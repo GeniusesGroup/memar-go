@@ -1,6 +1,6 @@
 ##Arrows : Go Package for Scalable and Big Scale Projects (Don't Use Mutex)
 
-<img align="right" src="https://github.com/SabzCity/Go-Library/blob/master/arrows/etc/logo.png">
+<img align="right" src="./etc/logo.png">
 
 ###This package provide four ways for concurrently programming in Go
 

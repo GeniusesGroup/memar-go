@@ -1,4 +1,4 @@
-//Copyright 2016 SabzCity
+//Copyright 2017 SabzCity
 //
 //Licensed under the Apache License, Version 2.0 (the "License");
 //you may not use this file except in compliance with the License.
@@ -26,8 +26,8 @@ var (
 	ErrCircuitRunning = errors.New("circuit is now running")
 )
 
-//Work is repeat in circuit, and when success or
-//return error consecutive it will break.
+// CircuitBreaker Work is repeat in circuit, and when success or
+// return error consecutive it will break.
 type CircuitBreaker struct {
 	//How many circuit return error to open breaker ?
 	ErrorThreshold int
