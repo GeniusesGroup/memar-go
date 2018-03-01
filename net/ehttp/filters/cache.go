@@ -21,9 +21,9 @@ import (
 
 	"github.com/vmihailenco/msgpack"
 
+	persiadb "github.com/SabzCity/PersiaDB"
 	"github.com/SabzCity/go-library/convert"
 	"github.com/SabzCity/go-library/cryptography/md5"
-	cachedata "github.com/SabzCity/go-library/database/cache-data"
 	"github.com/SabzCity/go-library/errors"
 	"github.com/SabzCity/go-library/net/ehttp"
 	"github.com/SabzCity/go-library/net/ehttp/ehttputil"
@@ -32,14 +32,14 @@ import (
 // NewHTTPCache : Create new "HTTPCache" object.
 func NewHTTPCache() *HTTPCache {
 	return &HTTPCache{
-		value: cachedata.NewMemoryCache(time.Hour*24*365, 512),
-		vary:  cachedata.NewMemoryCache(time.Hour*24*365*10, 128)}
+		value: persiadb.NewMemoryCache(time.Hour*24*365, 512),
+		vary:  persiadb.NewMemoryCache(time.Hour*24*365*10, 128)}
 }
 
 // HTTPCache : Manage HTTP request and response cache.
 type HTTPCache struct {
-	value *cachedata.MemoryCache
-	vary  *cachedata.MemoryCache
+	value *persiadb.MemoryCache
+	vary  *persiadb.MemoryCache
 }
 
 // InputCache : This is a filter that check if requested data is in the cache

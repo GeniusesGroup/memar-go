@@ -17,12 +17,12 @@ package authorization
 import (
 	"time"
 
-	cachedata "github.com/SabzCity/go-library/database/cache-data"
+	persiadb "github.com/SabzCity/PersiaDB"
 )
 
-var userJoinedGroupsCache = cachedata.NewObjectCache(time.Hour * 24 * 7)
-var orgGroupsCache = cachedata.NewObjectCache(time.Hour * 24 * 7)
-var groupsDetailsCache = cachedata.NewObjectCache(time.Hour * 24 * 7)
+var userJoinedGroupsCache = persiadb.NewObjectCache(time.Hour * 24 * 7)
+var orgGroupsCache = persiadb.NewObjectCache(time.Hour * 24 * 7)
+var groupsDetailsCache = persiadb.NewObjectCache(time.Hour * 24 * 7)
 
 // UserJoinedGroups :
 func UserJoinedGroups(userID string) []string {
