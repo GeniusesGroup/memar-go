@@ -17,16 +17,15 @@ package authorization
 import (
 	"time"
 
-	persiadb "github.com/SabzCity/PersiaDB"
+	"github.com/SabzCity/go-library/cache"
 )
 
-var userJoinedGroupsCache = persiadb.NewObjectCache(time.Hour * 24 * 7)
-var orgGroupsCache = persiadb.NewObjectCache(time.Hour * 24 * 7)
-var groupsDetailsCache = persiadb.NewObjectCache(time.Hour * 24 * 7)
+var userJoinedGroupsCache = cache.NewObjectCache(time.Hour * 24 * 7)
+var orgGroupsCache = cache.NewObjectCache(time.Hour * 24 * 7)
+var groupsDetailsCache = cache.NewObjectCache(time.Hour * 24 * 7)
 
 // UserJoinedGroups :
 func UserJoinedGroups(userID string) []string {
-
 	userJoinedGroupsCached, err := userJoinedGroupsCache.Get(userID)
 	if err != nil {
 		// Get and cache needed data
@@ -42,7 +41,6 @@ func UserJoinedGroups(userID string) []string {
 
 // OrgGroups :
 func OrgGroups(orgID string) []string {
-
 	orgGroupsCached, err := orgGroupsCache.Get(orgID)
 	if err != nil {
 		// Get and cache needed data
@@ -58,7 +56,6 @@ func OrgGroups(orgID string) []string {
 
 // GroupDetails :
 func GroupDetails(groupID string) Group {
-
 	groupsDetailsCached, err := groupsDetailsCache.Get(groupID)
 	if err != nil {
 		// Get and cache needed data

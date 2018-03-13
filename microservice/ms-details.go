@@ -25,7 +25,7 @@ var MSDetails Details
 type Details struct {
 	OpenAPI      *openapi.OpenAPI
 	HandlersPort HandlersPort
-	Production   bool
+	ReleaseToken string                 // Empty means not production and just test environment!
 	Other        map[string]interface{} // All other specify details for MS.
 }
 

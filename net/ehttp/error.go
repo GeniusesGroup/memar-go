@@ -40,7 +40,7 @@ func HandleError(ctx *Context) {
 	ctx.Response.Header.Set("X-Error", convert.IntToString(extendedError.Code))
 
 	// Set extra info to response in development phase for easy debugging
-	if !microservice.MSDetails.Production {
+	if microservice.MSDetails.ReleaseToken == "" {
 		ctx.Response.Header.Set(ehttputil.ResponseStandards.Headers.Content.Type, ehttputil.MimeTypes["TEXT"])
 		ctx.Response.Header.Set("X-Error-Addition", extendedError.Text)
 		if extendedError.Information != nil {

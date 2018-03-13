@@ -33,7 +33,7 @@ func Fatal(err error) {
 			"Text":        extendedError.Text,
 			"Information": extendedError.Information})
 
-		if !microservice.MSDetails.Production {
+		if microservice.MSDetails.ReleaseToken == "" {
 			log.Println("FATAL : ", jDoc)
 		}
 		if extendedError.HTTPStatus == 0 {

@@ -17,13 +17,13 @@ package filters
 import (
 	"time"
 
-	persiadb "github.com/SabzCity/PersiaDB"
+	"github.com/SabzCity/go-library/cache"
 	"github.com/SabzCity/go-library/net/edns"
 	"github.com/SabzCity/go-library/net/edns/ednsutil"
 )
 
 // staticZoneCache : Set DNS zones to this variable in static process.
-var dynamicZoneCache = persiadb.NewObjectCache(time.Hour * 24 * 7)
+var dynamicZoneCache = cache.NewObjectCache(time.Hour * 24 * 7)
 
 // DynamicRouter :
 // Needed filter: before(), after()

@@ -21,13 +21,13 @@ import (
 	"strings"
 	"time"
 
-	persiadb "github.com/SabzCity/PersiaDB"
+	"github.com/SabzCity/go-library/cache"
 	"github.com/SabzCity/go-library/documentation/openapi"
 	"github.com/SabzCity/go-library/errors"
 	"github.com/SabzCity/go-library/net/ehttp"
 )
 
-var dynamicRoutingCache = persiadb.NewObjectCache(time.Hour * 24 * 7)
+var dynamicRoutingCache = cache.NewObjectCache(time.Hour * 24 * 7)
 
 // DynamicRestRoute : All we need for process a request.
 type DynamicRestRoute struct {

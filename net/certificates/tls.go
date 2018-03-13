@@ -18,15 +18,14 @@ import (
 	"crypto/tls"
 	"time"
 
-	persiadb "github.com/SabzCity/PersiaDB"
+	"github.com/SabzCity/go-library/cache"
 	"github.com/SabzCity/go-library/errors"
 )
 
-var certificateCache = persiadb.NewObjectCache(time.Hour * 24 * 7)
+var certificateCache = cache.NewObjectCache(time.Hour * 24 * 7)
 
 // GetCertificate : Return special certificate for client.
 func GetCertificate(clientHello *tls.ClientHelloInfo) (*tls.Certificate, error) {
-
 	certificate, err := certificateCache.Get(clientHello.ServerName)
 	if err != nil {
 		newCertificate := getWithoutCache(clientHello.ServerName)

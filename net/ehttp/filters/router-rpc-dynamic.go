@@ -20,12 +20,12 @@ package filters
 import (
 	"time"
 
-	persiadb "github.com/SabzCity/PersiaDB"
+	"github.com/SabzCity/go-library/cache"
 	"github.com/SabzCity/go-library/errors"
 	"github.com/SabzCity/go-library/net/ehttp"
 )
 
-var rpcRoutingCache = persiadb.NewObjectCache(time.Hour * 24 * 7)
+var rpcRoutingCache = cache.NewObjectCache(time.Hour * 24 * 7)
 
 // DynamicRPCRoute : All we need for process a request.
 type DynamicRPCRoute struct {

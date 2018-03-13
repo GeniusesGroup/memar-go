@@ -33,7 +33,7 @@ func panicHandler(w http.ResponseWriter) {
 		w.Header().Set("X-Error", convert.IntToString(extendedError.Code))
 		w.WriteHeader(extendedError.HTTPStatus)
 
-		if !microservice.MSDetails.Production {
+		if microservice.MSDetails.ReleaseToken == "" {
 			w.Header().Set("X-Error-Addition", extendedError.Text)
 
 			var buffer bytes.Buffer
