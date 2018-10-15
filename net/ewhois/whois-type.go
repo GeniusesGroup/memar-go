@@ -12,7 +12,7 @@
 //See the License for the specific language governing permissions and
 //limitations under the License.
 
-// Extended Whois Package
+// Package ewhois is Extended Whois!
 package ewhois
 
 import "time"
@@ -22,15 +22,11 @@ type Whois struct {
 	Details  Details
 	Date     Date
 	Contacts Contacts
-	Transfer struct {
-		Code   string
-		Status bool //true for lock, false for unlock
-	}
 }
 
 // Details : The standard struct of WHOIS details in usersdata.
 type Details struct {
-	Status             bool
+	Status             []string
 	RegistryDomainID   string
 	RegistrarContactID string
 	Registrar          string

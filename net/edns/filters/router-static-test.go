@@ -99,17 +99,12 @@ var sabzCityZone = `
                 "46.4.162.78"
             ]
         },
-        "ns5.sabz.city.": {
-            "A": [
-                "46.4.162.78"
-            ]
-        },
         "apis.sabz.city.": {
             "A": [
                 "46.4.162.78"
             ]
         },
-        "*.containers.sabz.city.": {
+        "containers.sabz.city.": {
             "A": [
                 "46.4.162.78"
             ]
