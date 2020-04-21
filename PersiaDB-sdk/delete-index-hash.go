@@ -5,7 +5,6 @@ package persiadb
 import (
 	chaparkhane "../ChaparKhane"
 	persiadb "../persiaDB"
-	srpc "../srpc"
 )
 
 // DeleteIndexHashReq is request structure of DeleteIndexHash()
@@ -14,36 +13,53 @@ type DeleteIndexHashReq struct {
 }
 
 // DeleteIndexHash use to delete exiting index hash with all related records IDs!
+// It wouldn't delete related records! Use DeleteIndexHistory() instead if you want delete all records too!
 func DeleteIndexHash(s *chaparkhane.Server, c *persiadb.Cluster, req *DeleteIndexHashReq) (err error) {
-	// Make new request stream
-	var st = chaparkhane.NewStream()
-
-	// Set DeleteIndexHash ServiceID
-	srpc.SetID(st.Payload, 0)
-
-	req.syllabEecoder(st.Payload[4:])
-
-	var nodeID = c.FindIndexNodeID(req.IndexHash)
+	var nodeID uint32 = c.FindNodeIDByIndexHash(req.IndexHash)
 
 	var ok bool
 	var i uint8
-	// Maybe closest PersiaDB node not response recently
+	var conn *chaparkhane.Connection
+	// Indicate conn! Maybe closest PersiaDB node not response recently
 	for i = 0; i < c.TotalReplications; i++ {
-		st.Connection, ok = s.Connections.GetConnectionByDomainID(c.Replications[i].Nodes[nodeID].DomainID)
+		var domainID = c.Replications[i].Nodes[nodeID].DomainID
+		conn, ok = s.Connections.GetConnectionByDomainID(domainID)
 		if !ok {
-			// TODO : Ask to make the connection!
-		}
-		err = s.WorkerPool.RegisterStreamToSend(st)
-		if err == nil {
+			conn, err = s.Connections.MakeNewConnectionByDomainID(domainID)
+			if err == nil {
+				break
+			}
+		} else {
 			break
 		}
 	}
 
-	// TODO : Listen to response stream and decode error ID and return it to caller
+	// Check if no connection exist to use!
+	if conn == nil {
+		return err
+	}
 
-	return nil
+	// Make new request-response streams
+	var reqStream, resStream *chaparkhane.Stream
+	reqStream, resStream = conn.MakeBidirectionalStream(0)
+
+	// Set DeleteIndexHash ServiceID
+	reqStream.ServiceID = 3411747355
+
+	req.syllabEncoder(reqStream.Payload[4:])
+	err = reqStream.SrpcOutcomeRequestHandler(s)
+	if err == nil {
+		return err
+	}
+
+	// Listen to response stream and decode error ID and return it to caller
+	var responseStatus = <-resStream.Status
+	if responseStatus == chaparkhane.StreamStateReady {
+	}
+
+	return resStream.Err
 }
 
-func (req *DeleteIndexHashReq) syllabEecoder(buf []byte) {
+func (req *DeleteIndexHashReq) syllabEncoder(buf []byte) {
 	copy(buf[:], req.IndexHash[:])
 }

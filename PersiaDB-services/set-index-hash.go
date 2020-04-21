@@ -5,8 +5,9 @@ package services
 import chaparkhane "../ChaparKhane"
 
 var setIndexService = chaparkhane.Service{
+	ID:              1881585857,
 	Name:            "SetIndex",
-	IssueDate:       0,
+	IssueDate:       1587282740,
 	ExpiryDate:      0,
 	ExpireInFavorOf: "",
 	Status:          chaparkhane.ServiceStatePreAlpha,

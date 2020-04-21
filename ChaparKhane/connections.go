@@ -19,6 +19,28 @@ func (c *Connections) init() {
 	}
 }
 
+// MakeNewConnectionByDomainID use to
+func (c *Connections) MakeNewConnectionByDomainID(domainID [16]byte) (conn *Connection, err error) {
+	// TODO::: Get closest domain UIP
+	var domainUIP = [16]byte{}
+	conn, err = c.MakeNewConnectionByPeerUIP(domainUIP)
+
+	return
+}
+
+// MakeNewConnectionByPeerUIP use to make new connection by peer UIP and initialize it!
+func (c *Connections) MakeNewConnectionByPeerUIP(peerUIP [16]byte) (conn *Connection, err error) {
+	// TODO::: Make connection by ask peer public key from peer uip router!
+
+	conn = &Connection{
+		StreamPool: make(map[uint32]*Stream),
+	}
+
+	c.RegisterConnection(conn)
+
+	return
+}
+
 // RegisterConnection use to register new connection in server connection pool!!
 func (c *Connections) RegisterConnection(conn *Connection) {
 	c.PoolByPeerUIP[conn.PeerUIPAddress] = conn
@@ -34,6 +56,7 @@ func (c *Connections) GetConnectionByPeerUIP(peerUIPAddress [16]byte) (conn *Con
 // GetConnectionByDomainID use to get a connection by peer domain ID from connections pool!!
 func (c *Connections) GetConnectionByDomainID(domainID [16]byte) (conn *Connection, ok bool) {
 	conn, ok = c.PoolByDomainID[domainID]
+	// check if connection is in not ready status
 	return
 }
 

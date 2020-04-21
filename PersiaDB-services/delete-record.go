@@ -5,41 +5,34 @@ package services
 import chaparkhane "../ChaparKhane"
 
 var deleteRecordService = chaparkhane.Service{
+	ID:              1758631843,
 	Name:            "DeleteRecord",
-	IssueDate:       0,
+	IssueDate:       1587282740,
 	ExpiryDate:      0,
 	ExpireInFavorOf: "",
 	Status:          chaparkhane.ServiceStatePreAlpha,
 	Handler:         DeleteRecord,
 	Description: []string{
-		"",
+		`Delete specific record by given ID in all cluster!
+		We don't suggest use this service, due to we strongly suggest think about data as immutable entity(stream and time)
+		It won't delete record history or indexes associate to it!`,
 	},
 	TAGS: []string{""},
 }
 
-type deleteRecordReq struct{
-	RecordID [32]byte
-}
-
-type deleteRecordRes struct{}
-
-func deleteRecord(st *chaparkhane.Stream, req *deleteRecordReq) (res *deleteRecordRes, err error) {
-	return res, nil
-}
-
-// DeleteRecord use to send delete request to all cluster to delete a record!
+// DeleteRecord use to delete specific record by given ID in all cluster!
 // We don't suggest use this service, due to we strongly suggest think about data as immutable entity(stream and time)
-// It won't delete record history just given specific ID.
+// It won't delete record history or indexes associate to it!
 func DeleteRecord(s *chaparkhane.Server, st *chaparkhane.Stream) {}
 
-func (req *deleteRecordReq) validator() error {
+type deleteRecordReq struct {
+	RecordID [16]byte
+}
+
+func deleteRecord(st *chaparkhane.Stream, req *deleteRecordReq) (err error) {
 	return nil
 }
 
 func (req *deleteRecordReq) syllabDecoder(buf []byte) error {
-	return nil
-}
-
-func (res *deleteRecordRes) syllabEncoder(buf []byte) error {
 	return nil
 }

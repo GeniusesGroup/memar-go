@@ -17,7 +17,7 @@ type Connection struct {
 	CipherSuite           uint16   // Selected algorithms https://en.wikipedia.org/wiki/Cipher_suite
 	FrameSize             uint16   // Default frame size is 128bit due cipher block size
 	EncryptionKey         [32]byte // 256bit encryption key, It will not use directly instead create time sensitive key each 10 second!
-	PacketPayloadSize     uint16   // It can't be under 1200 byte. Exclude network or transport header.
+	PacketPayloadSize     uint32   // Always must respect max frame size, so usually packets can't be more than 8192Byte!
 	MaxBandwidth          uint64   // use to tell the peer to slow down or packets will be drops in OS queues!
 	ServiceCallCount      uint64   // Count successful or unsuccessful request.
 	BytesSent             uint64   // Counts the bytes of payload data sent.
@@ -46,16 +46,47 @@ const (
 	ConnectionStateNotResponse
 )
 
-// NewConnection use to make new connection and initialize inner maps!
-func NewConnection() *Connection {
-	return &Connection{
-		StreamPool: make(map[uint32]*Stream),
+// MakeUnidirectionalStream use to make a new one way stream!
+// Never make Stream instance by hand, This function can improve by many ways!
+func (conn *Connection) MakeUnidirectionalStream(streamID uint32) (st *Stream) {
+	// TODO::: Check user can open new stream first
+	st = &Stream{
+		StreamID: streamID,
+		Status:   make(chan uint8),
 	}
+	conn.RegisterStream(st)
+	return
+}
+
+// MakeBidirectionalStream use to make new Request-Response stream!
+func (conn *Connection) MakeBidirectionalStream(streamID uint32) (reqStream, resStream *Stream) {
+	reqStream = conn.MakeUnidirectionalStream(streamID)
+	resStream = &Stream{
+		Connection: reqStream.Connection,
+		ReqRes:     reqStream,
+		StreamID:   reqStream.StreamID + 1,
+		Status:     make(chan uint8),
+	}
+	reqStream.ReqRes = resStream
+	conn.RegisterStream(resStream)
+	return
+}
+
+// MakeSubscriberStream use to make new Publish–Subscribe stream!
+func (conn *Connection) MakeSubscriberStream() (st *Stream) {
+	return
+}
+
+// GetStreamByID use to get exiting stream in the stream pool of a connection!
+func (conn *Connection) GetStreamByID(streamID uint32) (st *Stream, ok bool) {
+	st, ok = conn.StreamPool[streamID]
+	// TODO::: Check stream isn't closed!!
+	return
 }
 
 // RegisterStream use to register new stream in the stream pool of a connection!
 func (conn *Connection) RegisterStream(st *Stream) {
-	// TODO : Check user can open new stream!
+	// TODO::: Check stream policy!
 	conn.StreamPool[st.StreamID] = st
 }
 

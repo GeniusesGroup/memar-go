@@ -7,19 +7,14 @@ import (
 	persiadb "../persiaDB"
 )
 
-// GetRecordReq is request structure of GetRecord()
-type GetRecordReq struct {
-	RecordID [16]byte
+// DeleteIndexHashHistoryReq is request structure of DeleteIndexHashHistory()
+type DeleteIndexHashHistoryReq struct {
+	IndexHash [32]byte
 }
 
-// GetRecordRes is response structure of GetRecord()
-type GetRecordRes struct {
-	Record []byte
-}
-
-// GetRecord use get the specific record by its ID!
-func GetRecord(s *chaparkhane.Server, c *persiadb.Cluster, req *GetRecordReq) (res *GetRecordRes, err error) {
-	var nodeID uint32 = c.FindNodeIDByRecordID(req.RecordID)
+// DeleteIndexHashHistory use to delete all record associate to given index and delete index itself!
+func DeleteIndexHashHistory(s *chaparkhane.Server, c *persiadb.Cluster, req *DeleteIndexHashHistoryReq) (err error) {
+	var nodeID uint32 = c.FindNodeIDByIndexHash(req.IndexHash)
 
 	var ok bool
 	var i uint8
@@ -40,20 +35,20 @@ func GetRecord(s *chaparkhane.Server, c *persiadb.Cluster, req *GetRecordReq) (r
 
 	// Check if no connection exist to use!
 	if conn == nil {
-		return nil, err
+		return err
 	}
 
 	// Make new request-response streams
 	var reqStream, resStream *chaparkhane.Stream
 	reqStream, resStream = conn.MakeBidirectionalStream(0)
 
-	// Set GetRecord ServiceID
-	reqStream.ServiceID = 4052491139
+	// Set DeleteIndexHashHistory ServiceID
+	reqStream.ServiceID = 691384835
 
 	req.syllabEncoder(reqStream.Payload[4:])
 	err = reqStream.SrpcOutcomeRequestHandler(s)
 	if err == nil {
-		return nil, err
+		return err
 	}
 
 	// Listen to response stream and decode error ID and return it to caller
@@ -61,16 +56,9 @@ func GetRecord(s *chaparkhane.Server, c *persiadb.Cluster, req *GetRecordReq) (r
 	if responseStatus == chaparkhane.StreamStateReady {
 	}
 
-	res.syllabDecoder(resStream.Payload[4:])
-
-	return res, resStream.Err
+	return resStream.Err
 }
 
-func (req *GetRecordReq) syllabEncoder(buf []byte) error {
-	copy(buf[:], req.RecordID[:])
-	return nil
-}
-
-func (res *GetRecordRes) syllabDecoder(buf []byte) error {
-	return nil
+func (req *DeleteIndexHashHistoryReq) syllabEncoder(buf []byte) {
+	copy(buf[:], req.IndexHash[:])
 }

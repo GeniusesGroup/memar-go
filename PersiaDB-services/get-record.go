@@ -2,11 +2,12 @@
 
 package services
 
-import chaparkhane  "../ChaparKhane"
+import chaparkhane "../ChaparKhane"
 
 var getRecordService = chaparkhane.Service{
+	ID:              4052491139,
 	Name:            "GetRecord",
-	IssueDate:       0,
+	IssueDate:       1587282740,
 	ExpiryDate:      0,
 	ExpireInFavorOf: "",
 	Status:          chaparkhane.ServiceStatePreAlpha,
@@ -17,8 +18,11 @@ var getRecordService = chaparkhane.Service{
 	TAGS: []string{""},
 }
 
+// GetRecord use to get a record by given ID! It must send to proper node otherwise get not found error!
+func GetRecord(s *chaparkhane.Server, st *chaparkhane.Stream) {}
+
 type getRecordReq struct {
-	RecordID [32]byte
+	RecordID [16]byte
 }
 
 type getRecordRes struct {
@@ -28,9 +32,6 @@ type getRecordRes struct {
 func getRecord(st *chaparkhane.Stream, req *getRecordReq) (res *getRecordRes) {
 	return nil
 }
-
-// GetRecord use to get a record by given ID! It must send to proper node otherwise get not found error!
-func GetRecord(s *chaparkhane.Server, st *chaparkhane.Stream) {}
 
 func (req *getRecordReq) validator() error {
 	return nil

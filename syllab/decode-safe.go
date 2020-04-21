@@ -4,10 +4,11 @@ package syllab
 
 /*
 	************************************************************
-	**********************Fixed Size ARRAY**********************
+	**********************Fixed Size Data**********************
 	************************************************************
 	***********************PAY ATTENTION************************
-	If you want fixed sized array other than standard golang types use first function and edit it for your usage!
+	If you want fixed sized array other than standard golang types
+	use first function and edit it for your usage!
 	Use code generation to make specific size array in return by ChaparKhane!
 */
 
@@ -95,17 +96,17 @@ func GetComplex128(p []byte, offset uint32) complex128 {
 
 /*
 ************************************************************
-*******************Dynamically size ARRAY*******************
+*******************Dynamically size Data*******************
 ************************************************************
  */
 
-// GetArrayAddress decodes array address from the payload buffer!
-func GetArrayAddress(p []byte, offset uint32) uint32 {
+// GetAddress decodes array address from the payload buffer!
+func GetAddress(p []byte, offset uint32) uint32 {
 	return GetUInt32(p, offset)
 }
 
-// GetArrayLength decodes array length from the payload buffer!
-func GetArrayLength(p []byte, offset uint32) uint32 {
+// GetLength decodes array length from the payload buffer!
+func GetLength(p []byte, offset uint32) uint32 {
 	return GetUInt32(p, offset+3)
 }
 
@@ -116,14 +117,15 @@ func GetString(p []byte, offset uint32) string {
 
 // GetByteArray decodes byte array from the payload buffer!
 func GetByteArray(p []byte, offset uint32) []byte {
-	var add uint32 = GetArrayAddress(p, offset)
-	return p[add : add+GetArrayLength(p, offset)]
+	var add uint32 = GetAddress(p, offset)
+	var len uint32 = GetLength(p, offset)
+	return p[add : add+len]
 }
 
 // GetInt8Array decodes int8 array from the payload buffer!
 func GetInt8Array(p []byte, offset uint32) []int8 {
-	var add uint32 = GetArrayAddress(p, offset)
-	var len uint32 = GetArrayLength(p, offset)
+	var add uint32 = GetAddress(p, offset)
+	var len uint32 = GetLength(p, offset)
 	var int8Array = make([]int8, 0, len)
 	var i uint32
 	for i = 0; i <= len; i++ {
@@ -134,8 +136,8 @@ func GetInt8Array(p []byte, offset uint32) []int8 {
 
 // GetUInt8Array decodes uint8 array from the payload buffer!
 func GetUInt8Array(p []byte, offset uint32) []uint8 {
-	var add uint32 = GetArrayAddress(p, offset)
-	var len uint32 = GetArrayLength(p, offset)
+	var add uint32 = GetAddress(p, offset)
+	var len uint32 = GetLength(p, offset)
 	var uint8Array = make([]uint8, 0, len)
 	var i uint32
 	for i = 0; i <= len; i++ {
@@ -146,8 +148,8 @@ func GetUInt8Array(p []byte, offset uint32) []uint8 {
 
 // GetBoolArray decodes bool array from the payload buffer!
 func GetBoolArray(p []byte, offset uint32) []bool {
-	var add uint32 = GetArrayAddress(p, offset)
-	var len uint32 = GetArrayLength(p, offset)
+	var add uint32 = GetAddress(p, offset)
+	var len uint32 = GetLength(p, offset)
 	var boolArray = make([]bool, 0, len)
 	var i uint32
 	for i = 0; i <= len; i++ {
@@ -158,8 +160,8 @@ func GetBoolArray(p []byte, offset uint32) []bool {
 
 // GetInt16Array decode Int16 array from the payload buffer
 func GetInt16Array(p []byte, offset uint32) []int16 {
-	var add uint32 = GetArrayAddress(p, offset)
-	var len uint32 = GetArrayLength(p, offset)
+	var add uint32 = GetAddress(p, offset)
+	var len uint32 = GetLength(p, offset)
 	var int16Array = make([]int16, 0, len)
 	var i uint32
 	for i = 0; i <= len; i++ {
@@ -170,8 +172,8 @@ func GetInt16Array(p []byte, offset uint32) []int16 {
 
 // GetUInt16Array decode UInt16 array from the payload buffer
 func GetUInt16Array(p []byte, offset uint32) []uint16 {
-	var add uint32 = GetArrayAddress(p, offset)
-	var len uint32 = GetArrayLength(p, offset)
+	var add uint32 = GetAddress(p, offset)
+	var len uint32 = GetLength(p, offset)
 	var uint16Array = make([]uint16, 0, len)
 	var i uint32
 	for i = 0; i <= len; i++ {
@@ -182,8 +184,8 @@ func GetUInt16Array(p []byte, offset uint32) []uint16 {
 
 // GetInt32Array decode fixed size Int32 array from the payload buffer
 func GetInt32Array(p []byte, offset uint32) []int32 {
-	var add uint32 = GetArrayAddress(p, offset)
-	var len uint32 = GetArrayLength(p, offset)
+	var add uint32 = GetAddress(p, offset)
+	var len uint32 = GetLength(p, offset)
 	var int32Array = make([]int32, 0, len)
 	var i uint32
 	for i = 0; i <= len; i++ {
@@ -194,8 +196,8 @@ func GetInt32Array(p []byte, offset uint32) []int32 {
 
 // GetUInt32Array decode fixed size UInt32 array from the payload buffer
 func GetUInt32Array(p []byte, offset uint32) []uint32 {
-	var add uint32 = GetArrayAddress(p, offset)
-	var len uint32 = GetArrayLength(p, offset)
+	var add uint32 = GetAddress(p, offset)
+	var len uint32 = GetLength(p, offset)
 	var uint32Array = make([]uint32, 0, len)
 	var i uint32
 	for i = 0; i <= len; i++ {
@@ -206,8 +208,8 @@ func GetUInt32Array(p []byte, offset uint32) []uint32 {
 
 // GetFloat32Array decode fixed size Float32 array from the payload buffer
 func GetFloat32Array(p []byte, offset uint32) []float32 {
-	var add uint32 = GetArrayAddress(p, offset)
-	var len uint32 = GetArrayLength(p, offset)
+	var add uint32 = GetAddress(p, offset)
+	var len uint32 = GetLength(p, offset)
 	var float32Array = make([]float32, 0, len)
 	var i uint32
 	for i = 0; i <= len; i++ {
@@ -218,8 +220,8 @@ func GetFloat32Array(p []byte, offset uint32) []float32 {
 
 // GetInt64Array decode fixed size Int64 array from the payload buffer
 func GetInt64Array(p []byte, offset uint32) []int64 {
-	var add uint32 = GetArrayAddress(p, offset)
-	var len uint32 = GetArrayLength(p, offset)
+	var add uint32 = GetAddress(p, offset)
+	var len uint32 = GetLength(p, offset)
 	var int64Array = make([]int64, 0, len)
 	var i uint32
 	for i = 0; i <= len; i++ {
@@ -230,8 +232,8 @@ func GetInt64Array(p []byte, offset uint32) []int64 {
 
 // GetUInt64Array decode fixed size UInt64 array from the payload buffer
 func GetUInt64Array(p []byte, offset uint32) []uint64 {
-	var add uint32 = GetArrayAddress(p, offset)
-	var len uint32 = GetArrayLength(p, offset)
+	var add uint32 = GetAddress(p, offset)
+	var len uint32 = GetLength(p, offset)
 	var uint64Array = make([]uint64, 0, len)
 	var i uint32
 	for i = 0; i <= len; i++ {
@@ -242,8 +244,8 @@ func GetUInt64Array(p []byte, offset uint32) []uint64 {
 
 // GetFloat64Array decode fixed size Float64 array from the payload buffer
 func GetFloat64Array(p []byte, offset uint32) []float64 {
-	var add uint32 = GetArrayAddress(p, offset)
-	var len uint32 = GetArrayLength(p, offset)
+	var add uint32 = GetAddress(p, offset)
+	var len uint32 = GetLength(p, offset)
 	var float64Array = make([]float64, 0, len)
 	var i uint32
 	for i = 0; i <= len; i++ {
@@ -254,8 +256,8 @@ func GetFloat64Array(p []byte, offset uint32) []float64 {
 
 // GetComplex64Array decode fixed size Complex64 array from the payload buffer
 func GetComplex64Array(p []byte, offset uint32) []complex64 {
-	var add uint32 = GetArrayAddress(p, offset)
-	var len uint32 = GetArrayLength(p, offset)
+	var add uint32 = GetAddress(p, offset)
+	var len uint32 = GetLength(p, offset)
 	var complex64Array = make([]complex64, 0, len)
 	var i uint32
 	for i = 0; i <= len; i++ {
@@ -266,8 +268,8 @@ func GetComplex64Array(p []byte, offset uint32) []complex64 {
 
 // GetComplex128Array decode fixed size Complex128 array from the payload buffer
 func GetComplex128Array(p []byte, offset uint32) []complex128 {
-	var add uint32 = GetArrayAddress(p, offset)
-	var len uint32 = GetArrayLength(p, offset)
+	var add uint32 = GetAddress(p, offset)
+	var len uint32 = GetLength(p, offset)
 	var complex128Array = make([]complex128, 0, len)
 	var i uint32
 	for i = 0; i <= len; i++ {

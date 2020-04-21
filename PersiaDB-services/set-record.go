@@ -5,8 +5,9 @@ package services
 import chaparkhane "../ChaparKhane"
 
 var setRecordService = chaparkhane.Service{
+	ID:              10488062,
 	Name:            "SetRecord",
-	IssueDate:       0,
+	IssueDate:       1587282740,
 	ExpiryDate:      0,
 	ExpireInFavorOf: "",
 	Status:          chaparkhane.ServiceStatePreAlpha,
@@ -17,8 +18,8 @@ var setRecordService = chaparkhane.Service{
 	TAGS: []string{""},
 }
 
-type setRecordReq struct{
-	RecordID [32]byte
+type setRecordReq struct {
+	RecordID [16]byte
 	Data     []byte
 	Indexes  [][32]byte
 }
@@ -43,4 +44,3 @@ func (req *setRecordReq) syllabDecoder(buf []byte) error {
 func (res *setRecordRes) syllabEncoder(buf []byte) error {
 	return nil
 }
-

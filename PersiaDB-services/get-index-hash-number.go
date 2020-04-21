@@ -5,31 +5,32 @@ package services
 import chaparkhane "../ChaparKhane"
 
 var getIndexHashNumberService = chaparkhane.Service{
+	ID:              222077451,
 	Name:            "GetIndexHashNumber",
-	IssueDate:       0,
+	IssueDate:       1587282740,
 	ExpiryDate:      0,
 	ExpireInFavorOf: "",
 	Status:          chaparkhane.ServiceStatePreAlpha,
 	Handler:         GetIndexHashNumber,
 	Description: []string{
-		"",
+		"Get number of recordsID register for specific IndexHash",
 	},
 	TAGS: []string{""},
-}
-
-type getIndexHashNumberReq struct{}
-
-type getIndexHashNumberRes struct{}
-
-func getIndexHashNumber(st *chaparkhane.Stream, req *getIndexHashNumberReq) (res *getIndexHashNumberRes, err error) {
-	return res, nil
 }
 
 // GetIndexHashNumber use to get number of recordsID register for specific IndexHash
 func GetIndexHashNumber(s *chaparkhane.Server, st *chaparkhane.Stream) {}
 
-func (req *getIndexHashNumberReq) validator() error {
-	return nil
+type getIndexHashNumberReq struct {
+	IndexHash [32]byte
+}
+
+type getIndexHashNumberRes struct {
+	RecordNumber uint64
+}
+
+func getIndexHashNumber(st *chaparkhane.Stream, req *getIndexHashNumberReq) (res *getIndexHashNumberRes, err error) {
+	return res, nil
 }
 
 func (req *getIndexHashNumberReq) syllabDecoder(buf []byte) error {

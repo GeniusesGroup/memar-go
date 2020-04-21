@@ -7,18 +7,15 @@ import (
 	persiadb "../persiaDB"
 )
 
-// GetRecordReq is request structure of GetRecord()
-type GetRecordReq struct {
+// SetRecordReq is request structure of SetRecord()
+type SetRecordReq struct {
 	RecordID [16]byte
+	Record   []byte
 }
 
-// GetRecordRes is response structure of GetRecord()
-type GetRecordRes struct {
-	Record []byte
-}
-
-// GetRecord use get the specific record by its ID!
-func GetRecord(s *chaparkhane.Server, c *persiadb.Cluster, req *GetRecordReq) (res *GetRecordRes, err error) {
+// SetRecord use to respect all data in record and don't change something like RecordID or WriteTime!
+// If data like OwnerAppID is wrong you can't get record anymore!
+func SetRecord(s *chaparkhane.Server, c *persiadb.Cluster, req *SetRecordReq) (err error) {
 	var nodeID uint32 = c.FindNodeIDByRecordID(req.RecordID)
 
 	var ok bool
@@ -40,20 +37,20 @@ func GetRecord(s *chaparkhane.Server, c *persiadb.Cluster, req *GetRecordReq) (r
 
 	// Check if no connection exist to use!
 	if conn == nil {
-		return nil, err
+		return err
 	}
 
 	// Make new request-response streams
 	var reqStream, resStream *chaparkhane.Stream
 	reqStream, resStream = conn.MakeBidirectionalStream(0)
 
-	// Set GetRecord ServiceID
-	reqStream.ServiceID = 4052491139
+	// Set SetRecord ServiceID
+	reqStream.ServiceID = 10488062
 
 	req.syllabEncoder(reqStream.Payload[4:])
 	err = reqStream.SrpcOutcomeRequestHandler(s)
 	if err == nil {
-		return nil, err
+		return err
 	}
 
 	// Listen to response stream and decode error ID and return it to caller
@@ -61,16 +58,12 @@ func GetRecord(s *chaparkhane.Server, c *persiadb.Cluster, req *GetRecordReq) (r
 	if responseStatus == chaparkhane.StreamStateReady {
 	}
 
-	res.syllabDecoder(resStream.Payload[4:])
-
-	return res, resStream.Err
+	return resStream.Err
 }
 
-func (req *GetRecordReq) syllabEncoder(buf []byte) error {
-	copy(buf[:], req.RecordID[:])
-	return nil
-}
-
-func (res *GetRecordRes) syllabDecoder(buf []byte) error {
+func (req *SetRecordReq) syllabEncoder(buf []byte) error {
+	// Don't need to include RecordID! we just get it from upper due to Go is strongly type
+	// and we don't want to use unsafe here in SDK!
+	copy(buf[:], req.Record[:])
 	return nil
 }

@@ -7,18 +7,20 @@ import (
 	persiadb "../persiaDB"
 )
 
-// GetRecordReq is request structure of GetRecord()
-type GetRecordReq struct {
+// ReadRecordReq is request structure of ReadRecord()
+type ReadRecordReq struct {
 	RecordID [16]byte
+	Offset   uint64 // Do something like block storage API
+	Limit    uint64 // Do something like block storage API
 }
 
-// GetRecordRes is response structure of GetRecord()
-type GetRecordRes struct {
-	Record []byte
+// ReadRecordRes is response structure of ReadRecord()
+type ReadRecordRes struct {
+	Data []byte
 }
 
-// GetRecord use get the specific record by its ID!
-func GetRecord(s *chaparkhane.Server, c *persiadb.Cluster, req *GetRecordReq) (res *GetRecordRes, err error) {
+// ReadRecord use read some part of the specific record by its ID!
+func ReadRecord(s *chaparkhane.Server, c *persiadb.Cluster, req *ReadRecordReq) (res *ReadRecordRes, err error) {
 	var nodeID uint32 = c.FindNodeIDByRecordID(req.RecordID)
 
 	var ok bool
@@ -47,8 +49,8 @@ func GetRecord(s *chaparkhane.Server, c *persiadb.Cluster, req *GetRecordReq) (r
 	var reqStream, resStream *chaparkhane.Stream
 	reqStream, resStream = conn.MakeBidirectionalStream(0)
 
-	// Set GetRecord ServiceID
-	reqStream.ServiceID = 4052491139
+	// Set ReadRecord ServiceID
+	reqStream.ServiceID = 108857663
 
 	req.syllabEncoder(reqStream.Payload[4:])
 	err = reqStream.SrpcOutcomeRequestHandler(s)
@@ -66,11 +68,11 @@ func GetRecord(s *chaparkhane.Server, c *persiadb.Cluster, req *GetRecordReq) (r
 	return res, resStream.Err
 }
 
-func (req *GetRecordReq) syllabEncoder(buf []byte) error {
+func (req *ReadRecordReq) syllabEncoder(buf []byte) error {
 	copy(buf[:], req.RecordID[:])
 	return nil
 }
 
-func (res *GetRecordRes) syllabDecoder(buf []byte) error {
+func (res *ReadRecordRes) syllabDecoder(buf []byte) error {
 	return nil
 }

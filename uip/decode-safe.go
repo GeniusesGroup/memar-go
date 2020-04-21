@@ -41,22 +41,23 @@ func GetSourceAppProtocol(p []byte) (sourceSessionID uint16) {
 	return uint16(p[30]) | uint16(p[31])<<8
 }
 
+// GetPayloadSize will return Payload size in bytes!
+func GetPayloadSize(p []byte) uint32 {
+	return uint32(p[32]) | uint32(p[33])<<8 | uint32(p[34])<<16 | uint32(p[35])<<24
+}
+
 // GetStreamID will return StreamID in memory safe way!
 func GetStreamID(p []byte) uint32 {
-	return uint32(p[32]) | uint32(p[33])<<8 | uint32(p[34])<<16 | uint32(p[35])<<24
+	return uint32(p[36]) | uint32(p[37])<<8 | uint32(p[38])<<16 | uint32(p[39])<<24
 }
 
 // GetPacketID will return PacketID in memory safe way!
 func GetPacketID(p []byte) uint32 {
-	return uint32(p[36]) | uint32(p[37])<<8 | uint32(p[38])<<16 | uint32(p[39])<<24
+	return uint32(p[40]) | uint32(p[41])<<8 | uint32(p[42])<<16 | uint32(p[43])<<24
 }
 
 // GetPayload will return Payload in memory safe way!
 func GetPayload(p []byte) []byte {
-	return p[40 : len(p)-4]
+	return p[44 : len(p)-4]
 }
 
-// GetPayloadLength will return Payload length!
-func GetPayloadLength(p []byte) int {
-	return len(p) - 44
-}

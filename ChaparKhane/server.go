@@ -3,7 +3,6 @@
 package chaparkhane
 
 import (
-	"fmt"
 	"os"
 	"os/signal"
 	"syscall"
@@ -23,7 +22,6 @@ type Server struct {
 	Services              Services
 	PublicKeyCryptography PublicKeyCryptography
 	Connections           Connections
-	WorkerPool            WorkerPool
 	Assets                Assets // Data in Assets dependency(folder) of repo
 }
 
@@ -88,10 +86,10 @@ func (s *Server) HandleOSSignals(sigChannel chan os.Signal) {
 		// wait for our os signal to stop the app
 		// on the graceful stop channel
 		// this goroutine will block until we get an OS signal
-		fmt.Printf("caught sig: %+v", sig)
+		Log("caught sig: %+v", sig)
 
 		// sleep for 60 seconds to waiting for app to finish,
-		fmt.Println("Waiting for server to finish, will take 60 seconds")
+		Log("Waiting for server to finish, will take 60 seconds")
 
 		s.Shutdown()
 
@@ -115,4 +113,11 @@ func (s *Server) Shutdown() {
 
 	// it must change to ServerStateStop(0) otherwise it means app can't close normally
 	s.Status = ServerStateRunning
+}
+
+// SendStream use to register a stream to send pool and automatically send to other side.
+func (s *Server) SendStream(st *Stream) (err error) {
+	// First Check st.Connection.Status to ability send stream over it
+
+	return nil
 }

@@ -2,11 +2,12 @@
 
 package services
 
-import chaparkhane  "../ChaparKhane"
+import chaparkhane "../ChaparKhane"
 
 var readRecordService = chaparkhane.Service{
+	ID:              108857663,
 	Name:            "ReadRecord",
-	IssueDate:       0,
+	IssueDate:       1587282740,
 	ExpiryDate:      0,
 	ExpireInFavorOf: "",
 	Status:          chaparkhane.ServiceStatePreAlpha,
@@ -19,8 +20,12 @@ var readRecordService = chaparkhane.Service{
 	TAGS: []string{""},
 }
 
+// ReadRecord use to read some part of a record! It must send to proper node otherwise get not found error!
+// Mostly use to get metadata first to know about record size before get it to split to some shorter part!
+func ReadRecord(s *chaparkhane.Server, st *chaparkhane.Stream) {}
+
 type readRecordReq struct {
-	RecordID [32]byte
+	RecordID [16]byte
 	Offset   uint64 // Do something like block storage API
 	Limit    uint64 // Do something like block storage API
 }
@@ -38,9 +43,6 @@ func readRecord(st *chaparkhane.Stream, req *readRecordReq) (res *readRecordRes)
 
 	return nil
 }
-
-// ReadRecord use to read some part of a record! It must send to proper node otherwise get not found error!
-func ReadRecord(s *chaparkhane.Server, st *chaparkhane.Stream) {}
 
 func (req *readRecordReq) validator() error {
 	return nil

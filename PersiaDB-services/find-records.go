@@ -5,8 +5,9 @@ package services
 import chaparkhane "../ChaparKhane"
 
 var findRecordsService = chaparkhane.Service{
+	ID:              1992558377,
 	Name:            "FindRecords",
-	IssueDate:       0,
+	IssueDate:       1587282740,
 	ExpiryDate:      0,
 	ExpireInFavorOf: "",
 	Status:          chaparkhane.ServiceStatePreAlpha,
@@ -19,6 +20,10 @@ var findRecordsService = chaparkhane.Service{
 	TAGS: []string{""},
 }
 
+// FindRecords use to find records by indexes that store before!
+// Suggest not get more than 65535 related RecordID in single request!
+func FindRecords(s *chaparkhane.Server, st *chaparkhane.Stream) {}
+
 type findRecordsReq struct {
 	IndexHash [32]byte
 	Offset    uint64
@@ -26,16 +31,12 @@ type findRecordsReq struct {
 }
 
 type findRecordsRes struct {
-	RecordIDs [][32]byte
+	RecordIDs [][16]byte
 }
 
 func findRecords(st *chaparkhane.Stream, req *findRecordsReq) (res *findRecordsRes, err error) {
 	return nil, nil
 }
-
-// FindRecords use to find records by indexes that store before!
-// Suggest not get more than 65535 related RecordID in single request!
-func FindRecords(s *chaparkhane.Server, st *chaparkhane.Stream) {}
 
 func (req *findRecordsReq) validator() error {
 	return nil

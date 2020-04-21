@@ -13,16 +13,16 @@ type Cluster struct {
 	WriteTime         int64
 	OwnerAppID        [16]byte
 	/* Unique data */
-	AppID                [16]byte // Unique ID to listen it in any node for new record!
-	ClusterCapacity      [16]byte // In bytes, Max 2^128 Byte, Is it enough!!??
-	TotalReplications    uint8
-	Replications         []ReplicationZone
-	TotalNodes           uint32   // we just support max nodes by uint32 limit!
-	PrimaryIndexRanges   []uint64 // First left 64bit of record ID!
-	SecondaryIndexRanges []uint64 // First left 64bit of hash index!
-	TransactionTimeOut   uint16   // in ms, default 500ms, Max 65.535s timeout
-	NodeFailureTimeOut   uint16   // in minute, default 60m, other corresponding node same range will replace failed node! not use in network failure, it is handy proccess!
-	OldCluster           *Cluster // Just exist in Re-Allocate proccess like add node or replication!
+	AppID              [16]byte // Unique ID to listen it in any node for new record!
+	ClusterCapacity    [16]byte // In bytes, Max 2^128 Byte, Is it enough!!??
+	TotalReplications  uint8
+	Replications       []ReplicationZone
+	TotalNodes         uint32   // we just support max nodes by uint32 limit!
+	PrimaryIndexRanges []uint64 // First left 64bit of record ID!
+	HashIndexRanges    []uint64 // First left 64bit of hash index!
+	TransactionTimeOut uint16   // in ms, default 500ms, Max 65.535s timeout
+	NodeFailureTimeOut uint16   // in minute, default 60m, other corresponding node same range will replace failed node! not use in network failure, it is handy proccess!
+	OldCluster         *Cluster // Just exist in Re-Allocate proccess like add node or replication!
 }
 
 // Init use to initialize a multi-node cluster.
@@ -57,76 +57,78 @@ func (c *Cluster) ChangeReplicationNumber(replicationNumber uint8) {
 // AddNewNode just call from master responsible node to split node range to two or more node!
 func (c *Cluster) AddNewNode() {}
 
-// FindRecordNodeID use to find responsible node ID for given record node part!
+// FindNodeIDByRecordID use to find responsible node ID for given record node part!
 // Nodes in each replication store in sort so nodeID is array location of desire node in any replication!
-func (c *Cluster) FindRecordNodeID(recordID [16]byte) (nodeID uint32) {
+func (c *Cluster) FindNodeIDByRecordID(recordID [16]byte) (nodeID uint32) {
 	var recordNodePart uint64 = uint64(recordID[0]) | uint64(recordID[1])<<8 | uint64(recordID[2])<<16 | uint64(recordID[3])<<24 |
 		uint64(recordID[4])<<32 | uint64(recordID[5])<<40 | uint64(recordID[6])<<48 | uint64(recordID[7])<<56
 
 	if c.TotalNodes == 1 {
-		return 1
-	} else if c.TotalNodes <= 4 {
-		if recordNodePart < c.PrimaryIndexRanges[1] {
-			return 1
-		} else if recordNodePart < c.PrimaryIndexRanges[2] {
-			return 2
-		} else if recordNodePart < c.PrimaryIndexRanges[3] {
-			return 3
-		}
-		return 4
-	} else {
-		var low uint32 = 0
-		var high uint32 = uint32(len(c.PrimaryIndexRanges)) - 1
-		var median uint32
+		// Due to nodeID == 0, Don't need to assign it again!!
+		return
+	}
 
-		for low <= high {
-			median = (low + high) / 2
-
+	var high uint32 = c.TotalNodes - 1
+	var median uint32
+	var diff uint32
+	for nodeID < high {
+		diff = high - nodeID
+		if diff < 3 {
+			median = nodeID + 1  // or high - 1
+			if c.PrimaryIndexRanges[high] <= recordNodePart {
+				nodeID = high
+			} else if c.PrimaryIndexRanges[median] <= recordNodePart {
+				nodeID = median
+			}
+			break
+		} else {
+			median = nodeID + diff/2
 			if c.PrimaryIndexRanges[median] < recordNodePart {
-				low = median + 1
+				nodeID = median
 			} else {
-				high = median - 1
+				high = median
 			}
 		}
-
-		return low
 	}
+
+	return
 }
 
-// FindIndexNodeID use to find responsible node ID for given index!
+// FindNodeIDByIndexHash use to find responsible node ID for given index hash!
 // Nodes in each replication store in sort so nodeID is array location of desire node in any replication!
-func (c *Cluster) FindIndexNodeID(indexHash [32]byte) (nodeID uint32) {
+func (c *Cluster) FindNodeIDByIndexHash(indexHash [32]byte) (nodeID uint32) {
 	var indexNodePart uint64 = uint64(indexHash[0]) | uint64(indexHash[1])<<8 | uint64(indexHash[2])<<16 | uint64(indexHash[3])<<24 |
 		uint64(indexHash[4])<<32 | uint64(indexHash[5])<<40 | uint64(indexHash[6])<<48 | uint64(indexHash[7])<<56
 
 	if c.TotalNodes == 1 {
-		return 1
-	} else if c.TotalNodes <= 4 {
-		if indexNodePart < c.SecondaryIndexRanges[1] {
-			return 1
-		} else if indexNodePart < c.SecondaryIndexRanges[2] {
-			return 2
-		} else if indexNodePart < c.SecondaryIndexRanges[3] {
-			return 3
-		}
-		return 4
-	} else {
-		var low uint32 = 0
-		var high uint32 = uint32(len(c.SecondaryIndexRanges)) - 1
-		var median uint32
+		// Due to nodeID == 0, Don't need to assign it again!!
+		return
+	}
 
-		for low <= high {
-			median = (low + high) / 2
-
-			if c.SecondaryIndexRanges[median] < indexNodePart {
-				low = median + 1
+	var high uint32 = c.TotalNodes - 1
+	var median uint32
+	var diff uint32
+	for nodeID < high {
+		diff = high - nodeID
+		if diff < 3 {
+			median = nodeID + 1 // or high - 1
+			if c.HashIndexRanges[high] <= indexNodePart {
+				nodeID = high
+			} else if c.HashIndexRanges[median] <= indexNodePart {
+				nodeID = median
+			}
+			break
+		} else {
+			median = nodeID + diff/2
+			if c.HashIndexRanges[median] < indexNodePart {
+				nodeID = median
 			} else {
-				high = median - 1
+				high = median
 			}
 		}
-
-		return low
 	}
+
+	return
 }
 
 // ReplicationZone :

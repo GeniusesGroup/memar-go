@@ -2,8 +2,6 @@
 
 package chaparkhane
 
-import "fmt"
-
 // Services store server services!
 type Services struct {
 	Services []*Service // Use RegisterService func to register service here not directly append them!
@@ -23,13 +21,15 @@ func (ss *Services) init() {
 // RegisterService use to set or change specific service detail!
 func (ss *Services) RegisterService(st *Service) {
 	if st.ID == 0 {
-		panic(fmt.Sprint("This service: ", st.Name, ", give 0 as service ID! it illegal to use 0 as ID! It must hash of service name"))
+		Log("This service: ", st.Name, ", give 0 as service ID! it illegal to use 0 as ID! It must hash of service name")
+		panic("ChaparKhane occur panic situation due to ^")
 	}
 
 	_, ok := ss.ByID[st.ID]
 	if ok {
 		// Warn developer this ServiceID use for other service and this panic
-		panic(fmt.Sprint("This ID: ", st.ID, ", Used before for other service and it illegal to reuse IDs"))
+		Log("This ID: ", st.ID, ", Used before for other service and it illegal to reuse IDs")
+		panic("ChaparKhane occur panic situation due to ^")
 	} else {
 		ss.ByID[st.ID] = st.Handler
 		ss.Services = append(ss.Services, st)

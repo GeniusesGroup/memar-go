@@ -7,18 +7,15 @@ import (
 	persiadb "../persiaDB"
 )
 
-// GetRecordReq is request structure of GetRecord()
-type GetRecordReq struct {
+// DeleteRecordReq is request structure of DeleteRecord()
+type DeleteRecordReq struct {
 	RecordID [16]byte
 }
 
-// GetRecordRes is response structure of GetRecord()
-type GetRecordRes struct {
-	Record []byte
-}
-
-// GetRecord use get the specific record by its ID!
-func GetRecord(s *chaparkhane.Server, c *persiadb.Cluster, req *GetRecordReq) (res *GetRecordRes, err error) {
+// DeleteRecord use to delete specific record by given ID in all cluster!
+// We don't suggest use this service, due to we strongly suggest think about data as immutable entity(stream and time)
+// It won't delete record history or indexes associate to it!
+func DeleteRecord(s *chaparkhane.Server, c *persiadb.Cluster, req *DeleteRecordReq) (err error) {
 	var nodeID uint32 = c.FindNodeIDByRecordID(req.RecordID)
 
 	var ok bool
@@ -40,20 +37,20 @@ func GetRecord(s *chaparkhane.Server, c *persiadb.Cluster, req *GetRecordReq) (r
 
 	// Check if no connection exist to use!
 	if conn == nil {
-		return nil, err
+		return err
 	}
 
 	// Make new request-response streams
 	var reqStream, resStream *chaparkhane.Stream
 	reqStream, resStream = conn.MakeBidirectionalStream(0)
-
-	// Set GetRecord ServiceID
-	reqStream.ServiceID = 4052491139
+	
+	// Set DeleteRecord ServiceID
+	reqStream.ServiceID = 1758631843
 
 	req.syllabEncoder(reqStream.Payload[4:])
 	err = reqStream.SrpcOutcomeRequestHandler(s)
 	if err == nil {
-		return nil, err
+		return err
 	}
 
 	// Listen to response stream and decode error ID and return it to caller
@@ -61,16 +58,9 @@ func GetRecord(s *chaparkhane.Server, c *persiadb.Cluster, req *GetRecordReq) (r
 	if responseStatus == chaparkhane.StreamStateReady {
 	}
 
-	res.syllabDecoder(resStream.Payload[4:])
-
-	return res, resStream.Err
+	return resStream.Err
 }
 
-func (req *GetRecordReq) syllabEncoder(buf []byte) error {
+func (req *DeleteRecordReq) syllabEncoder(buf []byte) {
 	copy(buf[:], req.RecordID[:])
-	return nil
-}
-
-func (res *GetRecordRes) syllabDecoder(buf []byte) error {
-	return nil
 }

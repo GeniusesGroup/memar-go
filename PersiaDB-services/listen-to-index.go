@@ -2,39 +2,39 @@
 
 package services
 
-// This service has a lot of use cases like
-// - any geospatial usage e.g. tracking device or user, ...
-// - following content author like telegram channels or instagram live video!
-
 import chaparkhane "../ChaparKhane"
 
 var listenToIndexService = chaparkhane.Service{
+	ID:              2145882122,
 	Name:            "ListenToIndex",
-	IssueDate:       0,
+	IssueDate:       1587282740,
 	ExpiryDate:      0,
 	ExpireInFavorOf: "",
 	Status:          chaparkhane.ServiceStatePreAlpha,
 	Handler:         ListenToIndex,
 	Description: []string{
-		"",
+		`get records to given index hash when new record set!
+		Request Must send to specific node that handle that hash index range!!
+		This service has a lot of use cases like:
+		- any geospatial usage e.g. tracking device or user, ...
+		- following content author like telegram channels or instagram live video!`,
 	},
 	TAGS: []string{""},
 }
 
-type listenToIndexReq struct{}
+// ListenToIndex use to get records to given index hash when new record set!
+func ListenToIndex(s *chaparkhane.Server, st *chaparkhane.Stream) {}
 
-type listenToIndexRes struct{}
+type listenToIndexReq struct {
+	IndexHash [32]byte
+}
+
+type listenToIndexRes struct {
+	// Record []byte TODO::: it can't be simple byte, maybe channel
+}
 
 func listenToIndex(st *chaparkhane.Stream, req *listenToIndexReq) (res *listenToIndexRes, err error) {
 	return res, nil
-}
-
-// ListenToIndex use to get the recordID by index hash when new record set!
-// Must send this request to specific node that handle that range!!
-func ListenToIndex(s *chaparkhane.Server, st *chaparkhane.Stream) {}
-
-func (req *listenToIndexReq) validator() error {
-	return nil
 }
 
 func (req *listenToIndexReq) syllabDecoder(buf []byte) error {

@@ -7,19 +7,16 @@ import (
 	persiadb "../persiaDB"
 )
 
-// GetRecordReq is request structure of GetRecord()
-type GetRecordReq struct {
-	RecordID [16]byte
+// FinishTransactionReq is request structure of FinishTransaction()
+type FinishTransactionReq struct {
+	IndexHash [32]byte
+	Record    []byte
 }
 
-// GetRecordRes is response structure of GetRecord()
-type GetRecordRes struct {
-	Record []byte
-}
-
-// GetRecord use get the specific record by its ID!
-func GetRecord(s *chaparkhane.Server, c *persiadb.Cluster, req *GetRecordReq) (res *GetRecordRes, err error) {
-	var nodeID uint32 = c.FindNodeIDByRecordID(req.RecordID)
+// FinishTransaction use to approve transaction!
+// Transaction Manager will set record and index! no further action need after this call!
+func FinishTransaction(s *chaparkhane.Server, c *persiadb.Cluster, req *FinishTransactionReq) (err error) {
+	var nodeID uint32 = c.FindNodeIDByIndexHash(req.IndexHash)
 
 	var ok bool
 	var i uint8
@@ -40,20 +37,19 @@ func GetRecord(s *chaparkhane.Server, c *persiadb.Cluster, req *GetRecordReq) (r
 
 	// Check if no connection exist to use!
 	if conn == nil {
-		return nil, err
+		return err
 	}
 
 	// Make new request-response streams
 	var reqStream, resStream *chaparkhane.Stream
 	reqStream, resStream = conn.MakeBidirectionalStream(0)
-
-	// Set GetRecord ServiceID
-	reqStream.ServiceID = 4052491139
+	// Set DeleteIndexHashHistory ServiceID
+	reqStream.ServiceID = 3962420401
 
 	req.syllabEncoder(reqStream.Payload[4:])
 	err = reqStream.SrpcOutcomeRequestHandler(s)
 	if err == nil {
-		return nil, err
+		return err
 	}
 
 	// Listen to response stream and decode error ID and return it to caller
@@ -61,16 +57,11 @@ func GetRecord(s *chaparkhane.Server, c *persiadb.Cluster, req *GetRecordReq) (r
 	if responseStatus == chaparkhane.StreamStateReady {
 	}
 
-	res.syllabDecoder(resStream.Payload[4:])
-
-	return res, resStream.Err
+	return resStream.Err
 }
 
-func (req *GetRecordReq) syllabEncoder(buf []byte) error {
-	copy(buf[:], req.RecordID[:])
-	return nil
-}
-
-func (res *GetRecordRes) syllabDecoder(buf []byte) error {
+func (req *FinishTransactionReq) syllabEncoder(buf []byte) error {
+	copy(buf[:], req.IndexHash[:])
+	copy(buf[32:], req.Record[:])
 	return nil
 }
