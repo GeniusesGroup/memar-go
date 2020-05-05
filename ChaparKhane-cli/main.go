@@ -9,12 +9,12 @@ import (
 	"time"
 
 	generator "../ChaparKhane-generator"
-	parser "../ChaparKhane-parser"
+	"../assets"
 )
 
 const (
 	// ChaparKhaneVersion must update in each release!
-	ChaparKhaneVersion = "v0.4.5"
+	ChaparKhaneVersion = "v0.5.7"
 )
 
 var (
@@ -50,7 +50,7 @@ func main() {
 	buildLog("Service root location is at", ServiceRootLocation)
 
 	// Parse repository
-	var repo = parser.NewRepository()
+	var repo = assets.NewFolder("")
 	var err error
 	err = repo.ReadRepositoryFromFileSystem(ServiceRootLocation)
 	if err != nil {
@@ -106,8 +106,8 @@ Choose:
 		if err != nil {
 			buildLog("Add new service template face this error:", err)
 		}
-		var file = parser.File{Name: res.ServiceFileName, Data: res.ServiceFile}
-		repo.Dependencies[PlatformServicesFolderName].AddFile(&file)
+		var file = assets.File{Name: res.ServiceFileName, Data: res.ServiceFile}
+		repo.Dependencies[FolderNameAPIs].Dependencies[FolderNameAPIsServices].SetFile(&file)
 	case 6:
 		// res, err := generator.UpdateProjectTemplate(&ReqUpdateProjectTemplate002{readRepo})
 		// if err != nil {

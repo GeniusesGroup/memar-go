@@ -8,12 +8,12 @@ import (
 	"go/format"
 	"text/template"
 
-	parser "../ChaparKhane-parser"
+	"../assets"
 )
 
 // MakeAssetsReq is request structure of MakeAssets()
 type MakeAssetsReq struct {
-	Repo *parser.Repository
+	Repo *assets.Folder
 }
 
 // MakeAssetsRes is response structure of MakeAssets()
@@ -42,7 +42,7 @@ func MakeAssets(req *MakeAssetsReq) (res *MakeAssetsRes, err error) {
 	return res, nil
 }
 
-func printAssets(repo *parser.Repository, depLocation string) (printed string) {
+func printAssets(repo *assets.Folder, depLocation string) (printed string) {
 	for fileName, file := range repo.Files {
 		filePrinted := printFile(fileName, file.Data)
 		printed = printed + depLocation + `.Files["` + fileName + `"] =` + filePrinted + "\n"
@@ -78,8 +78,7 @@ var assetsTemplate = template.Must(template.New("assetsTemplate").Funcs(template
 	"printFile":   printFile,
 }).Parse(`
 // Code generated .* DO NOT EDIT.$
-/* Copyright 2018 SabzCity 
-For license and copyright information please see LEGAL file in ChaparKhane repository */
+/* For license and copyright information please see LEGAL file in ChaparKhane repository */
 
 package main
 
@@ -92,10 +91,6 @@ var Assets = chaparkhane.NewAssets()
 
 func init(){
 	chaparkhane.DefaultServer.Assets = Assets.Dependencies["assets"]
-
-	{{range .Files}}
-		{{- if (eq .Name "server.manifest.json")}} Assets.Files["server.manifest.json"] = {{- printFile .Name .Data}} {{- end}}
-	{{end}}
 
 	Assets.Dependencies["assets"].Files = make(map[string]*chaparkhane.AssetsFile)
 	Assets.Dependencies["assets"].Dependencies = make(map[string]*chaparkhane.Assets)

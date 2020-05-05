@@ -13,7 +13,7 @@ func Init(s *chaparkhane.Server) {
 	s.Services.RegisterService(&getStreamsIDsService)
 	s.Services.RegisterService(&closeStreamService)
 	// s.Services.RegisterService()
-	s.Services.RegisterService(&setStreamSettingsService)
+	// s.Services.RegisterService()
 	s.Services.RegisterService(&reSendBrokenPacketService)
 	s.Services.RegisterService(&transferConnectionService)
 	s.Services.RegisterService(&syncTimeService)

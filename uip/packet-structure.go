@@ -9,12 +9,13 @@ type packetStructure struct {
 	DestinationXP          [4]byte
 	DestinationRouter      [4]byte
 	DestinationUser        [4]byte
-	DestinationApp         [2]byte 
+	DestinationApp         [2]byte
 	DestinationAppProtocol [2]byte
 	SourceUIP              [16]byte
-	PayloadSize            uint32
+	PayloadLength          uint16
 	StreamID               uint32
 	PacketID               uint32
 	Payload                []byte
+	Padding                []byte
 	Checksum               [32]byte
 }

@@ -2,8 +2,17 @@
 
 package main
 
-//
+// Some mutable folder name!
 const (
-	PlatformServicesFolderName  = "platform-services"
-	PlatfromDataStoreFolderName = "platform-datastore"
+	FolderNameAPIs = "apis"
+	FolderNameDB   = "db"
+	FolderNameGUI  = "gui"
+	FolderNameWWW  = "www"
+
+	FolderNameAPIsServices  = "services"
+	FolderNameAPIsDataStore = "datastore"
+
+	FolderNameGUIPages = "pages"
+	FolderNameGUILandings = "landings"
+	FolderNameGUIWidgets = "widgets"
 )

@@ -48,7 +48,7 @@ func FindRecords(s *chaparkhane.Server, c *persiadb.Cluster, req *FindRecordsReq
 
 	// Make new request-response streams
 	var reqStream, resStream *chaparkhane.Stream
-	reqStream, resStream = conn.MakeBidirectionalStream(0)
+	reqStream, resStream, err = conn.MakeBidirectionalStream(0)
 	// Set DeleteIndexHashHistory ServiceID
 	reqStream.ServiceID = 1992558377
 
@@ -59,7 +59,7 @@ func FindRecords(s *chaparkhane.Server, c *persiadb.Cluster, req *FindRecordsReq
 	}
 
 	// Listen to response stream and decode error ID and return it to caller
-	var responseStatus = <-resStream.Status
+	var responseStatus uint8 = <-resStream.StatusChannel
 	if responseStatus == chaparkhane.StreamStateReady {
 	}
 

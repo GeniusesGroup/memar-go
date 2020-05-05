@@ -1,0 +1,78 @@
+/* For license and copyright information please see LEGAL file in repository */
+
+package assets
+
+import (
+	"io/ioutil"
+	"mime"
+	"os"
+	"path"
+)
+
+// ReadRepositoryFromFileSystem use to get all repository by its name!
+func (f *Folder) ReadRepositoryFromFileSystem(dirname string) (err error) {
+	var repoFiles []os.FileInfo
+	repoFiles, err = ioutil.ReadDir(dirname)
+	if err != nil {
+		return err
+	}
+
+	for _, file := range repoFiles {
+		if file.IsDir() {
+			var innerRepo = NewFolder(file.Name())
+			innerRepo.FSPath = path.Join(dirname, file.Name())
+			err = innerRepo.ReadRepositoryFromFileSystem(innerRepo.FSPath)
+			if err != nil {
+				return err
+			}
+			f.Dependencies[file.Name()] = innerRepo
+		} else {
+			var data []byte
+			data, err = ioutil.ReadFile(path.Join(dirname, file.Name()))
+			if err != nil {
+				return err
+			}
+
+			var fi = File{
+				FullName: file.Name(),
+				Dep:      f,
+				Data:     data,
+			}
+			for i := len(fi.FullName) - 1; i >= 0; i-- {
+				if fi.FullName[i] == '.' {
+					fi.Name = fi.FullName[:i]
+					fi.Extension = fi.FullName[i+1:]
+					fi.MimeType = mime.TypeByExtension(fi.FullName[i:])
+				}
+			}
+
+			f.SetFile(&fi)
+		}
+	}
+
+	return nil
+}
+
+// WriteRepositoryToFileSystem use to write repository to file system!
+// It print any error to screen and pass last error to caller!
+func (f *Folder) WriteRepositoryToFileSystem(dirname string) (err error) {
+	for _, obj := range f.Files {
+		err = ioutil.WriteFile(path.Join(dirname, obj.FullName), obj.Data, 0755)
+		if err != nil {
+			return
+		}
+	}
+
+	for _, dep := range f.Dependencies {
+		err = os.Mkdir(path.Join(dirname, dep.Name), 0755)
+		if err != nil {
+			return
+		}
+		err = dep.WriteRepositoryToFileSystem(path.Join(dirname, dep.Name))
+		if err != nil {
+			return
+		}
+	}
+
+	return
+}

@@ -2,20 +2,22 @@
 
 package chaparkhane
 
+import "../crypto"
+
 // Connections store pools of connection to retrieve in many ways!
 type Connections struct {
-	PoolByDomainID    map[[16]byte]*Connection
-	PoolByPeerUIP     map[[16]byte]*Connection
-	PoolByOwnerUserID map[[16]byte][]*Connection
-	PoolByBlackList   map[[16]byte]*Connection
+	PoolByDomainID  map[[16]byte]*Connection
+	PoolByPeerUIP   map[[16]byte]*Connection
+	PoolByUserID    map[[16]byte][]*Connection
+	PoolByBlackList map[[16]byte]*Connection
 }
 
 func (c *Connections) init() {
 	if c.PoolByPeerUIP == nil {
 		c.PoolByPeerUIP = make(map[[16]byte]*Connection)
 	}
-	if c.PoolByOwnerUserID == nil {
-		c.PoolByOwnerUserID = make(map[[16]byte][]*Connection)
+	if c.PoolByUserID == nil {
+		c.PoolByUserID = make(map[[16]byte][]*Connection)
 	}
 }
 
@@ -33,6 +35,7 @@ func (c *Connections) MakeNewConnectionByPeerUIP(peerUIP [16]byte) (conn *Connec
 	// TODO::: Make connection by ask peer public key from peer uip router!
 
 	conn = &Connection{
+		Cipher:     crypto.NewGCM(crypto.NewAES256([32]byte{})),
 		StreamPool: make(map[uint32]*Stream),
 	}
 
@@ -43,8 +46,8 @@ func (c *Connections) MakeNewConnectionByPeerUIP(peerUIP [16]byte) (conn *Connec
 
 // RegisterConnection use to register new connection in server connection pool!!
 func (c *Connections) RegisterConnection(conn *Connection) {
-	c.PoolByPeerUIP[conn.PeerUIPAddress] = conn
-	// c.PoolByOwnerUserID[conn.OwnerUserID] = conn
+	c.PoolByPeerUIP[conn.UIPAddress] = conn
+	// c.PoolByUserID[conn.OwnerUserID] = conn
 }
 
 // GetConnectionByPeerUIP use to get a connection by peer UIP from connections pool!!
@@ -63,8 +66,8 @@ func (c *Connections) GetConnectionByDomainID(domainID [16]byte) (conn *Connecti
 // CloseConnection use to un-register exiting connection in server connection pool!!
 func (c *Connections) CloseConnection(conn *Connection) {
 	// TODO : Don't delete connection just reset it and send it to pool of unused connection due to GC!
-	delete(c.PoolByPeerUIP, conn.PeerUIPAddress)
-	delete(c.PoolByOwnerUserID, conn.OwnerUserID)
+	delete(c.PoolByPeerUIP, conn.UIPAddress)
+	delete(c.PoolByUserID, conn.UserID)
 
 	// Let unfinished stream handled!!
 }
@@ -73,6 +76,6 @@ func (c *Connections) CloseConnection(conn *Connection) {
 func (c *Connections) RevokeConnection(conn *Connection) {
 	// Remove all unfinished stream first!!
 
-	delete(c.PoolByPeerUIP, conn.PeerUIPAddress)
-	delete(c.PoolByOwnerUserID, conn.OwnerUserID)
+	delete(c.PoolByPeerUIP, conn.UIPAddress)
+	delete(c.PoolByUserID, conn.UserID)
 }

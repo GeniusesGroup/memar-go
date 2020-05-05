@@ -43,7 +43,7 @@ func (st *Stream) AuthorizeWhere() {
 	var notAuthorize bool
 	for _, ip := range st.Connection.AccessControl.Where {
 		// TODO : ip may contain zero padding!! org may restricted user to isp not subnet nor even device!!
-		if ip == st.Connection.PeerUIPAddress {
+		if ip == st.Connection.UIPAddress {
 			notAuthorize = false
 			break
 		} else {

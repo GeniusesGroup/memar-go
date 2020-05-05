@@ -7,6 +7,8 @@ import (
 	"os/signal"
 	"syscall"
 	"time"
+
+	"../assets"
 )
 
 // DefaultServer use as default server.
@@ -22,7 +24,7 @@ type Server struct {
 	Services              Services
 	PublicKeyCryptography PublicKeyCryptography
 	Connections           Connections
-	Assets                Assets // Data in Assets dependency(folder) of repo
+	Assets                assets.Folder // Any data files to serve!
 }
 
 // Server Status

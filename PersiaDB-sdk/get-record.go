@@ -45,7 +45,7 @@ func GetRecord(s *chaparkhane.Server, c *persiadb.Cluster, req *GetRecordReq) (r
 
 	// Make new request-response streams
 	var reqStream, resStream *chaparkhane.Stream
-	reqStream, resStream = conn.MakeBidirectionalStream(0)
+	reqStream, resStream, err = conn.MakeBidirectionalStream(0)
 
 	// Set GetRecord ServiceID
 	reqStream.ServiceID = 4052491139
@@ -57,7 +57,7 @@ func GetRecord(s *chaparkhane.Server, c *persiadb.Cluster, req *GetRecordReq) (r
 	}
 
 	// Listen to response stream and decode error ID and return it to caller
-	var responseStatus = <-resStream.Status
+	var responseStatus uint8 = <-resStream.StatusChannel
 	if responseStatus == chaparkhane.StreamStateReady {
 	}
 

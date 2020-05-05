@@ -43,25 +43,51 @@ var mainFileTemplate = template.Must(template.New("main").Parse(`
 package main
 
 import (
-	"encoding/json"
-
-	chaparkhane "./libgo/ChaparKhane"
+	chaparkhane "../libgo/ChaparKhane"
+	ss "../libgo/ChaparKhane-services"
+	services "./platform-services"
 )
 
 func init() {
-	if manifest, ok := Assets.Files["server.manifest.json"]; ok {
-		// Manifest : All needed Data to operation the service(application)
-		err := json.Unmarshal(manifest.Data, &chaparkhane.Manifest)
-		if err != nil {
-			panic(err)
-		}
-	} else {
-		panic("Chaparkhane manifest not exist!!")
+	chaparkhane.DefaultServer.Init()
+
+	ss.Init(chaparkhane.DefaultServer)
+	services.Init(chaparkhane.DefaultServer)
+
+	chaparkhane.DefaultServer.Manifest = chaparkhane.Manifest{
+		AppID:               [16]byte{},
+		Domain:              "",
+		Email:               "",
+		Icon:                "",
+		AuthorizedAppDomain: []string{},
+		SupportedLanguages:  []uint32{},
+		ManifestLanguages:   []uint32{},
+		Name: []string{
+			"",
+			"",
+		},
+		Description: []string{
+			"",
+			"",
+		},
+		TermsOfService: []string{
+			"",
+		},
+		Licence: []string{
+			"",
+		},
+		TAGS: []string{
+			"",
+		},
+		RequestedPermission: []uint32{},
+		TechnicalInfo:       chaparkhane.TechnicalInfo{},
 	}
 }
 
 func main() {
-	if err := StartServer(); err != nil {
+	var err error
+	err = chaparkhane.DefaultServer.Start()
+	if err != nil {
 		panic(err)
 	}
 }

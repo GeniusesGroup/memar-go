@@ -42,7 +42,7 @@ func SetRecord(s *chaparkhane.Server, c *persiadb.Cluster, req *SetRecordReq) (e
 
 	// Make new request-response streams
 	var reqStream, resStream *chaparkhane.Stream
-	reqStream, resStream = conn.MakeBidirectionalStream(0)
+	reqStream, resStream, err = conn.MakeBidirectionalStream(0)
 
 	// Set SetRecord ServiceID
 	reqStream.ServiceID = 10488062
@@ -54,7 +54,7 @@ func SetRecord(s *chaparkhane.Server, c *persiadb.Cluster, req *SetRecordReq) (e
 	}
 
 	// Listen to response stream and decode error ID and return it to caller
-	var responseStatus = <-resStream.Status
+	var responseStatus uint8 = <-resStream.StatusChannel
 	if responseStatus == chaparkhane.StreamStateReady {
 	}
 
@@ -64,6 +64,6 @@ func SetRecord(s *chaparkhane.Server, c *persiadb.Cluster, req *SetRecordReq) (e
 func (req *SetRecordReq) syllabEncoder(buf []byte) error {
 	// Don't need to include RecordID! we just get it from upper due to Go is strongly type
 	// and we don't want to use unsafe here in SDK!
-	copy(buf[:], req.Record[:])
+	req.Record = buf
 	return nil
 }

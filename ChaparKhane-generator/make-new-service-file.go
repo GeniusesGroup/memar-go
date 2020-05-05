@@ -61,7 +61,7 @@ var serviceFileTemplate = template.Must(template.New("serviceFileTemplate").Pars
 
 package services
 
-import chaparkhane "../libgo/ChaparKhane"
+import chaparkhane "../../libgo/ChaparKhane"
 
 var {{.ServiceLowerName}}Service = chaparkhane.Service{
 	ID:              {{.ServiceID}},
@@ -80,8 +80,8 @@ var {{.ServiceLowerName}}Service = chaparkhane.Service{
 // {{.ServiceUpperName}} will
 func {{.ServiceUpperName}}(s *chaparkhane.Server, st *chaparkhane.Stream) {
 	// Delete comments and write code here if you want directly work on input stream!
-	// Don't delete these three comment line, If you want ChaparKhane-generator make code for you!
-	// Stream Protocol ::: sRPC
+	// Don't delete these three comment line, If you want ChaparKhane-generator make||update code for you!
+	// StreamProtocol::: sRPC
 }
 
 type {{.ServiceLowerName}}Req struct {}

@@ -46,7 +46,7 @@ func listenToIndex(s *chaparkhane.Server, c *persiadb.Cluster, req *listenToInde
 
 	// Make new request-response streams
 	var reqStream, resStream *chaparkhane.Stream
-	reqStream, resStream = conn.MakeBidirectionalStream(0)
+	reqStream, resStream, err = conn.MakeBidirectionalStream(0)
 
 	// Set listenToIndex ServiceID
 	reqStream.ServiceID = 2145882122
@@ -58,7 +58,7 @@ func listenToIndex(s *chaparkhane.Server, c *persiadb.Cluster, req *listenToInde
 	}
 
 	// Listen to response stream and decode error ID and return it to caller
-	var responseStatus = <-resStream.Status
+	var responseStatus uint8 = <-resStream.StatusChannel
 	if responseStatus == chaparkhane.StreamStateReady {
 	}
 

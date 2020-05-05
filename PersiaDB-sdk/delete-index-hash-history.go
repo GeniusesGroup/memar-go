@@ -40,8 +40,11 @@ func DeleteIndexHashHistory(s *chaparkhane.Server, c *persiadb.Cluster, req *Del
 
 	// Make new request-response streams
 	var reqStream, resStream *chaparkhane.Stream
-	reqStream, resStream = conn.MakeBidirectionalStream(0)
-
+	reqStream, resStream, err = conn.MakeBidirectionalStream(0)
+	if err == nil {
+		return err
+	}
+	
 	// Set DeleteIndexHashHistory ServiceID
 	reqStream.ServiceID = 691384835
 
@@ -52,7 +55,7 @@ func DeleteIndexHashHistory(s *chaparkhane.Server, c *persiadb.Cluster, req *Del
 	}
 
 	// Listen to response stream and decode error ID and return it to caller
-	var responseStatus = <-resStream.Status
+	var responseStatus uint8 = <-resStream.StatusChannel
 	if responseStatus == chaparkhane.StreamStateReady {
 	}
 

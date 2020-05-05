@@ -2,32 +2,40 @@
 
 package chaparkhane
 
+import "../crypto"
+
 // Connection can use by any type users itself or delegate to other users to act as the owner!
 // Each user in each device need unique connection to another party.
 type Connection struct {
-	ConnectionID          [16]byte
-	DomainID              [16]byte // Usually use for server to server connections that peer has domainID!
-	PeerUIPAddress        [16]byte
-	PeerThingID           [16]byte
-	Status                uint8    // States locate in const of this file.
-	Weight                uint8    // 16 queue for priority weight of the connections exist.
-	OwnerUserID           [16]byte // Can't change after creation. Guest=ConnectionPublicKey
-	OwnerType             uint8    // 0:Guest, 1:Registered 2:Person, 3:Org, 4:App, ...
-	DelegateUserID        [16]byte // Can't change after first set. Guest={1}
-	CipherSuite           uint16   // Selected algorithms https://en.wikipedia.org/wiki/Cipher_suite
-	FrameSize             uint16   // Default frame size is 128bit due cipher block size
-	EncryptionKey         [32]byte // 256bit encryption key, It will not use directly instead create time sensitive key each 10 second!
-	PacketPayloadSize     uint32   // Always must respect max frame size, so usually packets can't be more than 8192Byte!
-	MaxBandwidth          uint64   // use to tell the peer to slow down or packets will be drops in OS queues!
-	ServiceCallCount      uint64   // Count successful or unsuccessful request.
-	BytesSent             uint64   // Counts the bytes of payload data sent.
-	PacketsSent           uint64   // Counts packets sent.
-	BytesReceived         uint64   // Counts the bytes of payload data Receive.
-	PacketsReceived       uint64   // Counts packets Receive.
-	FailedPacketsReceived uint64   // Counts failed packets receive for firewalling server from some attack types!
-	FailedServiceCall     uint64   // Counts failed service call e.g. data validation failed, ...
-	AccessControl         AccessControl
-	StreamPool            map[uint32]*Stream // StreamID
+	/* Connection data */
+	ConnectionID [16]byte
+	Status       uint8              // States locate in const of this file.
+	Weight       uint8              // 16 queue for priority weight of the connections exist.
+	StreamPool   map[uint32]*Stream // StreamID
+
+	/* Peer data */
+	DomainID       [16]byte // Usually use for server to server connections that peer has domainID!
+	UIPAddress     [16]byte
+	ThingID        [16]byte
+	UserID         [16]byte // Can't change after first set. initial is 0 as Guest!
+	UserType       uint8    // 0:Guest, 1:Registered 2:Person, 3:Org, 4:App, ...
+	DelegateUserID [16]byte // Can't change after first set. Guest={1}
+
+	/* Security data */
+	PeerPublicKey [32]byte
+	Cipher        crypto.Cipher // Selected cipher algorithms https://en.wikipedia.org/wiki/Cipher_suite
+	AccessControl AccessControl
+
+	/* Metrics data */
+	PacketPayloadSize     uint16 // Always must respect max frame size, so usually packets can't be more than 8192Byte!
+	MaxBandwidth          uint64 // Peer must respect this, otherwise connection will terminate and UIP go to black list!
+	ServiceCallCount      uint64 // Count successful or unsuccessful request.
+	BytesSent             uint64 // Counts the bytes of payload data sent.
+	PacketsSent           uint64 // Counts packets sent.
+	BytesReceived         uint64 // Counts the bytes of payload data Receive.
+	PacketsReceived       uint64 // Counts packets Receive.
+	FailedPacketsReceived uint64 // Counts failed packets receive for firewalling server from some attack types!
+	FailedServiceCall     uint64 // Counts failed service call e.g. data validation failed, ...
 }
 
 // Connection Status
@@ -48,27 +56,29 @@ const (
 
 // MakeUnidirectionalStream use to make a new one way stream!
 // Never make Stream instance by hand, This function can improve by many ways!
-func (conn *Connection) MakeUnidirectionalStream(streamID uint32) (st *Stream) {
-	// TODO::: Check user can open new stream first
+func (conn *Connection) MakeUnidirectionalStream(streamID uint32) (st *Stream, err error) {
+	// TODO::: Check user can open new stream first as stream policy!
+
+	if streamID == 0 {
+		// TODO::: Get new incremental streamID from pool
+	}
+
 	st = &Stream{
-		StreamID: streamID,
-		Status:   make(chan uint8),
+		StreamID:      streamID,
+		StatusChannel: make(chan uint8),
 	}
 	conn.RegisterStream(st)
 	return
 }
 
 // MakeBidirectionalStream use to make new Request-Response stream!
-func (conn *Connection) MakeBidirectionalStream(streamID uint32) (reqStream, resStream *Stream) {
-	reqStream = conn.MakeUnidirectionalStream(streamID)
-	resStream = &Stream{
-		Connection: reqStream.Connection,
-		ReqRes:     reqStream,
-		StreamID:   reqStream.StreamID + 1,
-		Status:     make(chan uint8),
+func (conn *Connection) MakeBidirectionalStream(streamID uint32) (reqStream, resStream *Stream, err error) {
+	reqStream, err = conn.MakeUnidirectionalStream(streamID)
+	if err != nil {
+		return
 	}
-	reqStream.ReqRes = resStream
-	conn.RegisterStream(resStream)
+
+	resStream, err = reqStream.MakeResponseStream()
 	return
 }
 
@@ -86,7 +96,6 @@ func (conn *Connection) GetStreamByID(streamID uint32) (st *Stream, ok bool) {
 
 // RegisterStream use to register new stream in the stream pool of a connection!
 func (conn *Connection) RegisterStream(st *Stream) {
-	// TODO::: Check stream policy!
 	conn.StreamPool[st.StreamID] = st
 }
 
