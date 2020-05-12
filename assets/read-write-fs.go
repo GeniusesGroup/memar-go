@@ -34,9 +34,10 @@ func (f *Folder) ReadRepositoryFromFileSystem(dirname string) (err error) {
 			}
 
 			var fi = File{
-				FullName: file.Name(),
-				Dep:      f,
-				Data:     data,
+				FullName:   file.Name(),
+				Dep:        f,
+				Data:       data,
+				DataString: string(data),
 			}
 			for i := len(fi.FullName) - 1; i >= 0; i-- {
 				if fi.FullName[i] == '.' {
@@ -57,16 +58,22 @@ func (f *Folder) ReadRepositoryFromFileSystem(dirname string) (err error) {
 // It print any error to screen and pass last error to caller!
 func (f *Folder) WriteRepositoryToFileSystem(dirname string) (err error) {
 	for _, obj := range f.Files {
-		err = ioutil.WriteFile(path.Join(dirname, obj.FullName), obj.Data, 0755)
-		if err != nil {
-			return
+		// Just write changed file
+		if obj.Status > 0 {
+			err = ioutil.WriteFile(path.Join(dirname, obj.FullName), obj.Data, 0755)
+			if err != nil {
+				return
+			}
 		}
 	}
 
 	for _, dep := range f.Dependencies {
-		err = os.Mkdir(path.Join(dirname, dep.Name), 0755)
-		if err != nil {
-			return
+		// Just write folder if its not exist!
+		if dep.Status > 0 {
+			err = os.Mkdir(path.Join(dirname, dep.Name), 0755)
+			if err != nil {
+				return
+			}
 		}
 		err = dep.WriteRepositoryToFileSystem(path.Join(dirname, dep.Name))
 		if err != nil {

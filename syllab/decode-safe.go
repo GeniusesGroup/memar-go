@@ -9,7 +9,7 @@ package syllab
 	***********************PAY ATTENTION************************
 	If you want fixed sized array other than standard golang types
 	use first function and edit it for your usage!
-	Use code generation to make specific size array in return by ChaparKhane!
+	Use code generation to make specific size array in return by CompleteEncoderMethodSafe()!
 */
 
 // GetnByte decodes n byte from the payload buffer.

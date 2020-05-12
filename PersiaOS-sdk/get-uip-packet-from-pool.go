@@ -2,10 +2,11 @@
 
 package persiaos
 
-// UIPIncomeBufferPool store
-var UIPIncomeBufferPool uipBufferPool
+// GPIncomeBufferPool store
+var GPIncomeBufferPool GPBufferPool
 
-type uipBufferPool struct {
+// GPBufferPool use to
+type GPBufferPool struct {
 	PoolCapacity       uint16
 	ActiveFreeLocation uintptr
 	LastPacketGet      uintptr

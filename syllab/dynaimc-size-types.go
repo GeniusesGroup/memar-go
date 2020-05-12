@@ -4,7 +4,7 @@ package syllab
 
 /*
 ----encoder references in GoLang----
-// Read more about this encoder : https://github.com/SabzCity/internet/blob/master/Syllab.md
+// Read more about this encoder : https://github.com/SabzCity/RFCs/blob/master/Syllab.md
 
 fixed sized data types:
 - [1]byte	: byte, int8, uint8, bool

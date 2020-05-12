@@ -4,7 +4,7 @@ package srpc
 
 // packetStructure is represent protocol structure!
 // It is just to show protocol in better way, we never use this type!
-// Read more about this protocol : https://github.com/SabzCity/internet/blob/master/sRPC.md
+// Read more about this protocol : https://github.com/SabzCity/RFCs/blob/master/sRPC.md
 type packetStructure struct {
 	ID      uint32 // request>>ServiceID || response>>ErrorID (0 means no error!)
 	Payload []byte

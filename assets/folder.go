@@ -5,8 +5,9 @@ package assets
 // Folder use to store app needed data from repo like html, css, js, ...
 type Folder struct {
 	Name         string
-	FSPath       string             // Folder location in FileSystems
-	Event        chan uint8         // use in dev phase to update Folder if any change occur!!
+	FSPath       string     // Folder location in FileSystems
+	Event        chan uint8 // use in dev phase to update Folder if any change occur!!
+	Status       uint8
 	Files        map[string]*File   // Name
 	Dependencies map[string]*Folder // Name
 }
@@ -23,6 +24,23 @@ func NewFolder(name string) *Folder {
 // GetFile use to get a file by its ful name with extension!
 func (f *Folder) GetFile(fullName string) *File {
 	return f.Files[fullName]
+}
+
+// GetFileRecursively use to get a file by its ful name with extension in recursively!
+func (f *Folder) GetFileRecursively(fullName string) (file *File) {
+	file = f.Files[fullName]
+	if file != nil {
+		return
+	}
+	if f.Dependencies != nil {
+		for _, dep := range f.Dependencies {
+			file = dep.GetFileRecursively(fullName)
+			if file != nil {
+				return
+			}
+		}
+	}
+	return nil
 }
 
 // SetFile use to set a file to given asset!

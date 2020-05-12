@@ -9,6 +9,13 @@ type File struct {
 	Extension  string
 	MimeType   string
 	Dep        *Folder
+	Status     uint8
 	Data       []byte
 	DataString string
 }
+
+// File||Folder Status
+const (
+	StateUnChanged uint8 = iota
+	StateChanged
+)

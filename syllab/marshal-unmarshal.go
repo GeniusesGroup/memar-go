@@ -4,7 +4,7 @@ package syllab
 
 /*
 	********************PAY ATTENTION:*******************
-	We don't suggest use these 2 func instead use chaparkhane to autogenerate needed code before compile time
+	We don't suggest use these 2 func instead use CompleteEncoderMethodSafe() to autogenerate needed code before compile time
 	and reduce runtime proccess to improve performance of the app and gain max performance from this protocol!
 */
 

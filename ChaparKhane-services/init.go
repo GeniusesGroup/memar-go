@@ -2,20 +2,11 @@
 
 package ss
 
-import chaparkhane "../ChaparKhane"
+import "../achaemenid"
 
-// Init use to register all available server services to given chaparkhane.
-func Init(s *chaparkhane.Server) {
-	s.Services.RegisterService(&revokeConnectionService)
-	s.Services.RegisterService(&closeConnectionService)
-	s.Services.RegisterService(&pingPeerService)
-	s.Services.RegisterService(&setConnectionSettingsService)
-	s.Services.RegisterService(&getStreamsIDsService)
-	s.Services.RegisterService(&closeStreamService)
+// Init use to register all available server services to given achaemenid.
+func Init(s *achaemenid.Server) {
+	s.Services.RegisterService(&registerGuestConnectionService)
 	// s.Services.RegisterService()
-	// s.Services.RegisterService()
-	s.Services.RegisterService(&reSendBrokenPacketService)
-	s.Services.RegisterService(&transferConnectionService)
-	s.Services.RegisterService(&syncTimeService)
 	// s.Services.RegisterService()
 }

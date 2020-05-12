@@ -31,7 +31,6 @@ func SetByte(p []byte, offset uint32, b byte) {
 // SetInt8 encode INT8 to the payload buffer.
 func SetInt8(p []byte, offset uint32, n int8) {
 	p[offset] = byte(n)
-	return
 }
 
 // SetUInt8 encode UINT8 to the payload buffer.
@@ -43,9 +42,10 @@ func SetUInt8(p []byte, offset uint32, n uint8) {
 func SetBool(p []byte, offset uint32, b bool) {
 	if b {
 		p[offset] = 1
-	} else {
-		p[offset] = 0
 	}
+	// else {
+	// 	p[offset] = 0
+	// }
 }
 
 // SetInt16 encode INT16 to the payload buffer.
