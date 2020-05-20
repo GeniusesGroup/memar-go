@@ -7,6 +7,7 @@ import (
 	"go/parser"
 	"go/token"
 	"strconv"
+	"strings"
 
 	"../assets"
 )
@@ -16,11 +17,11 @@ Before pass file to safe||unsafe function, dev must add needed methods to desire
 Otherwise panic may occur due to improve performance we don't check some bad situation!!
 
 func ({{DesireName}} *{{DesireType}}) syllabDecoder(buf []byte) (err error) {
-	return nil
+	return
 }
 
 func ({{DesireName}} *{{DesireType}}) syllabEncoder(buf []byte) (err error) {
-	return nil
+	return
 }
 */
 
@@ -66,9 +67,15 @@ func CompleteEncoderMethodSafe(file *assets.File) (err error) {
 					Types: fileTypes,
 				}
 				err = data.makeSyllabEncoderSafe()
-				if data.HeapCreated {
-					data.GData = "	var lhi int = " + strconv.Itoa(data.LSI) + " // Heap start index\n" + data.GData
-				}
+
+				// Add some other common data
+				data.GData = "	var hsi int = " + data.getSLIAsString(0) + " // Heap start index || Stack size!\n" +
+					"	var ln int // len of strings, slices, maps, ...\n" +
+					strings.TrimSuffix("	ln = hsi +"+data.HLenData, "+") + "\n" +
+					"	" + data.RN + ".RecordSize = ln  // indicate record size!\n" +
+					"	buf = append(buf, make([]byte, ln)...)\n\n" +
+					data.GData
+
 				cpyFile = append(cpyFile, &copyToFileReq{data.GData, int(d.Body.Lbrace), int(d.Body.Rbrace)})
 			}
 		}
@@ -81,13 +88,13 @@ func CompleteEncoderMethodSafe(file *assets.File) (err error) {
 }
 
 type syllabMaker struct {
-	RN          string                   // Receiver Name
-	FRN         string                   // Flat Receiver Name e.g. req.Time.
-	RTN         string                   // Receiver Type Name
-	Types       map[string]*ast.TypeSpec // All types
-	GData       string                   // Generated Data
-	LSI         int                      // Last Stack Index
-	HeapCreated bool
+	RN       string                   // Receiver Name
+	FRN      string                   // Flat Receiver Name e.g. req.Time.
+	RTN      string                   // Receiver Type Name
+	Types    map[string]*ast.TypeSpec // All types
+	HLenData string                   // Heap len data to make slices size
+	GData    string                   // Generated Data
+	LSI      uint64                   // Last Stack Index
 }
 
 func (sm *syllabMaker) makeSyllabDecoderSafe() (err error) {
@@ -104,10 +111,10 @@ func (sm *syllabMaker) makeSyllabDecoderSafe() (err error) {
 		case *ast.ArrayType:
 			// Check array is slice?
 			if t.Len == nil {
-
+				// TODO::: Slice generator
 			} else {
 				// Get array len
-				var len, err = strconv.Atoi(t.Len.(*ast.BasicLit).Value)
+				var len, err = strconv.ParseUint(t.Len.(*ast.BasicLit).Value, 10, 64)
 				if err != nil {
 					return ErrArrayLenNotSupported
 				}
@@ -121,22 +128,30 @@ func (sm *syllabMaker) makeSyllabDecoderSafe() (err error) {
 				case "int", "uint":
 					return ErrTypeIncludeIllegalChild
 				case "bool":
+					sm.LSI += len
 				case "byte":
-					sm.GData += "	copy(" + sm.FRN + in + "[:], buf[" + strconv.Itoa(sm.LSI) + ":])\n"
+					sm.GData += "	copy(" + sm.FRN + in + "[:], buf[" + sm.getSLIAsString(0) + ":])\n"
+					sm.LSI += len
 				case "uint8":
+					sm.LSI += len
 				case "int8":
+					sm.LSI += len
 				case "uint16":
+					sm.LSI += len * 2
 				case "int16":
+					sm.LSI += len * 2
 				case "uint32":
+					sm.LSI += len * 4
 				case "int32":
+					sm.LSI += len * 4
 				case "uint64":
+					sm.LSI += len * 8
 				case "int64":
+					sm.LSI += len * 8
 				case "string":
 				default:
 					// TODO::: get related type by its name as t.Elt.(*ast.Ident).Name
 				}
-
-				sm.LSI += len
 			}
 		case *ast.StructType:
 			var tmp = sm.FRN
@@ -157,38 +172,38 @@ func (sm *syllabMaker) makeSyllabDecoderSafe() (err error) {
 			case "int", "uint":
 				return ErrTypeIncludeIllegalChild
 			case "bool":
-				sm.GData += "	" + sm.FRN + in + " = buf[" + strconv.Itoa(sm.LSI) + "] == 1 \n"
+				sm.GData += "	" + sm.FRN + in + " = buf[" + sm.getSLIAsString(0) + "] == 1 \n"
 				sm.LSI++
 			case "byte":
-				sm.GData += "	" + sm.FRN + in + " = buf[" + strconv.Itoa(sm.LSI) + "]\n"
+				sm.GData += "	" + sm.FRN + in + " = buf[" + sm.getSLIAsString(0) + "]\n"
 				sm.LSI++
 			case "uint8":
-				sm.GData += "	" + sm.FRN + in + " = uint8(buf[" + strconv.Itoa(sm.LSI) + "])\n"
+				sm.GData += "	" + sm.FRN + in + " = uint8(buf[" + sm.getSLIAsString(0) + "])\n"
 				sm.LSI++
 			case "int8":
-				sm.GData += "	" + sm.FRN + in + " = int8(buf[" + strconv.Itoa(sm.LSI) + "])\n"
+				sm.GData += "	" + sm.FRN + in + " = int8(buf[" + sm.getSLIAsString(0) + "])\n"
 				sm.LSI++
 			case "uint16":
-				sm.GData += "	" + sm.FRN + in + " = uint16(buf[" + strconv.Itoa(sm.LSI) + "]) | uint16(buf[" + strconv.Itoa(sm.LSI+1) + "])<<8\n"
+				sm.GData += "	" + sm.FRN + in + " = uint16(buf[" + sm.getSLIAsString(0) + "]) | uint16(buf[" + sm.getSLIAsString(1) + "])<<8\n"
 				sm.LSI += 2
 			case "int16":
-				sm.GData += "	" + sm.FRN + in + " = int16(buf[" + strconv.Itoa(sm.LSI) + "]) | int16(buf[" + strconv.Itoa(sm.LSI+1) + "])<<8\n"
+				sm.GData += "	" + sm.FRN + in + " = int16(buf[" + sm.getSLIAsString(0) + "]) | int16(buf[" + sm.getSLIAsString(1) + "])<<8\n"
 				sm.LSI += 2
 			case "uint32":
-				sm.GData += "	" + sm.FRN + in + " = uint32(buf[" + strconv.Itoa(sm.LSI) + "]) | uint32(buf[" + strconv.Itoa(sm.LSI+1) + "])<<8 | uint32(buf[" + strconv.Itoa(sm.LSI+2) + "])<<16 | uint32(buf[" + strconv.Itoa(sm.LSI+3) + "])<<24\n"
+				sm.GData += "	" + sm.FRN + in + " = uint32(buf[" + sm.getSLIAsString(0) + "]) | uint32(buf[" + sm.getSLIAsString(1) + "])<<8 | uint32(buf[" + sm.getSLIAsString(2) + "])<<16 | uint32(buf[" + sm.getSLIAsString(3) + "])<<24\n"
 				sm.LSI += 4
 			case "int32":
-				sm.GData += "	" + sm.FRN + in + " = int32(buf[" + strconv.Itoa(sm.LSI) + "]) | int32(buf[" + strconv.Itoa(sm.LSI+1) + "])<<8 | int32(buf[" + strconv.Itoa(sm.LSI+2) + "])<<16 | int32(buf[" + strconv.Itoa(sm.LSI+3) + "])<<24\n"
+				sm.GData += "	" + sm.FRN + in + " = int32(buf[" + sm.getSLIAsString(0) + "]) | int32(buf[" + sm.getSLIAsString(1) + "])<<8 | int32(buf[" + sm.getSLIAsString(2) + "])<<16 | int32(buf[" + sm.getSLIAsString(3) + "])<<24\n"
 				sm.LSI += 4
 			case "uint64":
-				sm.GData += "	" + sm.FRN + in + " = uint64(buf[" + strconv.Itoa(sm.LSI) + "]) | uint64(buf[" + strconv.Itoa(sm.LSI+1) + "])<<8 | uint64(buf[" + strconv.Itoa(sm.LSI+2) + "])<<16 | uint64(buf[" + strconv.Itoa(sm.LSI+3) + "])<<24 | uint64(buf[" + strconv.Itoa(sm.LSI+4) + "])<<32 | uint64(buf[" + strconv.Itoa(sm.LSI+5) + "])<<40 | uint64(buf[" + strconv.Itoa(sm.LSI+6) + "])<<48 | uint64(buf[" + strconv.Itoa(sm.LSI+7) + "])<<56\n"
+				sm.GData += "	" + sm.FRN + in + " = uint64(buf[" + sm.getSLIAsString(0) + "]) | uint64(buf[" + sm.getSLIAsString(1) + "])<<8 | uint64(buf[" + sm.getSLIAsString(2) + "])<<16 | uint64(buf[" + sm.getSLIAsString(3) + "])<<24 | uint64(buf[" + sm.getSLIAsString(4) + "])<<32 | uint64(buf[" + sm.getSLIAsString(5) + "])<<40 | uint64(buf[" + sm.getSLIAsString(6) + "])<<48 | uint64(buf[" + sm.getSLIAsString(7) + "])<<56\n"
 				sm.LSI += 8
 			case "int64":
-				sm.GData += "	" + sm.FRN + in + " = int64(buf[" + strconv.Itoa(sm.LSI) + "]) | int64(buf[" + strconv.Itoa(sm.LSI+1) + "])<<8 | int64(buf[" + strconv.Itoa(sm.LSI+2) + "])<<16 | int64(buf[" + strconv.Itoa(sm.LSI+3) + "])<<24 | int64(buf[" + strconv.Itoa(sm.LSI+4) + "])<<32 | int64(buf[" + strconv.Itoa(sm.LSI+5) + "])<<40 | int64(buf[" + strconv.Itoa(sm.LSI+6) + "])<<48 | int64(buf[" + strconv.Itoa(sm.LSI+7) + "])<<56\n"
+				sm.GData += "	" + sm.FRN + in + " = int64(buf[" + sm.getSLIAsString(0) + "]) | int64(buf[" + sm.getSLIAsString(1) + "])<<8 | int64(buf[" + sm.getSLIAsString(2) + "])<<16 | int64(buf[" + sm.getSLIAsString(3) + "])<<24 | int64(buf[" + sm.getSLIAsString(4) + "])<<32 | int64(buf[" + sm.getSLIAsString(5) + "])<<40 | int64(buf[" + sm.getSLIAsString(6) + "])<<48 | int64(buf[" + sm.getSLIAsString(7) + "])<<56\n"
 				sm.LSI += 8
 			case "string":
-				sm.GData += "	var " + in + "Add = uint32(buf[" + strconv.Itoa(sm.LSI) + "]) | uint32(buf[" + strconv.Itoa(sm.LSI+1) + "])<<8 | uint32(buf[" + strconv.Itoa(sm.LSI+2) + "])<<16 | uint32(buf[" + strconv.Itoa(sm.LSI+3) + "])<<24\n"
-				sm.GData += "	var " + in + "Len = uint32(buf[" + strconv.Itoa(sm.LSI+4) + "]) | uint32(buf[" + strconv.Itoa(sm.LSI+5) + "])<<8 | uint32(buf[" + strconv.Itoa(sm.LSI+6) + "])<<16 | uint32(buf[" + strconv.Itoa(sm.LSI+7) + "])<<24\n"
+				sm.GData += "	var " + in + "Add = uint32(buf[" + sm.getSLIAsString(0) + "]) | uint32(buf[" + sm.getSLIAsString(1) + "])<<8 | uint32(buf[" + sm.getSLIAsString(2) + "])<<16 | uint32(buf[" + sm.getSLIAsString(3) + "])<<24\n"
+				sm.GData += "	var " + in + "Len = uint32(buf[" + sm.getSLIAsString(4) + "]) | uint32(buf[" + sm.getSLIAsString(5) + "])<<8 | uint32(buf[" + sm.getSLIAsString(6) + "])<<16 | uint32(buf[" + sm.getSLIAsString(7) + "])<<24\n"
 				sm.GData += "	" + sm.FRN + in + " = string(buf[" + in + "Add:" + in + "Len])\n"
 				sm.LSI += 8
 			default:
@@ -218,10 +233,10 @@ func (sm *syllabMaker) makeSyllabEncoderSafe() (err error) {
 		case *ast.ArrayType:
 			// Check array is slice?
 			if t.Len == nil {
-
+				// TODO::: Slice generator
 			} else {
 				// Get array len
-				var len, err = strconv.Atoi(t.Len.(*ast.BasicLit).Value)
+				var len, err = strconv.ParseUint(t.Len.(*ast.BasicLit).Value, 10, 64)
 				if err != nil {
 					return ErrArrayLenNotSupported
 				}
@@ -235,27 +250,35 @@ func (sm *syllabMaker) makeSyllabEncoderSafe() (err error) {
 				case "int", "uint":
 					return ErrTypeIncludeIllegalChild
 				case "bool":
+					sm.LSI += len
 				case "byte":
-					sm.GData += "	copy(buf[" + strconv.Itoa(sm.LSI) + ":], " + sm.FRN + in + "[:])\n"
+					sm.GData += "	copy(buf[" + sm.getSLIAsString(0) + ":], " + sm.FRN + in + "[:])\n"
 					// TODO::: Performance check assignment vs copy??
 					// for i:= 0; i<len; i++ {
-					// 	sm.GData += "	buf["+strconv.Itoa(sm.LSI+i)+"] = "+sm.FRN+in+"["+strconv.Itoa(i)+"];"
+					// 	sm.GData += "	buf["+strconv.FormatUint(sm.LSI+i)+"] = "+sm.FRN+in+"["+strconv.FormatUint(i)+"];"
 					// }
 					// sm.GData += "\n"
+					sm.LSI += len
 				case "uint8":
+					sm.LSI += len
 				case "int8":
+					sm.LSI += len
 				case "uint16":
+					sm.LSI += len * 2
 				case "int16":
+					sm.LSI += len * 2
 				case "uint32":
+					sm.LSI += len * 4
 				case "int32":
+					sm.LSI += len * 4
 				case "uint64":
+					sm.LSI += len * 8
 				case "int64":
+					sm.LSI += len * 8
 				case "string":
 				default:
 					// TODO::: get related type by its name as t.Elt.(*ast.Ident).Name
 				}
-
-				sm.LSI += len
 			}
 		case *ast.StructType:
 			var tmp = sm.FRN
@@ -276,32 +299,29 @@ func (sm *syllabMaker) makeSyllabEncoderSafe() (err error) {
 			case "int", "uint":
 				return ErrTypeIncludeIllegalChild
 			case "bool":
-				sm.GData += "	if " + sm.FRN + in + " {\n	buf[" + strconv.Itoa(sm.LSI) + "] = 1\n	}\n"
+				sm.GData += "	if " + sm.FRN + in + " {\n	buf[" + sm.getSLIAsString(0) + "] = 1\n	}\n"
 				sm.LSI++
 			case "byte":
-				sm.GData += "	buf[" + strconv.Itoa(sm.LSI) + "] = " + sm.FRN + in + "\n"
+				sm.GData += "	buf[" + sm.getSLIAsString(0) + "] = " + sm.FRN + in + "\n"
 				sm.LSI++
 			case "uint8", "int8":
-				sm.GData += "	buf[" + strconv.Itoa(sm.LSI) + "] = byte(" + sm.FRN + in + ")\n"
+				sm.GData += "	buf[" + sm.getSLIAsString(0) + "] = byte(" + sm.FRN + in + ")\n"
 				sm.LSI++
 			case "uint16", "int16":
-				sm.GData += "	buf[" + strconv.Itoa(sm.LSI) + "] = byte(" + sm.FRN + in + ")\n	buf[" + strconv.Itoa(sm.LSI+1) + "] = byte(" + sm.FRN + in + " >> 8)\n"
+				sm.GData += "	buf[" + sm.getSLIAsString(0) + "] = byte(" + sm.FRN + in + ")\n	buf[" + sm.getSLIAsString(1) + "] = byte(" + sm.FRN + in + " >> 8)\n"
 				sm.LSI += 2
 			case "uint32", "int32":
-				sm.GData += "	buf[" + strconv.Itoa(sm.LSI) + "] = byte(" + sm.FRN + in + ")\n	buf[" + strconv.Itoa(sm.LSI+1) + "] = byte(" + sm.FRN + in + " >> 8)\n	buf[" + strconv.Itoa(sm.LSI+2) + "] = byte(" + sm.FRN + in + " >> 16)\n	buf[" + strconv.Itoa(sm.LSI+3) + "] = byte(" + sm.FRN + in + " >> 24)\n"
+				sm.GData += "	buf[" + sm.getSLIAsString(0) + "] = byte(" + sm.FRN + in + ")\n	buf[" + sm.getSLIAsString(1) + "] = byte(" + sm.FRN + in + " >> 8)\n	buf[" + sm.getSLIAsString(2) + "] = byte(" + sm.FRN + in + " >> 16)\n	buf[" + sm.getSLIAsString(3) + "] = byte(" + sm.FRN + in + " >> 24)\n"
 				sm.LSI += 4
 			case "uint64", "int64":
-				sm.GData += "	buf[" + strconv.Itoa(sm.LSI) + "] = byte(" + sm.FRN + in + ")\n	buf[" + strconv.Itoa(sm.LSI+1) + "] = byte(" + sm.FRN + in + " >> 8)\n	buf[" + strconv.Itoa(sm.LSI+2) + "] = byte(" + sm.FRN + in + " >> 16)\n	buf[" + strconv.Itoa(sm.LSI+3) + "] = byte(" + sm.FRN + in + " >> 24)\n	buf[" + strconv.Itoa(sm.LSI+4) + "] = byte(" + sm.FRN + in + " >> 32)\n	buf[" + strconv.Itoa(sm.LSI+5) + "] = byte(" + sm.FRN + in + " >> 40)\n	buf[" + strconv.Itoa(sm.LSI+6) + "] = byte(" + sm.FRN + in + " >> 48)\n	buf[" + strconv.Itoa(sm.LSI+7) + "] = byte(" + sm.FRN + in + " >> 56)\n"
+				sm.GData += "	buf[" + sm.getSLIAsString(0) + "] = byte(" + sm.FRN + in + ")\n	buf[" + sm.getSLIAsString(1) + "] = byte(" + sm.FRN + in + " >> 8)\n	buf[" + sm.getSLIAsString(2) + "] = byte(" + sm.FRN + in + " >> 16)\n	buf[" + sm.getSLIAsString(3) + "] = byte(" + sm.FRN + in + " >> 24)\n	buf[" + sm.getSLIAsString(4) + "] = byte(" + sm.FRN + in + " >> 32)\n	buf[" + sm.getSLIAsString(5) + "] = byte(" + sm.FRN + in + " >> 40)\n	buf[" + sm.getSLIAsString(6) + "] = byte(" + sm.FRN + in + " >> 48)\n	buf[" + sm.getSLIAsString(7) + "] = byte(" + sm.FRN + in + " >> 56)\n"
 				sm.LSI += 8
 			case "string":
-				if !sm.HeapCreated {
-					sm.GData += "	var ln int // len of string, slices, maps, ...\n"
-					sm.HeapCreated = true
-				}
+				sm.HLenData += " len(" + sm.FRN + in + ") +"
 				sm.GData += "	ln = len(" + sm.FRN + in + ")\n"
-				sm.GData += "	buf[" + strconv.Itoa(sm.LSI) + "] = byte(lhi)\n	buf[" + strconv.Itoa(sm.LSI+1) + "] = byte(lhi >> 8)\n	buf[" + strconv.Itoa(sm.LSI+2) + "] = byte(lhi >> 16)\n	buf[" + strconv.Itoa(sm.LSI+3) + "] = byte(lhi >> 24)\n"
-				sm.GData += "	buf[" + strconv.Itoa(sm.LSI+4) + "] = byte(ln)\n	buf[" + strconv.Itoa(sm.LSI+5) + "] = byte(ln >> 8)\n	buf[" + strconv.Itoa(sm.LSI+6) + "] = byte(ln >> 16)\n	buf[" + strconv.Itoa(sm.LSI+7) + "] = byte(ln >> 24)\n"
-				sm.GData += "	copy(buf[lhi:], " + sm.FRN + in + "[:])\n	lhi += ln\n"
+				sm.GData += "	buf[" + sm.getSLIAsString(0) + "] = byte(hsi)\n	buf[" + sm.getSLIAsString(1) + "] = byte(hsi >> 8)\n	buf[" + sm.getSLIAsString(2) + "] = byte(hsi >> 16)\n	buf[" + sm.getSLIAsString(3) + "] = byte(hsi >> 24)\n"
+				sm.GData += "	buf[" + sm.getSLIAsString(4) + "] = byte(ln)\n	buf[" + sm.getSLIAsString(5) + "] = byte(ln >> 8)\n	buf[" + sm.getSLIAsString(6) + "] = byte(ln >> 16)\n	buf[" + sm.getSLIAsString(7) + "] = byte(ln >> 24)\n"
+				sm.GData += "	copy(buf[hsi:], " + sm.FRN + in + "[:])\n	hsi += ln\n"
 				sm.LSI += 8
 			default:
 				// TODO::: get related type by its name as t.Elt.(*ast.Ident).Name
@@ -313,6 +333,12 @@ func (sm *syllabMaker) makeSyllabEncoderSafe() (err error) {
 
 	sm.GData += "\n	return"
 
+	return
+}
+
+func (sm *syllabMaker) getSLIAsString(p uint64) (s string) {
+	// TODO::: Improve below line!
+	s = strconv.FormatUint(sm.LSI+p, 10)
 	return
 }
 

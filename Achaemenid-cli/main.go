@@ -8,14 +8,15 @@ import (
 	"runtime"
 	"time"
 
-	generator "../Achaemenid-generator"
+	ag "../Achaemenid-generator"
+	gg "../Ganjine-generator"
 	"../assets"
 	"../syllab"
 )
 
 const (
 	// ChaparKhaneVersion must update in each release!
-	ChaparKhaneVersion = "v0.5.7"
+	ChaparKhaneVersion = "v0.6.3"
 )
 
 var (
@@ -63,9 +64,18 @@ func main() {
 	buildLog("1  : Quit without save changes")
 	buildLog("2  : Save changes and quit")
 	buildLog("3  : Save changes without quit")
-	buildLog("4  : Add project template to repository")
-	buildLog("5  : Add new service to apis/services folder")
-	buildLog("6  : Update Syllab encoder||decoder methods in given file name")
+	buildLog("----Common Services")
+	buildLog("10  : Add project template to repository")
+	buildLog("----Achaemenid Services")
+	buildLog("30  : Add new Achaemenid service file to apis/services folder")
+	buildLog("31  : Update exiting Achaemenid file in apis/services folder")
+	buildLog("----Ganjine Services")
+	buildLog("50  : Add new Ganjine file to apis/datastore folder")
+	buildLog("51  : Update exiting Ganjine file in apis/datastore folder")
+	buildLog("----Syllab Services")
+	buildLog("70  : Update Syllab encoder||decoder methods in given file name by safe manner")
+	buildLog("71  : Update Syllab encoder||decoder methods in given file name by unsafe manner")
+	buildLog("----GUI Services")
 	buildLog("----------------------------------------")
 Choose:
 	var requestedService int
@@ -75,6 +85,7 @@ Choose:
 	switch requestedService {
 	case 0:
 		buildLog("Nothing DO in this ID to prevent often mistakes enter multi times!!!")
+		break
 	case 1:
 		buildLog("See you soon!")
 		goto Exit
@@ -92,13 +103,23 @@ Choose:
 			buildLog("Unable to write to repo:", err)
 		}
 		buildLog("All changes write to disk as you desire!")
-	case 4:
+
+	// ----Common Services
+	case 10:
 		_, err := MakeNewProject(&MakeNewProjectReq{Repo: repo})
 		if err != nil {
 			buildLog("Add project template to repository face this error:", err)
 		}
 		buildLog("Add project template had been succeed!!")
-	case 5:
+	case 11:
+		// res, err := ag.UpdateProjectTemplate(&ReqUpdateProjectTemplate002{readRepo})
+		// if err != nil {
+		// 	buildLog("Update project template error:", err)
+		// }
+		// repo = res.Repo
+
+	// ----Achaemenid Services
+	case 30:
 		buildLog("Enter desire service name in ```kebab-case``` like ```register-new-person```")
 		var serviceName string
 		fmt.Scanln(&serviceName)
@@ -107,14 +128,68 @@ Choose:
 		var file = assets.File{
 			Name: serviceName,
 		}
-		err = generator.MakeNewServiceFile(&file)
+		err = ag.MakeNewServiceFile(&file)
 		if err != nil {
-			buildLog("Add new service template face this error:", err)
+			buildLog("Add new Achaemenid service template face this error:", err)
 			break
 		}
 		repo.Dependencies[FolderNameAPIs].Dependencies[FolderNameAPIsServices].SetFile(&file)
-		buildLog("Add new service had been succeed!!")
-	case 6:
+		buildLog("Add new Achaemenid service had been succeed!!\n")
+	case 31:
+		buildLog("Enter desire full file name with extension!")
+		var fileName string
+		fmt.Scanln(&fileName)
+		buildLog("Desire file name: ", fileName)
+
+		var file = repo.GetFileRecursively(fileName)
+		if file == nil {
+			buildLog("Desire file name not exist in repo!!")
+			break
+		}
+
+		err = ag.UpdateServiceFile(file)
+		if err != nil {
+			buildLog("Update Achaemenid service file face this error:", err)
+		}
+		buildLog("Update exiting Achaemenid file had been succeed!!\n")
+
+	// ----Ganjine Services
+	case 50:
+		buildLog("Enter desire structure name in ```kebab-case``` like ```person-authentication```")
+		var sName string
+		fmt.Scanln(&sName)
+		buildLog("Desire name: ", sName)
+
+		var file = assets.File{
+			Name: sName,
+		}
+		err = gg.MakeNewDatastoreFile(&file)
+		if err != nil {
+			buildLog("Add new Ganjine file template face this error:", err)
+			break
+		}
+		repo.Dependencies[FolderNameAPIs].Dependencies[FolderNameAPIsDataStore].SetFile(&file)
+		buildLog("Add new structure had been succeed!!\n")
+	case 51:
+		buildLog("Enter desire full file name with extension!")
+		var fileName string
+		fmt.Scanln(&fileName)
+		buildLog("Desire file name: ", fileName)
+
+		var file = repo.GetFileRecursively(fileName)
+		if file == nil {
+			buildLog("Desire file name not exist in repo!!")
+			break
+		}
+
+		err = gg.UpdateDatastoreFile(file)
+		if err != nil {
+			buildLog("Update Structure file face this error:", err)
+		}
+		buildLog("Update exiting Ganjine file had been succeed!!\n")
+
+	// ----Syllab Services
+	case 70:
 		buildLog("Enter desire full file name with extension!")
 		var fileName string
 		fmt.Scanln(&fileName)
@@ -128,16 +203,30 @@ Choose:
 
 		err = syllab.CompleteEncoderMethodSafe(file)
 		if err != nil {
-			buildLog("Update Syllab encoder||decoder face this error:", err)
+			buildLog("Update Syllab encoder||decoder safe face this error:", err)
 		}
-		buildLog("Update Syllab encoder||decoder had been succeed!!")
-	case 7:
-		// res, err := generator.UpdateProjectTemplate(&ReqUpdateProjectTemplate002{readRepo})
-		// if err != nil {
-		// 	buildLog("Update project template error:", err)
-		// }
-		// repo = res.Repo
-	case 8:
+		buildLog("Update Syllab encoder||decoder safe had been succeed!!\n")
+	case 71:
+		buildLog("Enter desire full file name with extension!")
+		var fileName string
+		fmt.Scanln(&fileName)
+		buildLog("Desire file name: ", fileName)
+
+		var file = repo.GetFileRecursively(fileName)
+		if file == nil {
+			buildLog("Desire file name not exist in repo!!")
+			break
+		}
+
+		err = syllab.CompleteEncoderMethodUnsafe(file)
+		if err != nil {
+			buildLog("Update Syllab encoder||decoder unsafe face this error:", err)
+		}
+		buildLog("Update Syllab encoder||decoder unsafe had been succeed!!\n")
+
+	default:
+		buildLog("Nothing DO in given ID to prevent often mistakes enter bad ID!!!")
+		break
 	}
 
 	buildLog("----------------------------------------")

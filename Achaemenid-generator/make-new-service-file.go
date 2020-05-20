@@ -5,6 +5,7 @@ package generator
 import (
 	"bytes"
 	"go/format"
+	"hash/crc32"
 	"strings"
 	"text/template"
 	"time"
@@ -17,7 +18,6 @@ import (
 func MakeNewServiceFile(file *assets.File) (err error) {
 	file.FullName = file.Name + ".go"
 	file.Extension = "go"
-	file.Status = assets.StateChanged
 
 	var sn = strings.Title(file.Name)
 	sn = strings.ReplaceAll(sn, "-", "")
@@ -28,7 +28,7 @@ func MakeNewServiceFile(file *assets.File) (err error) {
 		ServiceLowerName string
 		IssueDate        int64
 	}{
-		ServiceID:        0, // hash sn for its ID
+		ServiceID:        crc32.ChecksumIEEE([]byte(sn)), // hash sn for its ID
 		ServiceUpperName: sn,
 		ServiceLowerName: strings.ToLower(sn[0:1]) + sn[1:],
 		IssueDate:        time.Now().Unix(),
@@ -41,11 +41,10 @@ func MakeNewServiceFile(file *assets.File) (err error) {
 	}
 
 	file.Data, err = format.Source(sf.Bytes())
-	if err != nil {
-		return
-	}
+	// Indicate file had been changed
+	file.Status = assets.StateChanged
 
-	return nil
+	return
 }
 
 var serviceFileTemplate = template.Must(template.New("serviceFileTemplate").Parse(`
@@ -56,14 +55,15 @@ package services
 import "../../libgo/achaemenid"
 
 var {{.ServiceLowerName}}Service = achaemenid.Service{
-	ID:              {{.ServiceID}},
-	Name:            "{{.ServiceUpperName}}",
-	IssueDate:       {{.IssueDate}},
-	ExpiryDate:      0,
-	ExpireInFavorOf: "",
-	Status:          achaemenid.ServiceStatePreAlpha,
-	Handler:         {{.ServiceUpperName}},
-	Description:     []string{
+	ID:                {{.ServiceID}},
+	Name:              "{{.ServiceUpperName}}",
+	IssueDate:         {{.IssueDate}},
+	ExpiryDate:        0,
+	ExpireInFavorOf:   "",
+	ExpireInFavorOfID: 0,
+	Status:            achaemenid.ServiceStatePreAlpha,
+	Handler:           {{.ServiceUpperName}},
+	Description:       []string{
 		"",
 	},
 	TAGS: []string{""},
@@ -81,18 +81,23 @@ type {{.ServiceLowerName}}Req struct {}
 type {{.ServiceLowerName}}Res struct {}
 
 func {{.ServiceLowerName}}(st *achaemenid.Stream, req *{{.ServiceLowerName}}Req) (res *{{.ServiceLowerName}}Res, err error) {
-	return res, nil
+	err = req.validator()
+	if err != nil {
+		return
+	}
+
+	return
 }
 
-func (req *{{.ServiceLowerName}}Req) validator() error {
-	return nil
+func (req *{{.ServiceLowerName}}Req) validator() (err error) {
+	return
 }
 
-func (req *{{.ServiceLowerName}}Req) syllabDecoder(buf []byte) error {
-	return nil
+func (req *{{.ServiceLowerName}}Req) syllabDecoder(buf []byte) (err error) {
+	return
 }
 
-func (res *{{.ServiceLowerName}}Res) syllabEncoder(buf []byte) error {
-	return nil
+func (res *{{.ServiceLowerName}}Res) syllabEncoder(buf []byte) (err error) {
+	return
 }
 `))

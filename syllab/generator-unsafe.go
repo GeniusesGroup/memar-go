@@ -7,6 +7,7 @@ import (
 	"go/parser"
 	"go/token"
 	"strconv"
+	"strings"
 
 	"../assets"
 )
@@ -65,9 +66,15 @@ func CompleteEncoderMethodUnsafe(ass *assets.File) (err error) {
 					Types: fileTypes,
 				}
 				err = data.makeSyllabEncoderUnsafe()
-				if data.HeapCreated {
-					data.GData += "	var lhi int = " + strconv.Itoa(data.LSI) + " // Heap start index\n"
-				}
+
+				// Add some other common data
+				data.GData = "	var hsi int = " + strconv.FormatUint(data.LSI, 10) + " // Heap start index || Stack size!\n" +
+					"	var ln int // len of strings, slices, maps, ...\n" +
+					strings.TrimSuffix("	ln = hsi +"+data.HLenData, "+") + "\n" +
+					"	" + data.RN + ".RecordSize = ln  // indicate record size!\n" +
+					"	buf = append(buf, make([]byte, ln)...)\n\n" +
+					data.GData
+
 				cpyFile = append(cpyFile, &copyToFileReq{data.GData, int(d.Body.Lbrace), int(d.Body.Rbrace)})
 			}
 		}
