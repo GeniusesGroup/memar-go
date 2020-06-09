@@ -12,11 +12,26 @@ import (
 	gg "../Ganjine-generator"
 	"../assets"
 	"../syllab"
+	wg "../www"
 )
 
 const (
-	// ChaparKhaneVersion must update in each release!
-	ChaparKhaneVersion = "v0.6.3"
+	// version must update in each release!
+	version = "v0.6.7"
+)
+
+// Some mutable folder name!
+const (
+	FolderNameAPIs = "apis"
+	FolderNameDB   = "db"
+	FolderNameGUI  = "gui"
+
+	FolderNameServices  = "services"
+	FolderNameDataStore = "datastore"
+
+	FolderNameGGPages     = "pages"
+	FolderNameGUILandings = "landings"
+	FolderNameGUIWidgets  = "widgets"
 )
 
 var (
@@ -38,13 +53,13 @@ func main() {
 	defer saveLog()
 
 	// Add some generic data to first of file.
-	buildLog("Generator version:", ChaparKhaneVersion)
+	buildLog("Generator version:", version)
 
 	// print contact information to code-generate.log
 	buildLog("You may help us and create issue:")
 	buildLog("https://github.com/SabzCity/libgo/issues/new")
 	buildLog("For more information, see:")
-	buildLog("https://github.com/SabzCity/libgo/Achaemenid-cli")
+	buildLog("https://github.com/SabzCity/libgo/")
 
 	start := time.Now()
 	buildLog("Code generate start at", start)
@@ -64,18 +79,20 @@ func main() {
 	buildLog("1  : Quit without save changes")
 	buildLog("2  : Save changes and quit")
 	buildLog("3  : Save changes without quit")
-	buildLog("----Common Services")
+	buildLog("*************** Common Services *************** ")
 	buildLog("10  : Add project template to repository")
-	buildLog("----Achaemenid Services")
+	buildLog(" *************** Achaemenid Services *************** ")
 	buildLog("30  : Add new Achaemenid service file to apis/services folder")
 	buildLog("31  : Update exiting Achaemenid file in apis/services folder")
-	buildLog("----Ganjine Services")
+	buildLog("40  : Make www assets file from gui folder")
+	buildLog(" *************** Ganjine Services *************** ")
 	buildLog("50  : Add new Ganjine file to apis/datastore folder")
 	buildLog("51  : Update exiting Ganjine file in apis/datastore folder")
-	buildLog("----Syllab Services")
+	buildLog(" *************** Syllab Services *************** ")
 	buildLog("70  : Update Syllab encoder||decoder methods in given file name by safe manner")
 	buildLog("71  : Update Syllab encoder||decoder methods in given file name by unsafe manner")
-	buildLog("----GUI Services")
+	buildLog(" *************** GUI Services *************** ")
+	buildLog(" *************** JSON Services *************** ")
 	buildLog("----------------------------------------")
 Choose:
 	var requestedService int
@@ -85,7 +102,7 @@ Choose:
 	switch requestedService {
 	case 0:
 		buildLog("Nothing DO in this ID to prevent often mistakes enter multi times!!!")
-		break
+		goto Choose
 	case 1:
 		buildLog("See you soon!")
 		goto Exit
@@ -104,7 +121,7 @@ Choose:
 		}
 		buildLog("All changes write to disk as you desire!")
 
-	// ----Common Services
+	// *************** Common Services ***************
 	case 10:
 		_, err := MakeNewProject(&MakeNewProjectReq{Repo: repo})
 		if err != nil {
@@ -118,7 +135,7 @@ Choose:
 		// }
 		// repo = res.Repo
 
-	// ----Achaemenid Services
+	// *************** Achaemenid Services ***************
 	case 30:
 		buildLog("Enter desire service name in ```kebab-case``` like ```register-new-person```")
 		var serviceName string
@@ -133,7 +150,7 @@ Choose:
 			buildLog("Add new Achaemenid service template face this error:", err)
 			break
 		}
-		repo.Dependencies[FolderNameAPIs].Dependencies[FolderNameAPIsServices].SetFile(&file)
+		repo.Dependencies[FolderNameAPIs].Dependencies[FolderNameServices].SetFile(&file)
 		buildLog("Add new Achaemenid service had been succeed!!\n")
 	case 31:
 		buildLog("Enter desire full file name with extension!")
@@ -152,8 +169,17 @@ Choose:
 			buildLog("Update Achaemenid service file face this error:", err)
 		}
 		buildLog("Update exiting Achaemenid file had been succeed!!\n")
+	case 40:
+		var file = assets.File{}
+		err = wg.MakeAssetsFile(repo, &file)
+		if err != nil {
+			buildLog("Make www assets file from gui folder face this error:", err)
+			break
+		}
+		repo.SetFile(&file)
+		buildLog("Make www assets file from gui folder had been succeed!!\n")
 
-	// ----Ganjine Services
+	// *************** Ganjine Services ***************
 	case 50:
 		buildLog("Enter desire structure name in ```kebab-case``` like ```person-authentication```")
 		var sName string
@@ -168,7 +194,7 @@ Choose:
 			buildLog("Add new Ganjine file template face this error:", err)
 			break
 		}
-		repo.Dependencies[FolderNameAPIs].Dependencies[FolderNameAPIsDataStore].SetFile(&file)
+		repo.Dependencies[FolderNameAPIs].Dependencies[FolderNameDataStore].SetFile(&file)
 		buildLog("Add new structure had been succeed!!\n")
 	case 51:
 		buildLog("Enter desire full file name with extension!")
@@ -188,7 +214,7 @@ Choose:
 		}
 		buildLog("Update exiting Ganjine file had been succeed!!\n")
 
-	// ----Syllab Services
+	// *************** Syllab Services ***************
 	case 70:
 		buildLog("Enter desire full file name with extension!")
 		var fileName string
@@ -226,7 +252,7 @@ Choose:
 
 	default:
 		buildLog("Nothing DO in given ID to prevent often mistakes enter bad ID!!!")
-		break
+		goto Choose
 	}
 
 	buildLog("----------------------------------------")

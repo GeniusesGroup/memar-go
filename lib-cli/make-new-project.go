@@ -18,53 +18,50 @@ type MakeNewProjectRes struct{}
 // MakeNewProject :
 func MakeNewProject(req *MakeNewProjectReq) (res *MakeNewProjectRes, err error) {
 	/* Folders */
-	var apis = assets.NewFolder(FolderNameAPIs)
-	apis.Status = assets.StateChanged
-	req.Repo.SetDependency(apis)
-	var db = assets.NewFolder(FolderNameDB)
-	db.Status = assets.StateChanged
-	req.Repo.SetDependency(db)
-	var gui = assets.NewFolder(FolderNameGUI)
-	gui.Status = assets.StateChanged
-	req.Repo.SetDependency(gui)
-	var www = assets.NewFolder(FolderNameWWW)
-	www.Status = assets.StateChanged
-	req.Repo.SetDependency(www)
+	var apisF = assets.NewFolder(FolderNameAPIs)
+	apisF.Status = assets.StateChanged
+	req.Repo.SetDependency(apisF)
+	var dbF = assets.NewFolder(FolderNameDB)
+	dbF.Status = assets.StateChanged
+	req.Repo.SetDependency(dbF)
+	var guiF = assets.NewFolder(FolderNameGUI)
+	guiF.Status = assets.StateChanged
+	req.Repo.SetDependency(guiF)
 
 	/* APIs */
 	// Folders
-	var services = assets.NewFolder(FolderNameAPIsServices)
+	var services = assets.NewFolder(FolderNameServices)
 	services.Status = assets.StateChanged
-	apis.SetDependency(services)
-	var datastore = assets.NewFolder(FolderNameAPIsDataStore)
+	apisF.SetDependency(services)
+	var datastore = assets.NewFolder(FolderNameDataStore)
 	datastore.Status = assets.StateChanged
-	apis.SetDependency(datastore)
-
-	// /apis/main.go
-	var mainGo = &assets.File{}
-	err = generator.MakeMainFile(mainGo)
-	if err != nil {
-		return nil, err
-	}
-	apis.SetFile(mainGo)
+	apisF.SetDependency(datastore)
 
 	/* GUI */
 	// Folders
 	var pages = assets.NewFolder(FolderNameGGPages)
 	pages.Status = assets.StateChanged
-	gui.SetDependency(pages)
+	guiF.SetDependency(pages)
 	var landings = assets.NewFolder(FolderNameGUILandings)
 	landings.Status = assets.StateChanged
-	gui.SetDependency(landings)
+	guiF.SetDependency(landings)
 	var widgets = assets.NewFolder(FolderNameGUIWidgets)
 	widgets.Status = assets.StateChanged
-	gui.SetDependency(widgets)
+	guiF.SetDependency(widgets)
 
 	// /gui/main.html
 
 	// /gui/main.js
 
 	/* Common files */
+	// main.go
+	var MainGo = &assets.File{}
+	err = generator.MakeMainFile(MainGo)
+	if err != nil {
+		return nil, err
+	}
+	req.Repo.SetFile(MainGo)
+
 	// .gitignore
 	var ob3 assets.File
 	ob3.Name = ".gitignore"
@@ -99,6 +96,7 @@ const gitignore = `
 *.a
 *.la
 *.lo
+assets--g.go
 
 # Shared objects (inc. Windows DLLs)
 *.dll
@@ -154,7 +152,4 @@ vendor/
 
 # Log data
 *.log
-
-# ChaparKhane files
-assets--g.go
 `
