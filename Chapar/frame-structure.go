@@ -5,13 +5,13 @@ package chapar
 // frameStructure represents Chapar frame structure!
 // It is just to show protocol in better way, we never use this type!
 // Read more about this protocol : https://github.com/SabzCity/RFCs/blob/master/Chapar.md
-// up-to 256 switch port number can be in a frame header!
+// up-to 255 switch port number can be in a frame header!
 type frameStructure struct {
 	NextHop          byte
-	TotalHop         byte
+	HopCount         byte
 	NextHeader       byte
 	FirstHopPortNum  byte
  // SecondHopPortNum byte
  // ...              byte
-	Payload []byte
+	Payload          []byte
 }
