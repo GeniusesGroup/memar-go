@@ -7,6 +7,7 @@ import (
 	"mime"
 	"os"
 	"path"
+	"unsafe"
 )
 
 // ReadRepositoryFromFileSystem use to get all repository by its name!
@@ -37,7 +38,7 @@ func (f *Folder) ReadRepositoryFromFileSystem(dirname string) (err error) {
 				FullName:   file.Name(),
 				Dep:        f,
 				Data:       data,
-				DataString: string(data),
+				DataString: *(*string)(unsafe.Pointer(&data)),
 			}
 			for i := len(fi.FullName) - 1; i >= 0; i-- {
 				if fi.FullName[i] == '.' {
@@ -59,7 +60,7 @@ func (f *Folder) ReadRepositoryFromFileSystem(dirname string) (err error) {
 func (f *Folder) WriteRepositoryToFileSystem(dirname string) (err error) {
 	for _, obj := range f.Files {
 		// Just write changed file
-		if obj.Status > 0 {
+		if obj.State > 0 {
 			err = ioutil.WriteFile(path.Join(dirname, obj.FullName), obj.Data, 0755)
 			if err != nil {
 				return
@@ -69,7 +70,7 @@ func (f *Folder) WriteRepositoryToFileSystem(dirname string) (err error) {
 
 	for _, dep := range f.Dependencies {
 		// Just write folder if its not exist!
-		if dep.Status > 0 {
+		if dep.State > 0 {
 			err = os.Mkdir(path.Join(dirname, dep.Name), 0755)
 			if err != nil {
 				return

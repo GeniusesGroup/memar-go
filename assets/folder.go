@@ -7,7 +7,7 @@ type Folder struct {
 	Name         string
 	FSPath       string     // Folder location in FileSystems
 	Event        chan uint8 // use in dev phase to update Folder if any change occur!!
-	Status       uint8
+	State        uint8
 	Files        map[string]*File   // Name
 	Dependencies map[string]*Folder // Name
 }
