@@ -26,7 +26,7 @@ func MakeNewResponse() *Response {
 }
 
 // Marshal enecodes r *Response data and append to given httpPacket
-func (r *Response) Marshal() (httpPacket []byte, err error) {
+func (r *Response) Marshal() (httpPacket []byte) {
 	// Make packet by twice size of body
 	httpPacket = make([]byte, 0, len(r.Body)*2)
 
@@ -88,8 +88,8 @@ func (r *Response) GetStatusCode() (uint16, error) {
 	return uint16(c), err
 }
 
-// SetStatusCode set given status uit16 code
-func (r *Response) SetStatusCode(code uint16) {
-	// TODO::: don't use strconv for such simple task
-	r.StatusCode = strconv.FormatUint(uint64(code), 10)
+// SetStatus set given status code and phrase
+func (r *Response) SetStatus(code, phrase string) {
+	r.StatusCode = code
+	r.ReasonPhrase = phrase
 }

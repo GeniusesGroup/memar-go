@@ -26,7 +26,7 @@ func MakeNewRequest() (r *Request) {
 }
 
 // Marshal enecodes r *Request data and append to given httpPacket
-func (r *Request) Marshal() (httpPacket []byte, err error) {
+func (r *Request) Marshal() (httpPacket []byte) {
 	// Make packet by twice size of body
 	httpPacket = make([]byte, 0, len(r.Body)*2)
 	
