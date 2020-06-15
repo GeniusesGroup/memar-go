@@ -10,12 +10,12 @@ import (
 	"../assets"
 )
 
-// MakeMainFile use to make main file to start ChaparKhane sever
+// MakeMainFile use to make main file to start Achaemenid sever for www!
 func MakeMainFile(file *assets.File) (err error) {
 	file.FullName = "main.go"
 	file.Name = "main"
 	file.Extension = "go"
-	file.Status = assets.StateChanged
+	file.State = assets.StateChanged
 
 	var mt = new(bytes.Buffer)
 	if err = mainFileTemplate.Execute(mt, ""); err != nil {
@@ -36,18 +36,23 @@ var mainFileTemplate = template.Must(template.New("main").Parse(`
 package main
 
 import (
-	"../libgo/achaemenid"
-	ss "../libgo/achaemenid-services"
-	"./services"
+	"./apis/datastore"
+	ps "./apis/services"
+	"./libgo/achaemenid"
+	as "./libgo/achaemenid-services"
+	"./libgo/assets"
+	"./libgo/www"
 )
 
+// Server is just address of Achaemenid DefaultServer for easily usage
+var server = achaemenid.DefaultServer
+
 func init() {
-	achaemenid.DefaultServer.Init()
+	var err error
 
-	ss.Init(achaemenid.DefaultServer)
-	services.Init(achaemenid.DefaultServer)
+	server.Init()
 
-	achaemenid.DefaultServer.Manifest = achaemenid.Manifest{
+	server.Manifest = achaemenid.Manifest{
 		AppID:               [16]byte{},
 		Domain:              "",
 		Email:               "",
@@ -75,11 +80,49 @@ func init() {
 		RequestedPermission: []uint32{},
 		TechnicalInfo:       achaemenid.TechnicalInfo{},
 	}
+
+	// Register stream app layer protocols
+	server.StreamProtocols.SetProtocolHandler(4, achaemenid.SrpcIncomeRequestHandler)
+	server.StreamProtocols.SetProtocolHandler(80, achaemenid.HTTPIncomeRequestHandler)
+	server.StreamProtocols.SetProtocolHandler(443, achaemenid.HTTPSIncomeRequestHandler)
+
+	// register networks.
+	err = achaemenid.MakeGPNetwork(server)
+	if err != nil {
+		panic(err)
+	}
+	err = achaemenid.MakeTCPTLSNetwork(server, 4, achaemenid.SrpcIncomeRequestHandler)
+	if err != nil {
+		panic(err)
+	}
+	err = achaemenid.MakeTCPNetwork(server, 80, achaemenid.HTTPIncomeRequestHandler)
+	if err != nil {
+		panic(err)
+	}
+	err = achaemenid.MakeTCPTLSNetwork(server, 443, achaemenid.HTTPSIncomeRequestHandler)
+	if err != nil {
+		panic(err)
+	}
+	// Comment other networks and uncomment below network in development phase!
+	// err = achaemenid.MakeTCPNetwork(server, 8080, achaemenid.HTTPSIncomeRequestHandler)
+	// if err != nil {
+	// 	panic(err)
+	// }
+	// server.Assets = assets.NewFolder(server.Manifest.Domain)
+	// go www.ReloadAssetsInDevPhase(server.Assets)
+
+	// Register default Achaemenid services
+	as.Init(server)
+	// Register platform defined custom service in ./apis/services/
+	ps.Init(server)
+
+	// Initialize datastore
+	datastore.Init(server)
 }
 
 func main() {
 	var err error
-	err = achaemenid.DefaultServer.Start()
+	err = server.Start()
 	if err != nil {
 		panic(err)
 	}

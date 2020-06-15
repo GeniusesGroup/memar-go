@@ -32,6 +32,9 @@ const (
 	FolderNameGGPages     = "pages"
 	FolderNameGUILandings = "landings"
 	FolderNameGUIWidgets  = "widgets"
+
+	FolderNameJSSDK = "sdk-js"
+	FolderNameGOSDK = "sdk-go"
 )
 
 var (
@@ -84,6 +87,8 @@ func main() {
 	buildLog(" *************** Achaemenid Services *************** ")
 	buildLog("30  : Add new Achaemenid service file to apis/services folder")
 	buildLog("31  : Update exiting Achaemenid file in apis/services folder")
+	buildLog("32  : Make Achaemenid service GO-SDK")
+	buildLog("33  : Make Achaemenid service JS-SDK")
 	buildLog("40  : Make www assets file from gui folder")
 	buildLog(" *************** Ganjine Services *************** ")
 	buildLog("50  : Add new Ganjine file to apis/datastore folder")
@@ -169,6 +174,42 @@ Choose:
 			buildLog("Update Achaemenid service file face this error:", err)
 		}
 		buildLog("Update exiting Achaemenid file had been succeed!!\n")
+	case 32:
+		buildLog("Enter desire full file name with extension!")
+		var fileName string
+		fmt.Scanln(&fileName)
+		buildLog("Desire file name: ", fileName)
+
+		var file = repo.GetFileRecursively(fileName)
+		if file == nil {
+			buildLog("Desire file name not exist in repo!!")
+			break
+		}
+
+		file, err = ag.MakeGoSDK(file)
+		if err != nil {
+			buildLog("Make Achaemenid service GO-SDK face this error:", err)
+		}
+		repo.Dependencies[FolderNameGOSDK].SetFile(file)
+		buildLog("Make Achaemenid service Go-SDK had been succeed!!\n")
+	case 33:
+		buildLog("Enter desire full file name with extension!")
+		var fileName string
+		fmt.Scanln(&fileName)
+		buildLog("Desire file name: ", fileName)
+
+		var file = repo.GetFileRecursively(fileName)
+		if file == nil {
+			buildLog("Desire file name not exist in repo!!")
+			break
+		}
+
+		file, err = ag.MakeJSSDK(file)
+		if err != nil {
+			buildLog("Make Achaemenid service JS-SDK face this error:", err)
+		}
+		repo.Dependencies[FolderNameJSSDK].SetFile(file)
+		buildLog("Make Achaemenid service JS-SDK had been succeed!!\n")
 	case 40:
 		var file = assets.File{}
 		err = wg.MakeAssetsFile(repo, &file)

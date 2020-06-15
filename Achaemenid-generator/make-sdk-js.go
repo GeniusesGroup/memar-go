@@ -4,9 +4,7 @@ package generator
 
 import (
 	"bytes"
-	"errors"
 	"go/ast"
-	"go/format"
 	"go/parser"
 	"go/token"
 	"strconv"
@@ -17,14 +15,8 @@ import (
 	"../assets"
 )
 
-// Errors use in SDK making proccess.
-var (
-	ErrInvalidServiceFile      = errors.New("Given service file doesn't match with standard service structure")
-	ErrTypeIncludeIllegalChild = errors.New("Request||Response type may include function, interface, int, uint, ... type that can't encode||decode")
-)
-
-// MakeGoSDK will make sdk for logics with enough document.
-func MakeGoSDK(file *assets.File) (goSDK *assets.File, err error) {
+// MakeJSSDK will make sdk for logics with enough document.
+func MakeJSSDK(file *assets.File) (jsSDK *assets.File, err error) {
 	var fileSet *token.FileSet = token.NewFileSet()
 	var fileParsed *ast.File
 	fileParsed, err = parser.ParseFile(fileSet, "", file.DataString, parser.ParseComments)
@@ -50,12 +42,14 @@ func MakeGoSDK(file *assets.File) (goSDK *assets.File, err error) {
 					// Don't need import
 				case *ast.TypeSpec:
 					if strings.HasSuffix(gd.Name.Name, "Req") {
-						service.Request, err = makeGOReqResType(gd)
+						// TODO::: add nested type support
+						service.Request, err = makeJSReqResType(gd)
 						if err != nil {
 							return
 						}
 					} else if strings.HasSuffix(gd.Name.Name, "Res") {
-						service.Response, err = makeGOReqResType(gd)
+						// TODO::: add nested type support
+						service.Response, err = makeJSReqResType(gd)
 						if err != nil {
 							return
 						}
@@ -106,25 +100,24 @@ func MakeGoSDK(file *assets.File) (goSDK *assets.File, err error) {
 		}
 	}
 
-	var buff = new(bytes.Buffer)
-	err = goSDKTemplate.Execute(buff, service)
+	var sf = new(bytes.Buffer)
+	err = jsSDKTemplate.Execute(sf, service)
 	if err != nil {
 		return
 	}
 
-	goSDK = &assets.File{
-		FullName:  file.Name + ".go",
+	jsSDK = &assets.File{
+		FullName:  file.Name + ".js",
 		Name:      file.Name,
-		Extension: "go",
+		Extension: "js",
 		State:     assets.StateChanged,
+		Data:      sf.Bytes(),
 	}
-	goSDK.Data, err = format.Source(buff.Bytes())
 
 	return
 }
 
-// TODO::: add nested type support
-func makeGOReqResType(t *ast.TypeSpec) (string, error) {
+func makeJSReqResType(t *ast.TypeSpec) (string, error) {
 	var data = make([]byte, 0, 1024)
 	var in string
 	for _, f := range t.Type.(*ast.StructType).Fields.List {
@@ -148,6 +141,7 @@ func makeGOReqResType(t *ast.TypeSpec) (string, error) {
 				return "", ErrTypeIncludeIllegalChild
 			case "bool", "byte", "uint8", "int8", "uint16", "int16", "uint32", "int32", "uint64", "int64", "string":
 				data = append(data, "	"+in+" ["+number+"]"+aType+"\n"...)
+				data = append(data, `	"`+in+`": [], // [`+number+"]"+aType+"\n"...)
 			default:
 				// TODO::: get related type by its name as t.Elt.(*ast.Ident).Name
 			}
@@ -165,8 +159,12 @@ func makeGOReqResType(t *ast.TypeSpec) (string, error) {
 			switch t.Name {
 			case "int", "uint":
 				return "", ErrTypeIncludeIllegalChild
-			case "bool", "byte", "uint8", "int8", "uint16", "int16", "uint32", "int32", "uint64", "int64", "string":
-				data = append(data, "	"+in+" "+t.Name+"\n"...)
+			case "bool":
+				data = append(data, `	"`+in+`": true, // boolean`+"\n"...)
+			case "byte", "uint8", "int8", "uint16", "int16", "uint32", "int32", "uint64", "int64":
+				data = append(data, `	"`+in+`": 0, // `+t.Name+"\n"...)
+			case "string":
+				data = append(data, `	"`+in+`": "", // string`+"\n"...)
 			default:
 				// TODO::: get related type by its name as t.Elt.(*ast.Ident).Name
 			}
@@ -180,60 +178,82 @@ func makeGOReqResType(t *ast.TypeSpec) (string, error) {
 	return *(*string)(unsafe.Pointer(&data)), nil
 }
 
-var goSDKTemplate = template.Must(template.New("goSDKTemplate").Parse(`
+var jsSDKTemplate = template.Must(template.New("jsSDKTemplate").Parse(`
 /* For license and copyright information please see LEGAL file in repository */
 // Auto-generated, edits will be overwritten
 
-package sdk
-
-import (
-	"../libgo/achaemenid"
-)
+/*
+Usage - Also you can use "async function (){ try{await}catch{} }" instead func().then().catch():
 
 // {{.Name}}Req is the request structure of {{.Name}}()
-type {{.Name}}Req struct {
+const {{.Name}}Req = {
 {{.Request}}
 }
-
 // {{.Name}}Res is the response structure of {{.Name}}()
-type {{.Name}}Res struct {
+const {{.Name}}Res = {
 {{.Response}}
 }
+{{.Name}}({{.Name}}Req)
+    .then(res => {
+		// Handle response
+        console.log(res)
+    })
+    .catch(err => {
+        // Handle error situation here
+        console.log(err)
+    })
+*/
 
 // {{.Name}} {{.Description}}
-func {{.Name}}(s *achaemenid.Server, req *{{.Name}}Req) (res *{{.Name}}Res, err error) {
-	var conn *achaemenid.Connection
-	// TODO::: find connection or make it
-	
-	// Check if no connection exist to use!
-	if conn == nil {
-		return nil, err
-	}
+async function {{.Name}}(req) {
+    // TODO::: First validate req before send to apis server!
 
-	// Make new request-response streams
-	var reqStream, resStream *achaemenid.Stream
-	reqStream, resStream, err = conn.MakeBidirectionalStream(0)
+    // TODO::: Check Quic protocol availability!
 
-	// Set ServiceID
-	reqStream.ServiceID = {{.ID}}
+    const request = new Request('/apis?{{.ID}}', {
+        method: "POST",
+        // compress: true,
+        credentials: 'same-origin',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(req)
+    })
 
-	reqStream.Payload = req.syllabEncoder()
-	err = achaemenid.SrpcOutcomeRequestHandler(s, reqStream)
-	if err == nil {
-		return nil, err
-	}
+    try {
+        let res = await fetch(request)
 
-	res = &{{.Name}}Res{}
-	err = res.syllabDecoder(resStream.Payload[4:])
-
-	return
+        switch (res.status) {
+            case 200:
+                const contentType = res.headers.get('content-type')
+                switch (contentType) {
+                    case 'application/json':
+                        try {
+                            return await res.json()
+                        } catch (err) {
+                            throw err
+                        }
+                    // case 'text/plain':
+                    //     try {
+                    //         return await res.text()
+                    //     } catch (err) {
+                    //         throw err
+                    //     }
+                    default:
+                        throw new TypeError("Oops, we haven't got valid data type in response!")
+                }
+            case 201:
+                return null
+            case 400:
+            case 500:
+            default:
+                // Almost not reachable code!
+                throw res.text()
+        }
+    } catch (err) {
+        // TODO::: Toast to GUI about no network connectivity!
+        throw err
+    }
 }
 
-func (req *GetRecordReq) syllabEncoder() (buf []byte) {
-	return
-}
-
-func (res *GetRecordRes) syllabDecoder(buf []byte) (err error) {
-	return
-}
 `))

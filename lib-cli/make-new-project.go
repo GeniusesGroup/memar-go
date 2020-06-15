@@ -3,7 +3,8 @@
 package main
 
 import (
-	generator "../Achaemenid-generator"
+	ag "../Achaemenid-generator"
+	gg "../Ganjine-generator"
 	"../assets"
 )
 
@@ -19,44 +20,61 @@ type MakeNewProjectRes struct{}
 func MakeNewProject(req *MakeNewProjectReq) (res *MakeNewProjectRes, err error) {
 	/* Folders */
 	var apisF = assets.NewFolder(FolderNameAPIs)
-	apisF.Status = assets.StateChanged
+	apisF.State = assets.StateChanged
 	req.Repo.SetDependency(apisF)
 	var dbF = assets.NewFolder(FolderNameDB)
-	dbF.Status = assets.StateChanged
+	dbF.State = assets.StateChanged
 	req.Repo.SetDependency(dbF)
 	var guiF = assets.NewFolder(FolderNameGUI)
-	guiF.Status = assets.StateChanged
+	guiF.State = assets.StateChanged
 	req.Repo.SetDependency(guiF)
 
 	/* APIs */
 	// Folders
 	var services = assets.NewFolder(FolderNameServices)
-	services.Status = assets.StateChanged
+	services.State = assets.StateChanged
 	apisF.SetDependency(services)
 	var datastore = assets.NewFolder(FolderNameDataStore)
-	datastore.Status = assets.StateChanged
+	datastore.State = assets.StateChanged
 	apisF.SetDependency(datastore)
+
+	/* DB */
+	// /db/main.go
+	var DBMainGo = &assets.File{}
+	err = gg.MakeMainFile(DBMainGo)
+	if err != nil {
+		return nil, err
+	}
+	dbF.SetFile(DBMainGo)
 
 	/* GUI */
 	// Folders
 	var pages = assets.NewFolder(FolderNameGGPages)
-	pages.Status = assets.StateChanged
+	pages.State = assets.StateChanged
 	guiF.SetDependency(pages)
 	var landings = assets.NewFolder(FolderNameGUILandings)
-	landings.Status = assets.StateChanged
+	landings.State = assets.StateChanged
 	guiF.SetDependency(landings)
 	var widgets = assets.NewFolder(FolderNameGUIWidgets)
-	widgets.Status = assets.StateChanged
+	widgets.State = assets.StateChanged
 	guiF.SetDependency(widgets)
 
 	// /gui/main.html
 
 	// /gui/main.js
 
+	/* SDK */
+	var goSDKRepo = assets.NewFolder("sdk-go")
+	goSDKRepo.State = assets.StateChanged
+	req.Repo.SetDependency(goSDKRepo)
+	var jsSDKRepo = assets.NewFolder("sdk-js")
+	jsSDKRepo.State = assets.StateChanged
+	req.Repo.SetDependency(jsSDKRepo)
+
 	/* Common files */
 	// main.go
 	var MainGo = &assets.File{}
-	err = generator.MakeMainFile(MainGo)
+	err = ag.MakeMainFile(MainGo)
 	if err != nil {
 		return nil, err
 	}
@@ -66,7 +84,7 @@ func MakeNewProject(req *MakeNewProjectReq) (res *MakeNewProjectRes, err error) 
 	var ob3 assets.File
 	ob3.Name = ".gitignore"
 	ob3.Data = []byte(gitignore)
-	ob3.Status = assets.StateChanged
+	ob3.State = assets.StateChanged
 	req.Repo.SetFile(&ob3)
 
 	return res, nil
