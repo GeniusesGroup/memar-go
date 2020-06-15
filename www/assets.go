@@ -3,8 +3,35 @@
 package www
 
 import (
+	"fmt"
+	"os"
+	"path"
+	"runtime"
+
 	"../assets"
 )
+
+// ReloadAssetsInDevPhase use to reload assets from gui folder!
+// It is blocking function, call by seprate goroutine, otherwise it can block other app logic!
+func ReloadAssetsInDevPhase(a *assets.Folder) {
+	// Indicate repoLocation
+	_, filename, _, ok := runtime.Caller(0)
+	if !ok {
+		panic("No caller information, So we can't specify service root location")
+	}
+	var repoLocation = path.Dir(path.Dir(path.Dir(filename)))
+
+	var repo = assets.NewFolder("")
+reload:
+	readRepositoryFromFileSystem(repoLocation, repo)
+	addRepo(a, repo)
+	addGUIToMain(a, repo)
+
+	fmt.Fprintf(os.Stderr, "%v\n", "Press '''Enter''' key to reload GUI changes")
+	var non string
+	fmt.Scanln(&non)
+	goto reload
+}
 
 // ReadRepositoryFromFileSystem use to get all repository by its name!
 func readRepositoryFromFileSystem(dirname string, repo *assets.Folder) (err error) {
