@@ -21,7 +21,7 @@ func UpdateDatastoreFile(file *assets.File) (err error) {
 	file.DataString = strings.Replace(file.DataString, "StructureID uint64 = 0", "StructureID uint64 = "+strconv.FormatUint(hash64.Sum64(), 10), 1)
 
 	// Indicate file had been changed
-	file.Status = assets.StateChanged
+	file.State = assets.StateChanged
 	file.Data = []byte(file.DataString)
 
 	return

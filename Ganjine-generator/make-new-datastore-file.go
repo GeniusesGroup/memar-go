@@ -53,7 +53,7 @@ func MakeNewDatastoreFile(file *assets.File) (err error) {
 
 	file.Data, err = format.Source(sf.Bytes())
 	// Indicate file had been changed
-	file.Status = assets.StateChanged
+	file.State = assets.StateChanged
 
 	return
 }
@@ -81,6 +81,7 @@ type {{.StructureUpperName}} struct {
 	RecordStructureID uint64
 	WriteTime         int64
 	OwnerAppID        [16]byte
+
 	/* Unique data */
 	AppConnectionID  [16]byte // Store to remember which app instance connection set||chanaged this record!
 	UserConnectionID [16]byte // Store to remember which user connection set||chanaged this record!
@@ -98,7 +99,7 @@ func ({{.ReceiverName}} *{{.StructureUpperName}}) Set() (err error) {
 	var req = ganjine.SetRecordReq{
 		RecordID: pa.RecordID,
 	}
-	pa.syllabEncoder(req.Record)
+	req.Record = pa.syllabEncoder(0)
 
 	err = ganjine.SetRecord(server, cluster, &req)
 	if err != nil {
@@ -139,7 +140,7 @@ func ({{.ReceiverName}} *{{.StructureUpperName}}) syllabDecoder(buf []byte) (err
 	return
 }
 
-func ({{.ReceiverName}} *{{.StructureUpperName}}) syllabEncoder(buf []byte) (err error) {
+func ({{.ReceiverName}} *{{.StructureUpperName}}) syllabEncoder(offset int) (buf []byte) {
 	return
 }
 
