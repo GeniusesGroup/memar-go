@@ -15,28 +15,25 @@ import (
 var DefaultServer = &defaultServer
 var defaultServer Server
 
-// Server represents needed data to serving as a network server.
+// Server represents needed data to serving some functionality such as networks, ...
+// to both server and client apps!
 type Server struct {
-	Status                int // States locate in const of this file.
-	Manifest              Manifest
-	Network               Network
-	ProtocolsHandlers     ProtocolsHandlers
-	Services              Services
-	PublicKeyCryptography PublicKeyCryptography
-	Connections           Connections
-	Assets                assets.Folder // Any data files to serve!
+	Status          int // States locate in const of this file.
+	Manifest        Manifest
+	Networks        networks
+	StreamProtocols streamProtocols
+	Cryptography    cryptography
+	Services        services
+	Connections     connections
+	Assets          *assets.Folder // Any data files to serve!
 }
 
 // Server Status
 const (
-	// ServerStateStop indicate server had been stopped
 	ServerStateStop int = iota
-	// ServerStateRunning indicate server is working
 	ServerStateRunning
-	// ServerStateStopping indicate server want to stop
 	ServerStateStopping
-	// ServerStateStarting indicate server plan to start and working on it
-	ServerStateStarting
+	ServerStateStarting // plan to start
 )
 
 // Init method use to initialize related object with default data to prevent from panic!
@@ -55,21 +52,10 @@ func (s *Server) Start() (err error) {
 	// Recover from panics if exist.
 	// defer panicHandler(s)
 
-	// watch for SIGTERM and SIGINT from the operating system, and notify the app on the channel
-	var sig = make(chan os.Signal)
-	signal.Notify(sig, syscall.SIGTERM)
-	signal.Notify(sig, syscall.SIGINT)
-	go s.HandleOSSignals(sig)
-
 	// Get UserGivenPermission from OS
 
 	// Make & Register publicKey
-	if err = s.PublicKeyCryptography.RegisterPublicKey(); err != nil {
-		return err
-	}
-
-	// Get GP & MTU from OS router.
-	if err = s.Network.RegisterGP(); err != nil {
+	if err = s.Cryptography.registerPublicKey(); err != nil {
 		return err
 	}
 
@@ -77,6 +63,13 @@ func (s *Server) Start() (err error) {
 
 	// register s.HandleGP() for income packet handler
 
+	// watch for SIGTERM and SIGINT from the operating system, and notify the app on the channel
+	var sig = make(chan os.Signal)
+	signal.Notify(sig, syscall.SIGTERM)
+	signal.Notify(sig, syscall.SIGINT)
+	// Block main goroutine by handle OS signals!
+	s.HandleOSSignals(sig)
+	
 	return nil
 }
 
@@ -117,7 +110,7 @@ func (s *Server) Shutdown() {
 	s.Status = ServerStateRunning
 }
 
-// SendStream use to register a stream to send pool and automatically send to other side.
+// SendStream use to register a stream to send pool and automatically send to the peer.
 func (s *Server) SendStream(st *Stream) (err error) {
 	// First Check st.Connection.Status to ability send stream over it
 

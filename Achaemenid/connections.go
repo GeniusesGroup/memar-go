@@ -4,37 +4,44 @@ package achaemenid
 
 import "../crypto"
 
-// Connections store pools of connection to retrieve in many ways!
-type Connections struct {
-	PoolByDomainID  map[[16]byte]*Connection
-	PoolByPeerGP    map[[16]byte]*Connection
-	PoolByUserID    map[[16]byte][]*Connection
-	PoolByBlackList map[[16]byte]*Connection
+// connections store pools of connection to retrieve in many ways!
+type connections struct {
+	poolByPeerAdd   map[[16]byte]*Connection
+	poolByUserID    map[[16]byte][]*Connection
+	poolByDomainID  map[[16]byte]*Connection
+	poolByBlackList map[[16]byte]*Connection
 }
 
-func (c *Connections) init() {
-	if c.PoolByPeerGP == nil {
-		c.PoolByPeerGP = make(map[[16]byte]*Connection)
+func (c *connections) init() {
+	if c.poolByPeerAdd == nil {
+		c.poolByPeerAdd = make(map[[16]byte]*Connection)
 	}
-	if c.PoolByUserID == nil {
-		c.PoolByUserID = make(map[[16]byte][]*Connection)
+	if c.poolByUserID == nil {
+		c.poolByUserID = make(map[[16]byte][]*Connection)
+	}
+	if c.poolByDomainID == nil {
+		c.poolByDomainID = make(map[[16]byte]*Connection)
+	}
+	if c.poolByBlackList == nil {
+		c.poolByBlackList = make(map[[16]byte]*Connection)
 	}
 }
 
 // MakeNewConnectionByDomainID use to
-func (c *Connections) MakeNewConnectionByDomainID(domainID [16]byte) (conn *Connection, err error) {
+func (c *connections) MakeNewConnectionByDomainID(domainID [16]byte) (conn *Connection, err error) {
 	// TODO::: Get closest domain GP
 	var domainGP = [16]byte{}
-	conn, err = c.MakeNewConnectionByPeerGP(domainGP)
+	conn, err = c.MakeNewConnectionByPeerAdd(domainGP)
 
 	return
 }
 
-// MakeNewConnectionByPeerGP use to make new connection by peer GP and initialize it!
-func (c *Connections) MakeNewConnectionByPeerGP(peerGP [16]byte) (conn *Connection, err error) {
+// MakeNewConnectionByPeerAdd use to make new connection by peer GP and initialize it!
+func (c *connections) MakeNewConnectionByPeerAdd(peerGP [16]byte) (conn *Connection, err error) {
 	// TODO::: Make connection by ask peer public key from peer GP router!
 
 	conn = &Connection{
+		GPAddress:  peerGP,
 		Cipher:     crypto.NewGCM(crypto.NewAES256([32]byte{})),
 		StreamPool: make(map[uint32]*Stream),
 	}
@@ -45,37 +52,39 @@ func (c *Connections) MakeNewConnectionByPeerGP(peerGP [16]byte) (conn *Connecti
 }
 
 // RegisterConnection use to register new connection in server connection pool!!
-func (c *Connections) RegisterConnection(conn *Connection) {
-	c.PoolByPeerGP[conn.GPAddress] = conn
-	// c.PoolByUserID[conn.OwnerUserID] = conn
+func (c *connections) RegisterConnection(conn *Connection) {
+	c.poolByPeerAdd[conn.GPAddress] = conn
+	c.poolByUserID[conn.UserID] = append(c.poolByUserID[conn.UserID], conn)
+	if conn.DomainID != [16]byte{} {
+		c.poolByDomainID[conn.DomainID] = conn
+	}
 }
 
-// GetConnectionByPeerGP use to get a connection by peer GP from connections pool!!
-func (c *Connections) GetConnectionByPeerGP(peerGPAddress [16]byte) (conn *Connection, ok bool) {
-	conn, ok = c.PoolByPeerGP[peerGPAddress]
-	return
+// GetConnectionByPeerAdd use to get a connection by peer GP from connections pool!!
+func (c *connections) GetConnectionByPeerAdd(peerAddress [16]byte) *Connection {
+	return c.poolByPeerAdd[peerAddress]
 }
 
 // GetConnectionByDomainID use to get a connection by peer domain ID from connections pool!!
-func (c *Connections) GetConnectionByDomainID(domainID [16]byte) (conn *Connection, ok bool) {
-	conn, ok = c.PoolByDomainID[domainID]
+func (c *connections) GetConnectionByDomainID(domainID [16]byte) (conn *Connection, ok bool) {
+	conn, ok = c.poolByDomainID[domainID]
 	// check if connection is in not ready status
 	return
 }
 
 // CloseConnection use to un-register exiting connection in server connection pool!!
-func (c *Connections) CloseConnection(conn *Connection) {
-	// TODO : Don't delete connection just reset it and send it to pool of unused connection due to GC!
-	delete(c.PoolByPeerGP, conn.GPAddress)
-	delete(c.PoolByUserID, conn.UserID)
+func (c *connections) CloseConnection(conn *Connection) {
+	// TODO::: Don't delete connection just reset it and send it to pool of unused connection due to GC!
+	delete(c.poolByPeerAdd, conn.GPAddress)
+	delete(c.poolByUserID, conn.UserID)
 
 	// Let unfinished stream handled!!
 }
 
 // RevokeConnection use to un-register exiting connection in server connection pool without given any time to finish any stream!!
-func (c *Connections) RevokeConnection(conn *Connection) {
+func (c *connections) RevokeConnection(conn *Connection) {
 	// Remove all unfinished stream first!!
 
-	delete(c.PoolByPeerGP, conn.GPAddress)
-	delete(c.PoolByUserID, conn.UserID)
+	delete(c.poolByPeerAdd, conn.GPAddress)
+	delete(c.poolByUserID, conn.UserID)
 }

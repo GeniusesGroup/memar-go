@@ -11,6 +11,8 @@ var (
 	ErrSRPCServiceNotFound = errors.New("Requested sRPC Service is out range of services in this version of service")
 	ErrSRPCPayloadEmpty    = errors.New("Stream data payload can't be empty")
 
+	ErrHTTPServiceNotFound = errors.New("Requested HTTP Service is not found in this instance of app")
+
 	ErrStreamPayloadEmpty = errors.New("Stream data payload can't be empty")
 	ErrPacketArrivedAnterior = errors.New("New packet arrive before some expected packet arrived. Usually cause of drop packet detection or high latency occur for some packet")
 	ErrPacketArrivedPosterior = errors.New("New packet arrive after some expected packet arrived. Usually cause of drop packet detection or high latency occur for some packet")

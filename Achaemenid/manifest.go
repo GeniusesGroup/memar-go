@@ -2,6 +2,8 @@
 
 package achaemenid
 
+import "time"
+
 // Manifest use to store server manifest data
 // All string slice is multi language and in order by ManifestLanguages order
 type Manifest struct {
@@ -23,32 +25,42 @@ type Manifest struct {
 
 // TechnicalInfo store some technical information but may different from really server condition!
 type TechnicalInfo struct {
-	OS                   []string // PersiaOS, Linux, Windows, ...
-	ApplicationProtocols []string // sRPC, HTTP, ...
-	UseAI                bool     // false: Open the lot of security concerns || true: use more resource.
-	AuthorizationServer  string   // Domain name that have sRPC needed store connection data. default is "apis.sabz.city"
+	UseAI               bool   // false: Open the lot of security concerns || true: use more resource.
+	AuthorizationServer string // Domain name that have sRPC needed store connection data. default is "apis.sabz.city"
+
 	// Shutdown settings
-	ShutdownDelay uint16 // the server will wait for at least this amount of time for active streams to finish!
+	ShutdownDelay time.Duration // the server will wait for at least this amount of time for active streams to finish!
+
 	// Server Overal rate limit
-	MaxOpenConnection uint64 // The maximum number of concurrent connections the app may serve.
+	MaxOpenConnection     uint64 // The maximum number of concurrent connections the app may serve.
+	ConnectionIdleTimeout time.Duration
+	MaxStreamHeaderSize   uint64 // For stream protocols with variable header size like HTTP
+	MaxStreamPayloadSize  uint64 // For stream protocols with variable payload size like sRPC, HTTP, ...
+
 	// Guest rete limit - Connection.OwnerType==0
-	GuestMaxConnection            uint64 // 0 means App not accept guest connection.
-	GuestMaxStreamConnectionDaily uint32 // Max open stream per day for a guest connection. overflow will drop on creation!
-	GuestMaxServiceCallDaily      uint64 // 0 means no limit and good for PayAsGo strategy!
-	GuestMaxBytesSendDaily        uint64
-	GuestMaxBytesReceiveDaily     uint64
-	GuestMaxPacketsSendDaily      uint64
-	GuestMaxPacketsReceiveDaily   uint64
+	GuestMaxConnections            uint64 // 0 means App not accept guest connection.
+	GuestMaxUserConnectionsPerAddr uint64
+	GuestMaxConcurrentStreams      uint32
+	GuestMaxStreamConnectionDaily  uint32 // Max open stream per day for a guest connection. overflow will drop on creation!
+	GuestMaxServiceCallDaily       uint64 // 0 means no limit and good for PayAsGo strategy!
+	GuestMaxBytesSendDaily         uint64
+	GuestMaxBytesReceiveDaily      uint64
+	GuestMaxPacketsSendDaily       uint64
+	GuestMaxPacketsReceiveDaily    uint64
+
 	// Registered rate limit - Connection.OwnerType==1
-	RegisteredMaxConnection            uint64
-	RegisteredMaxStreamConnectionDaily uint32 // Max open stream per day for a Registered user connection. overflow will drop on creation!
-	RegisteredMaxServiceCallDaily      uint64 // 0 means no limit and good for PayAsGo strategy!
-	RegisteredMaxBytesSendDaily        uint64
-	RegisteredMaxBytesReceiveDaily     uint64
-	RegisteredMaxPacketsSendDaily      uint64
-	RegisteredMaxPacketsReceiveDaily   uint64
+	RegisteredMaxConnections            uint64
+	RegisteredMaxUserConnectionsPerAddr uint64
+	RegisteredMaxConcurrentStreams      uint32
+	RegisteredMaxStreamConnectionDaily  uint32 // Max open stream per day for a Registered user connection. overflow will drop on creation!
+	RegisteredMaxServiceCallDaily       uint64 // 0 means no limit and good for PayAsGo strategy!
+	RegisteredMaxBytesSendDaily         uint64
+	RegisteredMaxBytesReceiveDaily      uint64
+	RegisteredMaxPacketsSendDaily       uint64
+	RegisteredMaxPacketsReceiveDaily    uint64
+
 	// If you want to know Connection.OwnerType>1 rate limit strategy, You must read server codes!!
-	//
+
 	// Minimum hardware specification for each instance of application.
 	CPU              uint64 // Hz
 	RAM              uint64 // Byte
@@ -57,8 +69,8 @@ type TechnicalInfo struct {
 	HDD              uint64 // Byte, Hard disk drive as storage engine. Act as object+block storage.
 	SSD              uint64 // Byte, Solid state drive as storage engine. Act as object+block storage..
 	// 4 type of devices trend now:
-	// Out of XP scope - Cloud Computing - Cheapest scenario - Primary Datastore	::/1 ()
-	// Adjacent Router or Inside same XP - Fog Computing - Caching Datastore		::/32
+	// Out of society scope - Cloud Computing - Cheapest scenario - Primary Datastore	::/1
+	// Adjacent Router or Inside same society - Fog Computing - Caching Datastore		::/32
 	// Inside Router scope - Edge Computing - Caching Datastore						::/64
 	// End user device - 															::/128
 	MaxNetworkScalability uint8 // If ::/32 it mean also ::/1 but not ::/64!!

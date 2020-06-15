@@ -2,24 +2,26 @@
 
 package achaemenid
 
-import "../crypto"
+import (
+	"../crypto"
+)
 
 // Connection can use by any type users itself or delegate to other users to act as the owner!
 // Each user in each device need unique connection to another party.
 type Connection struct {
 	/* Connection data */
 	ConnectionID [16]byte
-	Status       uint8              // States locate in const of this file.
+	State        connectionState
 	Weight       uint8              // 16 queue for priority weight of the connections exist.
-	StreamPool   map[uint32]*Stream // StreamID
+	StreamPool   map[uint32]*Stream // key is Stream.ID
 
 	/* Peer data */
 	DomainID       [16]byte // Usually use for server to server connections that peer has domainID!
-	GPAddress     [16]byte
+	GPAddress      [16]byte
 	ThingID        [16]byte
 	UserID         [16]byte // Can't change after first set. initial is 0 as Guest!
 	UserType       uint8    // 0:Guest, 1:Registered 2:Person, 3:Org, 4:App, ...
-	DelegateUserID [16]byte // Can't change after first set. Guest={1}
+	DelegateUserID [16]byte // Can't change after first set
 
 	/* Security data */
 	PeerPublicKey [32]byte
@@ -38,10 +40,12 @@ type Connection struct {
 	FailedServiceCall     uint64 // Counts failed service call e.g. data validation failed, ...
 }
 
-// Connection Status
+type connectionState uint8
+
+// Connection State
 const (
 	// ConnectionStateClosed indicate connection had been closed
-	ConnectionStateClosed uint8 = iota
+	ConnectionStateClosed connectionState = iota
 	// ConnectionStateOpen indicate connection is open and ready to use
 	ConnectionStateOpen
 	// ConnectionStateRateLimited indicate connection limited due to higher usage than permitted!
@@ -64,8 +68,9 @@ func (conn *Connection) MakeUnidirectionalStream(streamID uint32) (st *Stream, e
 	}
 
 	st = &Stream{
-		StreamID:      streamID,
-		StatusChannel: make(chan uint8),
+		ID:            streamID,
+		Connection:    conn,
+		StateChannel: make(chan streamState),
 	}
 	conn.RegisterStream(st)
 	return
@@ -88,18 +93,17 @@ func (conn *Connection) MakeSubscriberStream() (st *Stream) {
 }
 
 // GetStreamByID use to get exiting stream in the stream pool of a connection!
-func (conn *Connection) GetStreamByID(streamID uint32) (st *Stream, ok bool) {
-	st, ok = conn.StreamPool[streamID]
+func (conn *Connection) GetStreamByID(streamID uint32) *Stream {
 	// TODO::: Check stream isn't closed!!
-	return
+	return conn.StreamPool[streamID]
 }
 
 // RegisterStream use to register new stream in the stream pool of a connection!
 func (conn *Connection) RegisterStream(st *Stream) {
-	conn.StreamPool[st.StreamID] = st
+	conn.StreamPool[st.ID] = st
 }
 
 // CloseStream use to close the stream on other side requested or finished!
 func (conn *Connection) CloseStream(st *Stream) {
-	delete(conn.StreamPool, st.StreamID)
+	delete(conn.StreamPool, st.ID)
 }

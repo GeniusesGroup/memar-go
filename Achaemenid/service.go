@@ -12,13 +12,14 @@ type Service struct {
 	ExpireInFavorOf         string // Other service name
 	ExpireInFavorOfID       uint32 // Other ServiceID! Handy ID or Hash of ExpireInFavorOf!
 	Status                  uint8
-	Handler                 StreamHandler
 	MinExpectedRequestSize  uint64 // to improve performance by alloc stream buffer size
 	MaxExpectedRequestSize  uint64 // to improve performance by alloc stream buffer size
 	MinExpectedResponseSize uint64 // to improve performance by alloc stream buffer size
 	MaxExpectedResponseSize uint64 // to improve performance by alloc stream buffer size
 	Description             []string
 	TAGS                    []string
+	SRPCHandler             SRPCHandler
+	HTTPHandler 			HTTPHandler
 }
 
 // Service Status

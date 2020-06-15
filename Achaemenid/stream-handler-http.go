@@ -2,28 +2,65 @@
 
 package achaemenid
 
-// httpHandler use to handle HTTP protocol! It can use for architectures like restful, ...
-// Protocol Standard - http2 : https://httpwg.org/specs/rfc7540.html
-func httpHandler(s *Server, st *Stream) {
-	// Ready data for logics & do some logic
-	// - Route by URL
-	// - Encode||Decode body by mime type header
+import (
+	"net/url"
+	"strings"
 
-	// Add Server Header to response : "ChaparKhane"
+	"../http"
+)
 
-	// If project don't have any logic that support data on e.g. HTTP (restful, ...) we reject request with related error.
-}
+// ProtocolPortHTTP indicate standard port number register for http protocol
+const (
+	ProtocolPortHTTP uint16 = 80
+)
 
-// httpOptionsHandler is a filter function that inspects the HTTP Request for the OPTIONS method when Origin header not exist
-// and provides the response with a set of allowed methods for the request URL Path.
-func httpOptionsHandler() {
-	// if ctx.Request.Method == "OPTIONS" && ctx.Request.Header.Get(http.RequestStandards.Headers.Origin) == "" {
-	// 	var allowMethods []string
-	// 	staticRestRoute := ctx.InterfaceData["StaticRestRoute"].(*StaticRestRoute)
-	// 	for m := range staticRestRoute.MethodsFilters {
-	// 		allowMethods = append(allowMethods, m)
-	// 	}
+// HTTPIncomeRequestHandler handle incoming HTTP request streams!
+// We just support http to https redirect!
+func HTTPIncomeRequestHandler(s *Server, st *Stream) {
+	var err error
+	var req = http.MakeNewRequest()
+	var res = http.MakeNewResponse()
+	err = req.UnMarshal(st.Payload)
+	if err != nil {
+		st.Connection.FailedPacketsReceived++
+		res.SetStatus(http.StatusBadRequestCode, http.StatusBadRequestPhrase)
+		goto End
+	}
 
-	// 	ctx.Response.Header.Set(http.ResponseStandards.Headers.Allow, strings.Join(allowMethods, ","))
-	// }
+	{
+		// Encode URL to route request
+		var url *url.URL
+		url, err = req.GetURI()
+		if err != nil {
+			st.Connection.FailedPacketsReceived++
+			res.SetStatus(http.StatusBadRequestCode, http.StatusBadRequestPhrase)
+			goto End
+		}
+
+		var host = req.Header.GetHost(url)
+		// Add www to domain due to we just support http on www server app!
+		if !strings.HasPrefix(host, "www.") {
+			host = "www." + host
+		}
+
+		// redirect http to https
+		// remove/add not default ports from req.Host
+		var target = "https://" + host + url.Path
+		if len(url.RawQuery) > 0 {
+			target += "?" + url.RawQuery // + "&rd=tls" // TODO::: add rd query for analysis purpose??
+		}
+		res.SetStatus(http.StatusMovedPermanentlyCode, http.StatusMovedPermanentlyPhrase)
+		res.Header.SetValue(http.HeaderKeyLocation, target)
+	}
+
+End:
+	// Do some global assignment to response
+	res.Version = req.Version
+	res.Header.SetValue(http.HeaderKeyContentLength, "0")
+	// Add cache to decrease server load
+	res.Header.SetValue(http.HeaderKeyCacheControl, "public, max-age=2592000")
+	// Add Server Header to response : "Achaemenid"
+	res.Header.SetValue(http.HeaderKeyServer, http.DefaultServer)
+
+	st.ReqRes.Payload = res.Marshal()
 }
