@@ -24,16 +24,19 @@ var (
 )
 
 // MakeNewFrame makes new unicast||broadcast frame!
-func MakeNewFrame(nexHeaderID byte, path []byte, payloadSize int) (frame []byte, payloadLoc int) {
+func MakeNewFrame(nexHeaderID byte, path []byte, payload []byte) (frame []byte) {
 	var pathLen = len(path)
 	if pathLen == 0 {
 		pathLen = 255 // broadcast frame
 	}
-	payloadLoc = 3 + pathLen
-	frame = make([]byte, payloadLoc+payloadSize)
+	var payloadLoc = 3 + pathLen
+	frame = make([]byte, payloadLoc+len(payload))
 	SetHopCount(frame, byte(pathLen))
 	SetNextHeader(frame, nexHeaderID)
+	// Set path for unicast. it will not copy if path is 0 for broadcast frame as we want!
 	SetPath(frame, path)
+	// copy payload to frame
+	copy(frame[payloadLoc:], payload)
 	return
 }
 
@@ -132,9 +135,4 @@ func ReversePath(path []byte) (ReversePath []byte) {
 // GetPayload returns payload.
 func GetPayload(frame []byte) []byte {
 	return frame[GetHopCount(frame)+3:]
-}
-
-// SetPayload copy payload to frame. make frame by MakeNewFrame() to have needed data!
-func SetPayload(frame []byte, payloadLoc int, p []byte) {
-	copy(frame[payloadLoc:], p)
 }
