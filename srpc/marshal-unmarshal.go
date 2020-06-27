@@ -11,14 +11,14 @@ import "../syllab"
 */
 
 // MarshalPacket use to encode automatically the value of s to the payload buffer.
-func MarshalPacket(p []byte, id uint32, s interface{}) (err error) {
-	// Set ServiceID to payload
+func MarshalPacket(id uint32, s interface{}) (p []byte, err error) {
+	// encode s to p by syllab encoder
+	p, err = syllab.Marshal(s, 4)
+
+	// Set ServiceID to first of payload
 	SetID(p, id)
 
-	// encode s to p by syllab encoder
-	err = syllab.MarshalSyllab(p[4:], s)
-
-	return err
+	return
 }
 
 // UnMarshalPacket use to decode automatically payload and stores the result
@@ -33,7 +33,7 @@ func UnMarshalPacket(p []byte, expectedMinLen int, s interface{}) (id uint32, er
 	id = GetID(p)
 
 	// decode payload to s by syllab encoder
-	err = syllab.UnMarshalSyllab(p[4:], s)
+	err = syllab.UnMarshal(p[4:], s)
 
-	return id, err
+	return
 }
