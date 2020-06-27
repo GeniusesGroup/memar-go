@@ -1,31 +1,42 @@
 /* For license and copyright information please see LEGAL file in repository */
 
-package error
+package errors
 
-import "fmt"
+import (
+	"fmt"
+	"hash/crc32"
+)
 
-// Error interface type is the conventional interface for
-// representing an error condition, with the nil value representing no error.
-type error interface {
-	Error() string
-	AddInformationToError(information interface{}) error
-	IsEqualError(err error) bool
-}
+var errPool = map[uint32]*ExtendedError{}
 
 // ExtendedError : This is a extended implementation of error.
 type ExtendedError struct {
+	Name        string
 	Text        string
-	Information interface{}
 	Code        uint32
-	HTTPStatus  uint
+	Information interface{}
 }
 
-// NewError : Returns an error that formats as the given text, Code and httpStatus code.
-func NewError(text string, errorCode uint32, httpStatus uint) error {
-	return &ExtendedError{
-		Text:       text,
-		Code:       errorCode,
-		HTTPStatus: httpStatus}
+// New returns an error that formats as the given name, text & code.
+// Never change name due to it is very complicated to troubleshooting errors on SDK!
+func New(name, text string) error {
+	var err = ExtendedError{
+		Name: name,
+		Text: text,
+		Code: crc32.ChecksumIEEE([]byte(name)),
+	}
+	if errPool[err.Code] != nil {
+		fmt.Print("Exiting error >> ", errPool[err.Code].Code, " : ", errPool[err.Code].Text , "\n")
+		fmt.Print("New error >> ", err.Code, " : ", err.Text , "\n")
+		panic("Duplicate Error code exist ^^")
+	}
+	errPool[err.Code] = &err
+	return &err
+}
+
+// GetErrByCode returns desire error if exist or nil!
+func GetErrByCode(code uint32) error {
+	return errPool[code]
 }
 
 // Error : Return text of error.
@@ -43,7 +54,7 @@ func (e *ExtendedError) AddInformationToError(information interface{}) error {
 		Text:        e.Text,
 		Information: information,
 		Code:        e.Code,
-		HTTPStatus:  e.HTTPStatus}
+	}
 }
 
 // IsEqualError : Compare two error.
