@@ -3,7 +3,6 @@
 package achaemenid
 
 import (
-	"net/url"
 	"strconv"
 	"strings"
 
@@ -26,19 +25,10 @@ type HTTPHandler func(*Server, *Stream, *http.Request, *http.Response)
 func HTTPSIncomeRequestHandler(s *Server, st *Stream) {
 	var err error
 	var service *Service
-	var uri *url.URL
 	var req = http.MakeNewRequest()
 	var res = http.MakeNewResponse()
 
 	err = req.UnMarshal(st.Payload)
-	if err != nil {
-		st.Connection.FailedPacketsReceived++
-		res.SetStatus(http.StatusBadRequestCode, http.StatusBadRequestPhrase)
-		goto End
-	}
-
-	// Encode URL to route request
-	uri, err = req.GetURI()
 	if err != nil {
 		st.Connection.FailedPacketsReceived++
 		res.SetStatus(http.StatusBadRequestCode, http.StatusBadRequestPhrase)
@@ -51,24 +41,35 @@ func HTTPSIncomeRequestHandler(s *Server, st *Stream) {
 	}
 
 	// Find related services
-	if uri.Path == "/apis" {
+	if req.URI.Path == "/apis" {
 		var id uint64
-		id, err = strconv.ParseUint(uri.RawQuery, 10, 32)
+		id, err = strconv.ParseUint(req.URI.Query, 10, 32)
 		if err == nil {
 			st.ServiceID = uint32(id)
 			service = s.Services.GetServiceHandlerByID(st.ServiceID)
 		}
 		// Add some header for /apis like not index by SE(google, ...), ...
 		res.Header.SetValue("X-Robots-Tag", "noindex")
+	} else if req.URI.Path == "/objects" {
+		var file = s.Assets.GetDependency("objects").GetFile(req.URI.Query)
+		if file == nil {
+			file = s.Assets.GetFile("404.html")
+			res.SetStatus(http.StatusNotFoundCode, http.StatusNotFoundPhrase)
+		} else {
+			res.SetStatus(http.StatusOKCode, http.StatusOKPhrase)
+		}
+		res.Header.SetValue(http.HeaderKeyContentType, file.MimeType)
+		res.Body = file.Data
+		goto End
 	} else {
 		// First check of request send over non www subdomain
-		var host = req.Header.GetHost(uri)
+		var host = req.GetHost()
 		// Add www to domain. Just support http on www server app due to SE duplicate content both on www && non-www!
-		if !strings.HasPrefix(host, "www.") && !('0' <= host[0] && host[0] <= '9') {
+		if len(host) > 4 && !(host[:4] == "www.") && !('0' <= host[0] && host[0] <= '9') {
 			host = "www." + host
-			var target = "https://" + host + uri.Path
-			if len(uri.RawQuery) > 0 {
-				target += "?" + uri.RawQuery // + "&rd=tls" // TODO::: add rd query for analysis purpose??
+			var target = "https://" + host + req.URI.Path
+			if len(req.URI.Query) > 0 {
+				target += "?" + req.URI.Query // + "&rd=tls" // TODO::: add rd query for analysis purpose??
 			}
 			res.SetStatus(http.StatusMovedPermanentlyCode, http.StatusMovedPermanentlyPhrase)
 			res.Header.SetValue(http.HeaderKeyLocation, target)
@@ -77,11 +78,11 @@ func HTTPSIncomeRequestHandler(s *Server, st *Stream) {
 		}
 
 		// Route by URL
-		service = s.Services.GetServiceHandlerByURI(uri.Path)
+		service = s.Services.GetServiceHandlerByURI(req.URI.Path)
 
 		// Route by assets
 		if service == nil {
-			var path = strings.Split(uri.Path, "/")
+			var path = strings.Split(req.URI.Path, "/")
 			var lastPath = path[len(path)-1]
 
 			var file = s.Assets.GetFile(lastPath)

@@ -4,6 +4,7 @@ package achaemenid
 
 import (
 	"../srpc"
+	"../errors"
 )
 
 const (
@@ -51,8 +52,7 @@ func SrpcIncomeRequestHandler(s *Server, st *Stream) {
 // SrpcIncomeResponseHandler use to handle incoming sRPC response streams!
 func SrpcIncomeResponseHandler(s *Server, st *Stream) {
 	// Get error code from
-	st.ServiceID = srpc.GetID(st.Payload)
-	// TODO::: convert ErrorID to error!!
+	st.Err = errors.GetErrByCode(srpc.GetID(st.Payload))
 
 	// tell request stream that response stream ready to use!
 	st.ReqRes.StateChannel <- StreamStateReady
@@ -81,8 +81,11 @@ func SrpcOutcomeRequestHandler(s *Server, st *Stream) (err error) {
 
 // SrpcOutcomeResponseHandler use to handle outcoming sRPC response stream!
 func SrpcOutcomeResponseHandler(s *Server, st *Stream) (err error) {
-	// TODO::: Convert error to ErrorID and write it to stream payload
-	// srpc.SetID(st.Payload, ErrorID)
+	// Convert error to errors.ExtendedError and write error code to stream payload.
+	var ee, ok = st.Err.(*errors.ExtendedError)
+	if ok {
+		srpc.SetID(st.Payload, ee.Code)
+	}
 
 	return
 }

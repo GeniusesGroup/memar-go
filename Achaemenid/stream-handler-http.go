@@ -3,7 +3,6 @@
 package achaemenid
 
 import (
-	"net/url"
 	"strings"
 
 	"../http"
@@ -28,16 +27,7 @@ func HTTPIncomeRequestHandler(s *Server, st *Stream) {
 	}
 
 	{
-		// Encode URL to route request
-		var url *url.URL
-		url, err = req.GetURI()
-		if err != nil {
-			st.Connection.FailedPacketsReceived++
-			res.SetStatus(http.StatusBadRequestCode, http.StatusBadRequestPhrase)
-			goto End
-		}
-
-		var host = req.Header.GetHost(url)
+		var host = req.GetHost()
 		// Add www to domain due to we just support http on www server app!
 		if !strings.HasPrefix(host, "www.") {
 			host = "www." + host
@@ -45,9 +35,9 @@ func HTTPIncomeRequestHandler(s *Server, st *Stream) {
 
 		// redirect http to https
 		// remove/add not default ports from req.Host
-		var target = "https://" + host + url.Path
-		if len(url.RawQuery) > 0 {
-			target += "?" + url.RawQuery // + "&rd=tls" // TODO::: add rd query for analysis purpose??
+		var target = "https://" + host + req.URI.Path
+		if len(req.URI.Query) > 0 {
+			target += "?" + req.URI.Query // + "&rd=tls" // TODO::: add rd query for analysis purpose??
 		}
 		res.SetStatus(http.StatusMovedPermanentlyCode, http.StatusMovedPermanentlyPhrase)
 		res.Header.SetValue(http.HeaderKeyLocation, target)
