@@ -8,12 +8,13 @@ package syllab
 	and reduce runtime proccess to improve performance of the app and gain max performance from this protocol!
 */
 
-// MarshalSyllab use to encode automatically the value of s to the payload buffer.
-func MarshalSyllab(p []byte, s interface{}) error {
-	return nil
+// Marshal encodes the value of s to the payload buffer in runtime.
+// offset add free space by given number at begging of return slice that almost just use in sRPC protocol! It can be 0!!
+func Marshal(s interface{}, offset int) (p []byte, err error) {
+	return
 }
 
-// UnMarshalSyllab use to decode automatically payload and stores the result in the value pointed to by s.
-func UnMarshalSyllab(p []byte, s interface{}) error {
-	return nil
+// UnMarshal decode payload and stores the result in the value pointed to by s in runtime.
+func UnMarshal(p []byte, s interface{}) (err error) {
+	return
 }

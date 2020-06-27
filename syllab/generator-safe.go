@@ -20,7 +20,8 @@ func ({{DesireName}} *{{DesireType}}) syllabDecoder(buf []byte) (err error) {
 	return
 }
 
-func ({{DesireName}} *{{DesireType}}) syllabEncoder(buf []byte) (err error) {
+// offset add free space by given number at begging of return slice that almost just use in sRPC protocol! It can be 0!!
+func ({{DesireName}} *{{DesireType}}) syllabEncoder(offset int) (buf []byte) {
 	return
 }
 */
@@ -58,6 +59,10 @@ func CompleteEncoderMethodSafe(file *assets.File) (err error) {
 					Types: fileTypes,
 				}
 				err = data.makeSyllabDecoderSafe()
+				if err != nil {
+					return
+				}
+				
 				cpyFile = append(cpyFile, &copyToFileReq{data.GData, int(d.Body.Lbrace), int(d.Body.Rbrace)})
 			} else if d.Name.Name == "syllabEncoder" {
 				var data = syllabMaker{
@@ -67,13 +72,17 @@ func CompleteEncoderMethodSafe(file *assets.File) (err error) {
 					Types: fileTypes,
 				}
 				err = data.makeSyllabEncoderSafe()
+				if err != nil {
+					return
+				}
 
 				// Add some other common data
 				data.GData = "	var hsi int = " + data.getSLIAsString(0) + " // Heap start index || Stack size!\n" +
 					"	var ln int // len of strings, slices, maps, ...\n" +
 					strings.TrimSuffix("	ln = hsi +"+data.HLenData, "+") + "\n" +
 					"	" + data.RN + ".RecordSize = ln  // indicate record size!\n" +
-					"	buf = append(buf, make([]byte, ln)...)\n\n" +
+					"	buf = make([]byte, ln+offest)\n\n" +
+					"	var b = buf[offset:]\n\n" +
 					data.GData
 
 				cpyFile = append(cpyFile, &copyToFileReq{data.GData, int(d.Body.Lbrace), int(d.Body.Rbrace)})
@@ -82,7 +91,7 @@ func CompleteEncoderMethodSafe(file *assets.File) (err error) {
 	}
 
 	copyToFile(file, cpyFile)
-	file.Status = assets.StateChanged
+	file.State = assets.StateChanged
 	file.Data = []byte(file.DataString)
 	return
 }
@@ -252,10 +261,10 @@ func (sm *syllabMaker) makeSyllabEncoderSafe() (err error) {
 				case "bool":
 					sm.LSI += len
 				case "byte":
-					sm.GData += "	copy(buf[" + sm.getSLIAsString(0) + ":], " + sm.FRN + in + "[:])\n"
+					sm.GData += "	copy(b[" + sm.getSLIAsString(0) + ":], " + sm.FRN + in + "[:])\n"
 					// TODO::: Performance check assignment vs copy??
 					// for i:= 0; i<len; i++ {
-					// 	sm.GData += "	buf["+strconv.FormatUint(sm.LSI+i)+"] = "+sm.FRN+in+"["+strconv.FormatUint(i)+"];"
+					// 	sm.GData += "	b["+strconv.FormatUint(sm.LSI+i)+"] = "+sm.FRN+in+"["+strconv.FormatUint(i)+"];"
 					// }
 					// sm.GData += "\n"
 					sm.LSI += len
@@ -299,29 +308,29 @@ func (sm *syllabMaker) makeSyllabEncoderSafe() (err error) {
 			case "int", "uint":
 				return ErrTypeIncludeIllegalChild
 			case "bool":
-				sm.GData += "	if " + sm.FRN + in + " {\n	buf[" + sm.getSLIAsString(0) + "] = 1\n	}\n"
+				sm.GData += "	if " + sm.FRN + in + " {\n	b[" + sm.getSLIAsString(0) + "] = 1\n	}\n"
 				sm.LSI++
 			case "byte":
-				sm.GData += "	buf[" + sm.getSLIAsString(0) + "] = " + sm.FRN + in + "\n"
+				sm.GData += "	b[" + sm.getSLIAsString(0) + "] = " + sm.FRN + in + "\n"
 				sm.LSI++
 			case "uint8", "int8":
-				sm.GData += "	buf[" + sm.getSLIAsString(0) + "] = byte(" + sm.FRN + in + ")\n"
+				sm.GData += "	b[" + sm.getSLIAsString(0) + "] = byte(" + sm.FRN + in + ")\n"
 				sm.LSI++
 			case "uint16", "int16":
-				sm.GData += "	buf[" + sm.getSLIAsString(0) + "] = byte(" + sm.FRN + in + ")\n	buf[" + sm.getSLIAsString(1) + "] = byte(" + sm.FRN + in + " >> 8)\n"
+				sm.GData += "	b[" + sm.getSLIAsString(0) + "] = byte(" + sm.FRN + in + ")\n	b[" + sm.getSLIAsString(1) + "] = byte(" + sm.FRN + in + " >> 8)\n"
 				sm.LSI += 2
 			case "uint32", "int32":
-				sm.GData += "	buf[" + sm.getSLIAsString(0) + "] = byte(" + sm.FRN + in + ")\n	buf[" + sm.getSLIAsString(1) + "] = byte(" + sm.FRN + in + " >> 8)\n	buf[" + sm.getSLIAsString(2) + "] = byte(" + sm.FRN + in + " >> 16)\n	buf[" + sm.getSLIAsString(3) + "] = byte(" + sm.FRN + in + " >> 24)\n"
+				sm.GData += "	b[" + sm.getSLIAsString(0) + "] = byte(" + sm.FRN + in + ")\n	b[" + sm.getSLIAsString(1) + "] = byte(" + sm.FRN + in + " >> 8)\n	b[" + sm.getSLIAsString(2) + "] = byte(" + sm.FRN + in + " >> 16)\n	b[" + sm.getSLIAsString(3) + "] = byte(" + sm.FRN + in + " >> 24)\n"
 				sm.LSI += 4
 			case "uint64", "int64":
-				sm.GData += "	buf[" + sm.getSLIAsString(0) + "] = byte(" + sm.FRN + in + ")\n	buf[" + sm.getSLIAsString(1) + "] = byte(" + sm.FRN + in + " >> 8)\n	buf[" + sm.getSLIAsString(2) + "] = byte(" + sm.FRN + in + " >> 16)\n	buf[" + sm.getSLIAsString(3) + "] = byte(" + sm.FRN + in + " >> 24)\n	buf[" + sm.getSLIAsString(4) + "] = byte(" + sm.FRN + in + " >> 32)\n	buf[" + sm.getSLIAsString(5) + "] = byte(" + sm.FRN + in + " >> 40)\n	buf[" + sm.getSLIAsString(6) + "] = byte(" + sm.FRN + in + " >> 48)\n	buf[" + sm.getSLIAsString(7) + "] = byte(" + sm.FRN + in + " >> 56)\n"
+				sm.GData += "	b[" + sm.getSLIAsString(0) + "] = byte(" + sm.FRN + in + ")\n	b[" + sm.getSLIAsString(1) + "] = byte(" + sm.FRN + in + " >> 8)\n	b[" + sm.getSLIAsString(2) + "] = byte(" + sm.FRN + in + " >> 16)\n	b[" + sm.getSLIAsString(3) + "] = byte(" + sm.FRN + in + " >> 24)\n	b[" + sm.getSLIAsString(4) + "] = byte(" + sm.FRN + in + " >> 32)\n	b[" + sm.getSLIAsString(5) + "] = byte(" + sm.FRN + in + " >> 40)\n	b[" + sm.getSLIAsString(6) + "] = byte(" + sm.FRN + in + " >> 48)\n	b[" + sm.getSLIAsString(7) + "] = byte(" + sm.FRN + in + " >> 56)\n"
 				sm.LSI += 8
 			case "string":
 				sm.HLenData += " len(" + sm.FRN + in + ") +"
 				sm.GData += "	ln = len(" + sm.FRN + in + ")\n"
-				sm.GData += "	buf[" + sm.getSLIAsString(0) + "] = byte(hsi)\n	buf[" + sm.getSLIAsString(1) + "] = byte(hsi >> 8)\n	buf[" + sm.getSLIAsString(2) + "] = byte(hsi >> 16)\n	buf[" + sm.getSLIAsString(3) + "] = byte(hsi >> 24)\n"
-				sm.GData += "	buf[" + sm.getSLIAsString(4) + "] = byte(ln)\n	buf[" + sm.getSLIAsString(5) + "] = byte(ln >> 8)\n	buf[" + sm.getSLIAsString(6) + "] = byte(ln >> 16)\n	buf[" + sm.getSLIAsString(7) + "] = byte(ln >> 24)\n"
-				sm.GData += "	copy(buf[hsi:], " + sm.FRN + in + "[:])\n	hsi += ln\n"
+				sm.GData += "	b[" + sm.getSLIAsString(0) + "] = byte(hsi)\n	b[" + sm.getSLIAsString(1) + "] = byte(hsi >> 8)\n	b[" + sm.getSLIAsString(2) + "] = byte(hsi >> 16)\n	b[" + sm.getSLIAsString(3) + "] = byte(hsi >> 24)\n"
+				sm.GData += "	b[" + sm.getSLIAsString(4) + "] = byte(ln)\n	b[" + sm.getSLIAsString(5) + "] = byte(ln >> 8)\n	b[" + sm.getSLIAsString(6) + "] = byte(ln >> 16)\n	b[" + sm.getSLIAsString(7) + "] = byte(ln >> 24)\n"
+				sm.GData += "	copy(b[hsi:], " + sm.FRN + in + "[:])\n	hsi += ln\n"
 				sm.LSI += 8
 			default:
 				// TODO::: get related type by its name as t.Elt.(*ast.Ident).Name
