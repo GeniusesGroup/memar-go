@@ -4,7 +4,6 @@ package http
 
 import (
 	"net/textproto"
-	"net/url"
 	"strings"
 )
 
@@ -51,20 +50,6 @@ func (h header) SetValue(key string, value string) {
 // Key must already be in CanonicalHeaderKey form.
 func (h header) Del(key string) {
 	delete(h, key)
-}
-
-// GetHost returns host of request by RFC 7230, section 5.3 rules: Must treat
-//		GET / HTTP/1.1
-//		Host: www.sabz.city
-// and
-//		GET https://www.sabz.city/ HTTP/1.1
-//		Host: apis.sabz.city
-// the same. In the second case, any Host line is ignored.
-func (h header) GetHost(u *url.URL) (host string) {
-	if len(u.Host) == 0 {
-		return h.GetValue(HeaderKeyHost)
-	}
-	return u.Host
 }
 
 // GetCookies parses and returns the Cookie headers.

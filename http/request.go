@@ -3,7 +3,6 @@
 package http
 
 import (
-	"net/url"
 	"strings"
 	"unsafe"
 )
@@ -12,7 +11,7 @@ import (
 // https://tools.ietf.org/html/rfc2616#section-5
 type Request struct {
 	Method  string
-	URI     string
+	URI     URI
 	Version string
 	Header  header
 	Body    []byte
@@ -29,15 +28,20 @@ func MakeNewRequest() (r *Request) {
 func (r *Request) Marshal() (httpPacket []byte) {
 	// Make packet by twice size of body
 	httpPacket = make([]byte, 0, len(r.Body)*2)
-	
+
 	httpPacket = append(httpPacket, r.Method...)
 	httpPacket = append(httpPacket, Space)
-	httpPacket = append(httpPacket, r.URI...)
+
+	r.Header.SetValue(HeaderKeyHost, r.URI.Authority)
+	httpPacket = append(httpPacket, r.URI.MarshalRequestURI()...)
 	httpPacket = append(httpPacket, Space)
+
 	httpPacket = append(httpPacket, r.Version...)
 	httpPacket = append(httpPacket, CRLF...)
+
 	r.Header.Marshal(&httpPacket)
 	httpPacket = append(httpPacket, CRLF...)
+
 	httpPacket = append(httpPacket, r.Body...)
 	return
 }
@@ -62,7 +66,7 @@ func (r *Request) UnMarshal(httpPacket []byte) (err error) {
 	if index == -1 {
 		return ErrParsedErrorOnURI
 	}
-	r.URI = s[:index]
+	r.URI.UnMarshal(s[:index])
 	s = s[index+1:]
 
 	index = strings.IndexByte(s, '\n')
@@ -74,20 +78,23 @@ func (r *Request) UnMarshal(httpPacket []byte) (err error) {
 
 	// TODO::: check performance below vs make new Int var for bodyStart and add to it in each IndexByte()
 	// vs have 4 Int for each index
-	index = len(r.Method) + len(r.URI) + len(r.Method) + 4
+	index = len(r.Method) + len(r.URI.Raw) + len(r.Method) + 4
 
 	index += r.Header.UnMarshal(s)
 	r.Body = httpPacket[index:]
 	return
 }
 
-// GetURI returns decodes of r.URI
-func (r *Request) GetURI() (u *url.URL, err error) {
-	return url.Parse(r.URI)
-}
-
-// SetURI encodes given URI to request
-func (r *Request) SetURI(u *url.URL) {
-	r.Header.SetValue(HeaderKeyHost, u.Host)
-	r.URI = u.Path + "?" + u.RawQuery
+// GetHost returns host of request by RFC 7230, section 5.3 rules: Must treat
+//		GET / HTTP/1.1
+//		Host: www.sabz.city
+// and
+//		GET https://www.sabz.city/ HTTP/1.1
+//		Host: apis.sabz.city
+// the same. In the second case, any Host line is ignored.
+func (r *Request) GetHost() (host string) {
+	if len(r.URI.Authority) == 0 {
+		return r.Header.GetValue(HeaderKeyHost)
+	}
+	return r.URI.Authority
 }
