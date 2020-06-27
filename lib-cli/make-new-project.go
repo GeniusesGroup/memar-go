@@ -19,37 +19,37 @@ type MakeNewProjectRes struct{}
 // MakeNewProject :
 func MakeNewProject(req *MakeNewProjectReq) (res *MakeNewProjectRes, err error) {
 	/* Folders */
-	var apisF = assets.NewFolder(FolderNameAPIs)
-	apisF.State = assets.StateChanged
-	req.Repo.SetDependency(apisF)
-	var dbF = assets.NewFolder(FolderNameDB)
-	dbF.State = assets.StateChanged
-	req.Repo.SetDependency(dbF)
+	var servicesF = assets.NewFolder(FolderNameServices)
+	servicesF.State = assets.StateChanged
+	req.Repo.SetDependency(servicesF)
+	var datastoreF = assets.NewFolder(FolderNameDataStore)
+	datastoreF.State = assets.StateChanged
+	req.Repo.SetDependency(datastoreF)
 	var guiF = assets.NewFolder(FolderNameGUI)
 	guiF.State = assets.StateChanged
 	req.Repo.SetDependency(guiF)
 
-	/* APIs */
-	// Folders
-	var services = assets.NewFolder(FolderNameServices)
-	services.State = assets.StateChanged
-	apisF.SetDependency(services)
-	var datastore = assets.NewFolder(FolderNameDataStore)
-	datastore.State = assets.StateChanged
-	apisF.SetDependency(datastore)
-
-	/* DB */
-	// /db/main.go
-	var DBMainGo = &assets.File{}
-	err = gg.MakeMainFile(DBMainGo)
+	/* Services */
+	// /services/init.go
+	var servicesInitGO = &assets.File{}
+	err = ag.MakeServicesInitFile(servicesInitGO)
 	if err != nil {
 		return nil, err
 	}
-	dbF.SetFile(DBMainGo)
+	servicesF.SetFile(servicesInitGO)
+
+	/* Datastore */
+	// /datastore/init.go
+	var datastoreInitGO = &assets.File{}
+	err = gg.MakeDataStoreInitFile(datastoreInitGO)
+	if err != nil {
+		return nil, err
+	}
+	datastoreF.SetFile(datastoreInitGO)
 
 	/* GUI */
 	// Folders
-	var pages = assets.NewFolder(FolderNameGGPages)
+	var pages = assets.NewFolder(FolderNameGUIPages)
 	pages.State = assets.StateChanged
 	guiF.SetDependency(pages)
 	var landings = assets.NewFolder(FolderNameGUILandings)

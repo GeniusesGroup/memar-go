@@ -16,20 +16,17 @@ import (
 )
 
 const (
-	// version must update in each release!
-	version = "v0.6.7"
+	// it is better to update version in each release!
+	version = "v0.6.9"
 )
 
 // Some mutable folder name!
 const (
-	FolderNameAPIs = "apis"
-	FolderNameDB   = "db"
-	FolderNameGUI  = "gui"
-
-	FolderNameServices  = "services"
 	FolderNameDataStore = "datastore"
+	FolderNameGUI       = "gui"
+	FolderNameServices  = "services"
 
-	FolderNameGGPages     = "pages"
+	FolderNameGUIPages    = "pages"
 	FolderNameGUILandings = "landings"
 	FolderNameGUIWidgets  = "widgets"
 
@@ -85,14 +82,14 @@ func main() {
 	buildLog("*************** Common Services *************** ")
 	buildLog("10  : Add project template to repository")
 	buildLog(" *************** Achaemenid Services *************** ")
-	buildLog("30  : Add new Achaemenid service file to apis/services folder")
-	buildLog("31  : Update exiting Achaemenid file in apis/services folder")
+	buildLog("30  : Add new Achaemenid service file to ./services/ folder")
+	buildLog("31  : Update exiting Achaemenid file in ./services/ folder")
 	buildLog("32  : Make Achaemenid service GO-SDK")
 	buildLog("33  : Make Achaemenid service JS-SDK")
 	buildLog("40  : Make www assets file from gui folder")
 	buildLog(" *************** Ganjine Services *************** ")
-	buildLog("50  : Add new Ganjine file to apis/datastore folder")
-	buildLog("51  : Update exiting Ganjine file in apis/datastore folder")
+	buildLog("50  : Add new Ganjine file to ./datastore/ folder")
+	buildLog("51  : Update exiting Ganjine file in ./datastore/ folder")
 	buildLog(" *************** Syllab Services *************** ")
 	buildLog("70  : Update Syllab encoder||decoder methods in given file name by safe manner")
 	buildLog("71  : Update Syllab encoder||decoder methods in given file name by unsafe manner")
@@ -155,7 +152,7 @@ Choose:
 			buildLog("Add new Achaemenid service template face this error:", err)
 			break
 		}
-		repo.Dependencies[FolderNameAPIs].Dependencies[FolderNameServices].SetFile(&file)
+		repo.Dependencies[FolderNameServices].SetFile(&file)
 		buildLog("Add new Achaemenid service had been succeed!!\n")
 	case 31:
 		buildLog("Enter desire full file name with extension!")
@@ -235,7 +232,7 @@ Choose:
 			buildLog("Add new Ganjine file template face this error:", err)
 			break
 		}
-		repo.Dependencies[FolderNameAPIs].Dependencies[FolderNameDataStore].SetFile(&file)
+		repo.Dependencies[FolderNameDataStore].SetFile(&file)
 		buildLog("Add new structure had been succeed!!\n")
 	case 51:
 		buildLog("Enter desire full file name with extension!")

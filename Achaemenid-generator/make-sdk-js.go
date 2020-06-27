@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"strings"
 	"text/template"
+	"time"
 	"unsafe"
 
 	"../assets"
@@ -25,11 +26,17 @@ func MakeJSSDK(file *assets.File) (jsSDK *assets.File, err error) {
 	}
 
 	var service = struct {
-		ID          uint64
-		Name        string
-		Description string
-		Request     string
-		Response    string
+		ID                uint64
+		Name              string
+		IssueDate         string
+		ExpiryDate        string
+		ExpireInFavorOf   string
+		ExpireInFavorOfID string
+		Status            string
+		Description       string
+		TAGS              string
+		Request           string
+		Response          string
 	}{}
 
 	// find some data from achaemenid.Service variable
@@ -58,6 +65,9 @@ func MakeJSSDK(file *assets.File) (jsSDK *assets.File, err error) {
 					// name of const||var: gd.Names[0].Name
 					// type of const||var (if any package name): gd.Type.(*ast.SelectorExpr).X.(*ast.Ident).Name)
 					// type of const||var: gd.Type.(*ast.SelectorExpr).Sel.Name)
+					if len(gd.Values) == 0 {
+						continue
+					}
 					switch val := gd.Values[0].(type) {
 					case *ast.Ident:
 						// Don't need ident here
@@ -83,10 +93,31 @@ func MakeJSSDK(file *assets.File) (jsSDK *assets.File, err error) {
 											// fmt.Printf("Name %v\n", elt.Value.(*ast.BasicLit).Value)
 											service.Name, _ = strconv.Unquote(elt.Value.(*ast.BasicLit).Value)
 											continue
+										case "IssueDate":
+											var ut, _ = strconv.ParseInt(elt.Value.(*ast.BasicLit).Value, 10, 64)
+											var t = time.Unix(ut, 0)
+											service.IssueDate = t.Format("02/01/2006 15:04:05 MST")
+											continue
+										case "ExpiryDate":
+											var ut, _ = strconv.ParseInt(elt.Value.(*ast.BasicLit).Value, 10, 64)
+											var t = time.Unix(ut, 0)
+											service.ExpiryDate = t.Format("02/01/2006 15:04:05 MST")
+											continue
+										case "ExpireInFavorOf":
+											service.ExpireInFavorOf = elt.Value.(*ast.BasicLit).Value
+											continue
+										case "ExpireInFavorOfID":
+											service.ExpireInFavorOfID = elt.Value.(*ast.BasicLit).Value
+											continue
+										case "Status":
+											service.Status = elt.Value.(*ast.SelectorExpr).Sel.Name
+											continue
 										case "Description":
 											// fmt.Printf("Description %v\n", elt.Value.(*ast.CompositeLit).Elts[0].(*ast.BasicLit).Value)
 											service.Description, _ = strconv.Unquote(elt.Value.(*ast.CompositeLit).Elts[0].(*ast.BasicLit).Value)
 											continue
+										case "TAGS":
+											service.TAGS = file.DataString[elt.Value.(*ast.CompositeLit).Lbrace : elt.Value.(*ast.CompositeLit).Rbrace-1]
 										}
 									}
 								}
@@ -140,7 +171,6 @@ func makeJSReqResType(t *ast.TypeSpec) (string, error) {
 			case "int", "uint":
 				return "", ErrTypeIncludeIllegalChild
 			case "bool", "byte", "uint8", "int8", "uint16", "int16", "uint32", "int32", "uint64", "int64", "string":
-				data = append(data, "	"+in+" ["+number+"]"+aType+"\n"...)
 				data = append(data, `	"`+in+`": [], // [`+number+"]"+aType+"\n"...)
 			default:
 				// TODO::: get related type by its name as t.Elt.(*ast.Ident).Name
@@ -174,7 +204,9 @@ func makeJSReqResType(t *ast.TypeSpec) (string, error) {
 	}
 
 	// remove unneeded last new line
-	data = data[:len(data)-1]
+	if len(data) != 0 {
+		data = data[:len(data)-1]
+	}
 	return *(*string)(unsafe.Pointer(&data)), nil
 }
 
@@ -183,25 +215,34 @@ var jsSDKTemplate = template.Must(template.New("jsSDKTemplate").Parse(`
 // Auto-generated, edits will be overwritten
 
 /*
-Usage - Also you can use "async function (){ try{await}catch{} }" instead func().then().catch():
+Service Details :
+	- Status : {{.Status}}  >> https://en.wikipedia.org/wiki/Software_release_life_cycle
+	- IssueDate : {{.IssueDate}}
+	- ExpireDate : {{.ExpiryDate}}
+	- ExpireInFavorOf :  {{.ExpireInFavorOf}}
+	- ExpireInFavorOfID : {{.ExpireInFavorOfID}}
+	- TAGS : {{.TAGS}}
 
-// {{.Name}}Req is the request structure of {{.Name}}()
-const {{.Name}}Req = {
-{{.Request}}
-}
-// {{.Name}}Res is the response structure of {{.Name}}()
-const {{.Name}}Res = {
-{{.Response}}
-}
-{{.Name}}({{.Name}}Req)
-    .then(res => {
-		// Handle response
-        console.log(res)
-    })
-    .catch(err => {
-        // Handle error situation here
-        console.log(err)
-    })
+Usage :
+	// {{.Name}}Req is the request structure of {{.Name}}()
+	const {{.Name}}Req = {
+		{{.Request}}
+	}
+	// {{.Name}}Res is the response structure of {{.Name}}()
+	const {{.Name}}Res = {
+    	{{.Response}}
+	}
+	{{.Name}}({{.Name}}Req)
+		.then(res => {
+			// Handle response
+			console.log(res)
+		})
+		.catch(err => {
+			// Handle error situation here
+			console.log(err)
+		})
+
+Also you can use "async function (){ try{await func()}catch (err){} }" instead "func(req).then(res).catch(err)"
 */
 
 // {{.Name}} {{.Description}}
@@ -251,9 +292,9 @@ async function {{.Name}}(req) {
                 throw res.text()
         }
     } catch (err) {
+		// TODO::: new more check here for error type!
         // TODO::: Toast to GUI about no network connectivity!
         throw err
     }
 }
-
 `))

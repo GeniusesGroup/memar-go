@@ -12,6 +12,7 @@ import (
 	"strconv"
 	"strings"
 	"text/template"
+	"time"
 	"unsafe"
 
 	"../assets"
@@ -33,11 +34,17 @@ func MakeGoSDK(file *assets.File) (goSDK *assets.File, err error) {
 	}
 
 	var service = struct {
-		ID          uint64
-		Name        string
-		Description string
-		Request     string
-		Response    string
+		ID                uint64
+		Name              string
+		IssueDate         string
+		ExpiryDate        string
+		ExpireInFavorOf   string
+		ExpireInFavorOfID string
+		Status            string
+		Description       string
+		TAGS              string
+		Request           string
+		Response          string
 	}{}
 
 	// find some data from achaemenid.Service variable
@@ -89,10 +96,31 @@ func MakeGoSDK(file *assets.File) (goSDK *assets.File, err error) {
 											// fmt.Printf("Name %v\n", elt.Value.(*ast.BasicLit).Value)
 											service.Name, _ = strconv.Unquote(elt.Value.(*ast.BasicLit).Value)
 											continue
+										case "IssueDate":
+											var ut, _ = strconv.ParseInt(elt.Value.(*ast.BasicLit).Value, 10, 64)
+											var t = time.Unix(ut, 0)
+											service.IssueDate = t.Format("02/01/2006 15:04:05 MST")
+											continue
+										case "ExpiryDate":
+											var ut, _ = strconv.ParseInt(elt.Value.(*ast.BasicLit).Value, 10, 64)
+											var t = time.Unix(ut, 0)
+											service.ExpiryDate = t.Format("02/01/2006 15:04:05 MST")
+											continue
+										case "ExpireInFavorOf":
+											service.ExpireInFavorOf = elt.Value.(*ast.BasicLit).Value
+											continue
+										case "ExpireInFavorOfID":
+											service.ExpireInFavorOfID = elt.Value.(*ast.BasicLit).Value
+											continue
+										case "Status":
+											service.Status = elt.Value.(*ast.SelectorExpr).Sel.Name
+											continue
 										case "Description":
 											// fmt.Printf("Description %v\n", elt.Value.(*ast.CompositeLit).Elts[0].(*ast.BasicLit).Value)
 											service.Description, _ = strconv.Unquote(elt.Value.(*ast.CompositeLit).Elts[0].(*ast.BasicLit).Value)
 											continue
+										case "TAGS":
+											service.TAGS = file.DataString[elt.Value.(*ast.CompositeLit).Lbrace:elt.Value.(*ast.CompositeLit).Rbrace-1]
 										}
 									}
 								}
@@ -190,6 +218,19 @@ import (
 	"../libgo/achaemenid"
 )
 
+/*
+Service Details:
+	- Status : {{.Status}}  >> https://en.wikipedia.org/wiki/Software_release_life_cycle
+	- IssueDate : {{.IssueDate}}
+	- ExpireDate : {{.ExpiryDate}}
+	- ExpireInFavorOf :  {{.ExpireInFavorOf}}
+	- ExpireInFavorOfID : {{.ExpireInFavorOfID}}
+	- TAGS : {{.TAGS}}
+
+Usage :
+
+*/
+
 // {{.Name}}Req is the request structure of {{.Name}}()
 type {{.Name}}Req struct {
 {{.Request}}
@@ -229,11 +270,15 @@ func {{.Name}}(s *achaemenid.Server, req *{{.Name}}Req) (res *{{.Name}}Res, err 
 	return
 }
 
-func (req *GetRecordReq) syllabEncoder() (buf []byte) {
+func (req *{{.Name}}Req) validator() (err error) {
 	return
 }
 
-func (res *GetRecordRes) syllabDecoder(buf []byte) (err error) {
+func (req *{{.Name}}Req) syllabEncoder() (buf []byte) {
+	return
+}
+
+func (res *{{.Name}}Res) syllabDecoder(buf []byte) (err error) {
 	return
 }
 `))

@@ -36,16 +36,20 @@ var mainFileTemplate = template.Must(template.New("main").Parse(`
 package main
 
 import (
-	"./apis/datastore"
-	ps "./apis/services"
+	"./datastore"
+	ps "./services"
+	gs "./libgo/Ganjine-services"
 	"./libgo/achaemenid"
 	as "./libgo/achaemenid-services"
 	"./libgo/assets"
+	"./libgo/ganjine"
 	"./libgo/www"
 )
 
 // Server is just address of Achaemenid DefaultServer for easily usage
 var server = achaemenid.DefaultServer
+
+var cluster *ganjine.Cluster
 
 func init() {
 	var err error
@@ -113,11 +117,18 @@ func init() {
 
 	// Register default Achaemenid services
 	as.Init(server)
-	// Register platform defined custom service in ./apis/services/
+	// Register default Ganjine services
+	gs.Init(server)
+	// Register platform defined custom service in ./services/ folder
 	ps.Init(server)
 
+	err = cluster.Init(server)
+	if err != nil {
+		panic(err)
+	}
+
 	// Initialize datastore
-	datastore.Init(server)
+	datastore.Init(server, cluster)
 }
 
 func main() {

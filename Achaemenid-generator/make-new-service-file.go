@@ -11,11 +11,21 @@ import (
 	"time"
 
 	"../assets"
+	"../errors"
+)
+
+// Errors
+var (
+	ErrFileNameIsNotValid = errors.New("FileNameIsNotValid", "Requested file name is not exist or in bad shape")
 )
 
 // MakeNewServiceFile use to make new service template file!
 // Pass desire service name in ```kebab-case``` like ```register-new-person``` in file.Name
 func MakeNewServiceFile(file *assets.File) (err error) {
+	if len(file.Name) == 0 {
+		return ErrFileNameIsNotValid
+	}
+
 	file.FullName = file.Name + ".go"
 	file.Extension = "go"
 
@@ -53,9 +63,9 @@ var serviceFileTemplate = template.Must(template.New("serviceFileTemplate").Pars
 package services
 
 import (
-	"../../libgo/achaemenid"
-	"../../libgo/http"
-	"../../libgo/json"
+	"../libgo/achaemenid"
+	"../libgo/http"
+	"../libgo/json"
 )
 
 var {{.ServiceLowerName}}Service = achaemenid.Service{
@@ -85,7 +95,7 @@ func {{.ServiceUpperName}}SRPC(s *achaemenid.Server, st *achaemenid.Stream) {
 		return
 	}
 
-	var res = &{{.ServiceLowerName}}Res{}
+	var res *{{.ServiceLowerName}}Res
 	res, st.ReqRes.Err = {{.ServiceLowerName}}(st, req)
 	// Check if any error occur in bussiness logic
 	if st.ReqRes.Err != nil {
@@ -109,7 +119,7 @@ func {{.ServiceUpperName}}HTTP(s *achaemenid.Server, st *achaemenid.Stream, http
 		return
 	}
 
-	var res = &{{.ServiceLowerName}}Res{}
+	var res *{{.ServiceLowerName}}Res
 	res, st.ReqRes.Err = {{.ServiceLowerName}}(st, req)
 	// Check if any error occur in bussiness logic
 	if st.ReqRes.Err != nil {
@@ -132,11 +142,15 @@ type {{.ServiceLowerName}}Req struct {}
 type {{.ServiceLowerName}}Res struct {}
 
 func {{.ServiceLowerName}}(st *achaemenid.Stream, req *{{.ServiceLowerName}}Req) (res *{{.ServiceLowerName}}Res, err error) {
+	// Authenticate and authorize request first by service policy. Get help from st.Authorize...() methods!
+	
 	// Validate data here due to service use internally!
 	err = req.validator()
 	if err != nil {
 		return
 	}
+
+	res = &{{.ServiceLowerName}}Res{}
 
 	return
 }
@@ -151,7 +165,7 @@ func (req *{{.ServiceLowerName}}Req) syllabDecoder(buf []byte) (err error) {
 
 func (req *{{.ServiceLowerName}}Req) jsonDecoder(buf []byte) (err error) {
 	// TODO::: Help to complete json generator package to have better performance!
-	err = json.Unmarshal(buf, req)
+	err = json.UnMarshal(buf, req)
 	return
 }
 
