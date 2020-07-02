@@ -17,7 +17,7 @@ type GetCreditRes struct {
 func (a *Asanak) GetCredit() (res *GetCreditRes, err error) {
 	// Check if no connection exist to use!
 	if a.conn == nil {
-		return // err
+		return nil, ErrNoConnectionToAsanak
 	}
 
 	var httpReq = http.MakeNewRequest()
@@ -31,7 +31,7 @@ func (a *Asanak) GetCredit() (res *GetCreditRes, err error) {
 	httpReq.Header.SetValue(http.HeaderKeyCacheControl, "no-cache")
 
 	// make a slice by needed size to avoid copy data on append!
-	httpReq.Body = make([]byte, 0, sendSMSFixedSize+a.len)
+	httpReq.Body = make([]byte, 0, sendSMSFixedSize+a.fixSizeDatalen)
 	// set username
 	httpReq.Body = append(httpReq.Body, username...)
 	httpReq.Body = append(httpReq.Body, a.UserName...)
@@ -46,21 +46,23 @@ func (a *Asanak) GetCredit() (res *GetCreditRes, err error) {
 	reqStream.Payload = httpReq.Marshal()
 	// Block and wait for response
 	err = achaemenid.HTTPOutcomeRequestHandler(a.server, reqStream)
-	if err != nil || resStream.Err != nil {
-		return // err
+	if err != nil {
+		return nil, err
 	}
 
 	var httpRes = http.MakeNewResponse()
 	err = httpRes.UnMarshal(resStream.Payload)
 	if err == nil {
-		return // err
+		return nil, err
 	}
 
 	switch httpRes.StatusCode {
 	case http.StatusBadRequestCode:
+		return nil, ErrBadRequest
 	case http.StatusUnauthorizedCode:
-		// return related error
+		panic("Authorization failed with asanak services! Double check account username & password")
 	case http.StatusInternalServerErrorCode:
+		return nil, ErrAsanakServerInternalError
 	}
 
 	// TODO::: decode body by???

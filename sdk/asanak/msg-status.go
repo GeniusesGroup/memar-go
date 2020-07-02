@@ -41,10 +41,15 @@ const (
 
 // MsgStatus send req to asanak and return res to caller! it block caller until finish proccess.
 // https://panel.asanak.com/webservice/v1rest/msgstatus?Username=$USERNAME&Password=$PASSWORD&msgid=$MSGID
-func (a *Asanak) MsgStatus(req *MsgStatusReq) (res *MsgStatusRes, err error) {
+func (a *Asanak) MsgStatus(req *MsgStatusReq) (res MsgStatusRes, err error) {
 	// Due to legal paper not allow to send more than 100 destination at a request!
-	if len(req.MsgIDs) > 99 {
-		return // TODO::: error??
+	var ln = len(req.MsgIDs)
+	if ln == 0 || ln > 99 {
+		panic("Message IDs number can't be 0 or more than 100")
+	}
+	// Check if no connection exist to use!
+	if a.conn == nil {
+		return nil, ErrNoConnectionToAsanak
 	}
 
 	var httpReq = http.MakeNewRequest()
@@ -60,7 +65,7 @@ func (a *Asanak) MsgStatus(req *MsgStatusReq) (res *MsgStatusRes, err error) {
 
 	var msgIDLen = len(req.MsgIDs)
 	// make a slice by needed size to avoid copy data on append! '+msgIDLen' use for destination seprators(',')!
-	httpReq.Body = make([]byte, 0, sendSMSFixedSize+a.len+msgIDLen+(msgIDLen*len(req.MsgIDs[0])))
+	httpReq.Body = make([]byte, 0, sendSMSFixedSize+a.fixSizeDatalen+msgIDLen+(msgIDLen*len(req.MsgIDs[0])))
 	// set username
 	httpReq.Body = append(httpReq.Body, username...)
 	httpReq.Body = append(httpReq.Body, a.UserName...)
@@ -68,13 +73,11 @@ func (a *Asanak) MsgStatus(req *MsgStatusReq) (res *MsgStatusRes, err error) {
 	httpReq.Body = append(httpReq.Body, password...)
 	httpReq.Body = append(httpReq.Body, a.Password...)
 	// set destination numbers
-	httpReq.Body = append(httpReq.Body, destination...)
+	httpReq.Body = append(httpReq.Body, msgID...)
 	for i := 0; i < msgIDLen; i++ {
 		httpReq.Body = append(httpReq.Body, req.MsgIDs[i]...)
 		httpReq.Body = append(httpReq.Body, ',') // "," || "-"
 	}
-	// set message text
-	httpReq.Body = append(httpReq.Body, message...)
 
 	// Make new request-response streams
 	var reqStream, resStream *achaemenid.Stream
@@ -83,8 +86,8 @@ func (a *Asanak) MsgStatus(req *MsgStatusReq) (res *MsgStatusRes, err error) {
 	reqStream.Payload = httpReq.Marshal()
 	// Block and wait for response
 	err = achaemenid.HTTPOutcomeRequestHandler(a.server, reqStream)
-	if err != nil || resStream.Err != nil {
-		return // err
+	if err != nil {
+		return nil, err
 	}
 
 	var httpRes = http.MakeNewResponse()
@@ -95,12 +98,14 @@ func (a *Asanak) MsgStatus(req *MsgStatusReq) (res *MsgStatusRes, err error) {
 
 	switch httpRes.StatusCode {
 	case http.StatusBadRequestCode:
+		return nil, ErrBadRequest
 	case http.StatusUnauthorizedCode:
-		// return related error
+		panic("Authorization failed with asanak services! Double check account username & password")
 	case http.StatusInternalServerErrorCode:
+		return nil, ErrAsanakServerInternalError
 	}
 
-	res = &MsgStatusRes{}
+	res = MsgStatusRes{}
 	err = res.jsonDecoder(httpRes.Body)
 
 	return

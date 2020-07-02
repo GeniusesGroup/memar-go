@@ -15,21 +15,20 @@ type SendSMSReq struct {
 }
 
 // SendSMSRes is response structure of SendSMS()
-type SendSMSRes struct {
-	MsgIDs []string // max 100 number
-}
+type SendSMSRes []uint64 // max 100 number
 
 // SendSMS send req to asanak and return res to caller! it block caller until finish proccess.
 // https://panel.asanak.com/webservice/v1rest/sendsms?username=$USERNAME&password=$PASSWORD&
 // source=$SOURCE&destination=$DESTINATION&message=$MESSAGE
-func (a *Asanak) SendSMS(req *SendSMSReq) (res *SendSMSRes, err error) {
+func (a *Asanak) SendSMS(req *SendSMSReq) (res SendSMSRes, err error) {
 	// Due to legal paper not allow to send more than 100 destination at a request!
-	if len(req.Destination) > 99 {
-		return // TODO::: error??
+	var ln = len(req.Destination)
+	if ln == 0 || ln > 99 {
+		panic("Destination number can't be 0 or more than 100")
 	}
 	// Check if no connection exist to use!
 	if a.conn == nil {
-		return // err
+		return nil, ErrNoConnectionToAsanak
 	}
 
 	var httpReq = http.MakeNewRequest()
@@ -44,7 +43,7 @@ func (a *Asanak) SendSMS(req *SendSMSReq) (res *SendSMSRes, err error) {
 
 	var desLn = len(req.Destination)
 	// make a slice by needed size to avoid copy data on append! '+desLN' use for destination seprators(',')!
-	httpReq.Body = make([]byte, 0, sendSMSFixedSize+a.len+len(req.Message)+desLn+(desLn*maxNumberLength))
+	httpReq.Body = make([]byte, 0, sendSMSFixedSize+a.fixSizeDatalen+len(req.Message)+desLn+(desLn*maxNumberLength))
 	// set username
 	httpReq.Body = append(httpReq.Body, username...)
 	httpReq.Body = append(httpReq.Body, a.UserName...)
@@ -62,6 +61,7 @@ func (a *Asanak) SendSMS(req *SendSMSReq) (res *SendSMSRes, err error) {
 	}
 	// set message text
 	httpReq.Body = append(httpReq.Body, message...)
+	httpReq.Body = append(httpReq.Body, req.Message...)
 
 	// Make new request-response streams
 	var reqStream, resStream *achaemenid.Stream
@@ -70,24 +70,26 @@ func (a *Asanak) SendSMS(req *SendSMSReq) (res *SendSMSRes, err error) {
 	reqStream.Payload = httpReq.Marshal()
 	// Block and wait for response
 	err = achaemenid.HTTPOutcomeRequestHandler(a.server, reqStream)
-	if err != nil || resStream.Err != nil {
-		return // err
+	if err != nil {
+		return nil, err
 	}
 
 	var httpRes = http.MakeNewResponse()
 	err = httpRes.UnMarshal(resStream.Payload)
 	if err == nil {
-		return // err
+		return nil, err
 	}
 
 	switch httpRes.StatusCode {
 	case http.StatusBadRequestCode:
+		return nil, ErrBadRequest
 	case http.StatusUnauthorizedCode:
-		// return related error
+		panic("Authorization failed with asanak services! Double check account username & password")
 	case http.StatusInternalServerErrorCode:
+		return nil, ErrAsanakServerInternalError
 	}
 
-	res = &SendSMSRes{}
+	res = SendSMSRes{}
 	err = res.jsonDecoder(httpRes.Body)
 
 	return

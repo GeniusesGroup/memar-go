@@ -4,6 +4,8 @@ package asanak
 
 import (
 	"../../achaemenid"
+	"../../errors"
+	"../../json"
 )
 
 // https://asanak.com/media/2019/02/Asanak_REST_Webservice_Documentation_v3.0.pdf
@@ -32,26 +34,53 @@ const (
 	msgID       = "&msgid="
 )
 
+// Errors
+var (
+	ErrNoConnectionToAsanak      = errors.New("NoConnectionToAsanak", "No connection exist to Asanak servers due to temporary or long term problem")
+	ErrBadRequest                = errors.New("BadRequest", "Some given data in request must be invalid or server not accept them")
+	ErrAsanakServerInternalError = errors.New("AsanakServerInternalError", "Asanak server encounter problem due to temporary or long term problem!")
+)
+
 // Asanak store data to send and receive sms by asanak provider!
 type Asanak struct {
-	UserName     string
-	Password     string
-	SourceNumber string
-	RecChan      chan *GetSmsByAsanak
-	len          int
-	server       *achaemenid.Server
-	conn         *achaemenid.Connection
+	UserName       string
+	Password       string
+	SourceNumber   string
+	RecChan        chan *GetSmsByAsanak
+	fixSizeDatalen int
+	server         *achaemenid.Server
+	conn           *achaemenid.Connection
 }
 
-// Init use to initialize Asanak pointer by given data
-func (a *Asanak) Init(s *achaemenid.Server, userName, password, sourceNumber string) {
-	a = &Asanak{
-		UserName:     userName,
-		Password:     password,
-		SourceNumber: sourceNumber,
-		RecChan:      make(chan *GetSmsByAsanak),
-		len:          len(userName) + len(password) + len(sourceNumber),
-		server:       s,
+// Init use to initialize Asanak pointer by given server data.
+// Don't pass nil Asanak otherwise panic will occur.
+// Place "asanak.com.json" || "asanak.com.syllab" file in "secret" folder in top of repository
+func (a *Asanak) Init(s *achaemenid.Server) {
+	var f = s.Assets.Secret.GetFile("asanak.com.syllab")
+	if f == nil {
+		f = s.Assets.Secret.GetFile("asanak.com.json")
 	}
-	// make connection to asanak server!
+	if f != nil {
+		a.jsonDecoder(f.Data)
+	} else {
+		panic("Can't find 'asanak.com.json' or 'asanak.com.syllab' file in 'secret' folder in top of repository")
+	}
+
+	a.RecChan = make(chan *GetSmsByAsanak)
+	a.fixSizeDatalen = len(a.UserName) + len(a.Password) + len(a.SourceNumber)
+	a.server = s
+	// make connection to asanak server by domain!
+}
+
+/* decode json data in this format:
+{
+    "UserName": "",
+    "Password": "",
+    "SourceNumber": ""
+}
+*/
+func (a *Asanak) jsonDecoder(buf []byte) (err error) {
+	// TODO::: Change to generator code for decode!
+	err = json.UnMarshal(buf, a)
+	return
 }
