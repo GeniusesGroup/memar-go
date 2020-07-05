@@ -52,7 +52,7 @@ func (f *Folder) ReadRepositoryFromFileSystem(dirname string) (err error) {
 		}
 	}
 
-	return nil
+	return
 }
 
 // WriteRepositoryToFileSystem use to write repository to file system!
@@ -61,6 +61,8 @@ func (f *Folder) WriteRepositoryToFileSystem(dirname string) (err error) {
 	for _, obj := range f.Files {
 		// Just write changed file
 		if obj.State > 0 {
+			// Indicate state to not change to don't overwrite it again!
+			obj.State = StateUnChanged
 			err = ioutil.WriteFile(path.Join(dirname, obj.FullName), obj.Data, 0755)
 			if err != nil {
 				return
@@ -71,6 +73,8 @@ func (f *Folder) WriteRepositoryToFileSystem(dirname string) (err error) {
 	for _, dep := range f.Dependencies {
 		// Just write folder if its not exist!
 		if dep.State > 0 {
+			// Indicate state to not change to don't overwrite it again!
+			dep.State = StateUnChanged
 			err = os.Mkdir(path.Join(dirname, dep.Name), 0755)
 			if err != nil {
 				return

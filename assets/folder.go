@@ -12,9 +12,18 @@ type Folder struct {
 	Dependencies map[string]*Folder // Name
 }
 
-// NewFolder will make new Folder object
+// NewFolder make new Folder object
 func NewFolder(name string) *Folder {
 	return &Folder{
+		Name:         name,
+		Files:        make(map[string]*File),
+		Dependencies: make(map[string]*Folder),
+	}
+}
+
+// NewFolder make new Folder object in given Folder as dependency.
+func (f *Folder) NewFolder(name string) {
+	f.Dependencies[name] = &Folder{
 		Name:         name,
 		Files:        make(map[string]*File),
 		Dependencies: make(map[string]*Folder),
