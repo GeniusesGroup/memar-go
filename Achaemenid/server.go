@@ -6,10 +6,13 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
-	"time"
 
-	"../assets"
+	"../log"
 )
+
+func init() {
+	log.Info("---------------Achaemenid Server---------------")
+}
 
 // DefaultServer use as default server.
 var DefaultServer = &defaultServer
@@ -18,17 +21,17 @@ var defaultServer Server
 // Server represents needed data to serving some functionality such as networks, ...
 // to both server and client apps!
 type Server struct {
-	Status          int // States locate in const of this file.
+	State           int // States locate in const of this file.
 	Manifest        Manifest
 	Networks        networks
 	StreamProtocols streamProtocols
 	Cryptography    cryptography
 	Services        services
 	Connections     connections
-	Assets          *assets.Folder // Any data files to serve!
+	Assets          assets
 }
 
-// Server Status
+// Server State
 const (
 	ServerStateStop int = iota
 	ServerStateRunning
@@ -36,30 +39,34 @@ const (
 	ServerStateStarting // plan to start
 )
 
-// Init method use to initialize related object with default data to prevent from panic!
-func (s *Server) Init() {
+// Init method use to initialize server object with default data.
+func (s *Server) Init() (err error) {
+	log.Info("Try to initialize server...")
+
 	if s == nil {
 		s = DefaultServer
 	}
+	s.Assets.init()
 	s.Services.init()
 	s.Connections.init()
+
+	// Make & Register cryptography data
+	err = s.Cryptography.init(s)
+	return
 }
 
 // Start will start the server.
 func (s *Server) Start() (err error) {
-	s.Status = ServerStateStarting
+	log.Info("Try to start server...")
+
+	s.State = ServerStateStarting
 
 	// Recover from panics if exist.
 	// defer panicHandler(s)
 
 	// Get UserGivenPermission from OS
 
-	// Make & Register publicKey
-	if err = s.Cryptography.registerPublicKey(); err != nil {
-		return err
-	}
-
-	s.Status = ServerStateRunning
+	s.State = ServerStateRunning
 
 	// register s.HandleGP() for income packet handler
 
@@ -67,47 +74,40 @@ func (s *Server) Start() (err error) {
 	var sig = make(chan os.Signal)
 	signal.Notify(sig, syscall.SIGTERM)
 	signal.Notify(sig, syscall.SIGINT)
-	// Block main goroutine by handle OS signals!
+	// Block main goroutine to handle OS signals!
 	s.HandleOSSignals(sig)
-	
+
 	return nil
 }
 
-// HandleOSSignals use to handle OS signals!
+// HandleOSSignals use to handle OS signals! Caller will block until we get an OS signal
 func (s *Server) HandleOSSignals(sigChannel chan os.Signal) {
 	var sig = <-sigChannel
+	log.Warn("caught signal: ", sig)
 	switch sig {
-	case syscall.SIGTERM:
-		// wait for our os signal to stop the app
-		// on the graceful stop channel
-		// this goroutine will block until we get an OS signal
-		Log("caught sig: %+v", sig)
-
-		// sleep for 60 seconds to waiting for app to finish,
-		Log("Waiting for server to finish, will take 60 seconds")
-
-		s.Shutdown()
-
-		os.Exit(s.Status)
+	// wait for our os signal to stop the app on the graceful stop channel
+	case syscall.SIGINT, syscall.SIGQUIT, syscall.SIGTERM, syscall.SIGKILL:
+		if s.State == ServerStateRunning {
+			s.State = ServerStateStopping
+			log.Warn("Waiting for server to finish and release proccess, It will take up to 60 seconds")
+			s.Shutdown()
+			os.Exit(s.State)
+		}
 	}
 }
 
 // Shutdown use to graceful stop server!!
 func (s *Server) Shutdown() {
-	// ... Do business Logic for shutdown
-	// Shutdown works by:
-	// first closing open listener for income packet and refuse all new packet,
-	// then closing all idle connections,
-	// and then waiting indefinitely for connections to return to idle
-	// and then shut down
+	s.Cryptography.shutdown()
+	s.Networks.shutdown()
+	s.Assets.shutdown()
+	log.SaveToStorage("Achaemenid", repoLocation)
 
-	// Send signal to DNS & Certificate server to revoke app data.
-
-	// Wait to finish above logic
-	time.Sleep(60 * time.Second)
+	// Wait to finish above logic, or kill app in --- second!
+	// time.Sleep(10 * time.Second)
 
 	// it must change to ServerStateStop(0) otherwise it means app can't close normally
-	s.Status = ServerStateRunning
+	s.State = ServerStateStop
 }
 
 // SendStream use to register a stream to send pool and automatically send to the peer.

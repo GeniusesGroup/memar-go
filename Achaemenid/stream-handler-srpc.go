@@ -3,8 +3,8 @@
 package achaemenid
 
 import (
-	"../srpc"
 	"../errors"
+	"../srpc"
 )
 
 const (
@@ -71,7 +71,7 @@ func SrpcOutcomeRequestHandler(s *Server, st *Stream) (err error) {
 	// Listen to response stream and decode error ID and return it to caller
 	var responseStatus streamState = <-st.StateChannel
 	if responseStatus == StreamStateReady {
-		
+
 	} else {
 
 	}
@@ -81,11 +81,8 @@ func SrpcOutcomeRequestHandler(s *Server, st *Stream) (err error) {
 
 // SrpcOutcomeResponseHandler use to handle outcoming sRPC response stream!
 func SrpcOutcomeResponseHandler(s *Server, st *Stream) (err error) {
-	// Convert error to errors.ExtendedError and write error code to stream payload.
-	var ee, ok = st.Err.(*errors.ExtendedError)
-	if ok {
-		srpc.SetID(st.Payload, ee.Code)
-	}
+	// write error code to stream payload if exist.
+	srpc.SetID(st.Payload, errors.GetCode(st.Err))
 
 	return
 }

@@ -8,6 +8,8 @@ import (
 	"net"
 	"strconv"
 	"time"
+
+	"../log"
 )
 
 /*
@@ -20,76 +22,33 @@ Please have plan to transform your network to GP protocol!
 type tcpNetwork struct {
 	s             *Server
 	port          uint16
-	streamHandler StreamHandler
 	tcpListener   net.Listener
 	tlsListener   net.Listener
+	certificate   tls.Certificate
 }
 
 // MakeTCPNetwork start a TCP listener and response request by given stream handler
-func MakeTCPNetwork(s *Server, port uint16, streamHandler StreamHandler) (err error) {
+func MakeTCPNetwork(s *Server, port uint16) (err error) {
 	var p string = ":" + strconv.FormatUint(uint64(port), 10)
 
 	var tcpListener net.Listener
 	tcpListener, err = net.Listen("tcp", p)
 	if err != nil {
-		Log("TCP listen on port "+p+" failed due to: ", p, err)
+		log.Warn("TCP listen on port "+p+" failed due to: ", err)
 		return
 	}
 
-	Log("Begin listen TCP on port: ", p)
+	log.Info("Begin listen TCP on port: ", p)
 
 	// register TCP network to s.Networks
 	var tcp = tcpNetwork{
 		s:             s,
 		port:          port,
-		streamHandler: streamHandler,
 		tcpListener:   tcpListener,
 	}
 	s.Networks.RegisterTCPNetwork(&tcp)
 
 	go handleTCPListener(s, &tcp, tcpListener)
-
-	return
-}
-
-// MakeTCPTLSNetwork start a TCP/TLS listener and response request in given stream handler
-func MakeTCPTLSNetwork(s *Server, port uint16, streamHandler StreamHandler) (err error) {
-	var p string = ":" + strconv.FormatUint(uint64(port), 10)
-
-	var tcpListener net.Listener
-	tcpListener, err = net.Listen("tcp", p)
-	if err != nil {
-		Log("TCP/TLS listen on port "+p+" failed due to: ", p, err)
-		return
-	}
-
-	Log("Begin listen TCP/TLS on port: ", p)
-
-	// TODO::: convert tls package usage and implement tls by this package connections!
-	var config = new(tls.Config)
-	config.NextProtos = []string{"http/1.1", "sRPC"}
-	config.PreferServerCipherSuites = true
-	config.Certificates = make([]tls.Certificate, 1)
-	// TODO::: get certificate from letsencrypt
-	// var certPEMBlock, keyPEMBlock []byte
-	config.Certificates[0], err = tls.X509KeyPair(certificate, privateKey)
-	if err != nil {
-		return
-	}
-
-	var tlsListener = tls.NewListener(tcpListener, config)
-
-	// register TCP network to s.Networks
-	var tcp = tcpNetwork{
-		s:             s,
-		port:          port,
-		streamHandler: streamHandler,
-		tcpListener:   tcpListener,
-		tlsListener:   tlsListener,
-	}
-	s.Networks.RegisterTCPNetwork(&tcp)
-
-	go handleTCPListener(s, &tcp, tlsListener)
 
 	return
 }
@@ -102,17 +61,17 @@ func handleTCPListener(s *Server, tcp *tcpNetwork, ln net.Listener) {
 		var tcpConn net.Conn
 		tcpConn, err = ln.Accept()
 		if err != nil {
-			// Log("TCP accepting occur error: ", err)
+			// log.Warn("TCP accepting occur error: ", err)
 			continue
 		}
 
-		// Log("Begin listen TCP conn on: ", conn.RemoteAddr())
+		// log.Info("Begin listen TCP conn on: ", tcpConn.RemoteAddr())
 
 		// set 1 minutes timeout for each connection
 		tcpConn.SetDeadline(time.Now().Add(60 * time.Second))
-		// conn.SetKeepAlive(true)
+		// tcpConn.SetKeepAlive(true)
 
-		// Due to nature of TCP and IPv4 NAT we have a lot problem and work to do!!
+		// TODO::: Due to nature of TCP and IPv4 NAT we have a lot problem and work to do!!
 		var conn = Connection{
 			StreamPool: map[uint32]*Stream{},
 		}
@@ -137,30 +96,29 @@ func handleTCPConn(s *Server, tcp *tcpNetwork, tcpConn net.Conn, conn *Connectio
 		// TODO::: check below performance!
 		// var buf bytes.Buffer
 		// io.Copy(&buf, conn)
-		// Log("total size:", buf.Len())
+		// log.Warn("total size:", buf.Len())
 
 		// Read the incoming connection into the buffer.
 		readSize, err = tcpConn.Read(buf)
 		if err == io.EOF || readSize == 0 {
 			// Peer already closed the connection, So we close it too!
-			// Log("Error reading: ", err)
+			// log.Warn("Closing error reading: ", err)
 			tcpConn.Close()
 			return
 		} else if err != nil {
-			// Log("Error reading: ", err.Error())
+			// log.Warn("Other error reading: ", err.Error())
 			tcpConn.Close()
 			return
 		}
 
 		var reqStream, resStream *Stream
 		reqStream, resStream, err = conn.MakeBidirectionalStream(0)
-
 		reqStream.Payload = buf[:readSize]
-		tcp.streamHandler(s, reqStream)
+		s.StreamProtocols.GetProtocolHandler(tcp.port)(s, reqStream)
 
 		readSize, err = tcpConn.Write(resStream.Payload)
 		if err != nil {
-			// Log("Error writing: ", err.Error())
+			// log.Warn("Error writing: ", err.Error())
 			tcpConn.Close()
 			return
 		}

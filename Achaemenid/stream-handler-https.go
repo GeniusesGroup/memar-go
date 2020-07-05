@@ -32,6 +32,7 @@ func HTTPSIncomeRequestHandler(s *Server, st *Stream) {
 	if err != nil {
 		st.Connection.FailedPacketsReceived++
 		res.SetStatus(http.StatusBadRequestCode, http.StatusBadRequestPhrase)
+		res.Body = []byte(err.Error())
 		goto End
 	}
 
@@ -51,9 +52,9 @@ func HTTPSIncomeRequestHandler(s *Server, st *Stream) {
 		// Add some header for /apis like not index by SE(google, ...), ...
 		res.Header.SetValue("X-Robots-Tag", "noindex")
 	} else if req.URI.Path == "/objects" {
-		var file = s.Assets.GetDependency("objects").GetFile(req.URI.Query)
+		var file = s.Assets.Objects.GetFile(req.URI.Query)
 		if file == nil {
-			file = s.Assets.GetFile("404.html")
+			file = s.Assets.WWW.GetFile("404.html")
 			res.SetStatus(http.StatusNotFoundCode, http.StatusNotFoundPhrase)
 		} else {
 			res.SetStatus(http.StatusOKCode, http.StatusOKPhrase)
@@ -80,14 +81,14 @@ func HTTPSIncomeRequestHandler(s *Server, st *Stream) {
 		// Route by URL
 		service = s.Services.GetServiceHandlerByURI(req.URI.Path)
 
-		// Route by assets
+		// Route by WWW assets
 		if service == nil {
 			var path = strings.Split(req.URI.Path, "/")
 			var lastPath = path[len(path)-1]
 
-			var file = s.Assets.GetFile(lastPath)
+			var file = s.Assets.WWW.GetFile(lastPath)
 			if file == nil {
-				file = s.Assets.GetFile("main.html")
+				file = s.Assets.WWW.GetFile("main.html")
 			}
 
 			// serve-to-robots

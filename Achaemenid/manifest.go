@@ -14,6 +14,7 @@ type Manifest struct {
 	AuthorizedAppDomain []string // Just accept request from these domains, neither guest nor users!
 	SupportedLanguages  []uint32
 	ManifestLanguages   []uint32
+	Organization        []string
 	Name                []string
 	Description         []string
 	TermsOfService      []string
@@ -26,7 +27,7 @@ type Manifest struct {
 // TechnicalInfo store some technical information but may different from really server condition!
 type TechnicalInfo struct {
 	UseAI               bool   // false: Open the lot of security concerns || true: use more resource.
-	AuthorizationServer string // Domain name that have sRPC needed store connection data. default is "apis.sabz.city"
+	AuthorizationServer string // Domain name that have sRPC needed store connection data. default is "sabz.city"
 
 	// Shutdown settings
 	ShutdownDelay time.Duration // the server will wait for at least this amount of time for active streams to finish!
@@ -74,4 +75,9 @@ type TechnicalInfo struct {
 	// Inside Router scope - Edge Computing - Caching Datastore						::/64
 	// End user device - 															::/128
 	MaxNetworkScalability uint8 // If ::/32 it mean also ::/1 but not ::/64!!
+
+	// DataStore
+	DataCenterClassForDataStore uint64 //
+	ReplicationNumber           uint64 // deafult is 3
+	NodeNumber                  uint64 // default is 3
 }
