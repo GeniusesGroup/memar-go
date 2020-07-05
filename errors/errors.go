@@ -5,32 +5,35 @@ package errors
 import (
 	"fmt"
 	"hash/crc32"
+	"strconv"
+
+	"../log"
 )
 
 var errPool = map[uint32]*ExtendedError{}
 
 // ExtendedError : This is a extended implementation of error.
 type ExtendedError struct {
-	Name        string
-	Text        string
-	Code        uint32
-	Information interface{}
+	name        string
+	text        string
+	code        uint32
+	information interface{}
 }
 
 // New returns an error that formats as the given name, text & code.
 // Never change name due to it is very complicated to troubleshooting errors on SDK!
 func New(name, text string) error {
 	var err = ExtendedError{
-		Name: name,
-		Text: text,
-		Code: crc32.ChecksumIEEE([]byte(name)),
+		name: name,
+		text: text,
+		code: crc32.ChecksumIEEE([]byte(name)),
 	}
-	if errPool[err.Code] != nil {
-		fmt.Print("Exiting error >> ", errPool[err.Code].Code, " : ", errPool[err.Code].Text , "\n")
-		fmt.Print("New error >> ", err.Code, " : ", err.Text , "\n")
-		panic("Duplicate Error code exist ^^")
+	if errPool[err.code] != nil {
+		log.Warn("Duplicate Error code exist")
+		log.Warn("Exiting error >> ", errPool[err.code].code, " : ", errPool[err.code].text, "\n")
+		log.Fatal("New error >> ", err.code, " : ", err.text, "\n")
 	}
-	errPool[err.Code] = &err
+	errPool[err.code] = &err
 	return &err
 }
 
@@ -39,27 +42,51 @@ func GetErrByCode(code uint32) error {
 	return errPool[code]
 }
 
-// Error : Return text of error.
+// GetCode return code of error if err code exist.
+func GetCode(err error) uint32 {
+	if err == nil {
+		return 0
+	}
+	var exErr *ExtendedError
+	exErr = err.(*ExtendedError)
+	if exErr != nil {
+		return exErr.code
+	}
+	// if error not nil but not ExtendedError, pass biggest number!
+	return 4294967295
+}
+
+// Error returns code of error.
 func (e *ExtendedError) Error() string {
+	if e == nil {
+		return "0"
+	}
+	return strconv.FormatUint(uint64(e.code), 10)
+}
+
+// Text return full details of error in text.
+func (e *ExtendedError) Text() string {
 	if e != nil {
-		return fmt.Sprintf("Error Code %v: %v \n Additional information: %v \n", e.Code, e.Text, e.Information)
+		return fmt.Sprintf("Error Code %v: %v \n Additional information: %v \n", e.code, e.text, e.information)
 	}
 
 	return "Error is empty"
 }
 
-// AddInformationToError : Add information to existing error and return it as new error(pointer)!
-func (e *ExtendedError) AddInformationToError(information interface{}) error {
+// AddInformation add to existing error and return it as new error(pointer)!
+func (e *ExtendedError) AddInformation(information interface{}) error {
 	return &ExtendedError{
-		Text:        e.Text,
-		Information: information,
-		Code:        e.Code,
+		name:        e.name,
+		text:        e.text,
+		code:        e.code,
+		information: information,
 	}
 }
 
-// IsEqualError : Compare two error.
-func (e *ExtendedError) IsEqualError(err error) bool {
-	if e.Code == err.(*ExtendedError).Code {
+// IsEqual compare two error.
+func (e *ExtendedError) IsEqual(err error) bool {
+	var exErr = err.(*ExtendedError)
+	if exErr != nil && e.code == exErr.code {
 		return true
 	}
 
