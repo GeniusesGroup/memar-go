@@ -28,6 +28,9 @@ func MakeNewProject(req *MakeNewProjectReq) (res *MakeNewProjectRes, err error) 
 	var guiF = assets.NewFolder(FolderNameGUI)
 	guiF.State = assets.StateChanged
 	req.Repo.SetDependency(guiF)
+	var secretF = assets.NewFolder(FolderNameSecret)
+	secretF.State = assets.StateChanged
+	req.Repo.SetDependency(secretF)
 
 	/* Services */
 	// /services/init.go
@@ -91,6 +94,9 @@ func MakeNewProject(req *MakeNewProjectReq) (res *MakeNewProjectRes, err error) 
 }
 
 const gitignore = `
+# Secrets files in secret folders
+secret/
+
 # Prerequisites
 *.d
 
