@@ -100,7 +100,7 @@ func (pcs *PhraseCaptchas) GetAudio(captchaID [16]byte, lang Language, audioForm
 // Get return exiting captcha if exits otherwise returns nil!
 func (pcs *PhraseCaptchas) Get(captchaID [16]byte) (pc *PhraseCaptcha) {
 	pc = pcs.Pool[captchaID]
-	if pc.ExpireIn < time.Now().Unix() {
+	if pc != nil && pc.ExpireIn < time.Now().Unix() {
 		delete(pcs.Pool, captchaID)
 		return nil
 	}
@@ -229,8 +229,10 @@ func (pcs *PhraseCaptchas) expirationProcessing() {
 				continue
 			}
 
+			// Usually this proccess is less than one second, so get time once for compare!
+			var timeNow = time.Now().Unix()
 			for _, captcha := range pcs.Pool {
-				if captcha.ExpireIn < time.Now().Unix() {
+				if captcha.ExpireIn < timeNow {
 					delete(pcs.Pool, captcha.ID)
 				}
 			}
