@@ -3,9 +3,9 @@
 package asanak
 
 import (
-	"../../achaemenid"
-	"../../http"
-	"../../json"
+	"../http"
+	"../json"
+	"../log"
 )
 
 // MsgStatusReq is request structure of MsgStatus()
@@ -39,21 +39,20 @@ const (
 	// Status  = ""
 )
 
-// MsgStatus send req to asanak and return res to caller! it block caller until finish proccess.
-// https://panel.asanak.com/webservice/v1rest/msgstatus?Username=$USERNAME&Password=$PASSWORD&msgid=$MSGID
+// MsgStatus send req to asanak and return res to caller! It block caller until finish proccess.
 func (a *Asanak) MsgStatus(req *MsgStatusReq) (res MsgStatusRes, err error) {
 	// Due to legal paper not allow to send more than 100 destination at a request!
 	var ln = len(req.MsgIDs)
 	if ln == 0 || ln > 99 {
-		panic("Message IDs number can't be 0 or more than 100")
-	}
-	// Check if no connection exist to use!
-	if a.conn == nil {
-		return nil, ErrNoConnectionToAsanak
+		log.Fatal("Message IDs number can't be 0 or more than 100")
 	}
 
+	return a.msgStatusByHTTP(req)
+}
+
+// https://panel.asanak.com/webservice/v1rest/msgstatus?Username=$USERNAME&Password=$PASSWORD&msgid=$MSGID
+func (a *Asanak) msgStatusByHTTP(req *MsgStatusReq) (res MsgStatusRes, err error) {
 	var httpReq = http.MakeNewRequest()
-
 	httpReq.Method = http.MethodPOST
 	httpReq.URI.Authority = domain
 	httpReq.URI.Path = sendSMSPath
@@ -79,28 +78,20 @@ func (a *Asanak) MsgStatus(req *MsgStatusReq) (res MsgStatusRes, err error) {
 		httpReq.Body = append(httpReq.Body, ',') // "," || "-"
 	}
 
-	// Make new request-response streams
-	var reqStream, resStream *achaemenid.Stream
-	reqStream, resStream, err = a.conn.MakeBidirectionalStream(0)
-
-	reqStream.Payload = httpReq.Marshal()
-	// Block and wait for response
-	err = achaemenid.HTTPOutcomeRequestHandler(a.server, reqStream)
-	if err != nil {
-		return nil, err
-	}
+	var serverRes []byte
+	serverRes, err = a.sendHTTPRequest(httpReq.Marshal())
 
 	var httpRes = http.MakeNewResponse()
-	err = httpRes.UnMarshal(resStream.Payload)
+	err = httpRes.UnMarshal(serverRes)
 	if err == nil {
-		return // err
+		return nil, err
 	}
 
 	switch httpRes.StatusCode {
 	case http.StatusBadRequestCode:
 		return nil, ErrBadRequest
 	case http.StatusUnauthorizedCode:
-		panic("Authorization failed with asanak services! Double check account username & password")
+		log.Fatal("Authorization failed with asanak services! Double check account username & password")
 	case http.StatusInternalServerErrorCode:
 		return nil, ErrAsanakServerInternalError
 	}
@@ -114,5 +105,10 @@ func (a *Asanak) MsgStatus(req *MsgStatusReq) (res MsgStatusRes, err error) {
 func (res *MsgStatusRes) jsonDecoder(buf []byte) (err error) {
 	// TODO::: Help to complete json generator package to have better performance!
 	err = json.UnMarshal(buf, res)
+	return
+}
+
+func (a *Asanak) msgStatusBySRPC(req *MsgStatusReq) (res MsgStatusRes, err error) {
+	// TODO::: when asanak.com impelement SRPC, complete SDK here!
 	return
 }

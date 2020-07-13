@@ -3,8 +3,8 @@
 package asanak
 
 import (
-	"../../achaemenid"
-	"../../http"
+	"../http"
+	"../log"
 )
 
 // GetCreditRes is response structure of GetCredit()
@@ -13,13 +13,12 @@ type GetCreditRes struct {
 }
 
 // GetCredit send req to asanak and return res to caller! it block caller until finish proccess.
-// https://panel.asanak.com/webservice/v1rest/getcredit?username=$USERNAME&password=$PASSWORD
 func (a *Asanak) GetCredit() (res *GetCreditRes, err error) {
-	// Check if no connection exist to use!
-	if a.conn == nil {
-		return nil, ErrNoConnectionToAsanak
-	}
+	return a.getCreditByHTTP()
+}
 
+// https://panel.asanak.com/webservice/v1rest/getcredit?username=$USERNAME&password=$PASSWORD
+func (a *Asanak) getCreditByHTTP() (res *GetCreditRes, err error) {
 	var httpReq = http.MakeNewRequest()
 	httpReq.Method = http.MethodPOST
 	httpReq.URI.Authority = domain
@@ -39,19 +38,11 @@ func (a *Asanak) GetCredit() (res *GetCreditRes, err error) {
 	httpReq.Body = append(httpReq.Body, password...)
 	httpReq.Body = append(httpReq.Body, a.Password...)
 
-	// Make new request-response streams
-	var reqStream, resStream *achaemenid.Stream
-	reqStream, resStream, err = a.conn.MakeBidirectionalStream(0)
-
-	reqStream.Payload = httpReq.Marshal()
-	// Block and wait for response
-	err = achaemenid.HTTPOutcomeRequestHandler(a.server, reqStream)
-	if err != nil {
-		return nil, err
-	}
+	var serverRes []byte
+	serverRes, err = a.sendHTTPRequest(httpReq.Marshal())
 
 	var httpRes = http.MakeNewResponse()
-	err = httpRes.UnMarshal(resStream.Payload)
+	err = httpRes.UnMarshal(serverRes)
 	if err == nil {
 		return nil, err
 	}
@@ -60,7 +51,7 @@ func (a *Asanak) GetCredit() (res *GetCreditRes, err error) {
 	case http.StatusBadRequestCode:
 		return nil, ErrBadRequest
 	case http.StatusUnauthorizedCode:
-		panic("Authorization failed with asanak services! Double check account username & password")
+		log.Fatal("Authorization failed with asanak services! Double check account username & password")
 	case http.StatusInternalServerErrorCode:
 		return nil, ErrAsanakServerInternalError
 	}
@@ -70,5 +61,10 @@ func (a *Asanak) GetCredit() (res *GetCreditRes, err error) {
 		Credit: string(httpRes.Body),
 	}
 
+	return
+}
+
+func (a *Asanak) getCreditBySRPC() (res *GetCreditRes, err error) {
+	// TODO::: when asanak.com impelement SRPC, complete SDK here!
 	return
 }
