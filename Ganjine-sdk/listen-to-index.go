@@ -19,59 +19,46 @@ type listenToIndexRes struct {
 
 // listenToIndex use to get the recordID by index hash when new record set!
 // Must send this request to specific node that handle that range!!
-func listenToIndex(s *achaemenid.Server, c *ganjine.Cluster, req *listenToIndexReq) (res *listenToIndexRes, err error) {
-	var nodeID uint32 = c.FindNodeIDByIndexHash(req.IndexHash)
-
-	var ok bool
-	var i uint8
-	var conn *achaemenid.Connection
-	// Indicate conn! Maybe closest PersiaDB node not response recently
-	for i = 0; i < c.TotalReplications; i++ {
-		var domainID = c.Replications[i].Nodes[nodeID].DomainID
-		conn, ok = s.Connections.GetConnectionByDomainID(domainID)
-		if !ok {
-			conn, err = s.Connections.MakeNewConnectionByDomainID(domainID)
-			if err == nil {
-				break
-			}
-		} else {
-			break
-		}
-	}
-
-	// Check if no connection exist to use!
-	if conn == nil {
-		return nil, err
+func listenToIndex(c *ganjine.Cluster, req *listenToIndexReq) (res *listenToIndexRes, err error) {
+	var node *ganjine.Node = c.GetNodeByIndexHash(req.IndexHash)
+	if node == nil {
+		return nil, ErrNoNodeAvailableToHandleRequests
 	}
 
 	// Make new request-response streams
+	var conn *achaemenid.Connection = node.GetConnection()
 	var reqStream, resStream *achaemenid.Stream
 	reqStream, resStream, err = conn.MakeBidirectionalStream(0)
-
-	// Set listenToIndex ServiceID
-	reqStream.ServiceID = 2145882122
-
-	req.syllabEncoder(reqStream.Payload[4:])
-	err = reqStream.SrpcOutcomeRequestHandler(s)
-	if err == nil {
+	if err != nil {
 		return nil, err
 	}
 
-	// Listen to response stream and decode error ID and return it to caller
-	var responseStatus uint8 = <-resStream.StatusChannel
-	if responseStatus == achaemenid.StreamStateReady {
+	// Set listenToIndex ServiceID
+	reqStream.ServiceID = 2145882122
+	reqStream.Payload = req.syllabEncoder()
+
+	err = node.SendStream(reqStream)
+	if err != nil {
+		return nil, err
 	}
 
 	// Sender can reuse exiting stream to send new record
 
-	res.syllabDecoder(resStream.Payload[4:])
+	res = &listenToIndexRes{}
+	err = res.syllabDecoder(resStream.Payload[4:])
+	if err != nil {
+		return nil, err
+	}
 
 	return res, resStream.Err
 }
 
-func (req *listenToIndexReq) syllabEncoder(buf []byte) error {
-	copy(buf[:], req.IndexHash[:])
-	return nil
+func (req *listenToIndexReq) syllabEncoder() (buf []byte) {
+	buf = make([]byte, 32+4) // +4 for sRPC ID instead get offset argument
+
+	copy(buf[4:], req.IndexHash[:])
+
+	return
 }
 
 func (res *listenToIndexRes) syllabDecoder(buf []byte) error {
