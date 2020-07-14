@@ -80,10 +80,13 @@ func (a *Asanak) msgStatusByHTTP(req *MsgStatusReq) (res MsgStatusRes, err error
 
 	var serverRes []byte
 	serverRes, err = a.sendHTTPRequest(httpReq.Marshal())
+	if err != nil {
+		return nil, err
+	}
 
 	var httpRes = http.MakeNewResponse()
 	err = httpRes.UnMarshal(serverRes)
-	if err == nil {
+	if err != nil {
 		return nil, err
 	}
 

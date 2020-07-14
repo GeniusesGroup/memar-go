@@ -3,8 +3,6 @@
 package asanak
 
 import (
-	"crypto/tls"
-
 	"../achaemenid"
 	"../errors"
 	"../json"
@@ -18,9 +16,7 @@ const (
 	// CC-xx-xxxxxxxxxxxxx
 	maxNumberLength = 17
 
-	// Don't understand why such a fundamental service like asanak.com serve just by one server and one IP!!??
 	domain = "panel.asanak.com"
-	ip     = "79.175.173.154:80"
 
 	sendSMSPath      = "/webservice/v1rest/sendsms"
 	sendSMSFixedSize = len(username) + len(password) + len(source) + len(destination) + len(message)
@@ -54,7 +50,6 @@ type Asanak struct {
 	RecChan        chan *GetSmsByAsanak
 	fixSizeDatalen int
 	gpConn         *achaemenid.Connection
-	tlsConn        *tls.Conn
 }
 
 // Init use to initialize Asanak pointer by given server data.
@@ -68,22 +63,6 @@ func (a *Asanak) Init(jsonSettings []byte) {
 
 	a.RecChan = make(chan *GetSmsByAsanak)
 	a.fixSizeDatalen = len(a.UserName) + len(a.Password) + len(a.SourceNumber)
-
-	var err error
-
-	// make TLS connection to asanak server by its IP:Port!
-	var tlsConf = tls.Config{
-		ServerName: domain,
-	}
-	a.tlsConn, err = tls.Dial("", ip, &tlsConf)
-	if err != nil {
-		log.Warn("asanak.com const IP:Port not work, resolve it domain and try again with this error: ", err)
-		// solve domain to IP and try again
-		a.tlsConn, err = tls.Dial("", domain+":https", &tlsConf)
-		if err != nil {
-			log.Fatal("Can't make a TLS connection to asanak.com with this err:", err)
-		}
-	}
 
 	// TODO::: Make GP connection to asanak.com, when asanak.com impelement GP!!
 }
@@ -102,22 +81,25 @@ func (a *Asanak) jsonDecoder(buf []byte) (err error) {
 }
 
 func (a *Asanak) sendHTTPRequest(req []byte) (res []byte, err error) {
-	// Check if no connection exist to use!
-	if a.tlsConn == nil {
+	var tlsConn *tlsConn
+	tlsConn, err = getTLSConn()
+	if err != nil {
 		return nil, ErrNoConnectionToAsanak
 	}
 
-	_, err = a.tlsConn.Write(req)
+	_, err = tlsConn.conn.Write(req)
 	if err != nil {
 		return
 	}
 
 	res = make([]byte, 4096)
 	var readSize int
-	readSize, err = a.tlsConn.Read(res)
+	readSize, err = tlsConn.conn.Read(res)
 	if err != nil {
 		return
 	}
+
+	tlsConn.free()
 
 	return res[:readSize], nil
 }
