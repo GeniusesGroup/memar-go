@@ -15,19 +15,24 @@ type streamProtocols struct {
 
 // Init use to register all standard supported protocols!
 // Usually Dev must register needed stream protocol not use this method to register all available protocols!
+// Not rule but suggest to use even port number to listen||receive||response||server and odd for send||request||client
 // https://en.wikipedia.org/wiki/List_of_TCP_and_UDP_port_numbers
 // https://www.iana.org/assignments/service-names-port-numbers/service-names-port-numbers.xhtml
 func (sp *streamProtocols) Init() {
 	// sRPC
-	sp.handlers[ProtocolPortSRPC] = SrpcIncomeRequestHandler
+	sp.handlers[ProtocolPortSRPCReceive] = SrpcIncomeRequestHandler
+	sp.handlers[ProtocolPortSRPCSend] = SrpcIncomeResponseHandler
+
 	// SMTP
 	// sp.handlers[25] = smtpHandler
+
 	// DNS
-	// sp.handlers[53] = dnsHandler
+	sp.handlers[ProtocolPortDNSReceive] = DNSIncomeRequestHandler
+	sp.handlers[ProtocolPortDNSSend] = DNSIncomeResponseHandler
+
 	// HTTP & HTTPS
-	sp.handlers[ProtocolPortHTTP] = HTTPIncomeRequestHandler
-	sp.handlers[ProtocolPortHTTPS] = HTTPSIncomeRequestHandler
-	sp.handlers[ProtocolPortHTTPDev] = HTTPSIncomeRequestHandler
+	sp.handlers[ProtocolPortHTTPReceive] = HTTPIncomeRequestHandler
+	sp.handlers[ProtocolPortHTTPSend] = HTTPIncomeResponseHandler
 }
 
 // SetSingleProtocol use to tell server use all port just for one type handler!
@@ -39,17 +44,12 @@ func (sp *streamProtocols) SetSingleProtocol(sh StreamHandler) {
 }
 
 // SetProtocolHandler use to set or change specific handler!
-// If given protocolID==0, register given handler in free ID and return protocol ID, use to start connection to other servers.
-func (sp *streamProtocols) SetProtocolHandler(protocolID uint16, sh StreamHandler) uint16 {
-	if protocolID == 0 {
-		protocolID = sp.lastUse
-		sp.lastUse++
-	}
+func (sp *streamProtocols) SetProtocolHandler(protocolID uint16, sh StreamHandler) {
 	if sp.handlers[protocolID] != nil {
 		log.Warn("Protocol handler with ID: ", protocolID, ", register before, Double check for any mistake to prevent unexpected behavior")
 	}
 	sp.handlers[protocolID] = sh
-	return protocolID
+	return
 }
 
 // GetProtocolHandler use to get specific protocol handler!
@@ -60,4 +60,16 @@ func (sp *streamProtocols) GetProtocolHandler(protocolID uint16) StreamHandler {
 // DeleteService use to delete specific service in services list.
 func (sp *streamProtocols) DeleteHandler(protocolID uint16) {
 	sp.handlers[protocolID] = nil
+}
+
+// GetFreePortID use to get free portID.
+// usually use to start connection to other servers in random other than standards ports number.
+func (sp *streamProtocols) GetFreePortID() (protocolID uint16) {
+	for i := 0; i < 65536; i++ {
+		sp.lastUse++
+		if sp.handlers[sp.lastUse] == nil {
+			return sp.lastUse
+		}
+	}
+	return 0
 }

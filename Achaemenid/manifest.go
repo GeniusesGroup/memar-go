@@ -7,11 +7,13 @@ import "time"
 // Manifest use to store server manifest data
 // All string slice is multi language and in order by ManifestLanguages order
 type Manifest struct {
+	SocietyID           uint32
 	AppID               [16]byte // Application ID
-	Domain              string
+	DomainID            [16]byte // Usually hash of domain
+	DomainName          string
 	Email               string
 	Icon                string
-	AuthorizedAppDomain []string // Just accept request from these domains, neither guest nor users!
+	AuthorizedAppDomain [][16]byte // Just accept request from these domains, neither guest nor users!
 	SupportedLanguages  []uint32
 	ManifestLanguages   []uint32
 	Organization        []string
@@ -26,9 +28,6 @@ type Manifest struct {
 
 // TechnicalInfo store some technical information but may different from really server condition!
 type TechnicalInfo struct {
-	UseAI               bool   // false: Open the lot of security concerns || true: use more resource.
-	AuthorizationServer string // Domain name that have sRPC needed store connection data. default is "sabz.city"
-
 	// Shutdown settings
 	ShutdownDelay time.Duration // the server will wait for at least this amount of time for active streams to finish!
 
@@ -63,21 +62,21 @@ type TechnicalInfo struct {
 	// If you want to know Connection.OwnerType>1 rate limit strategy, You must read server codes!!
 
 	// Minimum hardware specification for each instance of application.
-	CPU              uint64 // Hz
-	RAM              uint64 // Byte
-	GPU              uint64 // Hz
-	NetworkBandwidth uint64 // Byte
-	HDD              uint64 // Byte, Hard disk drive as storage engine. Act as object+block storage.
-	SSD              uint64 // Byte, Solid state drive as storage engine. Act as object+block storage..
-	// 4 type of devices trend now:
-	// Out of society scope - Cloud Computing - Cheapest scenario - Primary Datastore	::/1
-	// Adjacent Router or Inside same society - Fog Computing - Caching Datastore		::/32
-	// Inside Router scope - Edge Computing - Caching Datastore						::/64
-	// End user device - 															::/128
-	MaxNetworkScalability uint8 // If ::/32 it mean also ::/1 but not ::/64!!
+	CPUCores uint8  // Number
+	CPUSpeed uint64 // Hz
+	RAM      uint64 // Byte
+	GPU      uint64 // Hz
+	Network  uint64 // Byte per second
+	Storage  uint64 // Byte, HHD||SSD||... indicate by DataCentersClassForDataStore
+
+	// Distribution
+	DistributeOutOfSociety       bool   // Allow to run service-only instance of app out of original society belong to.
+	DataCentersClass             uint8  // 0:FirstClass 256:Low-Quality default:5
+	DataCentersClassForDataStore uint8  // 0:FirstClass 256:Low-Quality default:0
+	ReplicationNumber            uint8  // deafult:3
+	MaxNodeNumber                uint32 // default:3
 
 	// DataStore
-	DataCenterClassForDataStore uint64 //
-	ReplicationNumber           uint64 // deafult is 3
-	NodeNumber                  uint64 // default is 3
+	TransactionTimeOut uint16 // in ms, default:500ms, Max 65.535s timeout
+	NodeFailureTimeOut uint16 // in minute, default:60m, other corresponding node same range will replace failed node! not use in network failure, it is handy proccess!
 }

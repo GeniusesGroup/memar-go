@@ -6,12 +6,14 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"../log"
 )
 
 func init() {
-	log.Info("---------------Achaemenid Server---------------")
+	log.Info("-------------------Achaemenid Server-------------------")
+	log.Info("Server start at ", time.Now())
 }
 
 // DefaultServer use as default server.
@@ -23,11 +25,12 @@ var defaultServer Server
 type Server struct {
 	State           int // States locate in const of this file.
 	Manifest        Manifest
+	Cryptography    cryptography
 	Networks        networks
 	StreamProtocols streamProtocols
-	Cryptography    cryptography
 	Services        services
 	Connections     connections
+	Nodes           nodes
 	Assets          assets
 }
 
@@ -40,35 +43,27 @@ const (
 )
 
 // Init method use to initialize server object with default data.
-func (s *Server) Init() (err error) {
+func (s *Server) Init() {
 	log.Info("Try to initialize server...")
-
 	if s == nil {
 		s = DefaultServer
 	}
+	s.State = ServerStateStarting
+	// Get UserGivenPermission from OS
 	s.Assets.init()
 	s.Services.init()
-	s.Connections.init()
-
-	// Make & Register cryptography data
-	err = s.Cryptography.init(s)
-	return
+	s.Connections.init(s)
+	s.Cryptography.init(s)
 }
 
 // Start will start the server.
 func (s *Server) Start() (err error) {
 	log.Info("Try to start server...")
 
-	s.State = ServerStateStarting
-
-	// Recover from panics if exist.
-	// defer panicHandler(s)
-
-	// Get UserGivenPermission from OS
+	// Recover from panics if exist to prevent stop server.
+	defer s.panicHandler()
 
 	s.State = ServerStateRunning
-
-	// register s.HandleGP() for income packet handler
 
 	// watch for SIGTERM and SIGINT from the operating system, and notify the app on the channel
 	var sig = make(chan os.Signal)
@@ -80,6 +75,13 @@ func (s *Server) Start() (err error) {
 	return nil
 }
 
+func (s *Server) panicHandler() {
+	var r = recover()
+	if r != nil {
+		log.Warn("Panic Exception: ", r)
+	}
+}
+
 // HandleOSSignals use to handle OS signals! Caller will block until we get an OS signal
 func (s *Server) HandleOSSignals(sigChannel chan os.Signal) {
 	var sig = <-sigChannel
@@ -89,7 +91,7 @@ func (s *Server) HandleOSSignals(sigChannel chan os.Signal) {
 	case syscall.SIGINT, syscall.SIGQUIT, syscall.SIGTERM, syscall.SIGKILL:
 		if s.State == ServerStateRunning {
 			s.State = ServerStateStopping
-			log.Warn("Waiting for server to finish and release proccess, It will take up to 60 seconds")
+			log.Info("Waiting for server to finish and release proccess, It will take up to 60 seconds")
 			s.Shutdown()
 			os.Exit(s.State)
 		}
@@ -101,18 +103,13 @@ func (s *Server) Shutdown() {
 	s.Cryptography.shutdown()
 	s.Networks.shutdown()
 	s.Assets.shutdown()
-	log.SaveToStorage("Achaemenid", repoLocation)
 
 	// Wait to finish above logic, or kill app in --- second!
 	// time.Sleep(10 * time.Second)
 
 	// it must change to ServerStateStop(0) otherwise it means app can't close normally
 	s.State = ServerStateStop
-}
 
-// SendStream use to register a stream to send pool and automatically send to the peer.
-func (s *Server) SendStream(st *Stream) (err error) {
-	// First Check st.Connection.Status to ability send stream over it
-
-	return nil
+	log.Info("Server stopped at", time.Now())
+	log.SaveToStorage("Achaemenid", repoLocation)
 }

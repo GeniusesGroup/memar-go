@@ -3,6 +3,8 @@
 package achaemenid
 
 import (
+	"net"
+
 	"../crypto"
 )
 
@@ -10,14 +12,20 @@ import (
 // Each user in each device need unique connection to another party.
 type Connection struct {
 	/* Connection data */
-	ConnectionID [16]byte
+	Server       *Server
+	ID           [16]byte
 	State        connectionState
 	Weight       uint8              // 16 queue for priority weight of the connections exist.
 	StreamPool   map[uint32]*Stream // key is Stream.ID
+	freeStreamID uint32
 
 	/* Peer data */
 	DomainID       [16]byte // Usually use for server to server connections that peer has domainID!
-	GPAddress      [16]byte
+	SocietyID      uint32
+	RouterID       uint32
+	GPAddr         [16]byte
+	IPAddr         *net.IPAddr  // TODO::: due to IPv4&&IPv6 support we need this! Remove it when remove those support.
+	UDPAddr        *net.UDPAddr // TODO::: due to IPv4&&IPv6 support we need this! Remove it when remove those support.
 	ThingID        [16]byte
 	UserID         [16]byte // Can't change after first set. initial is 0 as Guest!
 	UserType       uint8    // 0:Guest, 1:Registered 2:Person, 3:Org, 4:App, ...
@@ -46,16 +54,16 @@ type connectionState uint8
 const (
 	// ConnectionStateClosed indicate connection had been closed
 	ConnectionStateClosed connectionState = iota
-	// ConnectionStateOpen indicate connection is open and ready to use
-	ConnectionStateOpen
-	// ConnectionStateRateLimited indicate connection limited due to higher usage than permitted!
-	ConnectionStateRateLimited
-	// ConnectionStateOpening indicate connection plan to open and not ready to accept stream!
-	ConnectionStateOpening
 	// ConnectionStateClosing indicate connection plan to close and not accept new stream
 	ConnectionStateClosing
 	// ConnectionStateNotResponse indicate peer not response to recently send request!
 	ConnectionStateNotResponse
+	// ConnectionStateOpen indicate connection is open and ready to use
+	ConnectionStateOpen
+	// ConnectionStateOpening indicate connection plan to open and not ready to accept stream!
+	ConnectionStateOpening
+	// ConnectionStateRateLimited indicate connection limited due to higher usage than permitted!
+	ConnectionStateRateLimited
 )
 
 // MakeUnidirectionalStream use to make a new one way stream!
@@ -63,14 +71,16 @@ const (
 func (conn *Connection) MakeUnidirectionalStream(streamID uint32) (st *Stream, err error) {
 	// TODO::: Check user can open new stream first as stream policy!
 
+	// if given streamID is 0, return new incremental streamID from pool
 	if streamID == 0 {
-		// TODO::: Get new incremental streamID from pool
+		streamID = conn.freeStreamID
+		conn.freeStreamID += 2
 	}
 
 	st = &Stream{
-		ID:            streamID,
-		Connection:    conn,
-		StateChannel: make(chan streamState),
+		ID:         streamID,
+		Connection: conn,
+		State:      StreamStateOpened,
 	}
 	conn.RegisterStream(st)
 	return
@@ -83,7 +93,7 @@ func (conn *Connection) MakeBidirectionalStream(streamID uint32) (reqStream, res
 		return
 	}
 
-	resStream, err = reqStream.MakeResponseStream()
+	resStream, err = reqStream.MakeResponse()
 	return
 }
 
@@ -106,4 +116,10 @@ func (conn *Connection) RegisterStream(st *Stream) {
 // CloseStream use to close the stream on other side requested or finished!
 func (conn *Connection) CloseStream(st *Stream) {
 	delete(conn.StreamPool, st.ID)
+}
+
+// CloseBidirectionalStream use to close the bidirectional stream!
+func (conn *Connection) CloseBidirectionalStream(st *Stream) {
+	delete(conn.StreamPool, st.ID)
+	delete(conn.StreamPool, st.ReqRes.ID)
 }

@@ -2,15 +2,20 @@
 
 package achaemenid
 
+import (
+	"../crypto"
+)
+
 // cryptography : Public-key for related domain.
 type cryptography struct {
-	publicKey  [32]byte // Use new algorithm like 256bit ECC(256bit) instead of RSA(4096bit)
-	privateKey [32]byte // Use new algorithm like 256bit ECC(256bit) instead of RSA(4096bit)
+	publicKey         [32]byte // Use new algorithm like 256bit ECC(256bit) instead of RSA(4096bit)
+	privateKey        [32]byte // Use new algorithm like 256bit ECC(256bit) instead of RSA(4096bit)
+	ChecksumGenerator crypto.Hash256
 }
 
-// init use to register public key in new domain name systems like sabz.city
-func (c *cryptography) init(s *Server) (err error) {
-	// make public & private key and store them
+// init make and register cryptography data for given server
+func (c *cryptography) init(s *Server) {
+	// make public & private key for desire node e.g. node12.sabz.city and store them
 	c.publicKey = [32]byte{}
 	c.privateKey = [32]byte{}
 	// ecdsa.GenerateKey()

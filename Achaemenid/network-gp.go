@@ -8,8 +8,9 @@ import (
 
 type gpNetwork struct {
 	InterfaceID uint8
-	GPRange     [14]byte
 	MTU         uint16 // Maximum Transmission Unit. GP packet size
+	RouterID    uint32
+	GPAddr      [14]byte
 }
 
 // MakeGPNetwork register app to OS GP router and start handle income GP packets.
@@ -18,7 +19,7 @@ func MakeGPNetwork(s *Server) (err error) {
 	// n.gp.GPRange = [14]byte{}
 
 	// Get MTU from router
-	// n.gp.MTU = 1200
+	// n.gp.MTU = 8192 || 1500 || ...
 
 	// Because Achaemenid is server based application must have GP access.
 
@@ -26,13 +27,14 @@ func MakeGPNetwork(s *Server) (err error) {
 }
 
 // handleGP use to handle GP with any application protocol and response just some basic data!
-func handleGP(s *Server, packet []byte) {
+// Protocol Standard : https://github.com/SabzCity/RFCs/blob/master/GP.md
+func handleGP(s *Server, packet []byte) (conn *Connection, st *Stream) {
 	// Don't need to check packet here due to ChaparKhane or OS must always check and penalty other routers or societies
 	// But it can panic server due to memory overflow, so decide to check or not!
 	// gp.CheckPacket()
 
 	// Check server supported requested protocol
-	var protocolID uint16 = gp.GetDestinationAppProtocol(packet)
+	var protocolID uint16 = gp.GetDestinationProtocol(packet)
 	var streamHandler StreamHandler = s.StreamProtocols.GetProtocolHandler(protocolID)
 	if streamHandler == nil {
 		// Send response or just ignore packet
@@ -41,11 +43,10 @@ func handleGP(s *Server, packet []byte) {
 	}
 
 	var err error
-	var conn *Connection
-	var peerGP = gp.GetSourceGP(packet)
+	var peerGP [16]byte = gp.GetSourceGP(packet)
 	// Find Connection from ConnectionPoolByPeerAdd by requester GP
 	conn = s.Connections.GetConnectionByPeerAdd(peerGP)
-	// If it is first time that ConnectionID used
+	// If it is first time that user want to connect
 	if conn == nil {
 		conn, err = s.Connections.MakeNewConnectionByPeerAdd(peerGP)
 		if err != nil {
@@ -53,6 +54,8 @@ func handleGP(s *Server, packet []byte) {
 			// TODO::: DDOS!!??
 			return
 		}
+		conn.SocietyID = gp.GetSourceSociety(packet)
+		conn.RouterID = gp.GetSourceRouter(packet)
 		conn.PacketPayloadSize = gp.GetPayloadLength(packet)
 	}
 
@@ -68,7 +71,6 @@ func handleGP(s *Server, packet []byte) {
 		return
 	}
 
-	var st *Stream
 	var streamID uint32 = gp.GetStreamID(packet)
 
 	st = conn.GetStreamByID(streamID)
@@ -92,7 +94,11 @@ func handleGP(s *Server, packet []byte) {
 	// Check TimeSensitive or stream ready to call requested app protocol to process stream.
 	if (st.TimeSensitive && err != ErrPacketArrivedPosterior) || (st.State == StreamStateReady) {
 		streamHandler(s, st)
+		// Close both streams!
+		conn.CloseBidirectionalStream(st)
 	}
+
+	return
 }
 
 // AddNewGPPacket use to add new GP packet payload to the stream!

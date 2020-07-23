@@ -5,37 +5,36 @@ package achaemenid
 import (
 	"crypto/tls"
 	"net"
-	"strconv"
 
 	"../log"
 )
 
 /*
 -------------------------------NOTICE:-------------------------------
-We just implement and support TCP over IP for transition period and not our goal!
+We just implement and support TCP/TLS over IP for transition period and not our goal!
 Please have plan to transform your network to GP protocol!
 */
 
 // MakeTCPTLSNetwork start a TCP/TLS listener and response request in given stream handler
 func MakeTCPTLSNetwork(s *Server, port uint16) (err error) {
-	var p string = ":" + strconv.FormatUint(uint64(port), 10)
+	// Can't make a network on a port that doesn't has a handler!
+	if s.StreamProtocols.GetProtocolHandler(port) == nil {
+		return ErrNoStreamProtocolHandler
+	}
 
-	var tcpListener net.Listener
-	tcpListener, err = net.Listen("tcp", p)
+	var tcp = tcpNetwork{
+		s:    s,
+		port: port,
+	}
+
+	tcp.listener, err = net.ListenTCP("tcp", &net.TCPAddr{IP: s.Networks.localIP, Port: int(port)})
 	if err != nil {
-		log.Warn("TCP/TLS listen on port "+p+" failed due to: ", err)
+		log.Warn("TCP/TLS listen on port ", tcp.listener.Addr(), " failed due to: ", err)
 		return
 	}
 
-	log.Info("Begin listen TCP/TLS on port: ", p)
-
-	// register TCP network to s.Networks
-	var tcp = tcpNetwork{
-		s:             s,
-		port:          port,
-		tcpListener:   tcpListener,
-	}
 	s.Networks.RegisterTCPNetwork(&tcp)
+	log.Info("Begin listen TCP on ", tcp.listener.Addr())
 
 	err = tcp.registerCertificates(s)
 
@@ -44,17 +43,33 @@ func MakeTCPTLSNetwork(s *Server, port uint16) (err error) {
 	config.NextProtos = []string{"http/1.1", "sRPC"}
 	config.PreferServerCipherSuites = true
 	config.Certificates = append(config.Certificates, tcp.certificate)
-	tcp.tlsListener = tls.NewListener(tcpListener, config)
+	tcp.tlsListener = tls.NewListener(tcp.listener, config)
 
-	go handleTCPListener(s, &tcp, tcp.tlsListener)
+	go handleTCPTLSListener(s, &tcp, tcp.tlsListener)
 
 	return
 }
 
+// handleTCPListener use to handle TCP/TLS networks connections with any application protocol.
+func handleTCPTLSListener(s *Server, tcp *tcpNetwork, ln net.Listener) {
+	for {
+		var err error
+		var tcpConn net.Conn
+		tcpConn, err = ln.Accept()
+		if err != nil {
+			// log.Warn("TCP accepting occur error: ", err)
+			continue
+		}
+		// log.Info("Begin listen TCP conn on: ", tcpConn.RemoteAddr())
+
+		go handleTCPConn(s, tcp, tcpConn)
+	}
+}
+
 func (tcp *tcpNetwork) registerCertificates(s *Server) (err error) {
 	// Try to load certificate from secret folder
-	var crtFile = s.Assets.Secret.GetFile(s.Manifest.Domain + "-fullchain.crt")
-	var keyFile = s.Assets.Secret.GetFile(s.Manifest.Domain + ".key")
+	var crtFile = s.Assets.Secret.GetFile(s.Manifest.DomainName + "-fullchain.crt")
+	var keyFile = s.Assets.Secret.GetFile(s.Manifest.DomainName + ".key")
 	if crtFile != nil && keyFile != nil {
 		tcp.certificate, err = tls.X509KeyPair(crtFile.Data, keyFile.Data)
 		if err == nil {
@@ -74,7 +89,7 @@ func (tcp *tcpNetwork) registerCertificates(s *Server) (err error) {
 }
 
 /*
-	Default self-sign certificate and Private key when no free TLS provider exist!
+	Default self-sign certificate and Private key when no certificate exist in secret folder!
 */
 
 var privateKey = []byte(`-----BEGIN EC PRIVATE KEY-----

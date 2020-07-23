@@ -2,40 +2,55 @@
 
 package achaemenid
 
-import "../log"
+import (
+	"net"
+
+	"../log"
+)
 
 type networks struct {
-	gp  []*gpNetwork
-	tcp []*tcpNetwork
+	server    *Server
+	gp        []*gpNetwork
+	localIP   net.IP
+	GPOverIP  *net.IPConn
+	GPOverUDP *net.UDPConn
+	udp       []*udpNetwork
+	tcp       []*tcpNetwork
 }
 
 // Init use to register all implemented networks!
 // Usually Dev must register needed network by hand, not use this method to register all networks
 func (n *networks) Init(s *Server) (err error) {
+	n.server = s
+	n.localIP = getLocalIP()
+
 	// GP network just need register once for full port range!
-	log.Info("try to register GP network")
+	log.Info("try to register GP network...")
 	err = MakeGPNetwork(s)
 	if err != nil {
 		return
 	}
 
-	log.Info("try to register TCP on port 80 to listen for HTTP protocol")
-	err = MakeTCPNetwork(s, 80)
+	// GP over IP network.
+	log.Info("try to register GP over IP network...")
+	err = MakeGPOverIPNetwork(s)
 	if err != nil {
 		return
 	}
-	log.Info("try to register TCP on port 8080 to listen for HTTP protocol for dev phase")
-	err = MakeTCPNetwork(s, 8080)
-	if err != nil {
-		return
-	}
-	log.Info("try to register TCP/TLS on port 443 to listen for HTTPs protocol")
-	err = MakeTCPTLSNetwork(s, 443)
+
+	// GP over IP/UDP network.
+	log.Info("try to register GP over IP/UDP network...")
+	err = MakeGPOverUDPNetwork(s)
 	if err != nil {
 		return
 	}
 
 	return
+}
+
+// RegisterUDPNetwork use to register a established udp network!
+func (n *networks) RegisterUDPNetwork(udp *udpNetwork) {
+	n.udp = append(n.udp, udp)
 }
 
 // RegisterTCPNetwork use to register a established tcp network!
@@ -44,10 +59,40 @@ func (n *networks) RegisterTCPNetwork(tcp *tcpNetwork) {
 }
 
 func (n *networks) shutdown() {
+	var err error
 	// TODO:::
 
 	// first closing open listener for income packet and refuse all new packet,
 	// then closing all idle connections,
 	// and then waiting indefinitely for connections to return to idle
 	// and then shut down
+
+	err = n.GPOverIP.Close()
+	if err != nil {
+		log.Warn("Closing IP/GP network face this error: ", err)
+	}
+
+	err = n.GPOverUDP.Close()
+	if err != nil {
+		log.Warn("Closing IP/UDP/GP network face this error: ", err)
+	}
+}
+
+func getLocalIP() (ipAddr net.IP) {
+	var addrs, err = net.InterfaceAddrs()
+	if err != nil {
+		return
+	}
+
+	var addr net.Addr
+	for _, addr = range addrs {
+		switch addr := addr.(type) {
+		case *net.IPNet:
+			if addr.IP.IsGlobalUnicast() {
+				return addr.IP
+			}
+		}
+	}
+
+	return
 }
