@@ -5,9 +5,9 @@ package gp
 import "errors"
 
 const (
-	// PacketLen is minimum packet length of GP packet
+	// MinPacketLen is minimum packet length of GP packet
 	// 448bit header + 128bit min payload
-	PacketLen = 60
+	MinPacketLen = 60
 )
 
 // Declare Errors Details
@@ -18,7 +18,7 @@ var (
 // CheckPacket  check packet for any bad situation!
 // Always check packet before use any other packet methods otherwise panic occur!
 func CheckPacket(p []byte) error {
-	if len(p) < PacketLen {
+	if len(p) < MinPacketLen {
 		return ErrGPPacketTooShort
 	}
 	return nil
@@ -50,9 +50,9 @@ func GetDestinationApp(p []byte) uint16 {
 	return uint16(p[12]) | uint16(p[13])<<8
 }
 
-// GetDestinationAppProtocol returns destination app protocol ID.
-// app protocol ID usage is like TCP||UDP port that indicate payload protocol
-func GetDestinationAppProtocol(p []byte) uint16 {
+// GetDestinationProtocol returns destination protocol ID that app talk with that.
+// App protocol ID usage is like TCP||UDP ports that indicate payload protocol.
+func GetDestinationProtocol(p []byte) uint16 {
 	return uint16(p[14]) | uint16(p[15])<<8
 }
 
@@ -82,9 +82,9 @@ func GetSourceApp(p []byte) uint16 {
 	return uint16(p[28]) | uint16(p[29])<<8
 }
 
-// GetSourceAppProtocol returns source app protocol ID.
-// app protocol ID usage is like TCP||UDP port that indicate payload protocol
-func GetSourceAppProtocol(p []byte) uint16 {
+// GetSourceProtocol returns source protocol ID that app want to talk with that.
+// App protocol ID usage is like TCP||UDP ports that indicate payload protocol.
+func GetSourceProtocol(p []byte) uint16 {
 	return uint16(p[30]) | uint16(p[31])<<8
 }
 
