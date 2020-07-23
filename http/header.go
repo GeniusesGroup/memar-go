@@ -55,61 +55,58 @@ func (h header) Del(key string) {
 // GetCookies parses and returns the Cookie headers.
 // By related RFC we just support one Cookie in header.
 // https://tools.ietf.org/html/rfc6265#section-5.4
-func (h header) GetCookies() (cookies []*Cookie) {
+func (h header) GetCookies() (cookies []Cookie) {
 	var cookie = h.GetValue(HeaderKeyCookie)
 	if len(cookie) == 0 {
 		return
 	}
 	var index int
-	cookies = make([]*Cookie, 0, 8)
+	cookies = make([]Cookie, 0, 8)
+	var c Cookie
 	for {
 		index = strings.IndexByte(cookie, ';')
 		if index == -1 {
+			c.UnMarshal(cookie)
+			cookies = append(cookies, c)
 			return
 		}
-		var c Cookie
 		c.UnMarshal(cookie[:index])
-		cookies = append(cookies, &c)
+		cookies = append(cookies, c)
 
 		cookie = cookie[index+2:]
 	}
 }
 
 // SetCookies parses and set them to Cookie header.
-func (h header) SetCookies(cookies []*Cookie) {
+func (h header) SetCookies(cookies []Cookie) {
 	var b strings.Builder
-	h.SetValue(HeaderKeyCookie, b.String())
-
 	var ln = len(cookies)
-	var cookie *Cookie
 	var i int
 	for ; ; i++ {
-		cookie = cookies[i]
-		b.WriteString(cookie.Name)
+		b.WriteString(cookies[i].Name)
 		b.WriteByte('=')
-		b.WriteString(cookie.Value)
+		b.WriteString(cookies[i].Value)
 		if i < ln {
 			b.WriteString(SemiColonSpace)
 		} else {
-			return
+			break
 		}
 	}
+	h.SetValue(HeaderKeyCookie, b.String())
 }
 
 // GetSetCookies parses and returns the Set-Cookie headers.
 // By related RFC must exist just one Set-Cookie in each line of header.
 // https://tools.ietf.org/html/rfc6265#section-4.1.1
-func (h header) GetSetCookies() (setCookies []*SetCookie) {
-	var setCookie = h.GetValues(HeaderKeySetCookie)
-	var setCookieCount = len(setCookie)
+func (h header) GetSetCookies() (setCookies []SetCookie) {
+	var scs = h.GetValues(HeaderKeySetCookie)
+	var setCookieCount = len(scs)
 	if setCookieCount == 0 {
 		return
 	}
-	setCookies = make([]*SetCookie, 0, setCookieCount)
+	setCookies = make([]SetCookie, setCookieCount)
 	for i := 0; i < setCookieCount; i++ {
-		var sc SetCookie
-		sc.UnMarshal(setCookie[i])
-		setCookies = append(setCookies, &sc)
+		setCookies[i].UnMarshal(scs[i])
 	}
 	return
 }
@@ -117,7 +114,7 @@ func (h header) GetSetCookies() (setCookies []*SetCookie) {
 // SetSetCookies parses and set given Set-Cookies to header.
 // By related RFC must exist just one Set-Cookie in each line of header.
 // https://tools.ietf.org/html/rfc6265#section-4.1.1
-func (h header) SetSetCookies(setCookies []*SetCookie) {
+func (h header) SetSetCookies(setCookies []SetCookie) {
 	var ln = len(setCookies)
 	for i := 0; i < ln; i++ {
 		h.Add(HeaderKeySetCookie, setCookies[i].Marshal())

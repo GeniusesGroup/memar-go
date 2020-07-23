@@ -93,3 +93,8 @@ func (r *Response) SetStatus(code, phrase string) {
 	r.StatusCode = code
 	r.ReasonPhrase = phrase
 }
+
+// SetError set given error to body of response
+func (r *Response) SetError(err error) {
+	r.Body = []byte(err.Error())
+}
