@@ -90,8 +90,6 @@ func {{.ServiceUpperName}}SRPC(s *achaemenid.Server, st *achaemenid.Stream) {
 	var req = &{{.ServiceLowerName}}Req{}
 	st.ReqRes.Err = req.syllabDecoder(st.Payload[4:])
 	if st.ReqRes.Err != nil {
-		st.Connection.FailedPacketsReceived++
-		// Attack??
 		return
 	}
 
@@ -99,8 +97,6 @@ func {{.ServiceUpperName}}SRPC(s *achaemenid.Server, st *achaemenid.Stream) {
 	res, st.ReqRes.Err = {{.ServiceLowerName}}(st, req)
 	// Check if any error occur in bussiness logic
 	if st.ReqRes.Err != nil {
-		st.Connection.FailedServiceCall++
-		// Attack??
 		return
 	}
 
@@ -112,10 +108,7 @@ func {{.ServiceUpperName}}HTTP(s *achaemenid.Server, st *achaemenid.Stream, http
 	var req = &{{.ServiceLowerName}}Req{}
 	st.ReqRes.Err = req.jsonDecoder(httpReq.Body)
 	if st.ReqRes.Err != nil {
-		st.Connection.FailedPacketsReceived++
 		httpRes.SetStatus(http.StatusBadRequestCode, http.StatusBadRequestPhrase)
-		httpRes.Body = []byte(st.ReqRes.Err.Error())
-		// Attack??
 		return
 	}
 
@@ -123,10 +116,7 @@ func {{.ServiceUpperName}}HTTP(s *achaemenid.Server, st *achaemenid.Stream, http
 	res, st.ReqRes.Err = {{.ServiceLowerName}}(st, req)
 	// Check if any error occur in bussiness logic
 	if st.ReqRes.Err != nil {
-		st.Connection.FailedServiceCall++
 		httpRes.SetStatus(http.StatusBadRequestCode, http.StatusBadRequestPhrase)
-		httpRes.Body = []byte(st.ReqRes.Err.Error())
-		// Attack??
 		return
 	}
 
@@ -142,9 +132,14 @@ type {{.ServiceLowerName}}Req struct {}
 type {{.ServiceLowerName}}Res struct {}
 
 func {{.ServiceLowerName}}(st *achaemenid.Stream, req *{{.ServiceLowerName}}Req) (res *{{.ServiceLowerName}}Res, err error) {
-	// Authenticate and authorize request first by service policy. Get help from st.Authorize...() methods!
-	
-	// Validate data here due to service use internally!
+	// TODO::: Authenticate request first by service policy.
+
+	err = st.Authorize()
+	if err != nil {
+		return
+	}
+
+	// Validate data here due to service use internally by other services!
 	err = req.validator()
 	if err != nil {
 		return

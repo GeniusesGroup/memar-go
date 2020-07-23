@@ -37,33 +37,36 @@ package main
 
 import (
 	"./datastore"
-	ps "./services"
-	gs "./libgo/Ganjine-services"
 	"./libgo/achaemenid"
 	as "./libgo/achaemenid-services"
-	"./libgo/assets"
 	"./libgo/ganjine"
-	"./libgo/www"
+	gs "./libgo/ganjine-services"
+	"./libgo/letsencrypt"
+	"./libgo/log"
+	ps "./services"
 )
 
 // Server is just address of Achaemenid DefaultServer for easily usage
-var server = achaemenid.DefaultServer
+var server *achaemenid.Server = achaemenid.DefaultServer
 
 var cluster *ganjine.Cluster
 
 func init() {
 	var err error
 
-	server.Init()
-
 	server.Manifest = achaemenid.Manifest{
+		SocietyID:           0,
 		AppID:               [16]byte{},
-		Domain:              "",
+		DomainID:            [16]byte{},
+		DomainName:              "",
 		Email:               "",
 		Icon:                "",
-		AuthorizedAppDomain: []string{},
+		AuthorizedAppDomain: [][16]byte{},
 		SupportedLanguages:  []uint32{},
 		ManifestLanguages:   []uint32{},
+		Organization:        []string{
+			"",
+		},
 		Name: []string{
 			"",
 			"",
@@ -82,38 +85,47 @@ func init() {
 			"",
 		},
 		RequestedPermission: []uint32{},
-		TechnicalInfo:       achaemenid.TechnicalInfo{},
+		TechnicalInfo:       achaemenid.TechnicalInfo{
+			GuestMaxConnections: 2000000,
+
+			CPUCores: 1,                        // one core
+			CPUSpeed: 1 * 1000 * 1000,          // 1 GHz
+			RAM:      4 * 1024 * 1024 * 1024,   // 4 GB
+			GPU:      0,                        // 0 Ghz
+			Network:  100 * 1024 * 1024,        // 100 MB/S
+			Storage:  100 * 1024 * 1024 * 1024, // 100 GB
+
+			DistributeOutOfSociety:       false,
+			DataCentersClass:             5,
+			DataCentersClassForDataStore: 0,
+			ReplicationNumber:            3,
+			MaxNodeNumber:                3,
+
+			TransactionTimeOut: 500,
+			NodeFailureTimeOut: 60,
+		},
 	}
 
-	// Register stream app layer protocols
-	server.StreamProtocols.SetProtocolHandler(4, achaemenid.SrpcIncomeRequestHandler)
-	server.StreamProtocols.SetProtocolHandler(80, achaemenid.HTTPIncomeRequestHandler)
-	server.StreamProtocols.SetProtocolHandler(443, achaemenid.HTTPSIncomeRequestHandler)
+	// Initialize server
+	server.Init()
+
+	// Register stream app layer protocols. Dev can remove below and register only needed protocols handlers.
+	server.StreamProtocols.Init()
 
 	// register networks.
-	err = achaemenid.MakeGPNetwork(server)
+	err = server.Networks.Init(server)
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
-	err = achaemenid.MakeTCPTLSNetwork(server, 4, achaemenid.SrpcIncomeRequestHandler)
+
+	// Register some selectable networks. Check to add or delete networks to this function.
+	selectableNetworks()
+
+	// Connect to other nodes or become first node!
+	server.Nodes.Init(server)
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
-	err = achaemenid.MakeTCPNetwork(server, 80, achaemenid.HTTPIncomeRequestHandler)
-	if err != nil {
-		panic(err)
-	}
-	err = achaemenid.MakeTCPTLSNetwork(server, 443, achaemenid.HTTPSIncomeRequestHandler)
-	if err != nil {
-		panic(err)
-	}
-	// Comment other networks and uncomment below network in development phase!
-	// err = achaemenid.MakeTCPNetwork(server, 8080, achaemenid.HTTPSIncomeRequestHandler)
-	// if err != nil {
-	// 	panic(err)
-	// }
-	// server.Assets = assets.NewFolder(server.Manifest.Domain)
-	// go www.ReloadAssetsInDevPhase(server.Assets)
 
 	// Register default Achaemenid services
 	as.Init(server)
@@ -122,11 +134,15 @@ func init() {
 	// Register platform defined custom service in ./services/ folder
 	ps.Init(server)
 
+	// Register some other services for Achaemenid
+	server.Connections.GetConnByID = getConnectionsByID
+	server.Connections.GetConnByUserID = getConnectionsByUserID
+
+	// Ganjine initialize
 	err = cluster.Init(server)
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
-
 	// Initialize datastore
 	datastore.Init(server, cluster)
 }
@@ -135,7 +151,39 @@ func main() {
 	var err error
 	err = server.Start()
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
+	}
+}
+
+func selectableNetworks() {
+	var err error
+
+	// Check LetsEncrypt Certificate
+	err = letsencrypt.CheckByAchaemenid(server)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// Delete below network if you don't want to listen for HTTPs protocol.
+	log.Info("try to register TCP on port 80 to listen for HTTP protocol")
+	server.StreamProtocols.SetProtocolHandler(80, achaemenid.HTTPToHTTPSHandler)
+	err = achaemenid.MakeTCPNetwork(server, 80)
+	if err != nil {
+		log.Fatal(err)
+	}
+	log.Info("try to register TCP/TLS on port 443 to listen for HTTPs protocol")
+	server.StreamProtocols.SetProtocolHandler(443, achaemenid.HTTPIncomeRequestHandler)
+	err = achaemenid.MakeTCPTLSNetwork(server, 443)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// Delete below network if you don't want to listen for DNS protocol.
+	log.Info("try to register UDP on port 53 to listen for DNS protocol")
+	server.StreamProtocols.SetProtocolHandler(53, achaemenid.DNSIncomeRequestHandler)
+	err = achaemenid.MakeUDPNetwork(server, 53)
+	if err != nil {
+		log.Fatal(err)
 	}
 }
 `))
