@@ -2,6 +2,8 @@
 
 package assets
 
+import "strings"
+
 // Folder use to store app needed data from repo like html, css, js, ...
 type Folder struct {
 	Name         string
@@ -55,6 +57,28 @@ func (f *Folder) GetFileRecursively(fullName string) (file *File) {
 // SetFile use to set a file to given asset!
 func (f *Folder) SetFile(file *File) {
 	f.Files[file.FullName] = file
+}
+
+// SetFiles use to set files to given asset!
+func (f *Folder) SetFiles(files []*File) {
+	for _, file := range files {
+		f.Files[file.FullName] = file
+	}
+}
+
+// FindFiles use to get a file by its ful name with extension!
+func (f *Folder) FindFiles(name string) (files []*File) {
+	for _, file := range f.Files {
+		if strings.Contains(file.FullName, name) {
+			files = append(files, file)
+		}
+	}
+	return
+}
+
+// DeleteFile use to delete the file from given folder!
+func (f *Folder) DeleteFile(fullName string) {
+	delete(f.Files, fullName)
 }
 
 // GetFilesNumbers use to get total files number in given Folder!
