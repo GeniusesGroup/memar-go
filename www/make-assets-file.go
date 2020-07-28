@@ -15,8 +15,7 @@ func MakeAssetsFile(Repo *assets.Folder, file *assets.File) (err error) {
 	file.Extension = "go"
 
 	var ass = assets.NewFolder("")
-	addRepo(ass, Repo)
-	addGUIToMain(ass, Repo)
+	addRepoToAsset(ass, Repo)
 
 	for _, file := range ass.Files {
 		addFile(file)
