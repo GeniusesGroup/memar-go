@@ -59,7 +59,7 @@ func (c *combine) readyMainJSFile() {
 	}
 
 	// Add SDK-JS to main.js
-	for _, sdk := range c.repoSDK.Files {
+	for _, sdk := range c.repoSDK.GetFiles() {
 		c.inlined[sdk.FullName] = sdk
 		c.mainJS.Data = append(c.mainJS.Data, MinifyJS(sdk.Data)...)
 	}
@@ -102,7 +102,7 @@ func (c *combine) localeAndMixFolders() {
 }
 
 func (c *combine) localeAndMixFiles(repo *assets.Folder) {
-	for _, file := range repo.Files {
+	for _, file := range repo.GetFiles() {
 		switch file.Extension {
 		case "js":
 			var cssFile = repo.GetFile(file.Name + ".css")
@@ -151,7 +151,7 @@ func (c *combine) localeAndMixFiles(repo *assets.Folder) {
 // readyLandingsFiles read needed files from given repo folder and do some logic and return files.
 func (c *combine) readyLandingsFiles() {
 	var landing *assets.File
-	for _, landing = range c.repoLandings.Files {
+	for _, landing = range c.repoLandings.GetFiles() {
 		switch landing.Extension {
 		case "html":
 			var jsonFile *assets.File = c.repoLandings.GetFile(landing.Name + ".json")
@@ -164,6 +164,7 @@ func (c *combine) readyLandingsFiles() {
 			lj.jsonDecoder(jsonFile.Data)
 
 			var mixed = mixCSSToHTML(landing, c.repoLandings.GetFile(landing.Name+".css"))
+
 			for _, f := range localizeHTMLFile(mixed, lj) {
 				c.landings = append(c.landings, f)
 			}

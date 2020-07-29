@@ -3,34 +3,21 @@
 package www
 
 import (
-	"fmt"
-	"os"
-	"path/filepath"
+	"bytes"
+	"hash/crc32"
+	"strconv"
+	"strings"
 
 	"../assets"
 	"../log"
 )
 
-// ReloadAssetsFromStorage use to reload assets from gui folder usually in development phase!
-// It block function and must call by seprate goroutine, otherwise it can block other app logic!
-func ReloadAssetsFromStorage(ass *assets.Folder) {
-	// Indicate repoLocation
-	var ex, err = os.Executable()
-	if err != nil {
-		log.Fatal(err)
-	}
-	var repoLocation = filepath.Dir(ex)
-
-	var repo = assets.NewFolder("")
-reload:
+// LoadAssetsFromStorage use to load assets from gui folder.
+func LoadAssetsFromStorage(ass, repo *assets.Folder, repoLocation string) (main *assets.File) {
 	readRepositoryFromFileSystem(repoLocation, repo)
-	addRepoToAsset(ass, repo)
+	main = addRepoToAsset(ass, repo)
 	log.Info("GUI changes successfully updated in server and ready to serve")
-
-	log.Info("Press '''Enter''' key to reload GUI changes")
-	var non string
-	fmt.Scanln(&non)
-	goto reload
+	return
 }
 
 // ReadRepositoryFromFileSystem use to get all repository by its name!
@@ -57,30 +44,58 @@ func readRepositoryFromFileSystem(dirname string, repo *assets.Folder) (err erro
 }
 
 // addRepoToAsset use to add needed repo files that get from disk or network to the assets!!
-func addRepoToAsset(ass, repo *assets.Folder) {
+func addRepoToAsset(ass, repo *assets.Folder) (main *assets.File) {
 	var c = combine{}
 	c.init(repo)
 	c.do()
-	ass.SetFile(c.mainJS)
-	ass.SetFiles(c.initsJS)
-	ass.SetFiles(c.landings)
-
-	// set images from gui
-	var images = c.repoGUI.GetDependency("images")
-	for _, file := range images.Files {
-		ass.SetFile(file)
-	}
-
-	// set main.html & sw.js
-	ass.SetFile(c.repoGUI.GetFile("main.html"))
-	ass.SetFile(c.repoGUI.GetDependency("libjs").GetDependency("gui-engine").GetFile("sw.js"))
 
 	// set design-languages
 	var dl = c.repoGUI.GetDependency("design-languages")
 	var file *assets.File
 	for _, file = range dl.Files {
 		if file.Extension == "css" {
-			ass.SetFile(file)
+			var fullName = file.FullName
+			file.Name = strconv.FormatUint(uint64(crc32.ChecksumIEEE(file.Data)), 10)
+			file.FullName = file.Name + ".css"
+			ass.SetAndCompressFile(file, assets.CompressTypeGZIP)
+
+			c.mainJS.Data = bytes.ReplaceAll(c.mainJS.Data, []byte(fullName), []byte(file.FullName))
 		}
 	}
+
+	// ass.SetAndCompressFiles(c.initsJS, assets.CompressTypeGZIP)
+	var initHashName = strconv.FormatUint(uint64(crc32.ChecksumIEEE(c.initsJS[0].Data)), 10)
+	for _, file := range c.initsJS {
+		file.Name = initHashName + "-" + strings.Split(file.Name, "-")[1] // strings.Split(file.Name, "-")[1] as file lang
+		file.FullName = file.Name + ".js"
+		ass.SetAndCompressFile(file, assets.CompressTypeGZIP)
+	}
+
+	c.mainJS.Data = bytes.ReplaceAll(c.mainJS.Data, []byte("/init-"), []byte("/"+initHashName+"-"))
+	c.mainJS.Name = strconv.FormatUint(uint64(crc32.ChecksumIEEE(c.mainJS.Data)), 10)
+	c.mainJS.FullName = c.mainJS.Name + ".js"
+	ass.SetAndCompressFile(c.mainJS, assets.CompressTypeGZIP)
+
+	// TODO::: Need to change landings file name to hash of data??
+	ass.SetAndCompressFiles(c.landings, assets.CompressTypeGZIP)
+
+	// set /main.html
+	main = c.repoGUI.GetFile("main.html")
+	main.Data = bytes.ReplaceAll(main.Data, []byte("main.js"), []byte(c.mainJS.FullName))
+	main.Name = strconv.FormatUint(uint64(crc32.ChecksumIEEE(main.Data)), 10)
+	main.FullName = main.Name + ".html"
+	ass.SetAndCompressFile(main, assets.CompressTypeGZIP)
+
+	// set /sw.js
+	var swFile = c.repoGUI.GetDependency("libjs").GetDependency("gui-engine").GetFile("sw.js")
+	swFile.Data = bytes.ReplaceAll(swFile.Data, []byte("main.html"), []byte(main.FullName))
+	ass.SetAndCompressFile(swFile, assets.CompressTypeGZIP)
+
+	// set images from gui
+	var images = c.repoGUI.GetDependency("images")
+	for _, file := range images.Files {
+		ass.SetAndCompressFile(file, assets.CompressTypeGZIP)
+	}
+
+	return
 }

@@ -24,7 +24,6 @@ func MakeAssetsFile(Repo *assets.Folder, file *assets.File) (err error) {
 	// Add ending file
 	assetsFile += "\n}\n"
 
-	file.DataString = assetsFile
 	file.Data = []byte(assetsFile)
 	file.State = assets.StateChanged
 
@@ -38,7 +37,8 @@ func addFile(file *assets.File) {
 		data = append(data, fmt.Sprintf("%v", file.Data[i])+","...)
 	}
 
-	assetsFile += `Server.Assets.Files["` + file.FullName + `"] = &assets.File{FullName: "` + file.FullName +
+	assetsFile += `Server.Assets.Files["` + file.FullName +
+		`"] = &assets.File{FullName: "` + file.FullName +
 		`", Name: "` + file.Name +
 		`", Extension: "` + file.Extension +
 		`", MimeType: "` + file.MimeType +
