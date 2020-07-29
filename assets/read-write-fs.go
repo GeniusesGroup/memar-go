@@ -7,7 +7,6 @@ import (
 	"mime"
 	"os"
 	"path"
-	"unsafe"
 )
 
 // ReadRepositoryFromFileSystem use to get all repository by its name!
@@ -38,7 +37,6 @@ func (f *Folder) ReadRepositoryFromFileSystem(dirname string) (err error) {
 				FullName:   file.Name(),
 				Dep:        f,
 				Data:       data,
-				DataString: *(*string)(unsafe.Pointer(&data)),
 			}
 			for i := len(fi.FullName) - 1; i >= 0; i-- {
 				if fi.FullName[i] == '.' {

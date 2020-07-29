@@ -2,7 +2,10 @@
 
 package assets
 
-import "strings"
+import (
+	"sort"
+	"strings"
+)
 
 // Folder use to store app needed data from repo like html, css, js, ...
 type Folder struct {
@@ -30,6 +33,20 @@ func (f *Folder) NewFolder(name string) {
 		Files:        make(map[string]*File),
 		Dependencies: make(map[string]*Folder),
 	}
+}
+
+// GetFiles use to get all files in order by name.
+func (f *Folder) GetFiles() (files []*File) {
+	var keys = make([]string, 0, len(f.Files))
+	for k := range f.Files {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+
+	for _, k := range keys {
+		files = append(files, f.Files[k])
+	}
+	return
 }
 
 // GetFile use to get a file by its ful name with extension!
@@ -62,6 +79,20 @@ func (f *Folder) SetFile(file *File) {
 // SetFiles use to set files to given asset!
 func (f *Folder) SetFiles(files []*File) {
 	for _, file := range files {
+		f.Files[file.FullName] = file
+	}
+}
+
+// SetAndCompressFile use to compress and set a file to given asset. Mostly to serve file by servers.
+func (f *Folder) SetAndCompressFile(file *File, compressType string) {
+	file.Compress(compressType)
+	f.Files[file.FullName] = file
+}
+
+// SetAndCompressFiles use to compress and set files to given asset. Mostly to serve file by servers.
+func (f *Folder) SetAndCompressFiles(files []*File, compressType string) {
+	for _, file := range files {
+		file.Compress(compressType)
 		f.Files[file.FullName] = file
 	}
 }
