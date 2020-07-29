@@ -39,44 +39,10 @@ func HTTPIncomeRequestHandler(s *Server, st *Stream) {
 	// TODO::: due to IPv4&&IPv6 support we must handle some functionality here! Remove them when remove those support.
 	// HTTP may transmit over TCP||UDP and we can't make full detail connection in that protocols!!
 	if st.Connection == nil {
-		// First try to find cookie on http header!
-		var cookies = req.Header.GetCookies()
-		if len(cookies) > 0 {
-			// Default Achaemenid HTTPS handler just support one cookie!
-			var cookie = cookies[0]
-			var acid, err = hex.DecodeString(cookie.Value)
-			if err == nil {
-				var acidArray [16]byte
-				copy(acidArray[:], acid)
-				st.Connection = s.Connections.GetConnectionByID(acidArray)
-			}
+		err = makeNewConnectionByHTTP(s, st, req, res)
+		if err != nil {
+			return
 		}
-		if st.Connection == nil {
-			// If can't find or get exiting connection from local and remote, make new one if server allow!
-			err = makeNewGuestConnection(s, st)
-			if err != nil {
-				// Can't make new guest connection almost due to lack of enough resources, So simply return to close the connection
-				return
-			}
-
-			res.Header.SetSetCookies([]http.SetCookie{
-				http.SetCookie{
-					Name:     "ACID", // "Achaemenid Connection ID"
-					Value:    hex.EncodeToString(st.Connection.ID[:]),
-					MaxAge:   strconv.FormatUint(365*24*60*60, 10),
-					Secure:   true,
-					HTTPOnly: true,
-					SameSite: "Lax",
-				},
-			})
-		}
-
-		// This header just need in IP connections, so add here not globally in HTTPOutcomeResponseHandler()
-		res.Header.SetValue(http.HeaderKeyConnection, http.HeaderValueKeepAlive)
-		res.Header.SetValue(http.HeaderKeyKeepAlive, "timeout=60")
-		res.Header.SetValue(http.HeaderKeyStrictTransportSecurity, "max-age=31536000")
-
-		st.Connection.RegisterStream(st)
 	}
 
 	var service *Service
@@ -96,6 +62,13 @@ func HTTPIncomeRequestHandler(s *Server, st *Stream) {
 		}
 		// Add some header for /apis like not index by SE(google, ...), ...
 		res.Header.SetValue("X-Robots-Tag", "noindex")
+
+		// res.Header.SetValue(http.HeaderKeyContentEncoding, "gzip")
+		// var b bytes.Buffer
+		// var gz = gzip.NewWriter(&b)
+		// gz.Write(res.Body)
+		// gz.Close()
+		// res.Body = b.Bytes()
 	} else if req.URI.Path == "/objects" {
 		var file = s.Assets.Objects.GetFile(req.URI.Query)
 		if file == nil {
@@ -103,9 +76,11 @@ func HTTPIncomeRequestHandler(s *Server, st *Stream) {
 			res.SetStatus(http.StatusNotFoundCode, http.StatusNotFoundPhrase)
 		} else {
 			res.SetStatus(http.StatusOKCode, http.StatusOKPhrase)
+			res.Header.SetValue(http.HeaderKeyCacheControl, "max-age=31536000")
 		}
 		res.Header.SetValue(http.HeaderKeyContentType, file.MimeType)
-		res.Body = file.Data
+		res.Header.SetValue(http.HeaderKeyContentEncoding, file.CompressType)
+		res.Body = file.CompressData
 		HTTPOutcomeResponseHandler(s, st.ReqRes, req, res)
 		return
 	} else {
@@ -120,7 +95,7 @@ func HTTPIncomeRequestHandler(s *Server, st *Stream) {
 			}
 			res.SetStatus(http.StatusMovedPermanentlyCode, http.StatusMovedPermanentlyPhrase)
 			res.Header.SetValue(http.HeaderKeyLocation, target)
-			res.Header.SetValue(http.HeaderKeyCacheControl, "max-age=2592000")
+			res.Header.SetValue(http.HeaderKeyCacheControl, "max-age=31536000")
 			HTTPOutcomeResponseHandler(s, st.ReqRes, req, res)
 			return
 		}
@@ -134,19 +109,26 @@ func HTTPIncomeRequestHandler(s *Server, st *Stream) {
 			var lastPath = path[len(path)-1]
 
 			var file = s.Assets.WWW.GetFile(lastPath)
-			if file == nil {
-				file = s.Assets.WWW.GetFile("main.html")
+			if file == nil && strings.IndexByte(lastPath, '.') == -1 {
+				// TODO::: serve-to-robots
+				file = s.Assets.WWWMain
 			}
 
-			// TODO::: serve-to-robots
+			if file == nil {
+				res.SetStatus(http.StatusNotFoundCode, http.StatusNotFoundPhrase)
+			} else {
+				res.SetStatus(http.StatusOKCode, http.StatusOKPhrase)
+				res.Header.SetValue(http.HeaderKeyContentType, file.MimeType)
+				res.Header.SetValue(http.HeaderKeyCacheControl, "max-age=31536000")
+				res.Header.SetValue(http.HeaderKeyContentEncoding, file.CompressType)
+				res.Body = file.CompressData
+			}
 
-			res.SetStatus(http.StatusOKCode, http.StatusOKPhrase)
-			res.Header.SetValue(http.HeaderKeyContentType, file.MimeType)
-			res.Body = file.Data
 			HTTPOutcomeResponseHandler(s, st.ReqRes, req, res)
 			return
 		}
 	}
+
 	// If project don't have any logic that support data on e.g. HTTP (restful, ...) we reject request with related error.
 	if service == nil {
 		st.Connection.ServiceCallCount++
@@ -240,4 +222,48 @@ func HTTPToHTTPSHandler(s *Server, st *Stream) {
 	res.Header.SetValue(http.HeaderKeyServer, http.DefaultServer)
 
 	st.ReqRes.Payload = res.Marshal()
+}
+
+// TODO::: due to IPv4&&IPv6 support need this func! Remove them when remove those support.
+func makeNewConnectionByHTTP(s *Server, st *Stream, req *http.Request, res *http.Response) (err error) {
+	// First try to find cookie on http header!
+	var cookies = req.Header.GetCookies()
+	if len(cookies) > 0 {
+		// Default Achaemenid HTTPS handler just support one cookie!
+		var cookie = cookies[0]
+		var acid, err = hex.DecodeString(cookie.Value)
+		if err == nil {
+			var acidArray [16]byte
+			copy(acidArray[:], acid)
+			st.Connection = s.Connections.GetConnectionByID(acidArray)
+		}
+	}
+	if st.Connection == nil {
+		// If can't find or get exiting connection from local and remote, make new one if server allow!
+		err = makeNewGuestConnection(s, st)
+		if err != nil {
+			// Can't make new guest connection almost due to lack of enough resources, So simply return to close the connection
+			return
+		}
+
+		res.Header.SetSetCookies([]http.SetCookie{
+			http.SetCookie{
+				Name:     "ACID", // "Achaemenid Connection ID"
+				Value:    hex.EncodeToString(st.Connection.ID[:]),
+				MaxAge:   strconv.FormatUint(365*24*60*60, 10),
+				Secure:   true,
+				HTTPOnly: true,
+				SameSite: "Lax",
+			},
+		})
+	}
+
+	// This header just need in IP connections, so add here not globally in HTTPOutcomeResponseHandler()
+	res.Header.SetValue(http.HeaderKeyConnection, http.HeaderValueKeepAlive)
+	res.Header.SetValue(http.HeaderKeyKeepAlive, "timeout=60")
+	res.Header.SetValue(http.HeaderKeyStrictTransportSecurity, "max-age=31536000")
+
+	st.Connection.RegisterStream(st)
+
+	return
 }
