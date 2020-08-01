@@ -69,16 +69,16 @@ func (r *Request) UnMarshal(httpPacket []byte) (err error) {
 	r.URI.UnMarshal(s[:index])
 	s = s[index+1:]
 
-	index = strings.IndexByte(s, '\n')
+	index = strings.IndexByte(s, '\r')
 	if index == -1 {
 		return ErrParsedErrorOnVersion
 	}
-	r.Version = s[:index-1] // -1 due to have "\r\n"
-	s = s[index+1:]
+	r.Version = s[:index]
+	s = s[index+2:] // +2 due to have "\r\n"
 
 	// TODO::: check performance below vs make new Int var for bodyStart and add to it in each IndexByte()
 	// vs have 4 Int for each index
-	index = len(r.Method) + len(r.URI.Raw) + len(r.Method) + 4
+	index = len(r.Method) + len(r.URI.Raw) + len(r.Version) + 4
 
 	index += r.Header.UnMarshal(s)
 	r.Body = httpPacket[index:]

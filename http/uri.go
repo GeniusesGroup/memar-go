@@ -80,7 +80,7 @@ func (u *URI) UnMarshal(raw string) {
 	u.Path = raw[pathStartIndex:pathEndIndex]
 
 	ln = len(u.Fragment)
-	if ln > 0 {
+	if ln > 0 && u.Query != "" {
 		u.Query = u.Query[:len(u.Query)-ln-1] // -1 due to we don't need '#'
 	}
 }

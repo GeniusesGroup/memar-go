@@ -153,28 +153,31 @@ func (h header) Marshal(httpPacket *[]byte) {
 // In some bad packet may occur panic, handle panic by recover otherwise app will crash and exit!
 func (h header) UnMarshal(s string) (bodyStart int) {
 	var valuesPool = make([]string, 16)
-	var index, newLine int
+	var colonIndex, newLine int
 	var key, value string
 	var values []string
 	for {
-		newLine = strings.IndexByte(s, '\n')
-		if newLine == -1 {
-			// By https://tools.ietf.org/html/rfc2616#section-4 very simple http packet must end with CRLF even packet without header or body!
-			// So this situation is not legal and means http packet is broken that don't even have new line. panic may occur!
-			return bodyStart
-		} else if newLine == 1 {
-			// End of headers part of packet!
+		newLine = strings.IndexByte(s, '\r')
+		// if newLine == -1 >> By https://tools.ietf.org/html/rfc2616#section-4 very simple http packet must end with CRLF even packet without header or body!
+		// So this situation is not legal and means http packet is broken that don't even have new line. panic may occur!
+		if newLine < 3 {
+			// End of headers part of packet or bad header
 			return bodyStart + 2
 		}
 
-		index = strings.IndexByte(s, ':')
-		if index == -1 || index > newLine {
-			// Bad http packet! panic may occur!
-			return bodyStart + 2 // Due to have one other "\r\n" after header end
+		colonIndex = strings.IndexByte(s[:newLine], ':')
+		if colonIndex == -1 {
+			// Header key without value! Bad http packet??
+			newLine += 2 // +2 due to have "\r\n"
+			s = s[newLine:]
+			bodyStart += newLine
+			continue
 		}
-		key = s[:index]
-		value = s[index+2 : newLine-1] // +2 due to have a space after colon force by RFC && -1 due to have "\r\n"
-		newLine++
+
+		key = s[:colonIndex]
+		value = s[colonIndex+2 : newLine] // +2 due to have a space after colon force by RFC &&
+
+		newLine += 2 // +2 due to have "\r\n"
 		s = s[newLine:]
 		bodyStart += newLine
 
