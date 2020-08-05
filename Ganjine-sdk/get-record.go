@@ -1,63 +1,50 @@
 /* For license and copyright information please see LEGAL file in repository */
 
-package ganjine
+package gsdk
 
 import (
 	"../achaemenid"
 	"../ganjine"
+	gs "../ganjine-services"
 )
 
-// GetRecordReq is request structure of GetRecord()
-type GetRecordReq struct {
-	RecordID [16]byte
-}
-
-// GetRecordRes is response structure of GetRecord()
-type GetRecordRes struct {
-	Record []byte
-}
-
-// GetRecord use get the specific record by its ID!
-func GetRecord(c *ganjine.Cluster, req *GetRecordReq) (res *GetRecordRes, err error) {
+// GetRecord get the specific record by its ID!
+func GetRecord(c *ganjine.Cluster, req *gs.GetRecordReq) (res *gs.GetRecordRes, err error) {
+	// TODO::: First read from local OS (related lib) as cache
+	// TODO::: Write to local OS as cache if not enough storage exist do GC(Garbage Collector)
+	
 	var node *ganjine.Node = c.GetNodeByRecordID(req.RecordID)
 	if node == nil {
-		return nil, ErrNoNodeAvailableToHandleRequests
+		return nil, ErrNoNodeAvailable
+	}
+
+	// Check if desire node is local node!
+	if node.Conn == nil {
+		res, err = gs.GetRecord(req)
+		return
 	}
 
 	// Make new request-response streams
-	var conn *achaemenid.Connection = node.GetConnection()
 	var reqStream, resStream *achaemenid.Stream
-	reqStream, resStream, err = conn.MakeBidirectionalStream(0)
+	reqStream, resStream, err = node.Conn.MakeBidirectionalStream(0)
 	if err != nil {
 		return nil, err
 	}
 
 	// Set GetRecord ServiceID
 	reqStream.ServiceID = 4052491139
-	reqStream.Payload = req.syllabEncoder()
+	reqStream.Payload = req.SyllabEncoder()
 
-	err = node.SendStream(reqStream)
+	err = achaemenid.SrpcOutcomeRequestHandler(c.Server, reqStream)
 	if err != nil {
 		return nil, err
 	}
 
-	res = &GetRecordRes{}
-	err = res.syllabDecoder(resStream.Payload[4:])
+	res = &gs.GetRecordRes{}
+	err = res.SyllabDecoder(resStream.Payload[4:])
 	if err != nil {
 		return nil, err
 	}
-	
+
 	return res, resStream.Err
-}
-
-func (req *GetRecordReq) syllabEncoder() (buf []byte) {
-	buf = make([]byte, 16+4) // +4 for sRPC ID instead get offset argument
-
-	copy(buf[4:], req.RecordID[:])
-
-	return
-}
-
-func (res *GetRecordRes) syllabDecoder(buf []byte) (err error) {
-	return
 }

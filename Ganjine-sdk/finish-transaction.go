@@ -1,50 +1,41 @@
 /* For license and copyright information please see LEGAL file in repository */
 
-package ganjine
+package gsdk
 
 import (
 	"../achaemenid"
 	"../ganjine"
+	gs "../ganjine-services"
 )
 
-// FinishTransactionReq is request structure of FinishTransaction()
-type FinishTransactionReq struct {
-	IndexHash [32]byte
-	Record    []byte
-}
-
-// FinishTransaction use to approve transaction!
+// FinishTransaction approve transaction!
 // Transaction Manager will set record and index! no further action need after this call!
-func FinishTransaction(c *ganjine.Cluster, req *FinishTransactionReq) (err error) {
+func FinishTransaction(c *ganjine.Cluster, req *gs.FinishTransactionReq) (err error) {
 	var node *ganjine.Node = c.GetNodeByIndexHash(req.IndexHash)
 	if node == nil {
-		return ErrNoNodeAvailableToHandleRequests
+		return ErrNoNodeAvailable
+	}
+
+	// Check if desire node is local node!
+	if node.Conn == nil {
+		err = gs.FinishTransaction(req)
+		return
 	}
 
 	// Make new request-response streams
-	var conn *achaemenid.Connection = node.GetConnection()
 	var reqStream, resStream *achaemenid.Stream
-	reqStream, resStream, err = conn.MakeBidirectionalStream(0)
+	reqStream, resStream, err = node.Conn.MakeBidirectionalStream(0)
 	if err != nil {
 		return err
 	}
 
 	// Set FinishTransaction ServiceID
 	reqStream.ServiceID = 3962420401
-	reqStream.Payload = req.syllabEncoder()
+	reqStream.Payload = req.SyllabEncoder()
 
-	err = node.SendStream(reqStream)
+	err = achaemenid.SrpcOutcomeRequestHandler(c.Server, reqStream)
 	if err != nil {
 		return err
 	}
 	return resStream.Err
-}
-
-func (req *FinishTransactionReq) syllabEncoder() (buf []byte) {
-	buf = make([]byte, 32+len(req.Record)+4) // +4 for sRPC ID instead get offset argument
-
-	copy(buf[4:], req.IndexHash[:])
-	copy(buf[36:], req.Record[:])
-
-	return
 }

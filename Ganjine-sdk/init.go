@@ -1,10 +1,10 @@
 /* For license and copyright information please see LEGAL file in repository */
 
-package ganjine
+package gsdk
 
 import "../errors"
 
 // Errors
 var (
-	ErrNoNodeAvailableToHandleRequests = errors.New("NoNodeAvailableToHandleRequests", "There isn't available node to handle requests")
+	ErrNoNodeAvailable = errors.New("NoNodeAvailable", "There isn't available node to handle requests")
 )

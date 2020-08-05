@@ -1,65 +1,50 @@
 /* For license and copyright information please see LEGAL file in repository */
 
-package ganjine
+package gsdk
 
 import (
 	"../achaemenid"
 	"../ganjine"
+	gs "../ganjine-services"
 )
 
-// ReadRecordReq is request structure of ReadRecord()
-type ReadRecordReq struct {
-	RecordID [16]byte
-	Offset   uint64 // Do something like block storage API
-	Limit    uint64 // Do something like block storage API
-}
+// ReadRecord read some part of the specific record by its ID!
+func ReadRecord(c *ganjine.Cluster, req *gs.ReadRecordReq) (res *gs.ReadRecordRes, err error) {
+	// TODO::: First read from local OS (related lib) as cache
+	// TODO::: Write to local OS as cache if not enough storage exist do GC(Garbage Collector)
 
-// ReadRecordRes is response structure of ReadRecord()
-type ReadRecordRes struct {
-	Data []byte
-}
-
-// ReadRecord use read some part of the specific record by its ID!
-func ReadRecord(c *ganjine.Cluster, req *ReadRecordReq) (res *ReadRecordRes, err error) {
 	var node *ganjine.Node = c.GetNodeByRecordID(req.RecordID)
 	if node == nil {
-		return nil, ErrNoNodeAvailableToHandleRequests
+		return nil, ErrNoNodeAvailable
+	}
+
+	// Check if desire node is local node!
+	if node.Conn == nil {
+		res, err = gs.ReadRecord(req)
+		return
 	}
 
 	// Make new request-response streams
-	var conn *achaemenid.Connection = node.GetConnection()
 	var reqStream, resStream *achaemenid.Stream
-	reqStream, resStream, err = conn.MakeBidirectionalStream(0)
+	reqStream, resStream, err = node.Conn.MakeBidirectionalStream(0)
 	if err != nil {
 		return nil, err
 	}
 
 	// Set ReadRecord ServiceID
 	reqStream.ServiceID = 108857663
-	reqStream.Payload = req.syllabEncoder()
+	reqStream.Payload = req.SyllabEncoder()
 
-	err = node.SendStream(reqStream)
+	err = achaemenid.SrpcOutcomeRequestHandler(c.Server, reqStream)
 	if err != nil {
 		return nil, err
 	}
 
-	res = &ReadRecordRes{}
-	err = res.syllabDecoder(resStream.Payload[4:])
+	res = &gs.ReadRecordRes{}
+	err = res.SyllabDecoder(resStream.Payload[4:])
 	if err != nil {
-		return nil , err
+		return nil, err
 	}
 
 	return res, resStream.Err
-}
-
-func (req *ReadRecordReq) syllabEncoder() (buf []byte) {
-	buf = make([]byte, 32+4) // +4 for sRPC ID instead get offset argument
-
-	copy(buf[4:], req.RecordID[:])
-
-	return
-}
-
-func (res *ReadRecordRes) syllabDecoder(buf []byte) error {
-	return nil
 }

@@ -1,47 +1,40 @@
 /* For license and copyright information please see LEGAL file in repository */
 
-package ganjine
+package gsdk
 
 import (
 	"../achaemenid"
 	"../ganjine"
+	gs "../ganjine-services"
 )
 
-// DeleteIndexHashHistoryReq is request structure of DeleteIndexHashHistory()
-type DeleteIndexHashHistoryReq struct {
-	IndexHash [32]byte
-}
-
-// DeleteIndexHashHistory use to delete all record associate to given index and delete index itself!
-func DeleteIndexHashHistory(c *ganjine.Cluster, req *DeleteIndexHashHistoryReq) (err error) {
+// DeleteIndexHashHistory delete all record associate to given index and delete index itself!
+func DeleteIndexHashHistory(c *ganjine.Cluster, req *gs.DeleteIndexHashHistoryReq) (err error) {
 	var node *ganjine.Node = c.GetNodeByIndexHash(req.IndexHash)
 	if node == nil {
-		return ErrNoNodeAvailableToHandleRequests
+		return ErrNoNodeAvailable
+	}
+
+	// Check if desire node is local node!
+	if node.Conn == nil {
+		err = gs.DeleteIndexHashHistory(req)
+		return
 	}
 
 	// Make new request-response streams
-	var conn *achaemenid.Connection = node.GetConnection()
 	var reqStream, resStream *achaemenid.Stream
-	reqStream, resStream, err = conn.MakeBidirectionalStream(0)
+	reqStream, resStream, err = node.Conn.MakeBidirectionalStream(0)
 	if err != nil {
 		return err
 	}
 
 	// Set DeleteIndexHashHistory ServiceID
 	reqStream.ServiceID = 691384835
-	reqStream.Payload = req.syllabEncoder()
+	reqStream.Payload = req.SyllabEncoder()
 
-	err = node.SendStream(reqStream)
+	err = achaemenid.SrpcOutcomeRequestHandler(c.Server, reqStream)
 	if err != nil {
 		return err
 	}
 	return resStream.Err
-}
-
-func (req *DeleteIndexHashHistoryReq) syllabEncoder() (buf []byte) {
-	buf = make([]byte, 32+4) // +4 for sRPC ID instead get offset argument
-
-	copy(buf[4:], req.IndexHash[:])
-
-	return
 }
