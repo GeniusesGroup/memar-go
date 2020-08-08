@@ -83,14 +83,15 @@ func (f *Folder) SetFiles(files []*File) {
 	}
 }
 
-// SetAndCompressFile use to compress and set a file to given asset. Mostly to serve file by servers.
-func (f *Folder) SetAndCompressFile(file *File, compressType string) {
+// MinifyCompressSet minify & compress file and set it to given asset. Mostly to serve file by servers.
+func (f *Folder) MinifyCompressSet(file *File, compressType string) {
+	file.Minify()
 	file.Compress(compressType)
 	f.Files[file.FullName] = file
 }
 
-// SetAndCompressFiles use to compress and set files to given asset. Mostly to serve file by servers.
-func (f *Folder) SetAndCompressFiles(files []*File, compressType string) {
+// MinifyCompressSets minify & compress files and set them to given asset. Mostly to serve file by servers.
+func (f *Folder) MinifyCompressSets(files []*File, compressType string) {
 	for _, file := range files {
 		file.Compress(compressType)
 		f.Files[file.FullName] = file

@@ -5,6 +5,17 @@ package assets
 import (
 	"bytes"
 	"compress/gzip"
+	"regexp"
+
+	"../log"
+
+	"github.com/tdewolff/minify"
+	"github.com/tdewolff/minify/css"
+	"github.com/tdewolff/minify/html"
+	"github.com/tdewolff/minify/js"
+	"github.com/tdewolff/minify/json"
+	"github.com/tdewolff/minify/svg"
+	"github.com/tdewolff/minify/xml"
 )
 
 // File :
@@ -52,6 +63,32 @@ func (f *File) DeepCopy() *File {
 	}
 	copy(file.Data, f.Data)
 	return &file
+}
+
+var m = minify.New()
+var htmlMinify = regexp.MustCompile(`\r?\n|(<!--.*?-->)|(<!--[\w\W\n\s]+?-->)`)
+
+func init() {
+	m.AddFunc("text/css", css.Minify)
+	m.AddFunc("text/html", html.Minify)
+	m.AddFunc("image/svg+xml", svg.Minify)
+	m.AddFuncRegexp(regexp.MustCompile("^(application|text)/(x-)?(java|ecma)script$"), js.Minify)
+	m.AddFuncRegexp(regexp.MustCompile("[/+]json$"), json.Minify)
+	m.AddFuncRegexp(regexp.MustCompile("[/+]xml$"), xml.Minify)
+}
+
+// Minify replace file data with minify of them.
+func (f *File) Minify() {
+	// TODO::: have problem minify HTML >> https://github.com/tdewolff/minify/issues/318
+	if f.Extension == "html" {
+		f.Data = htmlMinify.ReplaceAll(f.Data, []byte{})
+		return
+	}
+	var err error
+	f.Data, err = m.Bytes(f.MimeType, f.Data)
+	if err != nil {
+		log.Warn("Minify", f.FullName, "occur this error:", err)
+	}
 }
 
 // Supported compress types
