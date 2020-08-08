@@ -4,7 +4,6 @@ package www
 
 import (
 	"bytes"
-	"regexp"
 	"strconv"
 
 	"../assets"
@@ -12,17 +11,10 @@ import (
 	"../log"
 )
 
-var htmlComment = regexp.MustCompile(`(<!--.*?-->)|(<!--[\w\W\n\s]+?-->)`)
-
-// MinifyHTML use to minify html data.
-func MinifyHTML(html []byte) []byte {
-	var f = newLine.ReplaceAll(html, []byte{})
-	f = htmlComment.ReplaceAll(f, []byte{})
-	return f
-}
-
 // mixHTMLToJS add given HTML file to specific part of JS file.
 func mixHTMLToJS(jsFile, htmlFile *assets.File) {
+	htmlFile.Minify()
+
 	var loc = bytes.Index(jsFile.Data, []byte("HTML: ("))
 	if loc < 0 {
 		log.Warn(htmlFile.FullName, "html file can't add to", jsFile.FullName, "file due to bad JS.")
@@ -32,17 +24,17 @@ func mixHTMLToJS(jsFile, htmlFile *assets.File) {
 	var graveAccentIndex int
 	graveAccentIndex = bytes.IndexByte(jsFile.Data[loc:], '`')
 
-	var minifiedHTML = MinifyHTML(htmlFile.Data)
-
-	var jsFileData = make([]byte, 0, len(jsFile.Data)+len(minifiedHTML))
+	var jsFileData = make([]byte, 0, len(jsFile.Data)+len(htmlFile.Data))
 	jsFileData = append(jsFileData, jsFile.Data[:loc+graveAccentIndex+1]...)
-	jsFileData = append(jsFileData, minifiedHTML...)
+	jsFileData = append(jsFileData, htmlFile.Data...)
 	jsFileData = append(jsFileData, jsFile.Data[loc+graveAccentIndex+1:]...)
 	jsFile.Data = jsFileData
 }
 
 // mixHTMLTemplateToJS add given HTML template file to specific part of JS file.
 func mixHTMLTemplateToJS(jsFile, htmlFile *assets.File, tempName string) {
+	htmlFile.Minify()
+
 	var loc = bytes.Index(jsFile.Data, []byte(tempName+`": (`))
 	if loc < 0 {
 		log.Warn(htmlFile.FullName, "html template file can't add to", jsFile.FullName, "file due to bad JS template.")
@@ -52,20 +44,20 @@ func mixHTMLTemplateToJS(jsFile, htmlFile *assets.File, tempName string) {
 	var graveAccentIndex int
 	graveAccentIndex = bytes.IndexByte(jsFile.Data[loc:], '`')
 
-	var minifiedHTML = MinifyHTML(htmlFile.Data)
-
-	var jsFileData = make([]byte, 0, len(jsFile.Data)+len(minifiedHTML))
+	var jsFileData = make([]byte, 0, len(jsFile.Data)+len(htmlFile.Data))
 	jsFileData = append(jsFileData, jsFile.Data[:loc+graveAccentIndex+1]...)
-	jsFileData = append(jsFileData, minifiedHTML...)
+	jsFileData = append(jsFileData, htmlFile.Data...)
 	jsFileData = append(jsFileData, jsFile.Data[loc+graveAccentIndex+1:]...)
 	jsFile.Data = jsFileData
 }
 
 // localizeHTMLFile make and returns number of localize file by number of language indicate in JSON localize text
-func localizeHTMLFile(html *assets.File, lj localize) (files map[string]*assets.File) {
+func localizeHTMLFile(htmlFile *assets.File, lj localize) (files map[string]*assets.File) {
+	htmlFile.Minify()
+
 	files = make(map[string]*assets.File, len(lj))
 	for lang, text := range lj {
-		files[lang] = replaceLocalizeTextInHTML(html, text, lang)
+		files[lang] = replaceLocalizeTextInHTML(htmlFile, text, lang)
 	}
 	return
 }

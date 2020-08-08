@@ -1,11 +1,13 @@
 /* For license and copyright information please see LEGAL file in repository */
 
-package www
+package wg
 
 import (
 	"fmt"
+	"unsafe"
 
 	"../assets"
+	"../www"
 )
 
 // MakeAssetsFile generate a go file with combine & inline all assets files!
@@ -15,7 +17,7 @@ func MakeAssetsFile(Repo *assets.Folder, file *assets.File) (err error) {
 	file.Extension = "go"
 
 	var ass = assets.NewFolder("")
-	addRepoToAsset(ass, Repo)
+	www.AddRepoToAsset(ass, Repo)
 
 	for _, file := range ass.Files {
 		addFile(file)
@@ -24,17 +26,17 @@ func MakeAssetsFile(Repo *assets.Folder, file *assets.File) (err error) {
 	// Add ending file
 	assetsFile += "\n}\n"
 
-	file.Data = []byte(assetsFile)
+	file.Data = *(*[]byte)(unsafe.Pointer(&assetsFile))
 	file.State = assets.StateChanged
 
 	return
 }
 
 func addFile(file *assets.File) {
-	var ln = len(file.Data)
+	var ln = len(file.CompressData)
 	var data = make([]byte, 0, ln*3)
 	for i := 0; i < ln; i++ {
-		data = append(data, fmt.Sprintf("%v", file.Data[i])+","...)
+		data = append(data, fmt.Sprintf("%v", file.CompressData[i])+","...)
 	}
 
 	assetsFile += `Server.Assets.Files["` + file.FullName +
@@ -42,7 +44,8 @@ func addFile(file *assets.File) {
 		`", Name: "` + file.Name +
 		`", Extension: "` + file.Extension +
 		`", MimeType: "` + file.MimeType +
-		`", Data: []byte{` + string(data) + "}, } \n"
+		`", CompressType: ` + file.CompressType +
+		`", CompressData: []byte{` + *(*string)(unsafe.Pointer(&data)) + "}, } \n"
 }
 
 var assetsFile = `

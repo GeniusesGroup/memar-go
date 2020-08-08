@@ -3,7 +3,12 @@
 package www
 
 import (
+	"bytes"
+	"hash/crc32"
+	"strconv"
 	"strings"
+	"text/template"
+	"unsafe"
 
 	"../assets"
 	"../log"
@@ -22,6 +27,7 @@ type combine struct {
 	inlined     map[string]*assets.File   // map key is file FullName
 	localeFiles map[string][]*assets.File // map key is lang
 
+	mainHTML *assets.File
 	mainJS   *assets.File
 	initsJS  []*assets.File
 	landings []*assets.File
@@ -61,7 +67,7 @@ func (c *combine) readyMainJSFile() {
 	// Add SDK-JS to main.js
 	for _, sdk := range c.repoSDK.GetFiles() {
 		c.inlined[sdk.FullName] = sdk
-		c.mainJS.Data = append(c.mainJS.Data, MinifyJS(sdk.Data)...)
+		c.mainJS.Data = append(c.mainJS.Data, sdk.Data...)
 	}
 
 	addJSToJSRecursively(c.repo, main, c.mainJS, c.inlined)
@@ -171,3 +177,48 @@ func (c *combine) readyLandingsFiles() {
 		}
 	}
 }
+
+// readyMainHTMLFile read needed files from given repo folder and do some logic to make main.html.
+func (c *combine) readyMainHTMLFile(mainJSName string) {
+	var splash = mixCSSToHTML(c.repoLandings.GetFile("splash.html"), c.repoLandings.GetFile("splash.css"))
+
+	var tempName = struct {
+		MainJSName string
+		Splash     string
+	}{
+		MainJSName: mainJSName,
+		Splash:     *(*string)(unsafe.Pointer(&splash.Data)),
+	}
+
+	var err error
+	var sf = new(bytes.Buffer)
+	err = mainHTMLFile.Execute(sf, tempName)
+	if err != nil {
+		log.Warn(err)
+	}
+
+	c.mainHTML = &assets.File{}
+	c.mainHTML.Data = sf.Bytes()
+	c.mainHTML.Name = strconv.FormatUint(uint64(crc32.ChecksumIEEE(c.mainHTML.Data)), 10)
+	c.mainHTML.FullName = c.mainHTML.Name + ".html"
+	c.mainHTML.Extension = "html"
+	c.mainHTML.MimeType = "text/html"
+}
+
+var mainHTMLFile = template.Must(template.New("mainHTML").Parse(`
+<!-- For license and copyright information please see LEGAL file in repository -->
+<!DOCTYPE html>
+<html vocab="http://schema.org/" prefix="">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <script src="/{{.MainJSName}}.js" async></script>
+</head>
+
+<body>
+{{.Splash}}
+</body>
+
+</html>
+`))

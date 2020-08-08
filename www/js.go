@@ -4,20 +4,12 @@ package www
 
 import (
 	"bytes"
-	"regexp"
 	"strconv"
 	"strings"
 
 	"../assets"
 	"../log"
 )
-
-var jsComment = regexp.MustCompile(`(/\*.*?\*/)|(/\*[\w\W\n\s]+?\*/)`)
-
-// MinifyJS use to minify js string!
-func MinifyJS(js []byte) []byte {
-	return jsComment.ReplaceAll(js, []byte{})
-}
 
 // AddJSToJS use to add a JS file to other!
 func addJSToJS(ass *assets.Folder, srcJS, desJS *assets.File, inlined map[string]*assets.File) {
@@ -28,7 +20,7 @@ func addJSToJS(ass *assets.Folder, srcJS, desJS *assets.File, inlined map[string
 		return
 	}
 	inlined[srcJS.FullName] = srcJS
-	desJS.Data = append(desJS.Data, MinifyJS(srcJS.Data)...)
+	desJS.Data = append(desJS.Data, srcJS.Data...)
 }
 
 // AddJSToJSRecursively use to add JSS and all import to JS file!
@@ -42,22 +34,20 @@ func addJSToJSRecursively(ass *assets.Folder, srcJS, desJS *assets.File, inlined
 	// Tell other this file will add to desJS later!
 	inlined[srcJS.FullName] = srcJS
 
-	var minifiedJS = MinifyJS(srcJS.Data)
-
 	var im, st, en int
 	var loc, depName, fileName string
 	var locPart []string
 	var imDep *assets.Folder
 	var imFile *assets.File
 	for {
-		im = bytes.Index(minifiedJS, []byte("import "))
+		im = bytes.Index(srcJS.Data, []byte("import "))
 		if im == -1 {
 			break
 		}
 		// Find start and end of import file location!
-		st = im + bytes.IndexByte(minifiedJS[im:], '\'') + 1
-		en = st + bytes.IndexByte(minifiedJS[st:], '\'')
-		loc = string(minifiedJS[st:en])
+		st = im + bytes.IndexByte(srcJS.Data[im:], '\'') + 1
+		en = st + bytes.IndexByte(srcJS.Data[st:], '\'')
+		loc = string(srcJS.Data[st:en])
 
 		locPart = strings.Split(loc, "/")
 		if len(locPart) < 2 {
@@ -73,8 +63,8 @@ func addJSToJSRecursively(ass *assets.Folder, srcJS, desJS *assets.File, inlined
 			}
 		}
 
-		copy(minifiedJS[im-1:], minifiedJS[en+1:])
-		minifiedJS = minifiedJS[:len(minifiedJS)-(en-im)-2]
+		copy(srcJS.Data[im-1:], srcJS.Data[en+1:])
+		srcJS.Data = srcJS.Data[:len(srcJS.Data)-(en-im)-2]
 		// srcJSString = srcJSString[:im] + srcJSString[en+2:]
 
 		fileName = locPart[len(locPart)-1]
@@ -85,7 +75,7 @@ func addJSToJSRecursively(ass *assets.Folder, srcJS, desJS *assets.File, inlined
 		}
 	}
 
-	desJS.Data = append(desJS.Data, minifiedJS...)
+	desJS.Data = append(desJS.Data, srcJS.Data...)
 }
 
 // localizeJSFile make and returns number of localize file by number of language indicate in JSON localize text

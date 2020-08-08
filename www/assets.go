@@ -15,7 +15,7 @@ import (
 // LoadAssetsFromStorage use to load assets from gui folder.
 func LoadAssetsFromStorage(ass, repo *assets.Folder, repoLocation string) (main *assets.File) {
 	readRepositoryFromFileSystem(repoLocation, repo)
-	main = addRepoToAsset(ass, repo)
+	main = AddRepoToAsset(ass, repo)
 	log.Info("GUI changes successfully updated in server and ready to serve")
 	return
 }
@@ -43,8 +43,8 @@ func readRepositoryFromFileSystem(dirname string, repo *assets.Folder) (err erro
 	return
 }
 
-// addRepoToAsset use to add needed repo files that get from disk or network to the assets!!
-func addRepoToAsset(ass, repo *assets.Folder) (main *assets.File) {
+// AddRepoToAsset use to add needed repo files that get from disk or network to the assets!!
+func AddRepoToAsset(ass, repo *assets.Folder) (main *assets.File) {
 	var c = combine{}
 	c.init(repo)
 	c.do()
@@ -57,45 +57,42 @@ func addRepoToAsset(ass, repo *assets.Folder) (main *assets.File) {
 			var fullName = file.FullName
 			file.Name = strconv.FormatUint(uint64(crc32.ChecksumIEEE(file.Data)), 10)
 			file.FullName = file.Name + ".css"
-			ass.SetAndCompressFile(file, assets.CompressTypeGZIP)
+			ass.MinifyCompressSet(file, assets.CompressTypeGZIP)
 
 			c.mainJS.Data = bytes.ReplaceAll(c.mainJS.Data, []byte(fullName), []byte(file.FullName))
 		}
 	}
 
-	// ass.SetAndCompressFiles(c.initsJS, assets.CompressTypeGZIP)
+	// ass.MinifyCompressSets(c.initsJS, assets.CompressTypeGZIP)
 	var initHashName = strconv.FormatUint(uint64(crc32.ChecksumIEEE(c.initsJS[0].Data)), 10)
 	for _, file := range c.initsJS {
 		file.Name = initHashName + "-" + strings.Split(file.Name, "-")[1] // strings.Split(file.Name, "-")[1] as file lang
 		file.FullName = file.Name + ".js"
-		ass.SetAndCompressFile(file, assets.CompressTypeGZIP)
+		ass.MinifyCompressSet(file, assets.CompressTypeGZIP)
 	}
 
 	c.mainJS.Data = bytes.ReplaceAll(c.mainJS.Data, []byte("/init-"), []byte("/"+initHashName+"-"))
 	c.mainJS.Name = strconv.FormatUint(uint64(crc32.ChecksumIEEE(c.mainJS.Data)), 10)
 	c.mainJS.FullName = c.mainJS.Name + ".js"
-	ass.SetAndCompressFile(c.mainJS, assets.CompressTypeGZIP)
+	ass.MinifyCompressSet(c.mainJS, assets.CompressTypeGZIP)
 
 	// TODO::: Need to change landings file name to hash of data??
-	ass.SetAndCompressFiles(c.landings, assets.CompressTypeGZIP)
+	ass.MinifyCompressSets(c.landings, assets.CompressTypeGZIP)
 
 	// set /main.html
-	main = c.repoGUI.GetFile("main.html")
-	main.Data = bytes.ReplaceAll(main.Data, []byte("main.js"), []byte(c.mainJS.FullName))
-	main.Name = strconv.FormatUint(uint64(crc32.ChecksumIEEE(main.Data)), 10)
-	main.FullName = main.Name + ".html"
-	ass.SetAndCompressFile(main, assets.CompressTypeGZIP)
+	c.readyMainHTMLFile(c.mainJS.Name)
+	ass.MinifyCompressSet(c.mainHTML, assets.CompressTypeGZIP)
 
 	// set /sw.js
 	var swFile = c.repoGUI.GetDependency("libjs").GetDependency("gui-engine").GetFile("sw.js")
-	swFile.Data = bytes.ReplaceAll(swFile.Data, []byte("main.html"), []byte(main.FullName))
-	ass.SetAndCompressFile(swFile, assets.CompressTypeGZIP)
+	swFile.Data = bytes.ReplaceAll(swFile.Data, []byte("main.html"), []byte(c.mainHTML.FullName))
+	ass.MinifyCompressSet(swFile, assets.CompressTypeGZIP)
 
 	// set images from gui
 	var images = c.repoGUI.GetDependency("images")
 	for _, file := range images.Files {
-		ass.SetAndCompressFile(file, assets.CompressTypeGZIP)
+		ass.MinifyCompressSet(file, assets.CompressTypeGZIP)
 	}
 
-	return
+	return c.mainHTML
 }
