@@ -29,20 +29,28 @@ func HTTPIncomeRequestHandler(s *Server, st *Stream) {
 
 	err = req.UnMarshal(st.Payload)
 	if err != nil {
-		st.Connection.FailedPacketsReceived++
+		if st.Connection == nil {
+			// TODO::: due to IPv4&&IPv6 support we must handle some functionality here! Remove it when remove those support.
+			// TODO::: attack??
+			return
+		}
 		res.SetStatus(http.StatusBadRequestCode, http.StatusBadRequestPhrase)
 		res.SetError(err)
+		st.Connection.FailedPacketsReceived++
 		HTTPOutcomeResponseHandler(s, st.ReqRes, req, res)
 		return
 	}
 
 	// TODO::: due to IPv4&&IPv6 support we must handle some functionality here! Remove them when remove those support.
-	// HTTP may transmit over TCP||UDP and we can't make full detail connection in that protocols!!
 	if st.Connection == nil {
+		// HTTP may transmit over TCP||UDP and we can't make full detail connection in that protocols!!
 		err = makeNewConnectionByHTTP(s, st, req, res)
 		if err != nil {
 			return
 		}
+	}
+	if nonWWWtoWWW(s, st, req, res) {
+		return
 	}
 
 	var service *Service
@@ -77,29 +85,13 @@ func HTTPIncomeRequestHandler(s *Server, st *Stream) {
 		} else {
 			res.SetStatus(http.StatusOKCode, http.StatusOKPhrase)
 			res.Header.SetValue(http.HeaderKeyCacheControl, "max-age=31536000")
+			res.Header.SetValue(http.HeaderKeyContentType, file.MimeType)
+			res.Header.SetValue(http.HeaderKeyContentEncoding, file.CompressType)
+			res.Body = file.CompressData
 		}
-		res.Header.SetValue(http.HeaderKeyContentType, file.MimeType)
-		res.Header.SetValue(http.HeaderKeyContentEncoding, file.CompressType)
-		res.Body = file.CompressData
 		HTTPOutcomeResponseHandler(s, st.ReqRes, req, res)
 		return
 	} else {
-		// First check of request send over non www subdomain
-		var host = req.GetHost()
-		// Add www to domain. Just support http on www server app due to SE duplicate content both on www && non-www!
-		if len(host) > 4 && !(host[:4] == "www.") && !('0' <= host[0] && host[0] <= '9') {
-			host = "www." + host
-			var target = "https://" + host + req.URI.Path
-			if len(req.URI.Query) > 0 {
-				target += "?" + req.URI.Query // + "&rd=tls" // TODO::: add rd query for analysis purpose??
-			}
-			res.SetStatus(http.StatusMovedPermanentlyCode, http.StatusMovedPermanentlyPhrase)
-			res.Header.SetValue(http.HeaderKeyLocation, target)
-			res.Header.SetValue(http.HeaderKeyCacheControl, "max-age=31536000")
-			HTTPOutcomeResponseHandler(s, st.ReqRes, req, res)
-			return
-		}
-
 		// Route by URL
 		service = s.Services.GetServiceHandlerByURI(req.URI.Path)
 
@@ -236,6 +228,7 @@ func makeNewConnectionByHTTP(s *Server, st *Stream, req *http.Request, res *http
 			var acidArray [16]byte
 			copy(acidArray[:], acid)
 			st.Connection = s.Connections.GetConnectionByID(acidArray)
+			st.ReqRes.Connection = st.Connection
 		}
 	}
 	if st.Connection == nil {
@@ -256,14 +249,36 @@ func makeNewConnectionByHTTP(s *Server, st *Stream, req *http.Request, res *http
 				SameSite: "Lax",
 			},
 		})
+
+		// It is first time user reach platform, So tell the browser always reach by https!
+		res.Header.SetValue(http.HeaderKeyStrictTransportSecurity, "max-age=31536000")
 	}
 
 	// This header just need in IP connections, so add here not globally in HTTPOutcomeResponseHandler()
 	res.Header.SetValue(http.HeaderKeyConnection, http.HeaderValueKeepAlive)
 	res.Header.SetValue(http.HeaderKeyKeepAlive, "timeout=60")
-	res.Header.SetValue(http.HeaderKeyStrictTransportSecurity, "max-age=31536000")
 
 	st.Connection.RegisterStream(st)
 
+	return
+}
+
+// TODO::: due to IPv4&&IPv6 support need this func! Remove them when remove those support.
+func nonWWWtoWWW(s *Server, st *Stream, req *http.Request, res *http.Response) (redirect bool) {
+	// First check of request send over non www subdomain
+	var host = req.GetHost()
+	// Add www to domain. Just support http on www server app due to SE duplicate content both on www && non-www!
+	if len(host) > 4 && !(host[:4] == "www.") && !('0' <= host[0] && host[0] <= '9') {
+		host = "www." + host
+		var target = "https://" + host + req.URI.Path
+		if len(req.URI.Query) > 0 {
+			target += "?" + req.URI.Query // + "&rd=tls" // TODO::: add rd query for analysis purpose??
+		}
+		res.SetStatus(http.StatusMovedPermanentlyCode, http.StatusMovedPermanentlyPhrase)
+		res.Header.SetValue(http.HeaderKeyLocation, target)
+		res.Header.SetValue(http.HeaderKeyCacheControl, "max-age=31536000")
+		HTTPOutcomeResponseHandler(s, st.ReqRes, req, res)
+		return true
+	}
 	return
 }

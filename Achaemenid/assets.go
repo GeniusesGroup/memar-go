@@ -3,11 +3,13 @@
 package achaemenid
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 
 	as "../assets"
 	"../log"
+	"../www"
 )
 
 var repoLocation string
@@ -18,6 +20,7 @@ type assets struct {
 	Objects *as.Folder
 	Secret  *as.Folder
 	WWW     *as.Folder
+	WWWMain *as.File
 }
 
 func (a *assets) init() {
@@ -33,11 +36,30 @@ func (a *assets) init() {
 		log.Fatal(err)
 	}
 	repoLocation = filepath.Dir(ex)
+	log.Info("App start in", repoLocation)
 
-	a.Secret.ReadRepositoryFromFileSystem(repoLocation + "/secret")
+	a.LoadFromStorage()
 }
 
 func (a *assets) shutdown() {
 	// write secret files to storage device if any change made
 	a.Secret.WriteRepositoryToFileSystem(repoLocation + "/secret")
+}
+
+// It block function and must call by seprate goroutine, otherwise it can block other app logic!
+func (a *assets) LoadFromStorage() {
+	a.Secret.ReadRepositoryFromFileSystem(repoLocation + "/secret")
+	a.WWWMain = www.LoadAssetsFromStorage(a.WWW, a.GUI, repoLocation)
+}
+
+// It block function and must call by seprate goroutine, otherwise it can block other app logic!
+func (a *assets) ReLoadFromStorage() {
+	// defer Server.PanicHandler()
+reload:
+	log.Info("Press '''Enter''' key to reload GUI changes")
+	var non string
+	fmt.Scanln(&non)
+
+	a.WWWMain = www.LoadAssetsFromStorage(a.WWW, a.GUI, repoLocation)
+	goto reload
 }

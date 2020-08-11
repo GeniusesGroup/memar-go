@@ -5,15 +5,14 @@ package achaemenid
 import (
 	"os"
 	"os/signal"
+	"runtime/debug"
 	"syscall"
-	"time"
 
 	"../log"
 )
 
 func init() {
 	log.Info("-------------------Achaemenid Server-------------------")
-	log.Info("Server start at ", time.Now())
 }
 
 // DefaultServer use as default server.
@@ -44,6 +43,8 @@ const (
 
 // Init method use to initialize server object with default data.
 func (s *Server) Init() {
+	defer s.PanicHandler()
+
 	log.Info("Try to initialize server...")
 	if s == nil {
 		s = DefaultServer
@@ -60,25 +61,26 @@ func (s *Server) Init() {
 func (s *Server) Start() (err error) {
 	log.Info("Try to start server...")
 
-	// Recover from panics if exist to prevent stop server.
-	defer s.panicHandler()
-
 	s.State = ServerStateRunning
 
-	// watch for SIGTERM and SIGINT from the operating system, and notify the app on the channel
-	var sig = make(chan os.Signal)
-	signal.Notify(sig, syscall.SIGTERM)
-	signal.Notify(sig, syscall.SIGINT)
-	// Block main goroutine to handle OS signals!
-	s.HandleOSSignals(sig)
+	log.Info("Server start successfully, Now listen to any OS signals ...")
 
-	return nil
+	for {
+		// watch for SIGTERM and SIGINT from the operating system, and notify the app on the channel
+		var sig = make(chan os.Signal)
+		signal.Notify(sig)
+		// Block main goroutine to handle OS signals!
+		s.HandleOSSignals(sig)
+	}
 }
 
-func (s *Server) panicHandler() {
+// PanicHandler recover from panics if exist to prevent server stop.
+// Call it by defer in any goroutine due to >> https://github.com/golang/go/issues/20161
+func (s *Server) PanicHandler() {
 	var r = recover()
 	if r != nil {
 		log.Warn("Panic Exception: ", r)
+		log.Warn("Debug Stack: ", string(debug.Stack()))
 	}
 }
 
@@ -95,6 +97,10 @@ func (s *Server) HandleOSSignals(sigChannel chan os.Signal) {
 			s.Shutdown()
 			os.Exit(s.State)
 		}
+	case syscall.Signal(10): // syscall.SIGUSR1
+		log.Info("Receive signal to reload server assets")
+		s.Assets.LoadFromStorage()
+	case syscall.Signal(12): // syscall.SIGUSR2
 	}
 }
 
@@ -110,6 +116,6 @@ func (s *Server) Shutdown() {
 	// it must change to ServerStateStop(0) otherwise it means app can't close normally
 	s.State = ServerStateStop
 
-	log.Info("Server stopped at", time.Now())
+	log.Info("Server stopped")
 	log.SaveToStorage("Achaemenid", repoLocation)
 }
