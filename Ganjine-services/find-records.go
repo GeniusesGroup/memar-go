@@ -6,6 +6,7 @@ import (
 	"unsafe"
 
 	"../achaemenid"
+	"../ganjine"
 )
 
 var findRecordsService = achaemenid.Service{
@@ -51,19 +52,23 @@ func FindRecordsSRPC(s *achaemenid.Server, st *achaemenid.Stream) {
 type FindRecordsReq struct {
 	IndexHash [32]byte
 	Offset    uint64
-	Limit     uint64 // It is better to be modulus of 64 or 256 if storage devices use 4K clusters!
+	Limit     uint64 // It is better to be modulus of 128 if storage devices use 4K clusters!
 }
 
 // FindRecordsRes is response structure of FindRecords()
 type FindRecordsRes struct {
-	RecordIDs [][16]byte
+	RecordIDs [][32]byte
 }
 
 // FindRecords get related RecordsID that set to given indexHash before!
 func FindRecords(req *FindRecordsReq) (res *FindRecordsRes, err error) {
-	res = &FindRecordsRes{
-		RecordIDs: cluster.Node.HashIndex.GetIndexRecords(req.IndexHash, req.Offset, req.Limit),
+	var hashIndex = ganjine.HashIndex{
+		RecordID: req.IndexHash,
 	}
+
+	res = &FindRecordsRes{}
+	res.RecordIDs, err = hashIndex.GetIndexRecords(req.Offset, req.Limit)
+
 	return
 }
 
@@ -110,7 +115,7 @@ func (req *FindRecordsReq) SyllabEncoder() (buf []byte) {
 func (res *FindRecordsRes) SyllabDecoder(buf []byte) (err error) {
 	var sliceLen = uint32(buf[4]) | uint32(buf[5])<<8 | uint32(buf[6])<<16 | uint32(buf[7])<<24
 	buf = buf[8:]
-	res.RecordIDs = *(*[][16]byte)(unsafe.Pointer(&buf))
+	res.RecordIDs = *(*[][32]byte)(unsafe.Pointer(&buf))
 	res.RecordIDs = res.RecordIDs[:sliceLen]
 	return
 }

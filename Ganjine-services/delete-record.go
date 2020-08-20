@@ -3,7 +3,7 @@
 package gs
 
 import (
-	psdk "../PersiaOS-sdk"
+	persiaos "../PersiaOS-sdk"
 	"../achaemenid"
 )
 
@@ -43,7 +43,7 @@ func DeleteRecordSRPC(s *achaemenid.Server, st *achaemenid.Stream) {
 // DeleteRecordReq is request structure of DeleteRecord()
 type DeleteRecordReq struct {
 	Type     requestType
-	RecordID [16]byte
+	RecordID [32]byte
 }
 
 // DeleteRecord delete specific record by given ID in all cluster!
@@ -55,10 +55,10 @@ func DeleteRecord(req *DeleteRecordReq) (err error) {
 
 		// send request to other related nodes
 		var i uint8
-		for i = 1; i < cluster.TotalReplications; i++ {
+		for i = 1; i < cluster.Replications.TotalZones; i++ {
 			// Make new request-response streams
 			var reqStream, resStream *achaemenid.Stream
-			reqStream, resStream, err = cluster.Replications[i].Nodes[cluster.Node.ID].Conn.MakeBidirectionalStream(0)
+			reqStream, resStream, err = cluster.Replications.Zones[i].Nodes[cluster.Node.ID].Conn.MakeBidirectionalStream(0)
 			if err != nil {
 				// TODO::: Can we easily return error if two nodes did their job and not have enough resource to send request to final node??
 				return
@@ -80,7 +80,7 @@ func DeleteRecord(req *DeleteRecordReq) (err error) {
 	}
 
 	// Do for i=0 as local node
-	err = psdk.DeleteStorageRecord(req.RecordID)
+	err = persiaos.DeleteStorageRecord(req.RecordID)
 	return
 }
 

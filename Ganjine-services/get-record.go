@@ -3,7 +3,7 @@
 package gs
 
 import (
-	psdk "../PersiaOS-sdk"
+	persiaos "../PersiaOS-sdk"
 	"../achaemenid"
 )
 
@@ -46,7 +46,7 @@ func GetRecordSRPC(s *achaemenid.Server, st *achaemenid.Stream) {
 
 // GetRecordReq is request structure of GetRecord()
 type GetRecordReq struct {
-	RecordID [16]byte
+	RecordID [32]byte
 }
 
 // GetRecordRes is response structure of GetRecord()
@@ -57,7 +57,7 @@ type GetRecordRes struct {
 // GetRecord get the specific record by its ID!
 func GetRecord(req *GetRecordReq) (res *GetRecordRes, err error) {
 	res = &GetRecordRes{}
-	res.Record, err = psdk.GetStorageRecord(req.RecordID)
+	res.Record, err = persiaos.GetStorageRecord(req.RecordID)
 	return
 }
 

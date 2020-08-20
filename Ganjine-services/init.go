@@ -29,6 +29,7 @@ func Init(s *achaemenid.Server, c *ganjine.Cluster) {
 	s.Services.RegisterService(&findRecordsService)
 	s.Services.RegisterService(&finishTransactionService)
 	s.Services.RegisterService(&getIndexHashNumberService)
+	s.Services.RegisterService(&getNodeDetailsService)
 	s.Services.RegisterService(&getRecordService)
 	s.Services.RegisterService(&listenToIndexService)
 	s.Services.RegisterService(&readRecordService)

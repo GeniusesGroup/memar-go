@@ -2,7 +2,10 @@
 
 package gs
 
-import "../achaemenid"
+import (
+	"../achaemenid"
+	"../ganjine"
+)
 
 var deleteIndexHashHistoryService = achaemenid.Service{
 	ID:              691384835,
@@ -49,7 +52,11 @@ func DeleteIndexHashHistory(req *DeleteIndexHashHistoryReq) (err error) {
 		return
 	}
 
-	var recordsID [][16]byte = cluster.Node.HashIndex.GetIndexRecords(req.IndexHash, 0, 0)
+	var hashIndex = ganjine.HashIndex{
+		RecordID: req.IndexHash,
+	}
+	var recordsID [][32]byte
+	recordsID, err = hashIndex.GetIndexRecords(0, 0)
 	var ln = len(recordsID)
 	for i := 0; i < ln; i++ {
 		err = DeleteRecord(&DeleteRecordReq{Type: req.Type, RecordID: recordsID[i]})

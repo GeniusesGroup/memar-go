@@ -2,7 +2,10 @@
 
 package gs
 
-import "../achaemenid"
+import (
+	"../achaemenid"
+	"../ganjine"
+)
 
 var setIndexHashService = achaemenid.Service{
 	ID:              1881585857,
@@ -39,7 +42,7 @@ func SetIndexHashSRPC(s *achaemenid.Server, st *achaemenid.Stream) {
 type SetIndexHashReq struct {
 	Type      requestType
 	IndexHash [32]byte
-	RecordID  [16]byte
+	RecordID  [32]byte
 }
 
 // SetIndexHash set a record ID to new||exiting index hash.
@@ -51,10 +54,10 @@ func SetIndexHash(req *SetIndexHashReq) (err error) {
 
 		// send request to other related nodes
 		var i uint8
-		for i = 1; i < cluster.TotalReplications; i++ {
+		for i = 1; i < cluster.Replications.TotalZones; i++ {
 			// Make new request-response streams
 			var reqStream, resStream *achaemenid.Stream
-			reqStream, resStream, err = cluster.Replications[i].Nodes[cluster.Node.ID].Conn.MakeBidirectionalStream(0)
+			reqStream, resStream, err = cluster.Replications.Zones[i].Nodes[cluster.Node.ID].Conn.MakeBidirectionalStream(0)
 			if err != nil {
 				// TODO::: Can we easily return error if two nodes did their job and not have enough resource to send request to final node??
 				return
@@ -76,7 +79,11 @@ func SetIndexHash(req *SetIndexHashReq) (err error) {
 	}
 
 	// Do for i=0 as local node
-	cluster.Node.HashIndex.SetIndexRecord(req.IndexHash, req.RecordID)
+	var hashIndex = ganjine.HashIndex{
+		RecordID:   req.IndexHash,
+		OwnerAppID: server.Manifest.AppID, // TODO::: just need copy if record is not exist and want to create new one
+	}
+	err = hashIndex.AppendRecordID(req.RecordID)
 	return
 }
 

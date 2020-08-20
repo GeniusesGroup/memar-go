@@ -2,7 +2,10 @@
 
 package gs
 
-import "../achaemenid"
+import (
+	"../achaemenid"
+	"../ganjine"
+)
 
 var getIndexHashNumberService = achaemenid.Service{
 	ID:              222077451,
@@ -53,8 +56,12 @@ type GetIndexHashNumberRes struct {
 
 // GetIndexHashNumber get number of recordsID register for specific IndexHash
 func GetIndexHashNumber(req *GetIndexHashNumberReq) (res *GetIndexHashNumberRes, err error) {
+	var hashIndex = ganjine.HashIndex{
+		RecordID: req.IndexHash,
+	}
+	err = hashIndex.GetHeader()
 	res = &GetIndexHashNumberRes{}
-	_, res.RecordNumber = cluster.Node.HashIndex.GetRecordsIDBucketInfo(req.IndexHash)
+	res.RecordNumber = hashIndex.RecordNumber
 	return
 }
 

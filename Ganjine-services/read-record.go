@@ -3,7 +3,7 @@
 package gs
 
 import (
-	psdk "../PersiaOS-sdk"
+	persiaos "../PersiaOS-sdk"
 	"../achaemenid"
 )
 
@@ -48,7 +48,7 @@ func ReadRecordSRPC(s *achaemenid.Server, st *achaemenid.Stream) {
 
 // ReadRecordReq is request structure of ReadRecord()
 type ReadRecordReq struct {
-	RecordID [16]byte
+	RecordID [32]byte
 	Offset   uint64 // Do something like block storage API
 	Limit    uint64 // Do something like block storage API
 }
@@ -61,7 +61,7 @@ type ReadRecordRes struct {
 // ReadRecord read some part of the specific record by its ID!
 func ReadRecord(req *ReadRecordReq) (res *ReadRecordRes, err error) {
 	res = &ReadRecordRes{}
-	res.Record, err = psdk.ReadStorageRecord(req.RecordID, req.Offset, req.Limit)
+	res.Record, err = persiaos.ReadStorageRecord(req.RecordID, req.Offset, req.Limit)
 	return
 }
 

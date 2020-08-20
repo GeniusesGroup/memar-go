@@ -54,7 +54,7 @@ type FindRecordsConsistentlyReq struct {
 
 // FindRecordsConsistentlyRes is response structure of FindRecordsConsistently()
 type FindRecordsConsistentlyRes struct {
-	RecordIDs [][16]byte // Max 256 record return
+	RecordIDs [][32]byte // Max 128 record return
 }
 
 // FindRecordsConsistently find records by indexes that store before in consistently!
@@ -85,7 +85,7 @@ func (req *FindRecordsConsistentlyReq) SyllabEncoder() (buf []byte) {
 func (res *FindRecordsConsistentlyRes) SyllabDecoder(buf []byte) (err error) {
 	var sliceLen = uint32(buf[4]) | uint32(buf[5])<<8 | uint32(buf[6])<<16 | uint32(buf[7])<<24
 	buf = buf[8:]
-	res.RecordIDs = *(*[][16]byte)(unsafe.Pointer(&buf))
+	res.RecordIDs = *(*[][32]byte)(unsafe.Pointer(&buf))
 	res.RecordIDs = res.RecordIDs[:sliceLen]
 	return
 }
