@@ -15,10 +15,6 @@ func init() {
 	log.Info("-------------------Achaemenid Server-------------------")
 }
 
-// DefaultServer use as default server.
-var DefaultServer = &defaultServer
-var defaultServer Server
-
 // Server represents needed data to serving some functionality such as networks, ...
 // to both server and client apps!
 type Server struct {
@@ -47,7 +43,7 @@ func (s *Server) Init() {
 
 	log.Info("Try to initialize server...")
 	if s == nil {
-		s = DefaultServer
+		log.Fatal("Try to initialize nil server! Check codes!")
 	}
 	s.State = ServerStateStarting
 	// Get UserGivenPermission from OS

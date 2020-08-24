@@ -186,23 +186,18 @@ func HTTPToHTTPSHandler(s *Server, st *Stream) {
 	var res = http.MakeNewResponse()
 	err = req.UnMarshal(st.Payload)
 	if err != nil {
-		st.Connection.FailedPacketsReceived++
+		// TODO::: attack??
 		res.SetStatus(http.StatusBadRequestCode, http.StatusBadRequestPhrase)
 	} else {
-		var host = req.GetHost()
-		// Add www to domain due to we just support http on www server app!
-		if len(host) >= 4 && host[0:4] != "www." {
-			host = "www." + host
-		}
-
 		// redirect http to https
 		// remove/add not default ports from req.Host
-		var target = "https://" + host + req.URI.Path
+		var target = "https://" + req.GetHost() + req.URI.Path
 		if len(req.URI.Query) > 0 {
 			target += "?" + req.URI.Query // + "&rd=tls" // TODO::: add rd query for analysis purpose??
 		}
 		res.SetStatus(http.StatusMovedPermanentlyCode, http.StatusMovedPermanentlyPhrase)
 		res.Header.SetValue(http.HeaderKeyLocation, target)
+		res.Header.SetValue(http.HeaderKeyConnection, http.HeaderValueClose)
 	}
 
 	// Do some global assignment to response
@@ -251,12 +246,12 @@ func makeNewConnectionByHTTP(s *Server, st *Stream, req *http.Request, res *http
 		})
 
 		// It is first time user reach platform, So tell the browser always reach by https!
-		res.Header.SetValue(http.HeaderKeyStrictTransportSecurity, "max-age=31536000")
+		res.Header.SetValue(http.HeaderKeyStrictTransportSecurity, "max-age=31536000; includeSubDomains; preload")
 	}
 
 	// This header just need in IP connections, so add here not globally in HTTPOutcomeResponseHandler()
 	res.Header.SetValue(http.HeaderKeyConnection, http.HeaderValueKeepAlive)
-	res.Header.SetValue(http.HeaderKeyKeepAlive, "timeout=60")
+	res.Header.SetValue(http.HeaderKeyKeepAlive, "timeout=120")
 
 	st.Connection.RegisterStream(st)
 
@@ -269,8 +264,7 @@ func nonWWWtoWWW(s *Server, st *Stream, req *http.Request, res *http.Response) (
 	var host = req.GetHost()
 	// Add www to domain. Just support http on www server app due to SE duplicate content both on www && non-www!
 	if len(host) > 4 && !(host[:4] == "www.") && !('0' <= host[0] && host[0] <= '9') {
-		host = "www." + host
-		var target = "https://" + host + req.URI.Path
+		var target = "https://www." + host + req.URI.Path
 		if len(req.URI.Query) > 0 {
 			target += "?" + req.URI.Query // + "&rd=tls" // TODO::: add rd query for analysis purpose??
 		}

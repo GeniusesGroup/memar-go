@@ -4,7 +4,7 @@ package achaemenid
 
 import "time"
 
-// Manifest use to store server manifest data
+// Manifest store server manifest data
 // All string slice is multi language and in order by ManifestLanguages order
 type Manifest struct {
 	SocietyID           uint32
@@ -70,13 +70,8 @@ type TechnicalInfo struct {
 	Storage  uint64 // Byte, HHD||SSD||... indicate by DataCentersClassForDataStore
 
 	// Distribution
-	DistributeOutOfSociety       bool   // Allow to run service-only instance of app out of original society belong to.
-	DataCentersClass             uint8  // 0:FirstClass 256:Low-Quality default:5
-	DataCentersClassForDataStore uint8  // 0:FirstClass 256:Low-Quality default:0
-	ReplicationNumber            uint8  // deafult:3
-	MaxNodeNumber                uint32 // default:3
-
-	// DataStore
-	TransactionTimeOut uint16 // in ms, default:500ms, Max 65.535s timeout
-	NodeFailureTimeOut uint16 // in minute, default:60m, other corresponding node same range will replace failed node! not use in network failure, it is handy proccess!
+	DistributeOutOfSociety bool   // Allow to run service-only instance of app out of original society belong to.
+	DataCentersClass       uint8  // 0:FirstClass 256:Low-Quality default:5
+	MaxNodeNumber          uint32 // default:3
+	NodeFailureTimeOut     uint16 // in minute, default:60m, other service only node replace failed node! not use in network failure, it is handy proccess!
 }
