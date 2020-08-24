@@ -3,9 +3,12 @@
 package main
 
 import (
+	"unsafe"
+
 	ag "../Achaemenid-generator"
 	gg "../Ganjine-generator"
 	"../assets"
+	wg "../www-generator"
 )
 
 // MakeNewProjectReq :
@@ -62,9 +65,32 @@ func MakeNewProject(req *MakeNewProjectReq) (res *MakeNewProjectRes, err error) 
 	widgets.State = assets.StateChanged
 	guiF.SetDependency(widgets)
 
-	// /gui/main.html
-
 	// /gui/main.js
+
+	// /gui/init.js
+	// /gui/init.json
+
+	// /gui/landings/splash.html
+	// /gui/landings/splash.css
+	// /gui/landings/splash.json
+	var splashHTML = &assets.File{}
+	var splashCSS = &assets.File{}
+	var splashJSON = &assets.File{}
+	err = wg.MakeSplashFiles(splashHTML, splashCSS, splashJSON)
+	if err != nil {
+		return nil, err
+	}
+	req.Repo.SetFile(splashHTML)
+	req.Repo.SetFile(splashCSS)
+	req.Repo.SetFile(splashJSON)
+
+	// /gui/main-dev.go
+	var MainDevGo = &assets.File{}
+	err = ag.MakeMainDevFile(MainDevGo)
+	if err != nil {
+		return nil, err
+	}
+	req.Repo.SetFile(MainDevGo)
 
 	/* SDK */
 	var goSDKRepo = assets.NewFolder("sdk-go")
@@ -82,18 +108,25 @@ func MakeNewProject(req *MakeNewProjectReq) (res *MakeNewProjectRes, err error) 
 		return nil, err
 	}
 	req.Repo.SetFile(MainGo)
+	// get-connection.go
+	var getConnectionGo = &assets.File{}
+	err = ag.MakeGetConnectionFile(getConnectionGo)
+	if err != nil {
+		return nil, err
+	}
+	req.Repo.SetFile(getConnectionGo)
 
 	// .gitignore
 	var ob3 assets.File
 	ob3.Name = ".gitignore"
-	ob3.Data = []byte(gitignore)
+	ob3.Data = *(*[]byte)(unsafe.Pointer(&gitignore))
 	ob3.State = assets.StateChanged
 	req.Repo.SetFile(&ob3)
 
 	return res, nil
 }
 
-const gitignore = `
+var gitignore = `
 # Secrets files in secret folders
 secret/
 
@@ -129,6 +162,7 @@ assets--g.go
 *.dylib
 
 # Executables
+gui-dev
 *.exe
 *.out
 *.app
@@ -167,6 +201,7 @@ _testmain.go
 *.prof
 
 # external packages folder
+images/
 vendor/
 *node_modules*
 *bower_components*

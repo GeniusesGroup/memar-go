@@ -13,7 +13,7 @@ import (
 	"../assets"
 	"../log"
 	"../syllab"
-	wg "../www"
+	wg "../www-generator"
 )
 
 const (
@@ -51,6 +51,7 @@ func init() {
 	ServiceRootLocation = filepath.Dir(ex)
 }
 
+// TODO::: improve architecture by split main function!
 func main() {
 	defer log.SaveToStorage("lib-cli", ServiceRootLocation)
 
@@ -76,6 +77,7 @@ func main() {
 		log.Fatal("Read repository face this error:", err)
 	}
 
+	log.Info("-------------------------------------------------------------------------------------")
 	log.Info("Enter desire chaparkhane CLI service ID. You can select:")
 	log.Info("0  : Nothing DO!!! Prevent mistakes!!!")
 	log.Info("1  : Quit without save changes")
@@ -96,8 +98,9 @@ func main() {
 	log.Info("70  : Update Syllab encoder||decoder methods in given file name by safe manner")
 	log.Info("71  : Update Syllab encoder||decoder methods in given file name by unsafe manner")
 	log.Info(" *************** GUI Services *************** ")
+	log.Info("80  : Add new GUI raw page")
 	log.Info(" *************** JSON Services *************** ")
-	log.Info("----------------------------------------")
+	log.Info("-------------------------------------------------------------------------------------")
 Choose:
 	var requestedService int
 	fmt.Scanln(&requestedService)
@@ -155,7 +158,7 @@ Choose:
 			break
 		}
 		repo.Dependencies[FolderNameServices].SetFile(&file)
-		log.Info("Add new Achaemenid service had been succeed!!\n")
+		log.Info("Add new Achaemenid service had been succeed!!")
 	case 31:
 		log.Info("Enter desire full file name with extension!")
 		var fileName string
@@ -172,7 +175,7 @@ Choose:
 		if err != nil {
 			log.Warn("Update Achaemenid service file face this error:", err)
 		}
-		log.Info("Update exiting Achaemenid file had been succeed!!\n")
+		log.Info("Update exiting Achaemenid file had been succeed!!")
 	case 32:
 		log.Info("Enter desire full file name with extension!")
 		var fileName string
@@ -190,7 +193,7 @@ Choose:
 			log.Warn("Make Achaemenid service GO-SDK face this error:", err)
 		}
 		repo.Dependencies[FolderNameGOSDK].SetFile(file)
-		log.Info("Make Achaemenid service Go-SDK had been succeed!!\n")
+		log.Info("Make Achaemenid service Go-SDK had been succeed!!")
 	case 33:
 		log.Info("Enter desire full file name with extension!")
 		var fileName string
@@ -208,7 +211,7 @@ Choose:
 			log.Warn("Make Achaemenid service JS-SDK face this error:", err)
 		}
 		repo.Dependencies[FolderNameJSSDK].SetFile(file)
-		log.Info("Make Achaemenid service JS-SDK had been succeed!!\n")
+		log.Info("Make Achaemenid service JS-SDK had been succeed!!")
 	case 40:
 		var file = assets.File{}
 		err = wg.MakeAssetsFile(repo, &file)
@@ -217,7 +220,7 @@ Choose:
 			break
 		}
 		repo.SetFile(&file)
-		log.Info("Make www assets file from gui folder had been succeed!!\n")
+		log.Info("Make www assets file from gui folder had been succeed!!")
 
 	// *************** Ganjine Services ***************
 	case 50:
@@ -235,7 +238,7 @@ Choose:
 			break
 		}
 		repo.Dependencies[FolderNameDataStore].SetFile(&file)
-		log.Info("Add new structure had been succeed!!\n")
+		log.Info("Add new structure had been succeed!!")
 	case 51:
 		log.Info("Enter desire full file name with extension!")
 		var fileName string
@@ -252,7 +255,7 @@ Choose:
 		if err != nil {
 			log.Warn("Update Structure file face this error:", err)
 		}
-		log.Info("Update exiting Ganjine file had been succeed!!\n")
+		log.Info("Update exiting Ganjine file had been succeed!!")
 
 	// *************** Syllab Services ***************
 	case 70:
@@ -271,7 +274,7 @@ Choose:
 		if err != nil {
 			log.Warn("Update Syllab encoder||decoder safe face this error:", err)
 		}
-		log.Info("Update Syllab encoder||decoder safe had been succeed!!\n")
+		log.Info("Update Syllab encoder||decoder safe had been succeed!!")
 	case 71:
 		log.Info("Enter desire full file name with extension!")
 		var fileName string
@@ -288,14 +291,36 @@ Choose:
 		if err != nil {
 			log.Warn("Update Syllab encoder||decoder unsafe face this error:", err)
 		}
-		log.Info("Update Syllab encoder||decoder unsafe had been succeed!!\n")
+		log.Info("Update Syllab encoder||decoder unsafe had been succeed!!")
+
+		// *************** GUI Services ***************
+	case 80:
+		log.Info("Enter desire full page name like 'store'")
+		var pageName string
+		fmt.Scanln(&pageName)
+		log.Info("Desire page name: ", pageName)
+
+		var jsFile = assets.File{Name: pageName}
+		var htmlFile assets.File
+		var cssFile assets.File
+		var jsonFile assets.File
+
+		err = wg.MakeNewPage(&jsFile, &htmlFile, &cssFile, &jsonFile)
+		if err != nil {
+			log.Warn("Add new GUI raw page face this error:", err)
+		}
+		repo.Dependencies[FolderNameGUI].Dependencies[FolderNameGUIPages].SetFile(&jsFile)
+		repo.Dependencies[FolderNameGUI].Dependencies[FolderNameGUIPages].SetFile(&htmlFile)
+		repo.Dependencies[FolderNameGUI].Dependencies[FolderNameGUIPages].SetFile(&cssFile)
+		repo.Dependencies[FolderNameGUI].Dependencies[FolderNameGUIPages].SetFile(&jsonFile)
+		log.Info("Add new GUI raw page had been succeed!!")
 
 	default:
 		log.Info("Nothing DO in given ID to prevent often mistakes enter bad ID!!!")
 		goto Choose
 	}
 
-	log.Info("----------------------------------------")
+	log.Info("-------------------------------------------------------------------------------------")
 	log.Info("Enter new desire chaparkhane service ID:")
 	goto Choose
 
