@@ -4,8 +4,6 @@ package www
 
 import (
 	"bytes"
-	"hash/crc32"
-	"strconv"
 	"strings"
 	"text/template"
 	"unsafe"
@@ -197,12 +195,14 @@ func (c *combine) readyMainHTMLFile(mainJSName string) {
 		log.Warn(err)
 	}
 
-	c.mainHTML = &assets.File{}
-	c.mainHTML.Data = sf.Bytes()
-	c.mainHTML.Name = strconv.FormatUint(uint64(crc32.ChecksumIEEE(c.mainHTML.Data)), 10)
-	c.mainHTML.FullName = c.mainHTML.Name + ".html"
-	c.mainHTML.Extension = "html"
-	c.mainHTML.MimeType = "text/html"
+	c.mainHTML = &assets.File{
+		FullName: "main.html",
+		Name: "main",
+		Extension: "html",
+		MimeType: "text/html",
+		Data: sf.Bytes(),
+	}
+	c.mainHTML.AddHashToName()
 }
 
 var mainHTMLFile = template.Must(template.New("mainHTML").Parse(`

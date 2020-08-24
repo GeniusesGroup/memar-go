@@ -4,8 +4,6 @@ package www
 
 import (
 	"bytes"
-	"hash/crc32"
-	"strconv"
 	"strings"
 
 	"../assets"
@@ -55,8 +53,7 @@ func AddRepoToAsset(ass, repo *assets.Folder) (main *assets.File) {
 	for _, file = range dl.Files {
 		if file.Extension == "css" {
 			var fullName = file.FullName
-			file.Name = strconv.FormatUint(uint64(crc32.ChecksumIEEE(file.Data)), 10)
-			file.FullName = file.Name + ".css"
+			file.AddHashToName()
 			ass.MinifyCompressSet(file, assets.CompressTypeGZIP)
 
 			c.mainJS.Data = bytes.ReplaceAll(c.mainJS.Data, []byte(fullName), []byte(file.FullName))
@@ -64,16 +61,15 @@ func AddRepoToAsset(ass, repo *assets.Folder) (main *assets.File) {
 	}
 
 	// ass.MinifyCompressSets(c.initsJS, assets.CompressTypeGZIP)
-	var initHashName = strconv.FormatUint(uint64(crc32.ChecksumIEEE(c.initsJS[0].Data)), 10)
+	var initJSHashName = "init-" + c.initsJS[0].GetHashOfData() + "-"
 	for _, file := range c.initsJS {
-		file.Name = initHashName + "-" + strings.Split(file.Name, "-")[1] // strings.Split(file.Name, "-")[1] as file lang
+		file.Name = initJSHashName + strings.Split(file.Name, "-")[1] // strings.Split(file.Name, "-")[1] as file lang
 		file.FullName = file.Name + ".js"
 		ass.MinifyCompressSet(file, assets.CompressTypeGZIP)
 	}
 
-	c.mainJS.Data = bytes.ReplaceAll(c.mainJS.Data, []byte("/init-"), []byte("/"+initHashName+"-"))
-	c.mainJS.Name = strconv.FormatUint(uint64(crc32.ChecksumIEEE(c.mainJS.Data)), 10)
-	c.mainJS.FullName = c.mainJS.Name + ".js"
+	c.mainJS.Data = bytes.ReplaceAll(c.mainJS.Data, []byte("/init-"), []byte("/"+initJSHashName))
+	c.mainJS.AddHashToName()
 	ass.MinifyCompressSet(c.mainJS, assets.CompressTypeGZIP)
 
 	// TODO::: Need to change landings file name to hash of data??
