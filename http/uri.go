@@ -60,11 +60,17 @@ func (u *URI) UnMarshal(raw string) {
 	for i := 0; i < ln; i++ {
 		switch raw[i] {
 		case ':':
-			pathStartIndex = i + 3 // +3 due to have ://
-			u.Scheme = raw[:i]
+			// Check : mark is first appear before any start||end sign or it is part of others!
+			if pathStartIndex == 0 && pathEndIndex == 0 {
+				pathStartIndex = i + 3 // +3 due to have ://
+				u.Scheme = raw[:i]
+			}
 		case '?':
-			pathEndIndex = i
-			u.Query = raw[i+1:] // +1 due to we don't need '?'
+			// Check ? mark is first appear or it is part of some query key||value!
+			if pathEndIndex == 0 {
+				pathEndIndex = i
+				u.Query = raw[i+1:] // +1 due to we don't need '?'
+			}
 		case '#':
 			if pathEndIndex == 0 {
 				pathEndIndex = i
