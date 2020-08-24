@@ -5,7 +5,9 @@ package assets
 import (
 	"bytes"
 	"compress/gzip"
+	"hash/crc32"
 	"regexp"
+	"strconv"
 
 	"../log"
 
@@ -18,7 +20,7 @@ import (
 	"github.com/tdewolff/minify/xml"
 )
 
-// File :
+// File store some data about a file!
 type File struct {
 	FullName     string
 	Name         string
@@ -36,6 +38,23 @@ const (
 	StateUnChanged uint8 = iota
 	StateChanged
 )
+
+// var md5Hasher = md5.New()
+
+// GetHashOfData return hash of f.Data
+func (f *File) GetHashOfData() (hash string) {
+	// Just want to differ two same file, So crc32 is more enough!
+	// md5Hasher.Write(f.Data)
+	// hash = hex.EncodeToString(md5Hasher.Sum(nil))
+	// md5Hasher.Reset()
+	return strconv.FormatUint(uint64(crc32.ChecksumIEEE(f.Data)), 10)
+}
+
+// AddHashToName add f.Data hash to its name and full name.
+func (f *File) AddHashToName() {
+	f.Name += "-" + f.GetHashOfData()
+	f.FullName = f.Name + "." + f.Extension
+}
 
 // Copy returns a copy of the file.
 func (f *File) Copy() *File {
