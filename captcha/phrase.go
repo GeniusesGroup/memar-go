@@ -11,14 +11,15 @@ import (
 	"image/png"
 	"math/rand"
 	"strconv"
+	"time"
 	"unsafe"
 
 	"github.com/golang/freetype"
 	"github.com/golang/freetype/truetype"
 	"golang.org/x/image/font/gofont/gobolditalic"
 
-	"time"
-
+	etime "../earth-time"
+	"../log"
 	"../uuid"
 )
 
@@ -45,7 +46,7 @@ type PhraseCaptcha struct {
 	ID       [16]byte
 	Answer   string
 	ExpireIn int64
-	State    State
+	State    state
 	Image    []byte // In requested lang & format
 	Audio    []byte // In requested lang & format
 }
@@ -70,7 +71,7 @@ func NewDefaultPhraseCaptchas() (pcs *PhraseCaptchas) {
 func (pcs *PhraseCaptchas) NewImage(lang Language, imageformat ImageFormat) (pc *PhraseCaptcha) {
 	pc = &PhraseCaptcha{
 		ID:       uuid.NewV4(),
-		ExpireIn: time.Now().Unix() + pcs.Duration,
+		ExpireIn: etime.Now() + pcs.Duration,
 		State:    StateCreated,
 	}
 	switch pcs.Type {
@@ -100,7 +101,7 @@ func (pcs *PhraseCaptchas) GetAudio(captchaID [16]byte, lang Language, audioForm
 // Get return exiting captcha if exits otherwise returns nil!
 func (pcs *PhraseCaptchas) Get(captchaID [16]byte) (pc *PhraseCaptcha) {
 	pc = pcs.Pool[captchaID]
-	if pc != nil && pc.ExpireIn < time.Now().Unix() {
+	if pc != nil && pc.ExpireIn < etime.Now() {
 		delete(pcs.Pool, captchaID)
 		return nil
 	}
@@ -108,24 +109,41 @@ func (pcs *PhraseCaptchas) Get(captchaID [16]byte) (pc *PhraseCaptcha) {
 }
 
 // Solve check answer and return captcha state!
-func (pcs *PhraseCaptchas) Solve(captchaID [16]byte, answer string) State {
-	var c *PhraseCaptcha
-	c = pcs.Pool[captchaID]
-	if c == nil {
-		return StateNotFound
+func (pcs *PhraseCaptchas) Solve(captchaID [16]byte, answer string) error {
+	var pc *PhraseCaptcha
+	pc = pcs.Pool[captchaID]
+	if pc == nil {
+		return ErrCaptchaNotFound
 	}
-	if c.ExpireIn < time.Now().Unix() {
+	if pc.ExpireIn < etime.Now() {
 		delete(pcs.Pool, captchaID)
-		return StateExpired
+		return ErrCaptchaExpired
 	}
-	if c.Answer != answer {
-		c.State = StateLastAnswerNotValid
-		return StateLastAnswerNotValid
+	if pc.Answer != answer {
+		pc.State = StateLastAnswerNotValid
+		return ErrCaptchaAnswerNotValid
 	}
 	// Give more time to user to complete any proccess need captcha!
-	c.ExpireIn += pcs.Duration
-	c.State = StateSolved
-	return StateSolved
+	pc.ExpireIn += pcs.Duration
+	pc.State = StateSolved
+	return nil
+}
+
+// Check return true if captcha exits and solved otherwise returns false!
+func (pcs *PhraseCaptchas) Check(captchaID [16]byte) error {
+	var pc *PhraseCaptcha
+	pc = pcs.Pool[captchaID]
+	if pc == nil {
+		return ErrCaptchaNotFound
+	}
+	if pc.ExpireIn < etime.Now() {
+		delete(pcs.Pool, captchaID)
+		return ErrCaptchaExpired
+	}
+	if pc.State != StateSolved {
+		return ErrCaptchaNotSolved
+	}
+	return nil
 }
 
 func (pcs *PhraseCaptchas) randomDigits() string {
@@ -181,7 +199,7 @@ func init() {
 	goBoldItalic, err = freetype.ParseFont(gobolditalic.TTF)
 	if err != nil {
 		// Almost never occur!
-		panic(err)
+		log.Fatal(err)
 	}
 }
 
@@ -230,7 +248,7 @@ func (pcs *PhraseCaptchas) expirationProcessing() {
 			}
 
 			// Usually this proccess is less than one second, so get time once for compare!
-			var timeNow = time.Now().Unix()
+			var timeNow = etime.Now()
 			for _, captcha := range pcs.Pool {
 				if captcha.ExpireIn < timeNow {
 					delete(pcs.Pool, captcha.ID)

@@ -3,13 +3,11 @@
 package captcha
 
 // State use to indicate captcha state
-type State uint8
+type state uint8
 
 // Captcha State
 const (
-	StateCreated  State = iota
-	StateNotFound
-	StateExpired
+	StateCreated  state = iota
 	StateLastAnswerNotValid
 	StateSolved
 )
