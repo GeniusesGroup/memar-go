@@ -77,16 +77,17 @@ func (c *Cluster) GetLocalNodeDetail() (res *Node, err error) {
 // FindNodeIDByRecordID use to find responsible node ID for given record node part!
 // Nodes in each replication store in sort so nodeID is array location of desire node in any replication!
 func (c *Cluster) FindNodeIDByRecordID(recordID [32]byte) (nodeID uint32) {
-	var recordNodePart uint64 = uint64(recordID[0]) | uint64(recordID[1])<<8 | uint64(recordID[2])<<16 | uint64(recordID[3])<<24 |
-		uint64(recordID[4])<<32 | uint64(recordID[5])<<40 | uint64(recordID[6])<<48 | uint64(recordID[7])<<56
-
-	if c.Replications.TotalNodes == 1 {
+	if c.Manifest.TotalNodesInZone == 1 {
 		// Due to nodeID == 0, Don't need to assign it again!!
 		return
 	}
 
+	var recordNodePart uint64 = uint64(recordID[0]) | uint64(recordID[1])<<8 | uint64(recordID[2])<<16 | uint64(recordID[3])<<24 |
+		uint64(recordID[4])<<32 | uint64(recordID[5])<<40 | uint64(recordID[6])<<48 | uint64(recordID[7])<<56
+
 	var primaryIndexRanges = c.PrimaryIndexRanges
-	var high uint32 = c.Replications.TotalNodes - 1
+
+	var high uint32 = c.Manifest.TotalNodesInZone - 1
 	var median uint32
 	var diff uint32
 	for nodeID < high {
