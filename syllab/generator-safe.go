@@ -31,13 +31,13 @@ func ({{DesireName}} *{{DesireType}}) syllabEncoder(offset int) (buf []byte) {
 func CompleteEncoderMethodSafe(file *assets.File) (err error) {
 	var fileSet *token.FileSet = token.NewFileSet()
 	var fileParsed *ast.File
-	fileParsed, err = parser.ParseFile(fileSet, "", file.DataString, parser.ParseComments)
+	fileParsed, err = parser.ParseFile(fileSet, "", file.Data, parser.ParseComments)
 	if err != nil {
 		return
 	}
 
 	var fileTypes = map[string]*ast.TypeSpec{}
-	var cpyFile = []*copyToFileReq{}
+	var fileReplaces = make([]assets.ReplaceReq, 0, 2)
 
 	// find syllabDecoder || syllabEncoder method
 	for _, decl := range fileParsed.Decls {
@@ -62,8 +62,11 @@ func CompleteEncoderMethodSafe(file *assets.File) (err error) {
 				if err != nil {
 					return
 				}
-				
-				cpyFile = append(cpyFile, &copyToFileReq{data.GData, int(d.Body.Lbrace), int(d.Body.Rbrace)})
+
+				fileReplaces = append(fileReplaces, assets.ReplaceReq{
+					Data:  data.GData,
+					Start: int(d.Body.Lbrace) + 2, // +2 for bracket & new line
+					End:   int(d.Body.Rbrace) - 1 }) // -1 to not remove end brace
 			} else if d.Name.Name == "syllabEncoder" {
 				var data = syllabMaker{
 					RN:    d.Recv.List[0].Names[0].Name,
@@ -78,21 +81,21 @@ func CompleteEncoderMethodSafe(file *assets.File) (err error) {
 
 				// Add some other common data
 				data.GData = "	var hsi int = " + data.getSLIAsString(0) + " // Heap start index || Stack size!\n" +
-					"	var ln int // len of strings, slices, maps, ...\n" +
-					strings.TrimSuffix("	ln = hsi +"+data.HLenData, "+") + "\n" +
-					"	" + data.RN + ".RecordSize = ln  // indicate record size!\n" +
-					"	buf = make([]byte, ln+offest)\n\n" +
+					strings.TrimSuffix("	var ln int = hsi +"+data.HLenData, "+") + "// len of strings, slices, maps, ...\n" +
+					"	buf = make([]byte, ln+offset)\n" +
 					"	var b = buf[offset:]\n\n" +
 					data.GData
 
-				cpyFile = append(cpyFile, &copyToFileReq{data.GData, int(d.Body.Lbrace), int(d.Body.Rbrace)})
+				fileReplaces = append(fileReplaces, assets.ReplaceReq{
+					Data:  data.GData,
+					Start: int(d.Body.Lbrace) + 2, // +2 for bracket & new line
+					End:   int(d.Body.Rbrace) - 1 }) // -1 to not remove end brace
 			}
 		}
 	}
 
-	copyToFile(file, cpyFile)
+	file.Replace(fileReplaces)
 	file.State = assets.StateChanged
-	file.Data = []byte(file.DataString)
 	return
 }
 
@@ -345,26 +348,8 @@ func (sm *syllabMaker) makeSyllabEncoderSafe() (err error) {
 	return
 }
 
-func (sm *syllabMaker) getSLIAsString(p uint64) (s string) {
+func (sm *syllabMaker) getSLIAsString(plus uint64) (s string) {
 	// TODO::: Improve below line!
-	s = strconv.FormatUint(sm.LSI+p, 10)
+	s = strconv.FormatUint(sm.LSI+plus, 10)
 	return
-}
-
-type copyToFileReq struct {
-	Data  string
-	Start int
-	End   int
-}
-
-func copyToFile(file *assets.File, gData []*copyToFileReq) {
-	var addedSize int
-	for _, cpy := range gData {
-		cpy.Start += addedSize
-		cpy.End += addedSize
-
-		addedSize += len(cpy.Data) - (cpy.End - cpy.Start) + 3 // 3 is for bracket, new line, and len!!
-
-		file.DataString = file.DataString[:cpy.Start+1] + cpy.Data + file.DataString[cpy.End-2:]
-	}
 }
