@@ -30,14 +30,14 @@ type HashIndex struct {
 
 const (
 	// hashIndexHeaderSize indicate start byte of first RecordID
-	hashIndexHeaderSize = 72 + 8 + 8 + (4 + 4)
+	hashIndexHeaderSize = 96 // 72 + 8 + 8 + (4 + 4)
 
 	firstBlockNumber  = 125 // to have first full 4K cluster >> 4096 = hashIndexHeaderSize + (125*32)
 	commonBlockNumber = 128
 )
 
-// GetHeader get data from storage and decode to given hi
-func (hi *HashIndex) GetHeader() (err error) {
+// ReadHeader get needed data from storage and decode to given hi without RecordsID array data
+func (hi *HashIndex) ReadHeader() (err error) {
 	// Get first cluster of record to read header data
 	var header []byte
 	header, err = persiaos.ReadStorageRecord(hi.RecordID, 0, hashIndexHeaderSize)
@@ -53,11 +53,80 @@ func (hi *HashIndex) GetHeader() (err error) {
 	return
 }
 
-// GetIndexRecords return related records ID to given index with offset and limit!
-func (hi *HashIndex) GetIndexRecords(offset, limit uint64) (recordsID [][32]byte, err error) {
+// Pop return last RecordID in given index and delete it from index!
+func (hi *HashIndex) Pop() (recordID [32]byte, err error) {
 	// Get first cluster of record to read header data
 	var header []byte
-	header, err = persiaos.ReadStorageRecord(hi.RecordID, 0, hashIndexHeaderSize)
+	header, err = persiaos.ReadStorageRecord(hi.RecordID, 0, 4096)
+	if err != nil {
+		return
+	}
+
+	err = hi.syllabDecoder(header)
+	if err != nil {
+		return
+	}
+
+	if hi.RecordsNumber > firstBlockNumber {
+		hi.RecordsNumber--
+		var record []byte
+		var recordOffset = hashIndexHeaderSize + (hi.RecordsNumber * 32)
+		record, err = persiaos.ReadStorageRecord(hi.RecordID, recordOffset, 32)
+		if err != nil {
+			return
+		}
+		copy(recordID[:], record[:])
+		err = persiaos.WriteStorageRecord(hi.RecordID, 0, hi.syllabEncoderHeader())
+		err = persiaos.WriteStorageRecord(hi.RecordID, recordOffset, make([]byte, 32))
+	} else {
+		if hi.RecordsNumber > 1 {
+			hi.RecordsNumber--
+			recordID = hi.RecordsID[hi.RecordsNumber]
+			hi.RecordsID[hi.RecordsNumber] = [32]byte{}
+			err = persiaos.SetStorageRecord(hi.syllabEncoderFull())
+		} else {
+			err = persiaos.DeleteStorageRecord(hi.RecordID)
+			// err = ErrEndOfIndexRecord
+		}
+	}
+
+	return
+}
+
+// Peek return last recordID pushed to given index. unlike Pop() don't delete it from index!
+func (hi *HashIndex) Peek() (recordID [32]byte, err error) {
+	// Get first cluster of record to read header data
+	var header []byte
+	header, err = persiaos.ReadStorageRecord(hi.RecordID, 0, 4096)
+	if err != nil {
+		return
+	}
+
+	err = hi.syllabDecoder(header)
+	if err != nil {
+		return
+	}
+
+	if hi.RecordsNumber > firstBlockNumber {
+		var record []byte
+		var recordOffset = hashIndexHeaderSize + (hi.RecordsNumber-1 * 32)
+		record, err = persiaos.ReadStorageRecord(hi.RecordID, recordOffset, 32)
+		if err != nil {
+			return
+		}
+		copy(recordID[:], record[:])
+	} else {
+		recordID = hi.RecordsID[hi.RecordsNumber-1]
+	}
+
+	return
+}
+
+// Get return related records ID to given index with offset and limit!
+func (hi *HashIndex) Get(offset, limit uint64) (recordsID [][32]byte, err error) {
+	// Get first cluster of record to read header data
+	var header []byte
+	header, err = persiaos.ReadStorageRecord(hi.RecordID, 0, 4096)
 	if err != nil {
 		return
 	}
@@ -88,23 +157,27 @@ func (hi *HashIndex) GetIndexRecords(offset, limit uint64) (recordsID [][32]byte
 		}
 	}
 
-	offset = hashIndexHeaderSize + (offset * 32)
-	limit = offset + (limit * 32)
-	var record []byte
-	record, err = persiaos.ReadStorageRecord(hi.RecordID, offset, limit)
-	if err != nil {
-		return
-	}
+	if offset+limit > firstBlockNumber {
+		offset = hashIndexHeaderSize + (offset * 32)
+		limit = offset + (limit * 32)
+		var record []byte
+		record, err = persiaos.ReadStorageRecord(hi.RecordID, offset, limit)
+		if err != nil {
+			return
+		}
 
-	// We know (128*[32]byte) == [4096]byte is same size but Go don't let return buckets simply, so:
-	recordsID = *(*[][32]byte)(unsafe.Pointer(&record))
-	recordsID = recordsID[:limit]
+		// We know (128*[32]byte) == [4096]byte is same size but Go don't let return buckets simply, so:
+		recordsID = *(*[][32]byte)(unsafe.Pointer(&record))
+		recordsID = recordsID[:limit]
+	} else {
+		recordsID = hi.RecordsID[offset:limit]
+	}
 
 	return
 }
 
-// AppendRecordID add given RecordID with any logic need like expand!
-func (hi *HashIndex) AppendRecordID(recordID [32]byte) (err error) {
+// Push add given RecordID to then end of given hash index!
+func (hi *HashIndex) Push(recordID [32]byte) (err error) {
 	var timeNow = etime.Now()
 
 	// Get first cluster of record to read header data
@@ -170,8 +243,13 @@ func (hi *HashIndex) calculateExpandNumber(timeNow int64) (expandNumber uint64) 
 	return
 }
 
-// DeleteRecordID use to delete given record ID form given indexHash!
-func (hi *HashIndex) DeleteRecordID(recordID [32]byte) (err error) {
+// Append add given RecordID with any logic need like expand!
+func (hi *HashIndex) Append(recordID ...[32]byte) (err error) {
+	return
+}
+
+// Delete use to delete given record ID form given indexHash!
+func (hi *HashIndex) Delete(recordID [32]byte) (err error) {
 	var record []byte
 	record, err = persiaos.GetStorageRecord(hi.RecordID)
 	if err != nil {
@@ -198,8 +276,8 @@ func (hi *HashIndex) DeleteRecordID(recordID [32]byte) (err error) {
 	return
 }
 
-// DeleteRecordsID use to delete given records ID form given indexHash!
-func (hi *HashIndex) DeleteRecordsID(recordsID [][32]byte) (err error) {
+// Deletes use to delete given records ID form given indexHash!
+func (hi *HashIndex) Deletes(recordsID [][32]byte) (err error) {
 	// Get first cluster of record to read header data
 	var record []byte
 	record, err = persiaos.GetStorageRecord(hi.RecordID)
