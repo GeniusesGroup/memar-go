@@ -10,23 +10,26 @@ import (
 	"reflect"
 	"testing"
 
+	jsoniter "github.com/json-iterator/go"
 	jlexer "github.com/mailru/easyjson/jlexer"
 	jwriter "github.com/mailru/easyjson/jwriter"
 	fflib "github.com/pquerna/ffjson/fflib/v1"
 )
 
 /*
-Benchmark1JsonDecode-8    	   29338	     40414 ns/op	    2616 B/op	      21 allocs/op
-Benchmark1LibgoDecode-8   	  218322	      5580 ns/op	    2304 B/op	       1 allocs/op
-Benchmark1EasyDecode-8    	 2592272	       459 ns/op	      96 B/op	       4 allocs/op
-Benchmark1FFDecode-8      	   95296	     12783 ns/op	    6755 B/op	       8 allocs/op
+Benchmark1JsonDecode-8       	   27414	     43281 ns/op	    3000 B/op	      21 allocs/op
+Benchmark1LibgoDecode-8      	  200120	      6011 ns/op	    2688 B/op	       1 allocs/op
+Benchmark1EasyDecode-8       	 2391920	       469 ns/op	      96 B/op	       4 allocs/op
+Benchmark1FFDecode-8         	   88944	     13525 ns/op	    7140 B/op	       8 allocs/op
+Benchmark1JsoniterDecode-8   	   80109	     14956 ns/op	    9154 B/op	       6 allocs/op
 
-Benchmark1JsonEncode-8    	  136446	      8768 ns/op	    6018 B/op	       2 allocs/op
-Benchmark1LibgoEncode-8   	  176578	      6941 ns/op	    4864 B/op	       1 allocs/op
-Benchmark1EasyEncode-8    	  102252	     11819 ns/op	   19520 B/op	      11 allocs/op
-Benchmark1FFEncode-8      	   98433	     12219 ns/op	   10069 B/op	      23 allocs/op
+Benchmark1JsonEncode-8       	  169116	      7133 ns/op	    4609 B/op	       2 allocs/op
+Benchmark1LibgoEncode-8      	  217006	      5514 ns/op	    3456 B/op	       1 allocs/op
+Benchmark1EasyEncode-8       	  116469	     10325 ns/op	   18112 B/op	      11 allocs/op
+Benchmark1FFEncode-8         	  106316	     11247 ns/op	   10070 B/op	      23 allocs/op
+Benchmark1JsoniterEncode-8   	  166528	      7212 ns/op	    6666 B/op	       3 allocs/op
 
-note1: This benchmark is not apple to apple e.g. easyJson failed on decoding due to it can't decode array as array, it decode array as base64 string!
+note1: This benchmark is not apple to apple e.g. EasyJson failed on decoding due to it can't decode array as array, it decode array as base64 string!
 */
 
 /*
@@ -38,10 +41,23 @@ type test1 struct {
 	Image     []byte
 }
 
-var marshaledTest1 = []byte(`{"CaptchaID":[167,7,56,140,146,65,70,25,183,113,230,83,166,148,108,210],"Image":"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"}`)
 var unMarshaledTest1 = test1{
 	CaptchaID: [16]byte{167, 7, 56, 140, 146, 65, 70, 25, 183, 113, 230, 83, 166, 148, 108, 210},
-	Image:     []byte("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"),
+}
+var marshaledTest1 []byte
+
+func init() {
+	const sliceLen = 2400
+	unMarshaledTest1.Image = make([]byte, sliceLen)
+	var j uint8
+	for i := 0; i < sliceLen; i++ {
+		unMarshaledTest1.Image[i] = j
+		j++
+	}
+
+	marshaledTest1, _ = json.Marshal(&unMarshaledTest1)
+	// marshaledTest1 = unMarshaledTest1.libgoEncoder()
+	// fmt.Print("Syllab test initialized!!", "\n")
 }
 
 /*
@@ -76,6 +92,13 @@ func Benchmark1FFDecode(b *testing.B) {
 	}
 }
 
+func Benchmark1JsoniterDecode(b *testing.B) {
+	for n := 0; n < b.N; n++ {
+		var t test1
+		jsoniter.Unmarshal(marshaledTest1, &t)
+	}
+}
+
 /*
 	Decode Tests
 */
@@ -83,7 +106,14 @@ func Benchmark1FFDecode(b *testing.B) {
 func Test1JsonDecode(b *testing.T) {
 	var t test1
 	var err = json.Unmarshal(marshaledTest1, &t)
-	if t.CaptchaID != unMarshaledTest1.CaptchaID || err != nil {
+	if err != nil {
+		fmt.Print(err, "\n")
+		b.Fail()
+	} else if t.CaptchaID != unMarshaledTest1.CaptchaID {
+		fmt.Print("Decoded CaptchaID not same\n")
+		b.Fail()
+	} else if !bytes.Equal(t.Image, unMarshaledTest1.Image) {
+		fmt.Print("Decoded Image not same\n")
 		b.Fail()
 	}
 }
@@ -91,8 +121,14 @@ func Test1JsonDecode(b *testing.T) {
 func Test1LibgoDecode(b *testing.T) {
 	var t test1
 	var err = t.libgoDecoder(marshaledTest1)
-	if t.CaptchaID != unMarshaledTest1.CaptchaID || err != nil {
-		fmt.Print(err)
+	if err != nil {
+		fmt.Print(err, "\n")
+		b.Fail()
+	} else if t.CaptchaID != unMarshaledTest1.CaptchaID {
+		fmt.Print("Decoded CaptchaID not same\n")
+		b.Fail()
+	} else if !bytes.Equal(t.Image, unMarshaledTest1.Image) {
+		fmt.Print("Decoded Image not same\n")
 		b.Fail()
 	}
 }
@@ -100,7 +136,14 @@ func Test1LibgoDecode(b *testing.T) {
 func Test1EasyDecode(b *testing.T) {
 	var t test1
 	var err = t.easyDecoder(marshaledTest1)
-	if t.CaptchaID != unMarshaledTest1.CaptchaID || err != nil {
+	if err != nil {
+		fmt.Print(err, "\n")
+		b.Fail()
+	} else if t.CaptchaID != unMarshaledTest1.CaptchaID {
+		fmt.Print("Decoded CaptchaID not same\n")
+		b.Fail()
+	} else if !bytes.Equal(t.Image, unMarshaledTest1.Image) {
+		fmt.Print("Decoded Image not same\n")
 		b.Fail()
 	}
 }
@@ -108,7 +151,29 @@ func Test1EasyDecode(b *testing.T) {
 func Test1FFDecode(b *testing.T) {
 	var t test1
 	var err = t.ffDecoder(marshaledTest1)
-	if t.CaptchaID != unMarshaledTest1.CaptchaID || err != nil {
+	if err != nil {
+		fmt.Print(err, "\n")
+		b.Fail()
+	} else if t.CaptchaID != unMarshaledTest1.CaptchaID {
+		fmt.Print("Decoded CaptchaID not same\n")
+		b.Fail()
+	} else if !bytes.Equal(t.Image, unMarshaledTest1.Image) {
+		fmt.Print("Decoded Image not same\n")
+		b.Fail()
+	}
+}
+
+func Test1JsoniterDecode(b *testing.T) {
+	var t test1
+	var err = jsoniter.Unmarshal(marshaledTest1, &t)
+	if err != nil {
+		fmt.Print(err, "\n")
+		b.Fail()
+	} else if t.CaptchaID != unMarshaledTest1.CaptchaID {
+		fmt.Print("Decoded CaptchaID not same\n")
+		b.Fail()
+	} else if !bytes.Equal(t.Image, unMarshaledTest1.Image) {
+		fmt.Print("Decoded Image not same\n")
 		b.Fail()
 	}
 }
@@ -138,6 +203,12 @@ func Benchmark1EasyEncode(b *testing.B) {
 func Benchmark1FFEncode(b *testing.B) {
 	for n := 0; n < b.N; n++ {
 		unMarshaledTest1.ffEncoder()
+	}
+}
+
+func Benchmark1JsoniterEncode(b *testing.B) {
+	for n := 0; n < b.N; n++ {
+		jsoniter.Marshal(&unMarshaledTest1)
 	}
 }
 
