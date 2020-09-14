@@ -13,7 +13,7 @@ import (
 )
 
 /*
-Before pass file to safe||unsafe function, dev must add needed methods to desire type by below template!
+Before pass file to CompleteMethods(), dev must add needed methods to desire type by below template!
 Otherwise panic may occur due to improve performance we don't check some bad situation!!
 
 func ({{DesireName}} *{{DesireType}}) syllabDecoder(buf []byte) (err error) {
@@ -26,9 +26,15 @@ func ({{DesireName}} *{{DesireType}}) syllabEncoder(offset int) (buf []byte) {
 }
 */
 
-// CompleteEncoderMethodSafe use to update given go files and complete syllab encoder to any struct type in it!
-// It will overwrite given file slice! If you need it clone it before pass it here!
-func CompleteEncoderMethodSafe(file *assets.File) (err error) {
+// GenerationOptions indicate generator behavior!
+type GenerationOptions struct {
+	HelperFuncs bool // true means use lib function such as GetAddress() instead of pure code!
+	UnSafe      bool // true means allow use unsafe package in generated codes!
+}
+
+// CompleteMethods use to update given go files and complete Syllab encoder&&decoder to any struct type in it!
+// It will overwrite given file methods! If you need it clone it before pass it here!
+func CompleteMethods(file *assets.File, gos *GenerationOptions) (err error) {
 	var fileSet *token.FileSet = token.NewFileSet()
 	var fileParsed *ast.File
 	fileParsed, err = parser.ParseFile(fileSet, "", file.Data, parser.ParseComments)
@@ -65,8 +71,8 @@ func CompleteEncoderMethodSafe(file *assets.File) (err error) {
 
 				fileReplaces = append(fileReplaces, assets.ReplaceReq{
 					Data:  data.GData,
-					Start: int(d.Body.Lbrace) + 2, // +2 for bracket & new line
-					End:   int(d.Body.Rbrace) - 1 }) // -1 to not remove end brace
+					Start: int(d.Body.Lbrace) + 2,  // +2 for bracket & new line
+					End:   int(d.Body.Rbrace) - 1}) // -1 to not remove end brace
 			} else if d.Name.Name == "syllabEncoder" {
 				var data = syllabMaker{
 					RN:    d.Recv.List[0].Names[0].Name,
@@ -88,8 +94,8 @@ func CompleteEncoderMethodSafe(file *assets.File) (err error) {
 
 				fileReplaces = append(fileReplaces, assets.ReplaceReq{
 					Data:  data.GData,
-					Start: int(d.Body.Lbrace) + 2, // +2 for bracket & new line
-					End:   int(d.Body.Rbrace) - 1 }) // -1 to not remove end brace
+					Start: int(d.Body.Lbrace) + 2,  // +2 for bracket & new line
+					End:   int(d.Body.Rbrace) - 1}) // -1 to not remove end brace
 			}
 		}
 	}
@@ -216,7 +222,7 @@ func (sm *syllabMaker) makeSyllabDecoderSafe() (err error) {
 			case "string":
 				sm.GData += "	var " + in + "Add = uint32(buf[" + sm.getSLIAsString(0) + "]) | uint32(buf[" + sm.getSLIAsString(1) + "])<<8 | uint32(buf[" + sm.getSLIAsString(2) + "])<<16 | uint32(buf[" + sm.getSLIAsString(3) + "])<<24\n"
 				sm.GData += "	var " + in + "Len = uint32(buf[" + sm.getSLIAsString(4) + "]) | uint32(buf[" + sm.getSLIAsString(5) + "])<<8 | uint32(buf[" + sm.getSLIAsString(6) + "])<<16 | uint32(buf[" + sm.getSLIAsString(7) + "])<<24\n"
-				sm.GData += "	" + sm.FRN + in + " = string(buf[" + in + "Add:" + in + "Len])\n"
+				sm.GData += "	" + sm.FRN + in + " = string(buf[" + in + "Add:" + in + "Add+" + in + "Len])\n"
 				sm.LSI += 8
 			default:
 				// TODO::: get related type by its name as t.Elt.(*ast.Ident).Name
@@ -351,5 +357,21 @@ func (sm *syllabMaker) makeSyllabEncoderSafe() (err error) {
 func (sm *syllabMaker) getSLIAsString(plus uint64) (s string) {
 	// TODO::: Improve below line!
 	s = strconv.FormatUint(sm.LSI+plus, 10)
+	return
+}
+
+func (sm *syllabMaker) makeSyllabDecoderUnsafe() (err error) {
+	// TODO:::
+
+	sm.GData += "\n	return"
+
+	return
+}
+
+func (sm *syllabMaker) makeSyllabEncoderUnsafe() (err error) {
+	// TODO:::
+
+	sm.GData += "\n	return"
+
 	return
 }
