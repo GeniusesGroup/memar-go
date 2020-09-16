@@ -27,10 +27,16 @@ const (
 	DefaultUserAgent = "Achaemenid-Client"
 	DefaultServer    = "Achaemenid"
 
-	Space          = ' '
-	CRLF           = "\r\n"
-	ColonSpace     = ": "
-	SemiColonSpace = "; "
+	SP             byte   = ' '  // <US-ASCII SP, space (32)>
+	HT             byte   = '	'  // <US-ASCII HT, horizontal-tab (9)>
+	CR             byte   = '\r' // <US-ASCII CR, carriage return (13)>
+	LF             byte   = '\n' // <US-ASCII LF, linefeed (10)>
+	CRLF           string = "\r\n"
+	ColonSpace     string = ": "
+	Coma           byte   = ','
+	Question       byte   = '?'
+	Slash          byte   = '/'
+	SemiColonSpace string = "; "
 )
 
 // Standard HTTP versions
@@ -162,6 +168,7 @@ const (
 const (
 	// Connection management
 	HeaderValueKeepAlive = "Keep-Alive"
+	HeaderValueClose     = "Close"
 )
 
 // HTTP Status codes

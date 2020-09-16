@@ -18,28 +18,28 @@ type Request struct {
 }
 
 // MakeNewRequest make new request with some default data
-func MakeNewRequest() (r *Request) {
-	return &Request{
-		Header: make(map[string][]string, 16),
-	}
+func MakeNewRequest() *Request {
+	var r Request
+	r.Header.init()
+	return &r
 }
 
 // Marshal enecodes r *Request data and append to given httpPacket
 func (r *Request) Marshal() (httpPacket []byte) {
-	// Make packet by twice size of body
-	httpPacket = make([]byte, 0, len(r.Body)*2)
+	r.Header.Set(HeaderKeyHost, r.URI.Authority)
+
+	httpPacket = make([]byte, 0, r.Len())
 
 	httpPacket = append(httpPacket, r.Method...)
-	httpPacket = append(httpPacket, Space)
+	httpPacket = append(httpPacket, SP)
 
-	r.Header.SetValue(HeaderKeyHost, r.URI.Authority)
-	httpPacket = append(httpPacket, r.URI.MarshalRequestURI()...)
-	httpPacket = append(httpPacket, Space)
+	httpPacket = r.URI.MarshalRequestURI(httpPacket)
+	httpPacket = append(httpPacket, SP)
 
 	httpPacket = append(httpPacket, r.Version...)
 	httpPacket = append(httpPacket, CRLF...)
 
-	r.Header.Marshal(&httpPacket)
+	httpPacket = r.Header.Marshal(httpPacket)
 	httpPacket = append(httpPacket, CRLF...)
 
 	httpPacket = append(httpPacket, r.Body...)
@@ -81,6 +81,11 @@ func (r *Request) UnMarshal(httpPacket []byte) (err error) {
 	index = len(r.Method) + len(r.URI.Raw) + len(r.Version) + 4
 
 	index += r.Header.UnMarshal(s)
+
+	// By https://tools.ietf.org/html/rfc2616#section-4 very simple http packet must end with CRLF even packet without header or body!
+	// So it can be occur panic if very simple request end without any CRLF
+	index += 2 // +2 due to have "\r\n" after header end
+
 	r.Body = httpPacket[index:]
 	return
 }
@@ -94,7 +99,19 @@ func (r *Request) UnMarshal(httpPacket []byte) (err error) {
 // the same. In the second case, any Host line is ignored.
 func (r *Request) GetHost() (host string) {
 	if len(r.URI.Authority) == 0 {
-		return r.Header.GetValue(HeaderKeyHost)
+		return r.Header.Get(HeaderKeyHost)
 	}
 	return r.URI.Authority
+}
+
+// Len return length of request
+func (r *Request) Len() (ln int) {
+	ln += len(r.Method)
+	ln += r.URI.MarshalRequestURILen()
+	ln += len(r.Version)
+	ln += r.Header.Len()
+	ln += 6 // 6=1+1+2+2=len(SP)+len(SP)+len(CRLF)+len(CRLF)
+	ln += len(r.Body)
+
+	return
 }

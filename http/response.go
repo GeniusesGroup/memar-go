@@ -20,23 +20,22 @@ type Response struct {
 
 // MakeNewResponse make new response with some default data
 func MakeNewResponse() *Response {
-	return &Response{
-		Header: make(map[string][]string, 16),
-	}
+	var r Response
+	r.Header.init()
+	return &r
 }
 
 // Marshal enecodes r *Response data and append to given httpPacket
 func (r *Response) Marshal() (httpPacket []byte) {
-	// Make packet by twice size of body
-	httpPacket = make([]byte, 0, len(r.Body)*2)
+	httpPacket = make([]byte, 0, r.Len())
 
 	httpPacket = append(httpPacket, r.Version...)
-	httpPacket = append(httpPacket, Space)
+	httpPacket = append(httpPacket, SP)
 	httpPacket = append(httpPacket, r.StatusCode...)
-	httpPacket = append(httpPacket, Space)
+	httpPacket = append(httpPacket, SP)
 	httpPacket = append(httpPacket, r.ReasonPhrase...)
 	httpPacket = append(httpPacket, CRLF...)
-	r.Header.Marshal(&httpPacket)
+	httpPacket = r.Header.Marshal(httpPacket)
 	httpPacket = append(httpPacket, CRLF...)
 	httpPacket = append(httpPacket, r.Body...)
 	return
@@ -77,6 +76,11 @@ func (r *Response) UnMarshal(httpPacket []byte) (err error) {
 	index = len(r.Version) + len(r.StatusCode) + len(r.ReasonPhrase) + 4
 
 	index += r.Header.UnMarshal(s)
+
+	// By https://tools.ietf.org/html/rfc2616#section-4 very simple http packet must end with CRLF even packet without header or body!
+	// So it can be occur panic if very simple request end without any CRLF
+	index += 2 // +2 due to have "\r\n" after header end
+
 	r.Body = httpPacket[index:]
 	return
 }
@@ -97,4 +101,16 @@ func (r *Response) SetStatus(code, phrase string) {
 // SetError set given error to body of response
 func (r *Response) SetError(err error) {
 	r.Body = []byte(err.Error())
+}
+
+// Len return length of response
+func (r *Response) Len() (ln int) {
+	ln += len(r.Version)
+	ln += len(r.StatusCode)
+	ln += len(r.ReasonPhrase)
+	ln += r.Header.Len()
+	ln += 6 // 6=1+1+2+2=len(SP)+len(SP)+len(CRLF)+len(CRLF)
+	ln += len(r.Body)
+
+	return
 }

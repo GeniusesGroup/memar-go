@@ -21,7 +21,7 @@ type URI struct {
 
 // Marshal encode URI data to u.RawURI
 func (u *URI) Marshal() {
-	var buf = make([]byte, len(u.Scheme)+len(u.Authority)+len(u.Path)+len(u.Query))
+	var buf = make([]byte, 0, u.Len())
 	if u.Scheme != "" {
 		buf = append(buf, u.Scheme...)
 		buf = append(buf, "://"...)
@@ -37,13 +37,17 @@ func (u *URI) Marshal() {
 
 // MarshalRequestURI returns the encoded path?query
 // string that would be used in an HTTP request for u.
-func (u *URI) MarshalRequestURI() string {
+func (u *URI) MarshalRequestURI(httpPacket []byte) []byte {
 	if len(u.Path) > 0 && len(u.Query) > 0 {
-		return u.Path + "?" + u.Query
+		httpPacket = append(httpPacket, u.Path...)
+		httpPacket = append(httpPacket, Question)
+		httpPacket = append(httpPacket, u.Query...)
 	} else if len(u.Path) > 0 {
-		return u.Path
+		httpPacket = append(httpPacket, u.Path...)
+	} else {
+		httpPacket = append(httpPacket, Slash)
 	}
-	return "/"
+	return httpPacket
 }
 
 // UnMarshal use to parse and decode given raw URI to u
@@ -89,4 +93,14 @@ func (u *URI) UnMarshal(raw string) {
 	if ln > 0 && u.Query != "" {
 		u.Query = u.Query[:len(u.Query)-ln-1] // -1 due to we don't need '#'
 	}
+}
+
+// Len return length of Marshal()
+func (u *URI) Len() int {
+	return len(u.Scheme) + len(u.Authority) + len(u.Path) + len(u.Query)
+}
+
+// MarshalRequestURILen return length of MarshalRequestURI()
+func (u *URI) MarshalRequestURILen() int {
+	return len(u.Path) + len(u.Query) + 1 // 1 for ? mark
 }
