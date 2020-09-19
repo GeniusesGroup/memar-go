@@ -10,7 +10,7 @@ import (
 )
 
 // ReadRepositoryFromFileSystem use to get all repository by its name!
-func (f *Folder) ReadRepositoryFromFileSystem(dirname string) (err error) {
+func (f *Folder) ReadRepositoryFromFileSystem(dirname string, readHidden bool) (err error) {
 	var repoFiles []os.FileInfo
 	repoFiles, err = ioutil.ReadDir(dirname)
 	if err != nil {
@@ -18,23 +18,27 @@ func (f *Folder) ReadRepositoryFromFileSystem(dirname string) (err error) {
 	}
 
 	for _, file := range repoFiles {
+		var name = file.Name()
+		if !readHidden && name[0] == '.' {
+			continue
+		}
 		if file.IsDir() {
-			var innerRepo = NewFolder(file.Name())
-			innerRepo.FSPath = path.Join(dirname, file.Name())
-			err = innerRepo.ReadRepositoryFromFileSystem(innerRepo.FSPath)
+			var innerRepo = NewFolder(name)
+			innerRepo.FSPath = path.Join(dirname, name)
+			err = innerRepo.ReadRepositoryFromFileSystem(innerRepo.FSPath, readHidden)
 			if err != nil {
 				return err
 			}
-			f.Dependencies[file.Name()] = innerRepo
+			f.Dependencies[name] = innerRepo
 		} else {
 			var data []byte
-			data, err = ioutil.ReadFile(path.Join(dirname, file.Name()))
+			data, err = ioutil.ReadFile(path.Join(dirname, name))
 			if err != nil {
 				return err
 			}
 
 			var fi = File{
-				FullName:   file.Name(),
+				FullName:   name,
 				Dep:        f,
 				Data:       data,
 			}

@@ -126,11 +126,46 @@ func (f *File) Compress(compressType string) {
 
 	f.CompressType = compressType
 	switch compressType {
-	case "gzip":
+	case CompressTypeGZIP:
 		var b bytes.Buffer
 		var gz = gzip.NewWriter(&b)
 		gz.Write(f.Data)
 		gz.Close()
 		f.CompressData = b.Bytes()
+	}
+}
+
+// ReplaceReq is request structure of Replace method.
+type ReplaceReq struct {
+	Data  string
+	Start int
+	End   int
+}
+
+// Replace replace given data in the file
+func (f *File) Replace(data []ReplaceReq) {
+	var addedSize int
+	for _, d := range data {
+		d.Start += addedSize
+		d.End += addedSize
+
+		var ln = len(d.Data)
+		addedSize = ln - (d.End - d.Start)
+		if addedSize > 0 {
+			if (cap(f.Data) - len(f.Data)) < addedSize {
+				f.Data = append(f.Data, make([]byte, addedSize)...)
+			} else {
+				// increase f.Data len
+				f.Data = f.Data[:len(f.Data)+addedSize]
+			}
+		} 
+
+		copy(f.Data[d.End+addedSize:], f.Data[d.End:])
+		copy(f.Data[d.Start:], d.Data)
+
+		if addedSize < 0 {
+			// decrease f.Data len
+			f.Data = f.Data[:len(f.Data)+addedSize]
+		}
 	}
 }
