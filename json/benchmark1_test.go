@@ -17,19 +17,21 @@ import (
 )
 
 /*
-Benchmark1JsonDecode-8       	   27414	     43281 ns/op	    3000 B/op	      21 allocs/op
-Benchmark1LibgoDecode-8      	  200120	      6011 ns/op	    2688 B/op	       1 allocs/op
-Benchmark1EasyDecode-8       	 2391920	       469 ns/op	      96 B/op	       4 allocs/op
-Benchmark1FFDecode-8         	   88944	     13525 ns/op	    7140 B/op	       8 allocs/op
-Benchmark1JsoniterDecode-8   	   80109	     14956 ns/op	    9154 B/op	       6 allocs/op
+Benchmark1JsonDecode-8       	   28238	     42080 ns/op	    3000 B/op	      21 allocs/op
+Benchmark1LibgoDecode-8      	  196774	      5992 ns/op	    2688 B/op	       1 allocs/op
+Benchmark1EasyDecode-8       	  188838	      5982 ns/op	    2720 B/op	       2 allocs/op
+Benchmark1FFDecode-8         	   89182	     13443 ns/op	    7140 B/op	       8 allocs/op
+Benchmark1JsoniterDecode-8   	   81746	     14824 ns/op	    9154 B/op	       6 allocs/op
 
-Benchmark1JsonEncode-8       	  169116	      7133 ns/op	    4609 B/op	       2 allocs/op
-Benchmark1LibgoEncode-8      	  217006	      5514 ns/op	    3456 B/op	       1 allocs/op
-Benchmark1EasyEncode-8       	  116469	     10325 ns/op	   18112 B/op	      11 allocs/op
-Benchmark1FFEncode-8         	  106316	     11247 ns/op	   10070 B/op	      23 allocs/op
-Benchmark1JsoniterEncode-8   	  166528	      7212 ns/op	    6666 B/op	       3 allocs/op
+Benchmark1JsonEncode-8       	  168676	      7142 ns/op	    4609 B/op	       2 allocs/op
+Benchmark1LibgoEncode-8      	  222344	      5504 ns/op	    3456 B/op	       1 allocs/op
+Benchmark1EasyEncode-8       	  117834	     10302 ns/op	   18112 B/op	      11 allocs/op
+Benchmark1FFEncode-8         	  108514	     11179 ns/op	   10070 B/op	      23 allocs/op
+Benchmark1JsoniterEncode-8   	  168082	      7236 ns/op	    6665 B/op	       3 allocs/op
 
-note1: This benchmark is not apple to apple e.g. EasyJson failed on decoding due to it can't decode array as array, it decode array as base64 string!
+note1: This benchmark is not apple to apple due to EasyJson encode||decode array as base64 string!
+note2: Libgo decoder performance better by: 7X from standard GO, 0X from EasyJson, 2.2X from FFJson and 2.5X from Jsoniter
+note3: Libgo encoder performance better by: 0.3X from standard GO, 1.9X from EasyJson, 2X from FFJson and 1.3X from Jsoniter
 */
 
 /*
@@ -45,6 +47,7 @@ var unMarshaledTest1 = test1{
 	CaptchaID: [16]byte{167, 7, 56, 140, 146, 65, 70, 25, 183, 113, 230, 83, 166, 148, 108, 210},
 }
 var marshaledTest1 []byte
+var marshaledTest1Easy []byte
 
 func init() {
 	const sliceLen = 2400
@@ -56,6 +59,7 @@ func init() {
 	}
 
 	marshaledTest1, _ = json.Marshal(&unMarshaledTest1)
+	marshaledTest1Easy, _ = unMarshaledTest1.easyEncoder()
 	// marshaledTest1 = unMarshaledTest1.libgoEncoder()
 	// fmt.Print("Syllab test initialized!!", "\n")
 }
@@ -81,7 +85,7 @@ func Benchmark1LibgoDecode(b *testing.B) {
 func Benchmark1EasyDecode(b *testing.B) {
 	for n := 0; n < b.N; n++ {
 		var t test1
-		t.easyDecoder(marshaledTest1)
+		t.easyDecoder(marshaledTest1Easy)
 	}
 }
 
@@ -135,7 +139,7 @@ func Test1LibgoDecode(b *testing.T) {
 
 func Test1EasyDecode(b *testing.T) {
 	var t test1
-	var err = t.easyDecoder(marshaledTest1)
+	var err = t.easyDecoder(marshaledTest1Easy)
 	if err != nil {
 		fmt.Print(err, "\n")
 		b.Fail()
@@ -216,6 +220,19 @@ func Benchmark1JsoniterEncode(b *testing.B) {
 	Encode Tests
 */
 
+func Test1LibgoEncode(b *testing.T) {
+	var buf []byte
+	buf = unMarshaledTest1.libgoEncoder()
+	if !bytes.Equal(buf, marshaledTest1) {
+		fmt.Print("Encoded unMarshaledTest1 not same\n")
+		fmt.Print("len--cap of test: ", len(buf), "--", cap(buf), "\n")
+		fmt.Print("len--cap of base: ", len(marshaledTest1), "--", cap(marshaledTest1), "\n")
+		fmt.Print(string(buf), "\n")
+		fmt.Print(string(marshaledTest1), "\n")
+		b.Fail()
+	}
+}
+
 // TODO:::
 
 /*
@@ -223,20 +240,28 @@ func Benchmark1JsoniterEncode(b *testing.B) {
 */
 
 func (t *test1) libgoDecoder(buf []byte) (err error) {
-	var decoder = Decoder{
+	var decoder = DecoderUnsafeMinifed{
 		Buf: buf,
 	}
 	for {
-		decoder.IterationCheckStartMinifed()
+		decoder.Offset(2)       // remove >>	'{"' 	&& 		',"'	due to don't need them
 		switch decoder.Buf[0] { // Just check first letter first!
 		case 'C':
-			decoder.Buf = decoder.Buf[12:]
-			t.CaptchaID, err = decoder.Decode16ByteArrayAsNumber()
-			if err != nil {
-				return
+			// CaptchaID":[0,0,0,0,0,0,0,0,0,0,0,0]
+			decoder.SetFounded()
+			decoder.Offset(12)
+			for i := 0; i < 16; i++ {
+				var value uint8
+				value, err = decoder.DecodeUInt8()
+				if err != nil {
+					return
+				}
+				t.CaptchaID[i] = value
+				decoder.Offset(1)
 			}
 		case 'I':
-			decoder.Buf = decoder.Buf[8:]
+			decoder.SetFounded()
+			decoder.Offset(8)
 			t.Image, err = decoder.DecodeSliceAsBase64()
 			if err != nil {
 				return
@@ -247,7 +272,7 @@ func (t *test1) libgoDecoder(buf []byte) (err error) {
 			// Reach last item!
 			return
 		}
-		err = decoder.IterationCheckEnd()
+		err = decoder.IterationCheck()
 		if err != nil {
 			return
 		}
@@ -255,24 +280,31 @@ func (t *test1) libgoDecoder(buf []byte) (err error) {
 }
 
 func (t *test1) libgoEncoder() []byte {
-	var base64Len = base64.StdEncoding.EncodedLen(len(t.Image))
 	var encoder = Encoder{
-		Buf: make([]byte, 0, 90+base64Len), // Fixed-Size-Data >> 90 = 14+((16*3)+15)+11+...+2
+		Buf: make([]byte, 0, t.jsonLen()),
 	}
 
 	encoder.EncodeString(`{"CaptchaID":[`)
-	encoder.EncodeSliceAsNumber(t.CaptchaID[:])
+	encoder.EncodeByteSliceAsNumber(t.CaptchaID[:])
 
 	encoder.EncodeString(`],"Image":"`)
-	encoder.EncodeSliceAsBase64(t.Image, base64Len)
+	encoder.EncodeByteSliceAsBase64(t.Image)
 	encoder.EncodeString(`"}`)
 
 	return encoder.Buf
 }
 
+func (t *test1) jsonLen() (ln int) {
+	ln = 27      // len(`{"CaptchaID":[],"Image":""}`)
+	ln += 16 * 4 // [16]bye array
+	ln += base64.StdEncoding.EncodedLen(len(t.Image))
+	return
+}
+
 /*
 	EasyJson Encoder and decoder
 	https://github.com/mailru/easyjson
+	>> easyjson -all ./benchmark1_test.go
 */
 
 func (t test1) easyEncoder() ([]byte, error) {
@@ -350,6 +382,7 @@ func easyjson42239ddeEncodeBench(out *jwriter.Writer, in test1) {
 /*
 	ffJson Encoder and decoder
 	https://github.com/pquerna/ffjson
+	>> ffjson ./benchmark1_test.go
 */
 
 func (t *test1) ffEncoder() ([]byte, error) {

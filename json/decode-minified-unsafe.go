@@ -9,20 +9,36 @@ import (
 	"unsafe"
 )
 
-// Decoder store data to decode data by each method!
-type Decoder struct {
+// DecoderUnsafeMinifed store data to decode data by each method!
+type DecoderUnsafeMinifed struct {
 	Buf      []byte
 	Token    byte
 	LastItem []byte
+	Found    bool
 }
 
 // Offset make d.Buf to start of given offset
-func (d *Decoder) Offset(o int) {
+func (d *DecoderUnsafeMinifed) Offset(o int) {
 	d.Buf = d.Buf[o:]
 }
 
+// SetFounded indicate that iteration is legal
+func (d *DecoderUnsafeMinifed) SetFounded() {
+	d.ResetToken()
+	d.Found = true
+}
+
+// IterationCheck call in end of each decode iteration.
+func (d *DecoderUnsafeMinifed) IterationCheck() error {
+	if d.Found {
+		d.Found = false
+		return nil
+	}
+	return ErrJSONEncodedStringCorrupted
+}
+
 // FindEndToken find next end json token
-func (d *Decoder) FindEndToken() {
+func (d *DecoderUnsafeMinifed) FindEndToken() {
 	for i, c := range d.Buf {
 		switch c {
 		case ',':
@@ -45,12 +61,12 @@ func (d *Decoder) FindEndToken() {
 }
 
 // ResetToken set d.Token to nil
-func (d *Decoder) ResetToken() {
+func (d *DecoderUnsafeMinifed) ResetToken() {
 	d.Token = 0
 }
 
 // CheckToken set d.Token to nil
-func (d *Decoder) CheckToken(t byte) bool {
+func (d *DecoderUnsafeMinifed) CheckToken(t byte) bool {
 	if d.Token == t {
 		d.ResetToken()
 		return true
@@ -58,23 +74,23 @@ func (d *Decoder) CheckToken(t byte) bool {
 	return false
 }
 
-// DecodeKey return key very safe for each decode iteration. pass d.Buf start from any where and receive from after :
-func (d *Decoder) DecodeKey() string {
+// DecodeKey return json key. pass d.Buf start from after " and receive from after :
+func (d *DecoderUnsafeMinifed) DecodeKey() string {
 	var loc = bytes.IndexByte(d.Buf, '"')
-	d.Buf = d.Buf[loc+1:] // remove any byte before first coma due to don't need them
-	loc = bytes.IndexByte(d.Buf, '"')
+	var slice []byte = d.Buf[:loc]
+	d.Offset(loc + 2) // +2 due to have ':"' after key name end!
+	return *(*string)(unsafe.Pointer(&slice))
+}
 
-	var slice []byte
-	slice = slice[:loc]
-
-	d.Buf = d.Buf[loc+1:] // remove any byte before last coma due to don't need them
-	loc = bytes.IndexByte(d.Buf, ':')
-	d.Buf = d.Buf[loc+1:]
-	return string(slice)
+// DecodeBool convert 64bit integer number string to number. pass d.Buf start from after : and receive from after ,
+func (d *DecoderUnsafeMinifed) DecodeBool() (b bool, err error) {
+	d.FindEndToken()
+	// ui, err = strconv.ParseUint(*(*string)(unsafe.Pointer(&d.LastItem)), 10, 64)
+	return
 }
 
 // DecodeUInt8 convert 8bit integer number string to number. pass d.Buf start from number and receive from after ,
-func (d *Decoder) DecodeUInt8() (ui uint8, err error) {
+func (d *DecoderUnsafeMinifed) DecodeUInt8() (ui uint8, err error) {
 	d.FindEndToken()
 	var num uint64
 	num, err = strconv.ParseUint(*(*string)(unsafe.Pointer(&d.LastItem)), 10, 8)
@@ -82,27 +98,23 @@ func (d *Decoder) DecodeUInt8() (ui uint8, err error) {
 	return
 }
 
-// DecodeUInt64 convert 64bit integer number string to number. pass d.Buf start from after : and receive from after ,
-func (d *Decoder) DecodeUInt64() (ui uint64, err error) {
+// DecodeUInt64 convert 64bit integer number string to number. pass d.Buf start from number and receive from after ,
+func (d *DecoderUnsafeMinifed) DecodeUInt64() (ui uint64, err error) {
 	d.FindEndToken()
 	ui, err = strconv.ParseUint(*(*string)(unsafe.Pointer(&d.LastItem)), 10, 64)
 	return
 }
 
-// DecodeFloat64AsNumber convert float64 number string to float64 number. pass d.Buf start from after : and receive from ,
-func (d *Decoder) DecodeFloat64AsNumber() (f float64, err error) {
+// DecodeFloat64AsNumber convert float64 number string to float64 number. pass d.Buf start from number and receive from ,
+func (d *DecoderUnsafeMinifed) DecodeFloat64AsNumber() (f float64, err error) {
 	d.FindEndToken()
 	f, err = strconv.ParseFloat(*(*string)(unsafe.Pointer(&d.LastItem)), 64)
 	return
 }
 
 // DecodeSliceAsNumber convert number string slice to []byte. pass buf start from after [ and receive from after ]
-func (d *Decoder) DecodeSliceAsNumber() (slice []byte, err error) {
-	var loc int // Coma, Colon, bracket, ... location
+func (d *DecoderUnsafeMinifed) DecodeSliceAsNumber() (slice []byte, err error) {
 	var num uint8
-
-	loc = bytes.IndexByte(d.Buf, '[')
-	d.Buf = d.Buf[loc+1:]
 	slice = make([]byte, 0, 8) // TODO::: Is cap efficient enough?
 
 	for !d.CheckToken(']') {
@@ -111,18 +123,15 @@ func (d *Decoder) DecodeSliceAsNumber() (slice []byte, err error) {
 			return
 		}
 		slice = append(slice, num)
-
-		d.FindEndToken()
+		d.Offset(1)
 	}
 	return
 }
 
 // DecodeSliceAsBase64 convert base64 string to []byte
-func (d *Decoder) DecodeSliceAsBase64() (slice []byte, err error) {
+func (d *DecoderUnsafeMinifed) DecodeSliceAsBase64() (slice []byte, err error) {
 	var loc int // Coma, Colon, bracket, ... location
-
 	loc = bytes.IndexByte(d.Buf, '"')
-
 	slice = make([]byte, base64.StdEncoding.DecodedLen(len(d.Buf[:loc])))
 	var n int
 	n, err = base64.StdEncoding.Decode(slice, d.Buf[:loc])
@@ -136,18 +145,15 @@ func (d *Decoder) DecodeSliceAsBase64() (slice []byte, err error) {
 }
 
 // DecodeString return string. pass d.Buf start from after " and receive from from after "
-func (d *Decoder) DecodeString() (s string) {
+func (d *DecoderUnsafeMinifed) DecodeString() (s string) {
 	var loc int // Coma, Colon, bracket, ... location
-
 	loc = bytes.IndexByte(d.Buf, '"')
 	if loc < 0 {
 		// Reach last item of d.Buf!
 		loc = len(d.Buf) - 1
 	}
 
-	var slice []byte
-	slice = slice[:loc]
-
-	d.Buf = d.Buf[loc+1:]
+	var slice []byte = d.Buf[:loc]
+	d.Offset(loc + 1)
 	return *(*string)(unsafe.Pointer(&slice))
 }
