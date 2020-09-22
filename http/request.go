@@ -26,14 +26,12 @@ func MakeNewRequest() *Request {
 
 // Marshal enecodes r *Request data and append to given httpPacket
 func (r *Request) Marshal() (httpPacket []byte) {
-	r.Header.Set(HeaderKeyHost, r.URI.Authority)
-
 	httpPacket = make([]byte, 0, r.Len())
 
 	httpPacket = append(httpPacket, r.Method...)
 	httpPacket = append(httpPacket, SP)
 
-	httpPacket = r.URI.MarshalRequestURI(httpPacket)
+	httpPacket = r.URI.Marshal(httpPacket)
 	httpPacket = append(httpPacket, SP)
 
 	httpPacket = append(httpPacket, r.Version...)
@@ -62,11 +60,7 @@ func (r *Request) UnMarshal(httpPacket []byte) (err error) {
 	r.Method = s[:index]
 	s = s[index+1:]
 
-	index = strings.IndexByte(s, ' ')
-	if index == -1 {
-		return ErrParsedErrorOnURI
-	}
-	r.URI.UnMarshal(s[:index])
+	index = r.URI.UnMarshal(s)
 	s = s[index+1:]
 
 	index = strings.IndexByte(s, '\r')
@@ -107,7 +101,7 @@ func (r *Request) GetHost() (host string) {
 // Len return length of request
 func (r *Request) Len() (ln int) {
 	ln += len(r.Method)
-	ln += r.URI.MarshalRequestURILen()
+	ln += r.URI.Len()
 	ln += len(r.Version)
 	ln += r.Header.Len()
 	ln += 6 // 6=1+1+2+2=len(SP)+len(SP)+len(CRLF)+len(CRLF)

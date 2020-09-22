@@ -19,88 +19,89 @@ type URI struct {
 	Fragment  string // fragment for references, without '#'
 }
 
-// Marshal encode URI data to u.RawURI
-func (u *URI) Marshal() {
-	var buf = make([]byte, 0, u.Len())
-	if u.Scheme != "" {
-		buf = append(buf, u.Scheme...)
-		buf = append(buf, "://"...)
-	}
-	buf = append(buf, u.Authority...)
-	buf = append(buf, u.Path...)
-	if u.Query != "" {
-		buf = append(buf, '?')
-		buf = append(buf, u.Path...)
-	}
-	u.Raw = *(*string)(unsafe.Pointer(&buf))
-}
+// Marshal encode URI data to given httpPacket and update u.Raw
+func (u *URI) Marshal(httpPacket []byte) []byte {
+	var startLen int = len(httpPacket)
 
-// MarshalRequestURI returns the encoded path?query
-// string that would be used in an HTTP request for u.
-func (u *URI) MarshalRequestURI(httpPacket []byte) []byte {
-	if len(u.Path) > 0 && len(u.Query) > 0 {
-		httpPacket = append(httpPacket, u.Path...)
-		httpPacket = append(httpPacket, Question)
-		httpPacket = append(httpPacket, u.Query...)
-	} else if len(u.Path) > 0 {
-		httpPacket = append(httpPacket, u.Path...)
-	} else {
+	if u.Scheme != "" {
+		httpPacket = append(httpPacket, u.Scheme...)
+		httpPacket = append(httpPacket, "://"...)
+	}
+	httpPacket = append(httpPacket, u.Authority...)
+	httpPacket = append(httpPacket, u.Path...)
+	if u.Path == "" {
 		httpPacket = append(httpPacket, Slash)
 	}
+	if u.Query != "" {
+		httpPacket = append(httpPacket, Question)
+		httpPacket = append(httpPacket, u.Query...)
+	}
+
+	var raw []byte = httpPacket[startLen:]
+	u.Raw = *(*string)(unsafe.Pointer(&raw))
+
 	return httpPacket
 }
 
 // UnMarshal use to parse and decode given raw URI to u
-func (u *URI) UnMarshal(raw string) {
-	u.Raw = raw
-
-	if raw == "*" {
-		u.Path = "*"
-		return
+func (u *URI) UnMarshal(s string) (uriEnd int) {
+	if s[0] == Asterisk {
+		u.Path = s[:1]
+		u.Raw = s[:1]
+		return 1
 	}
 
-	var pathStartIndex, pathEndIndex int
-	var ln = len(raw)
+	var authorityStartIndex, pathStartIndex, questionIndex, numberSignIndex int
+	var ln = len(s)
 	for i := 0; i < ln; i++ {
-		switch raw[i] {
-		case ':':
+		switch s[i] {
+		case Colon:
 			// Check : mark is first appear before any start||end sign or it is part of others!
-			if pathStartIndex == 0 && pathEndIndex == 0 {
-				pathStartIndex = i + 3 // +3 due to have ://
-				u.Scheme = raw[:i]
+			if authorityStartIndex == 0 {
+				u.Scheme = s[:i]
+				i += 2
+				authorityStartIndex = i + 1 // +3 due to have ://
 			}
-		case '?':
+		case Slash:
+			if pathStartIndex == 0 {
+				pathStartIndex = i
+				u.Authority = s[authorityStartIndex:pathStartIndex]
+			}
+		case Question:
 			// Check ? mark is first appear or it is part of some query key||value!
-			if pathEndIndex == 0 {
-				pathEndIndex = i
-				u.Query = raw[i+1:] // +1 due to we don't need '?'
+			if questionIndex == 0 {
+				questionIndex = i
+				u.Path = s[pathStartIndex:questionIndex]
 			}
-		case '#':
-			if pathEndIndex == 0 {
-				pathEndIndex = i
+		case NumberSign:
+			if numberSignIndex == 0 {
+				numberSignIndex = i
+				if questionIndex == 0 {
+					u.Path = s[pathStartIndex:numberSignIndex]
+				} else {
+					u.Query = s[questionIndex+1 : numberSignIndex] // +1 due to we don't need '?'
+				}
 			}
-			u.Fragment = raw[i+1:] // +1 due to we don't need '#'
+		case SP:
+			uriEnd = i
+			if questionIndex == 0 && numberSignIndex == 0 {
+				u.Path = s[pathStartIndex:uriEnd]
+			}
+			if numberSignIndex != 0 {
+				u.Fragment = s[numberSignIndex+1 : uriEnd] // +1 due to we don't need '#'
+			}
+			if questionIndex != 0 && numberSignIndex == 0 {
+				u.Query = s[questionIndex+1 : uriEnd] // +1 due to we don't need '?'
+			}
+			u.Raw = s[:uriEnd]
 			// Don't need to continue loop!
-			break
+			return
 		}
 	}
-	if pathEndIndex == 0 {
-		pathEndIndex = ln
-	}
-	u.Path = raw[pathStartIndex:pathEndIndex]
-
-	ln = len(u.Fragment)
-	if ln > 0 && u.Query != "" {
-		u.Query = u.Query[:len(u.Query)-ln-1] // -1 due to we don't need '#'
-	}
+	return
 }
 
 // Len return length of Marshal()
 func (u *URI) Len() int {
-	return len(u.Scheme) + len(u.Authority) + len(u.Path) + len(u.Query)
-}
-
-// MarshalRequestURILen return length of MarshalRequestURI()
-func (u *URI) MarshalRequestURILen() int {
-	return len(u.Path) + len(u.Query) + 1 // 1 for ? mark
+	return len(u.Scheme) + len(u.Authority) + len(u.Path) + len(u.Query) + 4 // 4 = len("://")+len("?")
 }

@@ -31,11 +31,14 @@ const (
 	HT             byte   = '	'  // <US-ASCII HT, horizontal-tab (9)>
 	CR             byte   = '\r' // <US-ASCII CR, carriage return (13)>
 	LF             byte   = '\n' // <US-ASCII LF, linefeed (10)>
-	CRLF           string = "\r\n"
-	ColonSpace     string = ": "
+	Colon          byte   = ':'
+	NumberSign     byte   = '#'
 	Coma           byte   = ','
 	Question       byte   = '?'
 	Slash          byte   = '/'
+	Asterisk       byte   = '*'
+	CRLF           string = "\r\n"
+	ColonSpace     string = ": "
 	SemiColonSpace string = "; "
 )
 
