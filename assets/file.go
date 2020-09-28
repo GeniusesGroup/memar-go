@@ -144,10 +144,10 @@ type ReplaceReq struct {
 
 // Replace replace given data in the file
 func (f *File) Replace(data []ReplaceReq) {
-	var addedSize int
+	var totalAddedSize, addedSize int
 	for _, d := range data {
-		d.Start += addedSize
-		d.End += addedSize
+		d.Start += totalAddedSize
+		d.End += totalAddedSize
 
 		var ln = len(d.Data)
 		addedSize = ln - (d.End - d.Start)
@@ -158,7 +158,8 @@ func (f *File) Replace(data []ReplaceReq) {
 				// increase f.Data len
 				f.Data = f.Data[:len(f.Data)+addedSize]
 			}
-		} 
+		}
+		totalAddedSize += addedSize
 
 		copy(f.Data[d.End+addedSize:], f.Data[d.End:])
 		copy(f.Data[d.Start:], d.Data)
