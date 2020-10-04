@@ -24,16 +24,16 @@ import (
  */
 
 // UnsafeGetString decodes string from the payload buffer in unsafe manner!
-// This would blow up silently if return not limit by make(string, 0, UnsafeGetArrayLength(p))
-func UnsafeGetString(p []byte, offset uint32) string {
-	var slice = UnsafeGetByteArray(p, offset)
+func UnsafeGetString(p []byte, stackIndex uint32) string {
+	var add uint32 = GetUInt32(p, stackIndex)
+	var len uint32 = GetUInt32(p, stackIndex+4)
+	var slice = p[add : add+len]
 	return *(*string)(unsafe.Pointer(&slice))
 }
 
 // UnsafeGetByteArray decodes byte slice from the payload buffer in unsafe manner!
-// This would blow up silently if return not limit by make([]byte, 0, UnsafeGetArrayLength(p))
-func UnsafeGetByteArray(p []byte, offset uint32) []byte {
-	var add uint32 = GetUInt32(p[offset:])
-	var len uint32 = GetUInt32(p[offset+4:])
+func UnsafeGetByteArray(p []byte, stackIndex uint32) []byte {
+	var add uint32 = GetUInt32(p, stackIndex)
+	var len uint32 = GetUInt32(p, stackIndex+4)
 	return p[add : add+len]
 }
