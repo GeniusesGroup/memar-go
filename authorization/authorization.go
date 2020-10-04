@@ -1,35 +1,33 @@
 /* For license and copyright information please see LEGAL file in repository */
 
-package achaemenid
+package authorization
 
-import "../errors"
-
-// AccessControl : Use ABAC features for AccessControl fields.
-// Must store arrays in sort for easy read and comparison
+// AccessControl store needed data to authorize a request to a platform!
+// Use add methods due to arrays must store in sort for easy read and comparison
+// Some standards: ABAC, ACL, RBAC, ... features for AccessControl fields,
 type AccessControl struct {
+	// Authorize Where:
 	AllowSocieties []uint32 // Part of GP address
 	DenySocieties  []uint32 // Part of GP address
 	AllowRouters   []uint32 // Part of GP address
 	DenyRouters    []uint32 // Part of GP address
-	AllowDays      []uint8
-	DenyDays       []uint8
-	AllowTime      []int64
-	DenyTime       []int64
-	AllowServices  []uint32 // ["ServiceID", "ServiceID"]
-	DenyServices   []uint32 // ["ServiceID", "ServiceID"]
+
+	// Authorize When:
+	AllowDays Day      // Any day of the week
+	DenyDays  Day      // Any day of the week
+	AllowTime []uint16 // Any Time of the Day in minute
+	DenyTime  []uint16 // Any Time of the Day in minute
+
+	// Authorize Which:
+	AllowServices []uint32 // ["ServiceID", "ServiceID"]
+	DenyServices  []uint32 // ["ServiceID", "ServiceID"]
+	AllowCRUD     CRUD     // CRUD == Create, Read, Update, Delete
+	DenyCRUD      CRUD     // CRUD == Create, Read, Update, Delete
+
+	// Authorize What:
+	// Authorize How:
+	// Authorize If:
 }
-
-// Errors
-var (
-	ErrRequestServiceNotAllow = errors.New("RequestServiceNotAllow", "Request service is not in allow list of connection")
-	ErrRequestServiceDenied   = errors.New("RequestServiceDenied", "Request service is in deny list of connection")
-
-	ErrRequestByNotAllowSociety = errors.New("RequestByNotAllowSociety", "Request send by society that is not in allow list of connection")
-	ErrRequestByDeniedSociety   = errors.New("RequestByDeniedSociety", "Request send by society that is in deny list of connection")
-
-	ErrRequestByNotAllowRouter = errors.New("RequestByNotAllowRouter", "Request send by router that is not in allow list of connection")
-	ErrRequestByDeniedRouter   = errors.New("RequestByDeniedRouter", "Request send by router that is in deny list of connection")
-)
 
 // AddDays store given days by check order.
 func (ac *AccessControl) AddDays(allow, deny []uint8) {
@@ -43,7 +41,8 @@ func (ac *AccessControl) AddTime(allow, deny []int64) {
 	// Just use GMT0!!!
 }
 
-func (ac *AccessControl) authorizeWhich(serviceID uint32) (err error) {
+// AuthorizeWhich authorize by ServiceID and CRUD that allow or denied by access control table!
+func (ac *AccessControl) AuthorizeWhich(serviceID uint32, crud CRUD) (err error) {
 	var i int
 	var notAuthorize bool
 
@@ -57,7 +56,7 @@ func (ac *AccessControl) authorizeWhich(serviceID uint32) (err error) {
 			}
 		}
 		if notAuthorize {
-			return ErrRequestServiceNotAllow
+			return ErrAuthorizationServiceNotAllow
 		}
 	}
 
@@ -66,20 +65,30 @@ DS:
 	if ln > 0 {
 		for i = 0; i < ln; i++ {
 			if ac.DenyServices[i] == serviceID {
-				return ErrRequestServiceDenied
+				return ErrAuthorizationServiceDenied
 			}
 		}
+	}
+
+	if ac.AllowCRUD != CRUDAll {
+		// TODO:::
+	}
+
+	if ac.DenyCRUD != CRUDNone {
+		// TODO:::
 	}
 
 	return
 }
 
-func (ac *AccessControl) authorizeWhen() (err error) {
+// AuthorizeWhen --
+func (ac *AccessControl) AuthorizeWhen(day Day, time int64) (err error) {
 
 	return
 }
 
-func (ac *AccessControl) authorizeWhere(societyID, RouterID uint32) (err error) {
+// AuthorizeWhere --
+func (ac *AccessControl) AuthorizeWhere(societyID, RouterID uint32) (err error) {
 	var i int
 	var notAuthorize bool
 
@@ -93,7 +102,7 @@ func (ac *AccessControl) authorizeWhere(societyID, RouterID uint32) (err error) 
 			}
 		}
 		if notAuthorize {
-			return ErrRequestByNotAllowSociety
+			return ErrAuthorizationNotAllowSociety
 		}
 	}
 
@@ -102,7 +111,7 @@ DS:
 	if ln > 0 {
 		for i = 0; i < ln; i++ {
 			if ac.DenySocieties[i] == societyID {
-				return ErrRequestByDeniedSociety
+				return ErrAuthorizationDeniedSociety
 			}
 		}
 	}
@@ -117,7 +126,7 @@ DS:
 			}
 		}
 		if notAuthorize {
-			return ErrRequestByNotAllowRouter
+			return ErrAuthorizationNotAllowRouter
 		}
 	}
 
@@ -126,7 +135,7 @@ DR:
 	if ln > 0 {
 		for i = 0; i < ln; i++ {
 			if ac.DenyRouters[i] == RouterID {
-				return ErrRequestByDeniedRouter
+				return ErrAuthorizationDeniedRouter
 			}
 		}
 	}
@@ -134,7 +143,8 @@ DR:
 	return
 }
 
-func (ac *AccessControl) authorizeWhat() (err error) {
+// AuthorizeWhat --
+func (ac *AccessControl) AuthorizeWhat() (err error) {
 	// TODO::: can be implement?
 
 	// AllowRecords   [][16]byte // ["RecordUUID", "RecordUUID"]
@@ -142,14 +152,16 @@ func (ac *AccessControl) authorizeWhat() (err error) {
 	return
 }
 
-func (ac *AccessControl) authorizeHow() (err error) {
+// AuthorizeHow --
+func (ac *AccessControl) AuthorizeHow() (err error) {
 	// TODO::: can be implement?
 
 	// How []string
 	return
 }
 
-func (ac *AccessControl) authorizeIf() (err error) {
+// AuthorizeIf --
+func (ac *AccessControl) AuthorizeIf() (err error) {
 	// TODO::: can be implement?
 
 	// If  []string
