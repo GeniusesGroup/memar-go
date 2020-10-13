@@ -5,6 +5,7 @@ package achaemenid
 import (
 	"os"
 	"os/signal"
+	"path/filepath"
 	"runtime/debug"
 	"syscall"
 
@@ -12,13 +13,14 @@ import (
 )
 
 func init() {
-	log.Info("-------------------Achaemenid Server-------------------")
+	log.Info("-----------------------------Achaemenid Server-----------------------------")
 }
 
 // Server represents needed data to serving some functionality such as networks, ...
 // to both server and client apps!
 type Server struct {
-	State           int // States locate in const of this file.
+	State           int    // States locate in const of this file.
+	RepoLocation    string // Just fill in supported OS
 	Manifest        Manifest
 	Cryptography    cryptography
 	Networks        networks
@@ -47,25 +49,35 @@ func (s *Server) Init() {
 	}
 	s.State = ServerStateStarting
 	// Get UserGivenPermission from OS
-	s.Assets.init()
+
+	// Indicate repoLocation
+	// TODO::: change to PersiaOS when it ready!
+	var ex, err = os.Executable()
+	if err != nil {
+		log.Fatal(err)
+	}
+	s.RepoLocation = filepath.Dir(ex)
+	log.Info("App start in", s.RepoLocation)
+
+	s.Assets.init(s)
 	s.Services.init()
 	s.Connections.init(s)
 	s.Cryptography.init(s)
 }
 
-// Start will start the server.
-func (s *Server) Start() (err error) {
+// Start will start the server and block caller until server shutdown.
+func (s *Server) Start() {
 	log.Info("Try to start server...")
 
 	s.State = ServerStateRunning
 
 	log.Info("Server start successfully, Now listen to any OS signals ...")
 
+	// watch for SIGTERM and SIGINT from the operating system, and notify the app on the channel
+	// Infinity loop block main goroutine to handle OS signals!
 	for {
-		// watch for SIGTERM and SIGINT from the operating system, and notify the app on the channel
-		var sig = make(chan os.Signal)
+		var sig = make(chan os.Signal, 1)
 		signal.Notify(sig)
-		// Block main goroutine to handle OS signals!
 		s.HandleOSSignals(sig)
 	}
 }
@@ -81,22 +93,26 @@ func (s *Server) PanicHandler() {
 }
 
 // HandleOSSignals use to handle OS signals! Caller will block until we get an OS signal
+// https://en.wikipedia.org/wiki/Signal_(IPC)
 func (s *Server) HandleOSSignals(sigChannel chan os.Signal) {
 	var sig = <-sigChannel
-	log.Warn("caught signal: ", sig)
 	switch sig {
-	// wait for our os signal to stop the app on the graceful stop channel
 	case syscall.SIGINT, syscall.SIGQUIT, syscall.SIGTERM, syscall.SIGKILL:
+		log.Info("Caught signal to stop server")
 		if s.State == ServerStateRunning {
 			s.State = ServerStateStopping
 			log.Info("Waiting for server to finish and release proccess, It will take up to 60 seconds")
 			s.Shutdown()
 			os.Exit(s.State)
 		}
+	case syscall.Signal(0x17): // syscall.SIGURG:
+		log.Warn("Caught urgened signal: ", sig)
 	case syscall.Signal(10): // syscall.SIGUSR1
-		log.Info("Receive signal to reload server assets")
+		log.Info("Caught signal to reload server assets")
 		s.Assets.LoadFromStorage()
-	case syscall.Signal(12): // syscall.SIGUSR2
+	// case syscall.Signal(12): // syscall.SIGUSR2
+	default:
+		log.Warn("Caught un-managed signal: ", sig)
 	}
 }
 
@@ -113,5 +129,5 @@ func (s *Server) Shutdown() {
 	s.State = ServerStateStop
 
 	log.Info("Server stopped")
-	log.SaveToStorage("Achaemenid", repoLocation)
+	log.SaveToStorage("Achaemenid", s.RepoLocation)
 }

@@ -52,7 +52,7 @@ func handleGPEncapsulateInIP(s *Server, IPConn *net.IPConn) {
 
 		conn, _ = handleGP(s, buf[:rwSize])
 		if conn != nil {
-			conn.IPAddr = IPAddr
+			conn.IPAddr = *IPAddr
 		}
 	}
 }

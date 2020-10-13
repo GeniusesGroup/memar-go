@@ -36,23 +36,34 @@ func MakeGPOverUDPNetwork(s *Server) (err error) {
 
 func handleGPEncapsulateInUDP(s *Server, udpConn *net.UDPConn) {
 	var rwSize int
-	var UDPAddr *net.UDPAddr
+	var udpAddr *net.UDPAddr
 	var err error
 	var conn *Connection
+	var st *Stream
 	for {
 		// Make a buffer to hold incoming data -- no packet can be bigger.
 		// 1472 = 1500(Ethernet MTU) - 20(IP header) - 8(UDP header)
 		var buf = make([]byte, 1472)
 
-		rwSize, UDPAddr, err = udpConn.ReadFromUDP(buf)
+		rwSize, udpAddr, err = udpConn.ReadFromUDP(buf)
 		if err != nil || rwSize < gp.MinPacketLen {
 			// TODO::: attack??
 			continue
 		}
 
-		conn, _ = handleGP(s, buf[:rwSize])
+		conn, st = handleGP(s, buf[:rwSize])
 		if conn != nil {
-			conn.UDPAddr = UDPAddr
+			// Just ignore packet and continue
+			continue
+		}
+
+		rwSize, err = udpConn.WriteToUDP(st.OutcomePayload, udpAddr)
+		if err != nil {
+			if log.DebugMode {
+				log.Debug("TCP - Writing error:", err.Error())
+			}
+			// Just ignore packet and continue
+			continue
 		}
 	}
 }

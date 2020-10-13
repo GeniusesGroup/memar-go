@@ -9,13 +9,13 @@ const (
 )
 
 // DNSHandler use to standard services handlers in any layer!
-type DNSHandler func(*Server, *Stream)
+type DNSHandler func(*Stream)
 
 // DNSIncomeRequestHandler handle incoming DNS request streams!
 func DNSIncomeRequestHandler(s *Server, st *Stream) {
 
 	// Handle response stream
-	DNSOutcomeResponseHandler(s, st.ReqRes)
+	DNSOutcomeResponseHandler(s, st)
 }
 
 // DNSIncomeResponseHandler use to handle incoming DNS response streams!

@@ -2,18 +2,26 @@
 
 package achaemenid
 
-import "../errors"
+import (
+	errorr "../error"
+	lang "../language"
+)
 
-// Declare Errors Details
+// Errors
 var (
-	ErrGPPacketTooShort = errors.New("GPPacketTooShort", "GP packet is empty or too short than standard header. It must include 44Byte header plus 16Byte min Payload")
+	ErrAchaemenidNoConnectionToNode = errorr.New().
+					SetDetail(lang.EnglishLanguage, "Achaemenid - No Connection To Node",
+			"There is no connection to desire node to complete request").Save()
 
-	ErrSRPCServiceNotFound = errors.New("SRPCServiceNotFound", "Requested sRPC Service is out range of services in this version of service")
-	ErrSRPCPayloadEmpty    = errors.New("SRPCPayloadEmpty", "Stream data payload can't be empty")
+	ErrAchaemenidProtocolHandler = errorr.New().
+					SetDetail(lang.EnglishLanguage, "Achaemenid - Protocol Handler",
+			"Protocol handler not exist to complete the request").Save()
 
-	ErrHTTPServiceNotFound = errors.New("HTTPServiceNotFound", "Requested HTTP Service is not found in this instance of app")
+	ErrAchaemenidGuestConnectionNotAllow = errorr.New().
+						SetDetail(lang.EnglishLanguage, "Achaemenid - Guest Connection Not Allow",
+			"Guest users don't allow to make new connection").Save()
 
-	ErrStreamPayloadEmpty     = errors.New("StreamPayloadEmpty", "Stream data payload can't be empty")
-	ErrPacketArrivedAnterior  = errors.New("PacketArrivedAnterior", "New packet arrive before some expected packet arrived. Usually cause of drop packet detection or high latency occur for some packet")
-	ErrPacketArrivedPosterior = errors.New("PacketArrivedPosterior", "New packet arrive after some expected packet arrived. Usually cause of drop packet detection or high latency occur for some packet")
+	ErrAchaemenidGuestConnectionMaxReached = errorr.New().
+						SetDetail(lang.EnglishLanguage, "Achaemenid - Guest Connection Max Reached",
+			"This server not have enough resource to make new guest connection, register or try other server").Save()
 )

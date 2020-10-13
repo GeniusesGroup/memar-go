@@ -6,11 +6,14 @@ import (
 	"bytes"
 	"context"
 	"net"
+
+	"../log"
+	"../uuid"
 )
 
 type nodes struct {
 	server       *Server
-	localNode    Node
+	LocalNode    *Node
 	Nodes        []Node // sort in nodeID
 	nodesDetails []NodeDetails
 }
@@ -18,18 +21,16 @@ type nodes struct {
 // Init use to get other node data and make connection to each of them
 func (n *nodes) Init(s *Server) (err error) {
 	n.server = s
-
-	n.nodesDetails, err = n.GetServerNodeDetails()
-	if err != nil {
-		return
+	var localNode = Node{
+		InstanceID: uuid.NewV4(),
+		server:     s,
+		State:      NodeStateLocalNode,
 	}
 
-	return
-}
-
-// GetServerNodeDetails returns all platform nodes details.
-func (n *nodes) GetServerNodeDetails() (nd []NodeDetails, err error) {
-	if len(n.nodesDetails) == 0 {
+	if log.DevMode {
+		n.LocalNode = &localNode
+		n.Nodes = append(n.Nodes, localNode)
+	} else {
 		// TODO::: change to Giti network when it is ready to serve lookup domain to GP address.
 		var ipsAddr []net.IPAddr
 		ipsAddr, err = net.DefaultResolver.LookupIPAddr(context.Background(), n.server.Manifest.DomainName)
@@ -37,17 +38,17 @@ func (n *nodes) GetServerNodeDetails() (nd []NodeDetails, err error) {
 			// TODO::: block and try agin for 3 times??
 		}
 
+		if log.DebugMode {
+			log.Debug("Achaemenid - Available nodes addr:", ipsAddr)
+		}
+
 		// Check if this is first instance of platform app.
 		if len(ipsAddr) == 1 {
-			n.Nodes = []Node{
-				Node{
-					Conn:  nil, // Nil due to it is local node
-					state: NodeStateStart,
-				},
-			}
+			n.Nodes = append(n.Nodes, localNode)
+			n.LocalNode = &n.Nodes[0]
 		} else {
 			var conn *Connection
-			conn, err = n.server.Connections.MakeNewIPConnection(&ipsAddr[0])
+			conn, err = n.server.Connections.MakeNewIPConnection(ipsAddr[0])
 			if err != nil {
 				// TODO::: why fresh starting app can't make new connection???
 			}
@@ -68,14 +69,19 @@ func (n *nodes) GetServerNodeDetails() (nd []NodeDetails, err error) {
 				n.nodesDetails[i].IPAddr = res.nodes[i].IPAddr
 
 				if !bytes.Equal(res.nodes[i].IPAddr, n.server.Networks.localIP) {
-					n.Nodes[i].Conn, err = n.server.Connections.MakeNewIPConnection(&net.IPAddr{IP: res.nodes[i].IPAddr})
+					n.Nodes[i].Conn, err = n.server.Connections.MakeNewIPConnection(net.IPAddr{IP: res.nodes[i].IPAddr})
 				}
 			}
 		}
 
+		// Register local node to cluster
 	}
+	return
+}
 
-	return n.nodesDetails, nil
+// GetServerNodeDetails returns all platform nodes details.
+func (n *nodes) GetServerNodeDetails() (nd []NodeDetails) {
+	return n.nodesDetails
 }
 
 type getServerNodeDetailsRes struct {
@@ -84,22 +90,21 @@ type getServerNodeDetailsRes struct {
 
 func getServerNodeDetails(s *Server, conn *Connection) (res *getServerNodeDetailsRes, err error) {
 	// Make new request-response streams
-	var reqStream, resStream *Stream
-	reqStream, resStream, err = conn.MakeBidirectionalStream(0)
+	var st *Stream
+	st, err = conn.MakeOutcomeStream(0)
 	if err != nil {
 		return
 	}
 
 	// Set GetServerNodes ServiceID
-	reqStream.ServiceID = 639492616
+	st.Service = &Service{ID: 639492616}
 
-	err = SrpcOutcomeRequestHandler(s, reqStream)
+	err = SrpcOutcomeRequestHandler(s, st)
 	if err != nil {
 		return
 	}
 
-	err = res.syllabDecoder(resStream.Payload)
-
+	err = res.syllabDecoder(st.OutcomePayload)
 	return
 }
 

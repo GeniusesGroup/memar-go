@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"../http"
+	"../log"
 )
 
 // Indicate standard listen and send port number register for http protocol
@@ -17,7 +18,7 @@ const (
 )
 
 // HTTPHandler use to standard HTTP handlers in any layer!
-type HTTPHandler func(*Server, *Stream, *http.Request, *http.Response)
+type HTTPHandler func(*Stream, *http.Request, *http.Response)
 
 // HTTPIncomeRequestHandler handle incoming HTTP request streams!
 // It can use for architectures like restful, ...
@@ -27,7 +28,7 @@ func HTTPIncomeRequestHandler(s *Server, st *Stream) {
 	var req = http.MakeNewRequest()
 	var res = http.MakeNewResponse()
 
-	err = req.UnMarshal(st.Payload)
+	err = req.UnMarshal(st.IncomePayload)
 	if err != nil {
 		if st.Connection == nil {
 			// TODO::: due to IPv4&&IPv6 support we must handle some functionality here! Remove it when remove those support.
@@ -37,7 +38,7 @@ func HTTPIncomeRequestHandler(s *Server, st *Stream) {
 		res.SetStatus(http.StatusBadRequestCode, http.StatusBadRequestPhrase)
 		res.SetError(err)
 		st.Connection.FailedPacketsReceived++
-		HTTPOutcomeResponseHandler(s, st.ReqRes, req, res)
+		HTTPOutcomeResponseHandler(s, st, req, res)
 		return
 	}
 
@@ -49,29 +50,28 @@ func HTTPIncomeRequestHandler(s *Server, st *Stream) {
 			return
 		}
 	}
-	if nonWWWtoWWW(s, st, req, res) {
+
+	if hostCheck(s, st, req, res) {
 		return
 	}
 
-	var service *Service
 	// Find related services
 	if req.URI.Path == "/apis" {
 		if req.Method != http.MethodPOST {
 			res.SetStatus(http.StatusMethodNotAllowedCode, http.StatusMethodNotAllowedPhrase)
-			HTTPOutcomeResponseHandler(s, st.ReqRes, req, res)
+			HTTPOutcomeResponseHandler(s, st, req, res)
 			return
 		}
 
 		var id uint64
 		id, err = strconv.ParseUint(req.URI.Query, 10, 32)
 		if err == nil {
-			st.ServiceID = uint32(id)
-			service = s.Services.GetServiceHandlerByID(st.ServiceID)
+			st.Service = s.Services.GetServiceHandlerByID(uint32(id))
 		}
 		// Add some header for /apis like not index by SE(google, ...), ...
-		res.Header.SetValue("X-Robots-Tag", "noindex")
+		res.Header.Set("X-Robots-Tag", "noindex")
 
-		// res.Header.SetValue(http.HeaderKeyContentEncoding, "gzip")
+		// res.Header.Set(http.HeaderKeyContentEncoding, "gzip")
 		// var b bytes.Buffer
 		// var gz = gzip.NewWriter(&b)
 		// gz.Write(res.Body)
@@ -84,19 +84,19 @@ func HTTPIncomeRequestHandler(s *Server, st *Stream) {
 			res.SetStatus(http.StatusNotFoundCode, http.StatusNotFoundPhrase)
 		} else {
 			res.SetStatus(http.StatusOKCode, http.StatusOKPhrase)
-			res.Header.SetValue(http.HeaderKeyCacheControl, "max-age=31536000")
-			res.Header.SetValue(http.HeaderKeyContentType, file.MimeType)
-			res.Header.SetValue(http.HeaderKeyContentEncoding, file.CompressType)
+			res.Header.Set(http.HeaderKeyCacheControl, "max-age=31536000")
+			res.Header.Set(http.HeaderKeyContentType, file.MimeType)
+			res.Header.Set(http.HeaderKeyContentEncoding, file.CompressType)
 			res.Body = file.CompressData
 		}
-		HTTPOutcomeResponseHandler(s, st.ReqRes, req, res)
+		HTTPOutcomeResponseHandler(s, st, req, res)
 		return
 	} else {
 		// Route by URL
-		service = s.Services.GetServiceHandlerByURI(req.URI.Path)
+		st.Service = s.Services.GetServiceHandlerByURI(req.URI.Path)
 
 		// Route by WWW assets
-		if service == nil {
+		if st.Service == nil {
 			var path = strings.Split(req.URI.Path, "/")
 			var lastPath = path[len(path)-1]
 
@@ -110,63 +110,62 @@ func HTTPIncomeRequestHandler(s *Server, st *Stream) {
 				res.SetStatus(http.StatusNotFoundCode, http.StatusNotFoundPhrase)
 			} else {
 				res.SetStatus(http.StatusOKCode, http.StatusOKPhrase)
-				res.Header.SetValue(http.HeaderKeyContentType, file.MimeType)
-				res.Header.SetValue(http.HeaderKeyCacheControl, "max-age=31536000")
-				res.Header.SetValue(http.HeaderKeyContentEncoding, file.CompressType)
+				res.Header.Set(http.HeaderKeyContentType, file.MimeType)
+				res.Header.Set(http.HeaderKeyCacheControl, "max-age=31536000")
+				res.Header.Set(http.HeaderKeyContentEncoding, file.CompressType)
 				res.Body = file.CompressData
 			}
 
-			HTTPOutcomeResponseHandler(s, st.ReqRes, req, res)
+			HTTPOutcomeResponseHandler(s, st, req, res)
 			return
 		}
 	}
 
 	// If project don't have any logic that support data on e.g. HTTP (restful, ...) we reject request with related error.
-	if service == nil {
+	if st.Service == nil {
 		st.Connection.ServiceCallCount++
 		st.Connection.FailedServiceCall++
 		// Attack??
 		res.SetStatus(http.StatusNotFoundCode, http.StatusNotFoundPhrase)
-		res.SetError(ErrHTTPServiceNotFound)
+		res.SetError(http.ErrHTTPNotFound)
 	} else {
 		// Handle request stream
-		service.HTTPHandler(s, st, req, res)
-		if st.ReqRes.Err != nil {
-			st.Connection.FailedPacketsReceived++
+		st.Service.HTTPHandler(st, req, res)
+		if st.Err != nil {
+			st.Connection.ServiceCallCount++
 			st.Connection.FailedServiceCall++
-			res.SetError(st.ReqRes.Err)
+			res.SetError(st.Err)
 			// Attack??
 		}
 	}
-	HTTPOutcomeResponseHandler(s, st.ReqRes, req, res)
+	HTTPOutcomeResponseHandler(s, st, req, res)
 }
 
 // HTTPIncomeResponseHandler use to handle incoming HTTP response streams!
 func HTTPIncomeResponseHandler(s *Server, st *Stream) {
-	st.SetState(StreamStateReady)
+	st.SetState(StateReady)
 }
 
 // HTTPOutcomeRequestHandler use to handle outcoming HTTP request stream!
 // given stream can't be nil, otherwise panic will occur!
 // It block caller until get response or error!!
 func HTTPOutcomeRequestHandler(s *Server, st *Stream) (err error) {
-	err = st.SendReq()
+	err = st.SendAndWait()
 	return
 }
 
 // HTTPOutcomeResponseHandler use to handle outcoming HTTP response stream!
 func HTTPOutcomeResponseHandler(s *Server, st *Stream, req *http.Request, res *http.Response) (err error) {
-	// Close request stream!
-	st.Connection.CloseStream(st.ReqRes)
+	st.Connection.StreamPool.CloseStream(st)
 
 	// Do some global assignment to response
 	res.Version = req.Version
-	// res.Header.SetValue(http.HeaderKeyAccessControlAllowOrigin, "*")
-	res.Header.SetValue(http.HeaderKeyContentLength, strconv.FormatUint(uint64(len(res.Body)), 10))
+	// res.Header.Set(http.HeaderKeyAccessControlAllowOrigin, "*")
+	res.Header.Set(http.HeaderKeyContentLength, strconv.FormatUint(uint64(len(res.Body)), 10))
 	// Add Server Header to response : "Achaemenid"
-	res.Header.SetValue(http.HeaderKeyServer, http.DefaultServer)
+	res.Header.Set(http.HeaderKeyServer, http.DefaultServer)
 
-	st.Payload = res.Marshal()
+	st.OutcomePayload = res.Marshal()
 
 	// send stream to outcome pool by weight
 	err = st.Send()
@@ -184,7 +183,7 @@ func HTTPToHTTPSHandler(s *Server, st *Stream) {
 	var err error
 	var req = http.MakeNewRequest()
 	var res = http.MakeNewResponse()
-	err = req.UnMarshal(st.Payload)
+	err = req.UnMarshal(st.IncomePayload)
 	if err != nil {
 		// TODO::: attack??
 		res.SetStatus(http.StatusBadRequestCode, http.StatusBadRequestPhrase)
@@ -196,19 +195,19 @@ func HTTPToHTTPSHandler(s *Server, st *Stream) {
 			target += "?" + req.URI.Query // + "&rd=tls" // TODO::: add rd query for analysis purpose??
 		}
 		res.SetStatus(http.StatusMovedPermanentlyCode, http.StatusMovedPermanentlyPhrase)
-		res.Header.SetValue(http.HeaderKeyLocation, target)
-		res.Header.SetValue(http.HeaderKeyConnection, http.HeaderValueClose)
+		res.Header.Set(http.HeaderKeyLocation, target)
+		res.Header.Set(http.HeaderKeyConnection, http.HeaderValueClose)
 	}
 
 	// Do some global assignment to response
 	res.Version = req.Version
-	res.Header.SetValue(http.HeaderKeyContentLength, "0")
+	res.Header.Set(http.HeaderKeyContentLength, "0")
 	// Add cache to decrease server load
-	res.Header.SetValue(http.HeaderKeyCacheControl, "public, max-age=2592000")
+	res.Header.Set(http.HeaderKeyCacheControl, "public, max-age=2592000")
 	// Add Server Header to response : "Achaemenid"
-	res.Header.SetValue(http.HeaderKeyServer, http.DefaultServer)
+	res.Header.Set(http.HeaderKeyServer, http.DefaultServer)
 
-	st.ReqRes.Payload = res.Marshal()
+	st.OutcomePayload = res.Marshal()
 }
 
 // TODO::: due to IPv4&&IPv6 support need this func! Remove them when remove those support.
@@ -223,16 +222,16 @@ func makeNewConnectionByHTTP(s *Server, st *Stream, req *http.Request, res *http
 			var acidArray [16]byte
 			copy(acidArray[:], acid)
 			st.Connection = s.Connections.GetConnectionByID(acidArray)
-			st.ReqRes.Connection = st.Connection
 		}
 	}
 	if st.Connection == nil {
 		// If can't find or get exiting connection from local and remote, make new one if server allow!
-		err = makeNewGuestConnection(s, st)
+		st.Connection, err = s.Connections.MakeNewGuestConnection()
 		if err != nil {
 			// Can't make new guest connection almost due to lack of enough resources, So simply return to close the connection
 			return
 		}
+		s.Connections.RegisterConnection(st.Connection)
 
 		res.Header.SetSetCookies([]http.SetCookie{
 			http.SetCookie{
@@ -246,33 +245,62 @@ func makeNewConnectionByHTTP(s *Server, st *Stream, req *http.Request, res *http
 		})
 
 		// It is first time user reach platform, So tell the browser always reach by https!
-		res.Header.SetValue(http.HeaderKeyStrictTransportSecurity, "max-age=31536000; includeSubDomains; preload")
+		res.Header.Set(http.HeaderKeyStrictTransportSecurity, "max-age=31536000; includeSubDomains; preload")
+
 	}
 
 	// This header just need in IP connections, so add here not globally in HTTPOutcomeResponseHandler()
-	res.Header.SetValue(http.HeaderKeyConnection, http.HeaderValueKeepAlive)
-	res.Header.SetValue(http.HeaderKeyKeepAlive, "timeout=120")
+	res.Header.Set(http.HeaderKeyConnection, http.HeaderValueKeepAlive)
+	res.Header.Set(http.HeaderKeyKeepAlive, "timeout=120")
 
-	st.Connection.RegisterStream(st)
+	st.Connection.StreamPool.RegisterStream(st)
 
 	return
 }
 
 // TODO::: due to IPv4&&IPv6 support need this func! Remove them when remove those support.
-func nonWWWtoWWW(s *Server, st *Stream, req *http.Request, res *http.Response) (redirect bool) {
-	// First check of request send over non www subdomain
-	var host = req.GetHost()
-	// Add www to domain. Just support http on www server app due to SE duplicate content both on www && non-www!
-	if len(host) > 4 && !(host[:4] == "www.") && !('0' <= host[0] && host[0] <= '9') {
-		var target = "https://www." + host + req.URI.Path
-		if len(req.URI.Query) > 0 {
-			target += "?" + req.URI.Query // + "&rd=tls" // TODO::: add rd query for analysis purpose??
+func hostCheck(s *Server, st *Stream, req *http.Request, res *http.Response) (redirect bool) {
+	if !log.DevMode {
+		var host = req.GetHost()
+
+		// First check of request send over IP
+		if '0' <= host[0] && host[0] <= '9' {
+			if log.DebugMode {
+				log.Debug("HTTP - IP host:", host)
+			}
+
+			// Add www to domain. Just support http on www server app due to SE duplicate content both on www && non-www!
+			var target = "https://" + s.Manifest.DomainName + req.URI.Path
+			if len(req.URI.Query) > 0 {
+				target += "?" + req.URI.Query // + "&rd=tls" // TODO::: add rd query for analysis purpose??
+			}
+			res.SetStatus(http.StatusMovedPermanentlyCode, http.StatusMovedPermanentlyPhrase)
+			res.Header.Set(http.HeaderKeyLocation, target)
+			res.Header.Set(http.HeaderKeyCacheControl, "max-age=31536000")
+			HTTPOutcomeResponseHandler(s, st, req, res)
+			return true
+		} else if host != s.Manifest.DomainName {
+			if log.DebugMode {
+				log.Debug("HTTP - Unknown host:", host)
+			}
+			// TODO::: Silently ignoring a request might not be a good idea and perhaps breaks the RFC's for HTTP.
+			return true
+		} else if len(host) > 4 && host[:4] == "www." {
+			if log.DebugMode {
+				log.Debug("HTTP - WWW host:", host)
+			}
+
+			// Add www to domain. Just support http on www server app due to SE duplicate content both on www && non-www!
+			var target = "https://" + s.Manifest.DomainName + req.URI.Path
+			if len(req.URI.Query) > 0 {
+				target += "?" + req.URI.Query // + "&rd=tls" // TODO::: add rd query for analysis purpose??
+			}
+			res.SetStatus(http.StatusMovedPermanentlyCode, http.StatusMovedPermanentlyPhrase)
+			res.Header.Set(http.HeaderKeyLocation, target)
+			res.Header.Set(http.HeaderKeyCacheControl, "max-age=31536000")
+			HTTPOutcomeResponseHandler(s, st, req, res)
+			return true
 		}
-		res.SetStatus(http.StatusMovedPermanentlyCode, http.StatusMovedPermanentlyPhrase)
-		res.Header.SetValue(http.HeaderKeyLocation, target)
-		res.Header.SetValue(http.HeaderKeyCacheControl, "max-age=31536000")
-		HTTPOutcomeResponseHandler(s, st.ReqRes, req, res)
-		return true
 	}
 	return
 }

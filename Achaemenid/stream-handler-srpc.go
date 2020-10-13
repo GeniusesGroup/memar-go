@@ -3,7 +3,7 @@
 package achaemenid
 
 import (
-	"../errors"
+	errorr "../error"
 	"../srpc"
 )
 
@@ -14,63 +14,61 @@ const (
 )
 
 // SRPCHandler use to standard services handlers in any layer!
-type SRPCHandler func(*Server, *Stream)
+type SRPCHandler func(*Stream)
 
 // SrpcIncomeRequestHandler handle incoming sRPC request streams!
 func SrpcIncomeRequestHandler(s *Server, st *Stream) {
-	st.ReqRes.Err = srpc.CheckPacket(st.Payload, 4)
-	if st.ReqRes.Err != nil {
+	st.Err = srpc.CheckPacket(st.IncomePayload, 4)
+	if st.Err != nil {
 		st.Connection.FailedServiceCall++
 		// TODO::: Attack?? tel router to block
-		st.ReqRes.Payload = make([]byte, 4)
+		st.OutcomePayload = make([]byte, 4)
 		// Handle response stream
-		SrpcOutcomeResponseHandler(s, st.ReqRes)
+		SrpcOutcomeResponseHandler(s, st)
 		return
 	}
 
-	st.ServiceID = srpc.GetID(st.Payload)
-
-	var service *Service = s.Services.GetServiceHandlerByID(st.ServiceID)
-	if service == nil {
+	st.Service = s.Services.GetServiceHandlerByID(srpc.GetID(st.IncomePayload))
+	if st.Service == nil {
 		st.Connection.FailedServiceCall++
 		// TODO::: Attack?? tel router to block
-		st.ReqRes.Payload = make([]byte, 4)
-		st.ReqRes.Err = ErrSRPCServiceNotFound
+		st.OutcomePayload = make([]byte, 4)
+		st.Err = srpc.ErrSRPCServiceNotFound
 		// Handle response stream
-		SrpcOutcomeResponseHandler(s, st.ReqRes)
+		SrpcOutcomeResponseHandler(s, st)
 		return
 	}
 
 	// Handle request stream
-	service.SRPCHandler(s, st)
-	if st.ReqRes.Err != nil {
+	st.Service.SRPCHandler(st)
+	if st.Err != nil {
 		st.Connection.FailedServiceCall++
 		// TODO::: Attack?? tel router to block
-		st.ReqRes.Payload = make([]byte, 4)
+		st.OutcomePayload = make([]byte, 4)
 		// Handle response stream
-		SrpcOutcomeResponseHandler(s, st.ReqRes)
+		SrpcOutcomeResponseHandler(s, st)
 		return
 	}
 
 	// Handle response stream
-	SrpcOutcomeResponseHandler(s, st.ReqRes)
+	SrpcOutcomeResponseHandler(s, st)
 }
 
 // SrpcIncomeResponseHandler use to handle incoming sRPC response streams!
 func SrpcIncomeResponseHandler(s *Server, st *Stream) {
 	// Get error code from
-	st.Err = errors.GetErrByCode(srpc.GetID(st.Payload))
+	st.Err = errorr.GetErrByCode(srpc.GetID(st.IncomePayload))
 
-	st.SetState(StreamStateReady)
+	st.SetState(StateReady)
 }
 
 // SrpcOutcomeRequestHandler use to handle outcoming sRPC request stream!
 // given stream can't be nil, otherwise panic will occur!
 // It block caller until get response or error!!
 func SrpcOutcomeRequestHandler(s *Server, st *Stream) (err error) {
-	srpc.SetID(st.Payload, st.ServiceID)
+	srpc.SetID(st.OutcomePayload, st.Service.ID)
 
-	err = st.SendReq()
+	err = st.SendAndWait()
 	// TODO::: handle send error almost due to no network available or connection closed!
 
 	return
@@ -79,10 +77,10 @@ func SrpcOutcomeRequestHandler(s *Server, st *Stream) (err error) {
 // SrpcOutcomeResponseHandler use to handle outcoming sRPC response stream!
 func SrpcOutcomeResponseHandler(s *Server, st *Stream) (err error) {
 	// Close request stream!
-	st.Connection.CloseStream(st.ReqRes)
+	st.Connection.StreamPool.CloseStream(st)
 
 	// write error code to stream payload if exist.
-	srpc.SetID(st.Payload, errors.GetCode(st.Err))
+	srpc.SetID(st.OutcomePayload, errorr.GetCode(st.Err))
 
 	// send stream to outcome pool by weight
 	err = st.Send()

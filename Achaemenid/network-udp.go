@@ -25,7 +25,7 @@ type udpNetwork struct {
 func MakeUDPNetwork(s *Server, port uint16) (err error) {
 	// Can't make a network on a port that doesn't has a handler!
 	if s.StreamProtocols.GetProtocolHandler(port) == nil {
-		return ErrNoStreamProtocolHandler
+		return ErrAchaemenidProtocolHandler
 	}
 
 	var udp = udpNetwork{
@@ -70,19 +70,19 @@ func handleUDPListener(s *Server, udp *udpNetwork) {
 
 func handleUDPPacket(s *Server, udp *udpNetwork, packet []byte, udpAddr *net.UDPAddr) {
 	var err error
-	var reqStream, resStream *Stream
+	var st *Stream
 
-	reqStream, resStream, err = MakeBidirectionalStream()
+	st, err = MakeNewStream()
 	// Server can't make new stream or connection almost due to not enough resources!
 	if err != nil {
 		// log.Warn("Error writing on UDP due to ", err.Error())
 		return
 	}
 
-	reqStream.Payload = packet
-	s.StreamProtocols.GetProtocolHandler(udp.port)(s, reqStream)
+	st.IncomePayload = packet
+	s.StreamProtocols.GetProtocolHandler(udp.port)(s, st)
 
-	_, err = udp.conn.WriteToUDP(resStream.Payload, udpAddr)
+	_, err = udp.conn.WriteToUDP(st.OutcomePayload, udpAddr)
 	if err != nil {
 		// log.Warn("Error writing on UDP due to ", err.Error())
 		return

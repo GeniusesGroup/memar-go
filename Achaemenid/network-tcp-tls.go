@@ -19,7 +19,7 @@ Please have plan to transform your network to GP protocol!
 func MakeTCPTLSNetwork(s *Server, port uint16) (err error) {
 	// Can't make a network on a port that doesn't has a handler!
 	if s.StreamProtocols.GetProtocolHandler(port) == nil {
-		return ErrNoStreamProtocolHandler
+		return ErrAchaemenidProtocolHandler
 	}
 
 	var tcp = tcpNetwork{
@@ -34,7 +34,7 @@ func MakeTCPTLSNetwork(s *Server, port uint16) (err error) {
 	}
 
 	s.Networks.RegisterTCPNetwork(&tcp)
-	log.Info("Begin listen TCP on ", tcp.listener.Addr())
+	log.Info("Begin listen TCP/TLS on ", tcp.listener.Addr())
 
 	err = tcp.registerCertificates(s)
 
@@ -52,15 +52,21 @@ func MakeTCPTLSNetwork(s *Server, port uint16) (err error) {
 
 // handleTCPListener use to handle TCP/TLS networks connections with any application protocol.
 func handleTCPTLSListener(s *Server, tcp *tcpNetwork, ln net.Listener) {
+	defer s.PanicHandler()
 	for {
 		var err error
 		var tcpConn net.Conn
 		tcpConn, err = ln.Accept()
 		if err != nil {
-			// log.Warn("TCP accepting occur error: ", err)
+			if log.DebugMode {
+				log.Debug("TCP/TLS - Accepting new connection occur error:", err)
+			}
 			continue
 		}
-		// log.Info("Begin listen TCP conn on: ", tcpConn.RemoteAddr())
+
+		if log.DebugMode {
+			log.Debug("TCP/TLS - Begin listen on:", tcpConn.RemoteAddr())
+		}
 
 		go handleTCPConn(s, tcp, tcpConn)
 	}

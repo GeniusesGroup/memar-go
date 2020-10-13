@@ -26,7 +26,7 @@ func MakeGPNetwork(s *Server) (err error) {
 	return
 }
 
-// handleGP use to handle GP with any application protocol and response just some basic data!
+// handleGP handle GP packet with any application protocol and response just some basic data!
 // Protocol Standard : https://github.com/SabzCity/RFCs/blob/master/GP.md
 func handleGP(s *Server, packet []byte) (conn *Connection, st *Stream) {
 	// Don't need to check packet here due to ChaparKhane or OS must always check and penalty other routers or societies
@@ -35,32 +35,30 @@ func handleGP(s *Server, packet []byte) (conn *Connection, st *Stream) {
 
 	// Check server supported requested protocol
 	var protocolID uint16 = gp.GetDestinationProtocol(packet)
-	var streamHandler StreamHandler = s.StreamProtocols.GetProtocolHandler(protocolID)
-	if streamHandler == nil {
+	var protocolHandler StreamHandler = s.StreamProtocols.GetProtocolHandler(protocolID)
+	if protocolHandler == nil {
 		// Send response or just ignore packet
 		// TODO::: DDOS!!??
 		return
 	}
 
 	var err error
-	var peerGP [16]byte = gp.GetSourceGP(packet)
+	var gpAddr [14]byte = gp.GetSourceAddr(packet)
 	// Find Connection from ConnectionPoolByPeerAdd by requester GP
-	conn = s.Connections.GetConnectionByPeerAdd(peerGP)
-	// If it is first time that user want to connect
+	conn = s.Connections.GetConnectionByPeerGPAdd(gpAddr)
+	// If it is first time that user want to connect or longer than server GC old unused connections!
 	if conn == nil {
-		conn, err = s.Connections.MakeNewConnectionByPeerAdd(peerGP)
+		conn, err = s.Connections.MakeNewConnectionByPeerAdd(gpAddr)
 		if err != nil {
 			// Send response or just ignore packet
 			// TODO::: DDOS!!??
 			return
 		}
-		conn.SocietyID = gp.GetSourceSociety(packet)
-		conn.RouterID = gp.GetSourceRouter(packet)
-		conn.PacketPayloadSize = gp.GetPayloadLength(packet)
+		s.Connections.RegisterConnection(conn)
+		conn.PacketPayloadSize = gp.GetPayloadLength(packet) // It's not working due to packet not encrypted yet!
 	}
 
 	conn.PacketsReceived++
-	conn.BytesReceived += uint64(gp.GetPayloadLength(packet))
 
 	// Decrypt packet!
 	err = gp.Decrypt(packet, conn.Cipher)
@@ -71,11 +69,14 @@ func handleGP(s *Server, packet []byte) (conn *Connection, st *Stream) {
 		return
 	}
 
+	conn.SocietyID = gp.GetSourceSociety(packet)
+	conn.RouterID = gp.GetSourceRouter(packet)
+	conn.BytesReceived += uint64(gp.GetPayloadLength(packet))
 	var streamID uint32 = gp.GetStreamID(packet)
 
-	st = conn.GetStreamByID(streamID)
+	st = conn.StreamPool.GetStreamByID(streamID)
 	if st == nil {
-		st, _, err = conn.MakeBidirectionalStream(streamID)
+		st, err = conn.MakeIncomeStream(streamID)
 		if err != nil {
 			conn.FailedServiceCall++
 			conn.FailedPacketsReceived++
@@ -83,7 +84,6 @@ func handleGP(s *Server, packet []byte) (conn *Connection, st *Stream) {
 			// TODO::: DDOS!!??
 			return
 		}
-		st.ProtocolID = protocolID
 	}
 
 	var packetID uint32 = gp.GetPacketID(packet)
@@ -92,24 +92,23 @@ func handleGP(s *Server, packet []byte) (conn *Connection, st *Stream) {
 	err = addNewGPPacket(st, gp.GetPayload(packet), packetID)
 
 	// Check TimeSensitive or stream ready to call requested app protocol to process stream.
-	if (st.TimeSensitive && err != ErrPacketArrivedPosterior) || (st.State == StreamStateReady) {
-		streamHandler(s, st)
-		// Close both streams!
-		conn.CloseBidirectionalStream(st)
+	if (st.Weight == WeightTimeSensitive && err != gp.ErrGPPacketArrivedPosterior) || (st.State == StateReady) {
+		protocolHandler(s, st)
+		conn.StreamPool.CloseStream(st)
 	}
 
 	return
 }
 
-// AddNewGPPacket use to add new GP packet payload to the stream!
+// AddNewGPPacket add new GP packet payload to the stream!
 func addNewGPPacket(st *Stream, p []byte, packetID uint32) (err error) {
 	// Handle packet received not by order
 	if packetID < st.LastPacketID {
-		st.State = StreamStateBrokenPacket
-		err = ErrPacketArrivedPosterior
+		st.State = StateBrokenPacket
+		err = gp.ErrGPPacketArrivedPosterior
 	} else if packetID > st.LastPacketID+1 {
-		st.State = StreamStateBrokenPacket
-		err = ErrPacketArrivedAnterior
+		st.State = StateBrokenPacket
+		err = gp.ErrGPPacketArrivedAnterior
 		// TODO::: send request to sender about not received packets!!
 	} else if packetID+1 == st.LastPacketID {
 		st.LastPacketID = packetID
@@ -121,12 +120,12 @@ func addNewGPPacket(st *Stream, p []byte, packetID uint32) (err error) {
 		setStreamSettings(st, p)
 	} else {
 		// TODO::: can't easily copy this way!!
-		copy(st.Payload, p)
+		copy(st.IncomePayload, p)
 	}
 
 	// Check stream ready situation!
 	if st.TotalPacket == st.PacketReceived {
-		st.State = StreamStateReady
+		st.State = StateReady
 	}
 
 	return
@@ -134,13 +133,12 @@ func addNewGPPacket(st *Stream, p []byte, packetID uint32) (err error) {
 
 // Just to show transfer data for setStreamSettings()! We never use this type!
 type setStreamSettingsReq struct {
-	TotalPacket   uint32 // Expected packets count that send over this stream!
-	PayloadSize   uint64
-	TimeSensitive bool  // If true we must call related service in each received packet. VoIP, IPTV, ...
-	Weight        uint8 // 16 queue for priority weight of the streams exist.
+	TotalPacket uint32 // Expected packets count that send over this stream!
+	PayloadSize uint64
+	Weight      weight
 }
 
-// setStreamSettings use to set stream settings like time sensitive use in VoIP, IPTV, ...
+// setStreamSettings set stream settings like time sensitive use in VoIP, IPTV, ...
 func setStreamSettings(st *Stream, p []byte) {
 	// TODO::: allow multiple settings set??
 

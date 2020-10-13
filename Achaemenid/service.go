@@ -2,24 +2,36 @@
 
 package achaemenid
 
+import (
+	"../authorization"
+	lang "../language"
+)
+
 // Service store needed data for service
 type Service struct {
-	ID                      uint32 // Handy ID or Hash of name!
-	URI                     string // Fill just if any http like type handler needed! Simple URI not variabale included!
-	Name                    string
-	IssueDate               int64
-	ExpiryDate              int64
-	ExpireInFavorOf         string // Other service name
-	ExpireInFavorOfID       uint32 // Other ServiceID! Handy ID or Hash of ExpireInFavorOf!
-	Status                  uint8
+	ID                uint32             // Handy ID or Hash of name!
+	URI               string             // Fill just if any http like type handler needed! Simple URI not variabale included!
+	CRUD              authorization.CRUD // CRUD == Create, Read, Update, Delete
+	IssueDate         int64
+	ExpiryDate        int64
+	ExpireInFavorOf   string // Other service name
+	ExpireInFavorOfID uint32 // Other ServiceID! Handy ID or Hash of ExpireInFavorOf!
+	Status            uint8
+
+	Name        map[lang.Language]string
+	Description map[lang.Language]string
+	TAGS        []string
+
 	MinExpectedRequestSize  uint64 // to improve performance by alloc stream buffer size
 	MaxExpectedRequestSize  uint64 // to improve performance by alloc stream buffer size
 	MinExpectedResponseSize uint64 // to improve performance by alloc stream buffer size
 	MaxExpectedResponseSize uint64 // to improve performance by alloc stream buffer size
-	Description             []string
-	TAGS                    []string
-	SRPCHandler             SRPCHandler
-	HTTPHandler 			HTTPHandler
+
+	SRPCHandler SRPCHandler `json:"-"`
+	HTTPHandler HTTPHandler `json:"-"`
+
+	JSON   []byte `json:"-"`
+	Syllab []byte `json:"-"`
 }
 
 // Service Status

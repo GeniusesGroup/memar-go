@@ -2,26 +2,29 @@
 
 package achaemenid
 
-import "time"
+import (
+	"time"
+
+	lang "../language"
+)
 
 // Manifest store server manifest data
 // All string slice is multi language and in order by ManifestLanguages order
 type Manifest struct {
-	SocietyID           uint32
-	AppID               [16]byte // Application ID
-	DomainID            [16]byte // Usually hash of domain
-	DomainName          string
-	Email               string
-	Icon                string
-	AuthorizedAppDomain [][16]byte // Just accept request from these domains, neither guest nor users!
-	SupportedLanguages  []uint32
-	ManifestLanguages   []uint32
-	Organization        []string
-	Name                []string
-	Description         []string
-	TermsOfService      []string
-	Licence             []string
-	TAGS                []string // Use to categorized apps e.g. Music, GPS, ...
+	SocietyID  uint32
+	AppID      [16]byte // Application ID
+	DomainID   [16]byte // Usually hash of domain
+	DomainName string
+	Email      string
+	Icon       string
+
+	Organization   map[lang.Language]string
+	Name           map[lang.Language]string
+	Description    map[lang.Language]string
+	TermsOfService map[lang.Language]string
+	Licence        map[lang.Language]string
+	TAGS           []string // Use to categorized apps e.g. Music, GPS, ...
+
 	RequestedPermission []uint32 // ServiceIDs from PersiaOS services e.g. InternetInBackground, Notification, ...
 	TechnicalInfo       TechnicalInfo
 }

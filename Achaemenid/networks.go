@@ -67,14 +67,18 @@ func (n *networks) shutdown() {
 	// and then waiting indefinitely for connections to return to idle
 	// and then shut down
 
-	err = n.GPOverIP.Close()
-	if err != nil {
-		log.Warn("Closing IP/GP network face this error: ", err)
+	if n.GPOverIP != nil {
+		err = n.GPOverIP.Close()
+		if err != nil {
+			log.Warn("Closing IP/GP network face this error: ", err)
+		}
 	}
 
-	err = n.GPOverUDP.Close()
-	if err != nil {
-		log.Warn("Closing IP/UDP/GP network face this error: ", err)
+	if n.GPOverUDP != nil {
+		err = n.GPOverUDP.Close()
+		if err != nil {
+			log.Warn("Closing IP/UDP/GP network face this error: ", err)
+		}
 	}
 }
 
