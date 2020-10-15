@@ -5,40 +5,45 @@ package gs
 import (
 	"../achaemenid"
 	"../ganjine"
+	lang "../language"
 )
 
-var getNodeDetailsService = achaemenid.Service{
+// GetNodeDetailsService store details about GetNodeDetails service
+var GetNodeDetailsService = achaemenid.Service{
 	ID:                3707636027,
-	URI:               "", // API services can set like "/apis?3707636027" but it is not efficient, find services by ID.
-	Name:              "GetNodeDetails",
 	IssueDate:         1596950889,
 	ExpiryDate:        0,
 	ExpireInFavorOf:   "",
 	ExpireInFavorOfID: 0,
 	Status:            achaemenid.ServiceStatePreAlpha,
-	Description: []string{
-		"Get node details that request receive",
+
+	Name: map[lang.Language]string{
+		lang.EnglishLanguage: "GetNodeDetails",
 	},
-	TAGS:        []string{""},
+	Description: map[lang.Language]string{
+		lang.EnglishLanguage: "Get node details that request receive",
+	},
+	TAGS: []string{""},
+
 	SRPCHandler: GetNodeDetailsSRPC,
 }
 
 // GetNodeDetailsSRPC is sRPC handler of GetNodeDetails service.
-func GetNodeDetailsSRPC(s *achaemenid.Server, st *achaemenid.Stream) {
+func GetNodeDetailsSRPC(st *achaemenid.Stream) {
 	if server.Manifest.DomainID != st.Connection.DomainID {
 		// TODO::: Attack??
-		st.ReqRes.Err = ErrNotAuthorizeGanjineRequest
+		st.Err = ganjine.ErrGanjineNotAuthorizeRequest
 		return
 	}
 
 	var res *ganjine.Node
-	res, st.ReqRes.Err = GetNodeDetails(st)
+	res, st.Err = GetNodeDetails(st)
 	// Check if any error occur in bussiness logic
-	if st.ReqRes.Err != nil {
+	if st.Err != nil {
 		return
 	}
 
-	st.ReqRes.Payload = res.SyllabEncoder()
+	st.OutcomePayload = res.SyllabEncoder()
 }
 
 // GetNodeDetails returns local node details or related error!

@@ -4,7 +4,6 @@ package gs
 
 import (
 	"../achaemenid"
-	"../errors"
 	"../ganjine"
 )
 
@@ -21,22 +20,25 @@ func Init(s *achaemenid.Server, c *ganjine.Cluster) {
 	server = s
 	cluster = c
 
-	s.Services.RegisterService(&deleteIndexHashHistoryService)
-	s.Services.RegisterService(&deleteIndexHashRecordService)
-	s.Services.RegisterService(&deleteIndexHashService)
-	s.Services.RegisterService(&deleteRecordService)
-	s.Services.RegisterService(&findRecordsConsistentlyService)
-	s.Services.RegisterService(&findRecordsService)
-	s.Services.RegisterService(&finishTransactionService)
-	s.Services.RegisterService(&getIndexHashNumberService)
-	s.Services.RegisterService(&getNodeDetailsService)
-	s.Services.RegisterService(&getRecordService)
-	s.Services.RegisterService(&listenToIndexService)
-	s.Services.RegisterService(&readRecordService)
-	s.Services.RegisterService(&registerTransactionService)
-	s.Services.RegisterService(&setIndexHashService)
-	s.Services.RegisterService(&setRecordService)
-	s.Services.RegisterService(&writeRecordService)
+	s.Services.RegisterService(&DeleteRecordService)
+	s.Services.RegisterService(&GetRecordService)
+	s.Services.RegisterService(&ReadRecordService)
+	s.Services.RegisterService(&SetRecordService)
+	s.Services.RegisterService(&WriteRecordService)
+
+	s.Services.RegisterService(&HashIndexDeleteKeyHistoryService)
+	s.Services.RegisterService(&HashIndexDeleteKeyService)
+	s.Services.RegisterService(&HashIndexDeleteValueService)
+	s.Services.RegisterService(&HashIndexGetValuesNumberService)
+	s.Services.RegisterService(&HashIndexGetValuesService)
+	s.Services.RegisterService(&HashIndexListenToKeyService)
+	s.Services.RegisterService(&HashIndexSetValueService)
+
+	s.Services.RegisterService(&HashTransactionFinishService)
+	s.Services.RegisterService(&HashTransactionGetValuesService)
+	s.Services.RegisterService(&HashTransactionRegisterService)
+
+	s.Services.RegisterService(&GetNodeDetailsService)
 	// s.Services.RegisterService()
 }
 
@@ -46,9 +48,4 @@ type requestType uint8
 const (
 	RequestTypeStandalone requestType = iota
 	RequestTypeBroadcast
-)
-
-// Package errors
-var (
-	ErrNotAuthorizeGanjineRequest = errors.New("NotAuthorizeGanjineRequest", "Given request to ganjine services came from connection that not authorize to request this service")
 )

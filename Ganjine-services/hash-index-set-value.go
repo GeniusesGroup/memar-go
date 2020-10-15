@@ -3,59 +3,61 @@
 package gs
 
 import (
-	persiaos "../PersiaOS-sdk"
 	"../achaemenid"
+	"../authorization"
 	"../ganjine"
 	lang "../language"
 	"../srpc"
 	"../syllab"
 )
 
-// WriteRecordService store details about WriteRecord service
-var WriteRecordService = achaemenid.Service{
-	ID:                3836795965,
+// HashIndexSetValueService store details about HashIndexSetValue service
+var HashIndexSetValueService = achaemenid.Service{
+	ID:                2734084480,
+	CRUD:              authorization.CRUDUpdate,
 	IssueDate:         1587282740,
 	ExpiryDate:        0,
-	ExpireInFavorOf:   "",
+	ExpireInFavorOf:   "", // English name of favor service just to show off!
 	ExpireInFavorOfID: 0,
 	Status:            achaemenid.ServiceStatePreAlpha,
 
 	Name: map[lang.Language]string{
-		lang.EnglishLanguage: "WriteRecord",
+		lang.EnglishLanguage: "HashIndexSetValue",
 	},
 	Description: map[lang.Language]string{
-		lang.EnglishLanguage: `write some part of a record! Don't use this service until you force to use!
-		Recalculate checksum do in database server that is not so efficient!`,
+		lang.EnglishLanguage: "set a record ID to new||exiting index hash.",
 	},
-	TAGS: []string{""},
+	TAGS: []string{
+		"",
+	},
 
-	SRPCHandler: WriteRecordSRPC,
+	SRPCHandler: HashIndexSetValueSRPC,
 }
 
-// WriteRecordSRPC is sRPC handler of WriteRecord service.
-func WriteRecordSRPC(st *achaemenid.Stream) {
+// HashIndexSetValueSRPC is sRPC handler of HashIndexSetValue service.
+func HashIndexSetValueSRPC(st *achaemenid.Stream) {
 	if server.Manifest.DomainID != st.Connection.DomainID {
 		// TODO::: Attack??
 		st.Err = ganjine.ErrGanjineNotAuthorizeRequest
 		return
 	}
 
-	var req = &WriteRecordReq{}
+	var req = &HashIndexSetValueReq{}
 	req.SyllabDecoder(srpc.GetPayload(st.IncomePayload))
 
-	st.Err = WriteRecord(req)
+	st.Err = HashIndexSetValue(req)
+	st.OutcomePayload = make([]byte, 4)
 }
 
-// WriteRecordReq is request structure of WriteRecord()
-type WriteRecordReq struct {
-	Type     requestType
-	RecordID [32]byte
-	Offset   uint64 // start location of write data
-	Data     []byte
+// HashIndexSetValueReq is request structure of HashIndexSetValue()
+type HashIndexSetValueReq struct {
+	Type       requestType
+	IndexKey   [32]byte
+	IndexValue [32]byte // can be RecordID or any data up to 32 byte length
 }
 
-// WriteRecord write some part of a record! Don't use this service until you force to use!
-func WriteRecord(req *WriteRecordReq) (err error) {
+// HashIndexSetValue set a record ID to new||exiting index hash.
+func HashIndexSetValue(req *HashIndexSetValueReq) (err error) {
 	if req.Type == RequestTypeBroadcast {
 		// tell other node that this node handle request and don't send this request to other nodes!
 		req.Type = RequestTypeStandalone
@@ -72,8 +74,8 @@ func WriteRecord(req *WriteRecordReq) (err error) {
 				return
 			}
 
-			// Set WriteRecord ServiceID
-			st.Service = &achaemenid.Service{ID: 3836795965}
+			// Set HashIndexSetValue ServiceID
+			st.Service = &achaemenid.Service{ID: 1881585857}
 			st.OutcomePayload = reqEncoded
 
 			err = achaemenid.SrpcOutcomeRequestHandler(server, st)
@@ -88,43 +90,40 @@ func WriteRecord(req *WriteRecordReq) (err error) {
 	}
 
 	// Do for i=0 as local node
-	err = persiaos.WriteStorageRecord(req.RecordID, req.Offset, req.Data)
+	var hashIndex = ganjine.HashIndex{
+		RecordID:   req.IndexKey,
+		OwnerAppID: server.Manifest.AppID, // TODO::: just need copy if record is not exist and want to create new one
+	}
+	err = hashIndex.Push(req.IndexValue)
 	return
 }
 
 // SyllabDecoder decode from buf to req
 // Due to this service just use internally, It skip check buf size syllab rule! Panic occur if bad request received!
-func (req *WriteRecordReq) SyllabDecoder(buf []byte) {
+func (req *HashIndexSetValueReq) SyllabDecoder(buf []byte) {
 	req.Type = requestType(syllab.GetUInt8(buf, 0))
-	copy(req.RecordID[:], buf[1:])
-	req.Offset = syllab.GetUInt64(buf, 33)
-	// Due to just have one field in res structure we break syllab rules and skip get address and size of res.Record from buf
-	req.Data = buf[req.syllabStackLen():]
+	copy(req.IndexKey[:], buf[1:])
+	copy(req.IndexValue[:], buf[33:])
 	return
 }
 
 // SyllabEncoder encode req to buf
-func (req *WriteRecordReq) SyllabEncoder() (buf []byte) {
+func (req *HashIndexSetValueReq) SyllabEncoder() (buf []byte) {
 	buf = make([]byte, req.syllabLen()+4) // +4 for sRPC ID instead get offset argument
 	syllab.SetUInt8(buf, 4, uint8(req.Type))
-	copy(buf[5:], req.RecordID[:])
-	syllab.SetUInt64(buf, 37, req.Offset)
-	// Due to just have one field in res structure we break syllab rules and skip set address and size of res.Record in buf
-	// syllab.SetUInt32(buf, 45, res.syllabStackLen())
-	// syllab.SetUInt32(buf, 49, uint32(len(res.Record)))
-	copy(buf[45:], req.Data[:])
+	copy(buf[5:], req.IndexKey[:])
+	copy(buf[37:], req.IndexValue[:])
 	return
 }
 
-func (req *WriteRecordReq) syllabStackLen() (ln uint32) {
-	return 41
+func (req *HashIndexSetValueReq) syllabStackLen() (ln uint32) {
+	return 65
 }
 
-func (req *WriteRecordReq) syllabHeapLen() (ln uint32) {
-	ln = uint32(len(req.Data))
+func (req *HashIndexSetValueReq) syllabHeapLen() (ln uint32) {
 	return
 }
 
-func (req *WriteRecordReq) syllabLen() (ln uint64) {
+func (req *HashIndexSetValueReq) syllabLen() (ln uint64) {
 	return uint64(req.syllabStackLen() + req.syllabHeapLen())
 }

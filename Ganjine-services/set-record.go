@@ -5,37 +5,44 @@ package gs
 import (
 	persiaos "../PersiaOS-sdk"
 	"../achaemenid"
+	"../ganjine"
+	lang "../language"
+	"../srpc"
+	"../syllab"
 )
 
-var setRecordService = achaemenid.Service{
-	ID:              10488062,
-	Name:            "SetRecord",
-	IssueDate:       1587282740,
-	ExpiryDate:      0,
-	ExpireInFavorOf: "",
-	Status:          achaemenid.ServiceStatePreAlpha,
-	Description: []string{
-		"Write a whole record or replace old record if it is exist!",
+// SetRecordService store details about SetRecord service
+var SetRecordService = achaemenid.Service{
+	ID:                10488062,
+	IssueDate:         1587282740,
+	ExpiryDate:        0,
+	ExpireInFavorOf:   "",
+	ExpireInFavorOfID: 0,
+	Status:            achaemenid.ServiceStatePreAlpha,
+
+	Name: map[lang.Language]string{
+		lang.EnglishLanguage: "SetRecord",
 	},
-	TAGS:        []string{""},
+	Description: map[lang.Language]string{
+		lang.EnglishLanguage: "Write a whole record or replace old record if it is exist!",
+	},
+	TAGS: []string{""},
+
 	SRPCHandler: SetRecordSRPC,
 }
 
 // SetRecordSRPC is sRPC handler of SetRecord service.
-func SetRecordSRPC(s *achaemenid.Server, st *achaemenid.Stream) {
+func SetRecordSRPC(st *achaemenid.Stream) {
 	if server.Manifest.DomainID != st.Connection.DomainID {
 		// TODO::: Attack??
-		st.ReqRes.Err = ErrNotAuthorizeGanjineRequest
+		st.Err = ganjine.ErrGanjineNotAuthorizeRequest
 		return
 	}
 
 	var req = &SetRecordReq{}
-	st.ReqRes.Err = req.SyllabDecoder(st.Payload[4:])
-	if st.ReqRes.Err != nil {
-		return
-	}
+	req.SyllabDecoder(srpc.GetPayload(st.IncomePayload))
 
-	st.ReqRes.Err = SetRecord(req)
+	st.Err = SetRecord(req)
 }
 
 // SetRecordReq is request structure of SetRecord()
@@ -54,27 +61,27 @@ func SetRecord(req *SetRecordReq) (err error) {
 
 		// send request to other related nodes
 		var i uint8
-		for i = 1; i < cluster.Replications.TotalZones; i++ {
+		for i = 1; i < cluster.Manifest.TotalZones; i++ {
 			// Make new request-response streams
-			var reqStream, resStream *achaemenid.Stream
-			reqStream, resStream, err = cluster.Replications.Zones[i].Nodes[cluster.Node.ID].Conn.MakeBidirectionalStream(0)
+			var st *achaemenid.Stream
+			st, err = cluster.Replications.Zones[i].Nodes[cluster.Node.ID].Conn.MakeOutcomeStream(0)
 			if err != nil {
 				// TODO::: Can we easily return error if two nodes did their job and not have enough resource to send request to final node??
 				return
 			}
 
 			// Set SetRecord ServiceID
-			reqStream.ServiceID = 10488062
-			reqStream.Payload = reqEncoded
+			st.Service = &achaemenid.Service{ID: 10488062}
+			st.OutcomePayload = reqEncoded
 
-			err = achaemenid.SrpcOutcomeRequestHandler(server, reqStream)
+			err = achaemenid.SrpcOutcomeRequestHandler(server, st)
 			if err != nil {
 				// TODO::: Can we easily return error if two nodes do their job and just one node connection lost??
 				return
 			}
 
 			// TODO::: Can we easily return response error without handle some known situations??
-			err = resStream.Err
+			err = st.Err
 		}
 	}
 
@@ -84,8 +91,9 @@ func SetRecord(req *SetRecordReq) (err error) {
 }
 
 // SyllabDecoder decode from buf to req
-func (req *SetRecordReq) SyllabDecoder(buf []byte) (err error) {
-	req.Type = requestType(buf[0])
+// Due to this service just use internally, It skip check buf size syllab rule! Panic occur if bad request received!
+func (req *SetRecordReq) SyllabDecoder(buf []byte) {
+	req.Type = requestType(syllab.GetUInt8(buf, 0))
 	// Due to just have one field in res structure we break syllab rules and skip get address and size of res.Record from buf
 	req.Record = buf[1:]
 	return
@@ -93,23 +101,24 @@ func (req *SetRecordReq) SyllabDecoder(buf []byte) (err error) {
 
 // SyllabEncoder encode req to buf
 func (req *SetRecordReq) SyllabEncoder() (buf []byte) {
-	var ln = len(req.Record)
-	buf = make([]byte, ln+5) // 13=4+1+(4+4) >> first 4+ for sRPC ID instead get offset argument
-
-	buf[4] = byte(req.Type)
-
+	buf = make([]byte, req.syllabLen()+4) // +4 for sRPC ID instead get offset argument
+	syllab.SetUInt8(buf, 4, uint8(req.Type))
 	// Due to just have one field in res structure we break syllab rules and skip set address and size of res.Record in buf
-	// buf[5] = byte(8)
-	// buf[6] = byte(8 >> 8)
-	// buf[7] = byte(8 >> 16)
-	// buf[8] = byte(8 >> 24)
-	// encode slice length to the payload buffer.
-	// buf[9] = byte(ln)
-	// buf[10] = byte(ln >> 8)
-	// buf[11] = byte(ln >> 16)
-	// buf[12] = byte(ln >> 24)
-
+	// syllab.SetUInt32(buf, 5, res.syllabStackLen())
+	// syllab.SetUInt32(buf, 9, uint32(len(res.Record))))
 	copy(buf[5:], req.Record)
-
 	return
+}
+
+func (req *SetRecordReq) syllabStackLen() (ln uint32) {
+	return 1
+}
+
+func (req *SetRecordReq) syllabHeapLen() (ln uint32) {
+	ln = uint32(len(req.Record))
+	return
+}
+
+func (req *SetRecordReq) syllabLen() (ln uint64) {
+	return uint64(req.syllabStackLen() + req.syllabHeapLen())
 }

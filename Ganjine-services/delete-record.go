@@ -5,39 +5,46 @@ package gs
 import (
 	persiaos "../PersiaOS-sdk"
 	"../achaemenid"
+	"../ganjine"
+	lang "../language"
+	"../srpc"
+	"../syllab"
 )
 
-var deleteRecordService = achaemenid.Service{
-	ID:              1758631843,
-	Name:            "DeleteRecord",
-	IssueDate:       1587282740,
-	ExpiryDate:      0,
-	ExpireInFavorOf: "",
-	Status:          achaemenid.ServiceStatePreAlpha,
-	Description: []string{
-		`Delete specific record by given ID in all cluster!
-		We don't suggest use this service, due to we strongly suggest think about data as immutable entity(stream and time)
-		It won't delete record history or indexes associate to it!`,
+// DeleteRecordService store details about DeleteRecord service
+var DeleteRecordService = achaemenid.Service{
+	ID:                1758631843,
+	IssueDate:         1587282740,
+	ExpiryDate:        0,
+	ExpireInFavorOf:   "",
+	ExpireInFavorOfID: 0,
+	Status:            achaemenid.ServiceStatePreAlpha,
+
+	Name: map[lang.Language]string{
+		lang.EnglishLanguage: "DeleteRecord",
 	},
-	TAGS:        []string{""},
+	Description: map[lang.Language]string{
+		lang.EnglishLanguage: `Delete specific record by given ID in all cluster!
+We don't suggest use this service, due to we strongly suggest think about data as immutable entity(stream and time)
+It won't delete record history or indexes associate to it!`,
+	},
+	TAGS: []string{""},
+
 	SRPCHandler: DeleteRecordSRPC,
 }
 
 // DeleteRecordSRPC is sRPC handler of DeleteRecord service.
-func DeleteRecordSRPC(s *achaemenid.Server, st *achaemenid.Stream) {
+func DeleteRecordSRPC(st *achaemenid.Stream) {
 	if server.Manifest.DomainID != st.Connection.DomainID {
 		// TODO::: Attack??
-		st.ReqRes.Err = ErrNotAuthorizeGanjineRequest
+		st.Err = ganjine.ErrGanjineNotAuthorizeRequest
 		return
 	}
 
 	var req = &DeleteRecordReq{}
-	st.ReqRes.Err = req.SyllabDecoder(st.Payload[4:])
-	if st.ReqRes.Err != nil {
-		return
-	}
+	req.SyllabDecoder(srpc.GetPayload(st.IncomePayload))
 
-	st.ReqRes.Err = DeleteRecord(req)
+	st.Err = DeleteRecord(req)
 }
 
 // DeleteRecordReq is request structure of DeleteRecord()
@@ -55,27 +62,27 @@ func DeleteRecord(req *DeleteRecordReq) (err error) {
 
 		// send request to other related nodes
 		var i uint8
-		for i = 1; i < cluster.Replications.TotalZones; i++ {
+		for i = 1; i < cluster.Manifest.TotalZones; i++ {
 			// Make new request-response streams
-			var reqStream, resStream *achaemenid.Stream
-			reqStream, resStream, err = cluster.Replications.Zones[i].Nodes[cluster.Node.ID].Conn.MakeBidirectionalStream(0)
+			var st *achaemenid.Stream
+			st, err = cluster.Replications.Zones[i].Nodes[cluster.Node.ID].Conn.MakeOutcomeStream(0)
 			if err != nil {
 				// TODO::: Can we easily return error if two nodes did their job and not have enough resource to send request to final node??
 				return
 			}
 
 			// Set DeleteRecord ServiceID
-			reqStream.ServiceID = 1758631843
-			reqStream.Payload = reqEncoded
+			st.Service = &achaemenid.Service{ID: 1758631843}
+			st.OutcomePayload = reqEncoded
 
-			err = achaemenid.SrpcOutcomeRequestHandler(server, reqStream)
+			err = achaemenid.SrpcOutcomeRequestHandler(server, st)
 			if err != nil {
 				// TODO::: Can we easily return error if two nodes do their job and just one node connection lost??
 				return
 			}
 
 			// TODO::: Can we easily return response error without handle some known situations??
-			err = resStream.Err
+			err = st.Err
 		}
 	}
 
@@ -85,18 +92,30 @@ func DeleteRecord(req *DeleteRecordReq) (err error) {
 }
 
 // SyllabDecoder decode from buf to req
-func (req *DeleteRecordReq) SyllabDecoder(buf []byte) (err error) {
-	req.Type = requestType(buf[0])
+// Due to this service just use internally, It skip check buf size syllab rule! Panic occur if bad request received!
+func (req *DeleteRecordReq) SyllabDecoder(buf []byte) {
+	req.Type = requestType(syllab.GetUInt8(buf, 0))
 	copy(req.RecordID[:], buf[1:])
 	return
 }
 
 // SyllabEncoder encode req to buf
 func (req *DeleteRecordReq) SyllabEncoder() (buf []byte) {
-	buf = make([]byte, 21) // 21=4+1+16 >> first 4+ for sRPC ID instead get offset argument
-
-	buf[4] = byte(req.Type)
+	buf = make([]byte, req.syllabLen()+4) // +4 for sRPC ID instead get offset argument
+	syllab.SetUInt8(buf, 4, uint8(req.Type))
 	copy(buf[5:], req.RecordID[:])
 
 	return
+}
+
+func (req *DeleteRecordReq) syllabStackLen() (ln uint32) {
+	return 33
+}
+
+func (req *DeleteRecordReq) syllabHeapLen() (ln uint32) {
+	return
+}
+
+func (req *DeleteRecordReq) syllabLen() (ln uint64) {
+	return uint64(req.syllabStackLen() + req.syllabHeapLen())
 }

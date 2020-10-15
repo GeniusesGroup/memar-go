@@ -5,57 +5,60 @@ package gs
 import (
 	persiaos "../PersiaOS-sdk"
 	"../achaemenid"
+	"../authorization"
 	"../ganjine"
 	lang "../language"
 	"../srpc"
 	"../syllab"
 )
 
-// WriteRecordService store details about WriteRecord service
-var WriteRecordService = achaemenid.Service{
-	ID:                3836795965,
+// HashIndexDeleteKeyService store details about HashIndexDeleteKey service
+var HashIndexDeleteKeyService = achaemenid.Service{
+	ID:                4081206292,
+	CRUD:              authorization.CRUDDelete,
 	IssueDate:         1587282740,
 	ExpiryDate:        0,
-	ExpireInFavorOf:   "",
+	ExpireInFavorOf:   "", // English name of favor service just to show off!
 	ExpireInFavorOfID: 0,
 	Status:            achaemenid.ServiceStatePreAlpha,
 
 	Name: map[lang.Language]string{
-		lang.EnglishLanguage: "WriteRecord",
+		lang.EnglishLanguage: "HashIndexDeleteKey",
 	},
 	Description: map[lang.Language]string{
-		lang.EnglishLanguage: `write some part of a record! Don't use this service until you force to use!
-		Recalculate checksum do in database server that is not so efficient!`,
+		lang.EnglishLanguage: `Delete just exiting index hash without any related record!
+It wouldn't delete related records! Use DeleteIndexHistory() instead if you want delete all records too!`,
 	},
-	TAGS: []string{""},
+	TAGS: []string{
+		"",
+	},
 
-	SRPCHandler: WriteRecordSRPC,
+	SRPCHandler: HashIndexDeleteKeySRPC,
 }
 
-// WriteRecordSRPC is sRPC handler of WriteRecord service.
-func WriteRecordSRPC(st *achaemenid.Stream) {
+// HashIndexDeleteKeySRPC is sRPC handler of HashIndexDeleteKey service.
+func HashIndexDeleteKeySRPC(st *achaemenid.Stream) {
 	if server.Manifest.DomainID != st.Connection.DomainID {
 		// TODO::: Attack??
 		st.Err = ganjine.ErrGanjineNotAuthorizeRequest
 		return
 	}
 
-	var req = &WriteRecordReq{}
+	var req = &HashIndexDeleteKeyReq{}
 	req.SyllabDecoder(srpc.GetPayload(st.IncomePayload))
 
-	st.Err = WriteRecord(req)
+	st.Err = HashIndexDeleteKey(req)
+	st.OutcomePayload = make([]byte, 4)
 }
 
-// WriteRecordReq is request structure of WriteRecord()
-type WriteRecordReq struct {
+// HashIndexDeleteKeyReq is request structure of HashIndexDeleteKey()
+type HashIndexDeleteKeyReq struct {
 	Type     requestType
-	RecordID [32]byte
-	Offset   uint64 // start location of write data
-	Data     []byte
+	IndexKey [32]byte
 }
 
-// WriteRecord write some part of a record! Don't use this service until you force to use!
-func WriteRecord(req *WriteRecordReq) (err error) {
+// HashIndexDeleteKey delete just exiting index hash without any related record.
+func HashIndexDeleteKey(req *HashIndexDeleteKeyReq) (err error) {
 	if req.Type == RequestTypeBroadcast {
 		// tell other node that this node handle request and don't send this request to other nodes!
 		req.Type = RequestTypeStandalone
@@ -72,8 +75,8 @@ func WriteRecord(req *WriteRecordReq) (err error) {
 				return
 			}
 
-			// Set WriteRecord ServiceID
-			st.Service = &achaemenid.Service{ID: 3836795965}
+			// Set HashIndexDeleteKey ServiceID
+			st.Service = &achaemenid.Service{ID: 3411747355}
 			st.OutcomePayload = reqEncoded
 
 			err = achaemenid.SrpcOutcomeRequestHandler(server, st)
@@ -88,43 +91,35 @@ func WriteRecord(req *WriteRecordReq) (err error) {
 	}
 
 	// Do for i=0 as local node
-	err = persiaos.WriteStorageRecord(req.RecordID, req.Offset, req.Data)
+	err = persiaos.DeleteStorageRecord(req.IndexKey)
 	return
 }
 
 // SyllabDecoder decode from buf to req
 // Due to this service just use internally, It skip check buf size syllab rule! Panic occur if bad request received!
-func (req *WriteRecordReq) SyllabDecoder(buf []byte) {
+func (req *HashIndexDeleteKeyReq) SyllabDecoder(buf []byte) {
 	req.Type = requestType(syllab.GetUInt8(buf, 0))
-	copy(req.RecordID[:], buf[1:])
-	req.Offset = syllab.GetUInt64(buf, 33)
-	// Due to just have one field in res structure we break syllab rules and skip get address and size of res.Record from buf
-	req.Data = buf[req.syllabStackLen():]
+	copy(req.IndexKey[:], buf[1:])
 	return
 }
 
 // SyllabEncoder encode req to buf
-func (req *WriteRecordReq) SyllabEncoder() (buf []byte) {
+func (req *HashIndexDeleteKeyReq) SyllabEncoder() (buf []byte) {
 	buf = make([]byte, req.syllabLen()+4) // +4 for sRPC ID instead get offset argument
 	syllab.SetUInt8(buf, 4, uint8(req.Type))
-	copy(buf[5:], req.RecordID[:])
-	syllab.SetUInt64(buf, 37, req.Offset)
-	// Due to just have one field in res structure we break syllab rules and skip set address and size of res.Record in buf
-	// syllab.SetUInt32(buf, 45, res.syllabStackLen())
-	// syllab.SetUInt32(buf, 49, uint32(len(res.Record)))
-	copy(buf[45:], req.Data[:])
+	copy(buf[5:], req.IndexKey[:])
+
 	return
 }
 
-func (req *WriteRecordReq) syllabStackLen() (ln uint32) {
-	return 41
+func (req *HashIndexDeleteKeyReq) syllabStackLen() (ln uint32) {
+	return 33
 }
 
-func (req *WriteRecordReq) syllabHeapLen() (ln uint32) {
-	ln = uint32(len(req.Data))
+func (req *HashIndexDeleteKeyReq) syllabHeapLen() (ln uint32) {
 	return
 }
 
-func (req *WriteRecordReq) syllabLen() (ln uint64) {
+func (req *HashIndexDeleteKeyReq) syllabLen() (ln uint64) {
 	return uint64(req.syllabStackLen() + req.syllabHeapLen())
 }

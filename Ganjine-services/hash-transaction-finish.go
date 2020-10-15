@@ -3,59 +3,62 @@
 package gs
 
 import (
-	persiaos "../PersiaOS-sdk"
 	"../achaemenid"
+	"../authorization"
 	"../ganjine"
 	lang "../language"
 	"../srpc"
 	"../syllab"
 )
 
-// WriteRecordService store details about WriteRecord service
-var WriteRecordService = achaemenid.Service{
-	ID:                3836795965,
+// HashTransactionFinishService store details about HashTransactionFinish service
+var HashTransactionFinishService = achaemenid.Service{
+	ID:                441719329,
+	CRUD:              authorization.CRUDUpdate,
 	IssueDate:         1587282740,
 	ExpiryDate:        0,
-	ExpireInFavorOf:   "",
+	ExpireInFavorOf:   "", // English name of favor service just to show off!
 	ExpireInFavorOfID: 0,
 	Status:            achaemenid.ServiceStatePreAlpha,
 
 	Name: map[lang.Language]string{
-		lang.EnglishLanguage: "WriteRecord",
+		lang.EnglishLanguage: "HashTransactionFinish",
 	},
 	Description: map[lang.Language]string{
-		lang.EnglishLanguage: `write some part of a record! Don't use this service until you force to use!
-		Recalculate checksum do in database server that is not so efficient!`,
+		lang.EnglishLanguage: `use to approve transaction!
+Transaction Manager will set record and index! no further action need after this call!`,
 	},
-	TAGS: []string{""},
+	TAGS: []string{
+		"",
+	},
 
-	SRPCHandler: WriteRecordSRPC,
+	SRPCHandler: HashTransactionFinishSRPC,
 }
 
-// WriteRecordSRPC is sRPC handler of WriteRecord service.
-func WriteRecordSRPC(st *achaemenid.Stream) {
+// HashTransactionFinishSRPC is sRPC handler of HashTransactionFinish service.
+func HashTransactionFinishSRPC(st *achaemenid.Stream) {
 	if server.Manifest.DomainID != st.Connection.DomainID {
 		// TODO::: Attack??
 		st.Err = ganjine.ErrGanjineNotAuthorizeRequest
 		return
 	}
 
-	var req = &WriteRecordReq{}
+	var req = &HashTransactionFinishReq{}
 	req.SyllabDecoder(srpc.GetPayload(st.IncomePayload))
 
-	st.Err = WriteRecord(req)
+	st.Err = HashTransactionFinish(req)
+	st.OutcomePayload = make([]byte, 4)
 }
 
-// WriteRecordReq is request structure of WriteRecord()
-type WriteRecordReq struct {
+// HashTransactionFinishReq is request structure of HashTransactionFinish()
+type HashTransactionFinishReq struct {
 	Type     requestType
-	RecordID [32]byte
-	Offset   uint64 // start location of write data
-	Data     []byte
+	IndexKey [32]byte
+	Record   []byte
 }
 
-// WriteRecord write some part of a record! Don't use this service until you force to use!
-func WriteRecord(req *WriteRecordReq) (err error) {
+// HashTransactionFinish approve transaction!
+func HashTransactionFinish(req *HashTransactionFinishReq) (err error) {
 	if req.Type == RequestTypeBroadcast {
 		// tell other node that this node handle request and don't send this request to other nodes!
 		req.Type = RequestTypeStandalone
@@ -64,7 +67,6 @@ func WriteRecord(req *WriteRecordReq) (err error) {
 		// send request to other related nodes
 		var i uint8
 		for i = 1; i < cluster.Manifest.TotalZones; i++ {
-			// Make new request-response streams
 			var st *achaemenid.Stream
 			st, err = cluster.Replications.Zones[i].Nodes[cluster.Node.ID].Conn.MakeOutcomeStream(0)
 			if err != nil {
@@ -72,8 +74,7 @@ func WriteRecord(req *WriteRecordReq) (err error) {
 				return
 			}
 
-			// Set WriteRecord ServiceID
-			st.Service = &achaemenid.Service{ID: 3836795965}
+			st.Service = &achaemenid.Service{ID: 441719329}
 			st.OutcomePayload = reqEncoded
 
 			err = achaemenid.SrpcOutcomeRequestHandler(server, st)
@@ -88,43 +89,41 @@ func WriteRecord(req *WriteRecordReq) (err error) {
 	}
 
 	// Do for i=0 as local node
-	err = persiaos.WriteStorageRecord(req.RecordID, req.Offset, req.Data)
+	err = cluster.TransactionManager.FinishTransaction(req.IndexKey, req.Record)
 	return
 }
 
 // SyllabDecoder decode from buf to req
 // Due to this service just use internally, It skip check buf size syllab rule! Panic occur if bad request received!
-func (req *WriteRecordReq) SyllabDecoder(buf []byte) {
+func (req *HashTransactionFinishReq) SyllabDecoder(buf []byte) {
 	req.Type = requestType(syllab.GetUInt8(buf, 0))
-	copy(req.RecordID[:], buf[1:])
-	req.Offset = syllab.GetUInt64(buf, 33)
+	copy(req.IndexKey[:], buf[1:])
 	// Due to just have one field in res structure we break syllab rules and skip get address and size of res.Record from buf
-	req.Data = buf[req.syllabStackLen():]
+	req.Record = buf[33:]
 	return
 }
 
 // SyllabEncoder encode req to buf
-func (req *WriteRecordReq) SyllabEncoder() (buf []byte) {
+func (req *HashTransactionFinishReq) SyllabEncoder() (buf []byte) {
 	buf = make([]byte, req.syllabLen()+4) // +4 for sRPC ID instead get offset argument
 	syllab.SetUInt8(buf, 4, uint8(req.Type))
-	copy(buf[5:], req.RecordID[:])
-	syllab.SetUInt64(buf, 37, req.Offset)
+	copy(buf[5:], req.IndexKey[:])
 	// Due to just have one field in res structure we break syllab rules and skip set address and size of res.Record in buf
-	// syllab.SetUInt32(buf, 45, res.syllabStackLen())
-	// syllab.SetUInt32(buf, 49, uint32(len(res.Record)))
-	copy(buf[45:], req.Data[:])
+	// syllab.SetUInt32(buf, 37, res.syllabStackLen())
+	// syllab.SetUInt32(buf, 45, uint32(len(res.Record)))
+	copy(buf[37:], req.Record[:])
 	return
 }
 
-func (req *WriteRecordReq) syllabStackLen() (ln uint32) {
-	return 41
+func (req *HashTransactionFinishReq) syllabStackLen() (ln uint32) {
+	return 33
 }
 
-func (req *WriteRecordReq) syllabHeapLen() (ln uint32) {
-	ln = uint32(len(req.Data))
+func (req *HashTransactionFinishReq) syllabHeapLen() (ln uint32) {
+	ln = uint32(len(req.Record))
 	return
 }
 
-func (req *WriteRecordReq) syllabLen() (ln uint64) {
+func (req *HashTransactionFinishReq) syllabLen() (ln uint64) {
 	return uint64(req.syllabStackLen() + req.syllabHeapLen())
 }
