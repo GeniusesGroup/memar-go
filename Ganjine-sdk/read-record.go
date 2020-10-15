@@ -6,6 +6,7 @@ import (
 	"../achaemenid"
 	"../ganjine"
 	gs "../ganjine-services"
+	"../srpc"
 )
 
 // ReadRecord read some part of the specific record by its ID!
@@ -15,36 +16,28 @@ func ReadRecord(c *ganjine.Cluster, req *gs.ReadRecordReq) (res *gs.ReadRecordRe
 
 	var node *ganjine.Node = c.GetNodeByRecordID(req.RecordID)
 	if node == nil {
-		return nil, ErrNoNodeAvailable
+		return nil, ganjine.ErrGanjineNoNodeAvailable
 	}
 
-	// Check if desire node is local node!
-	if node.Conn == nil {
-		res, err = gs.ReadRecord(req)
-		return
+	if node.Node.State == achaemenid.NodeStateLocalNode {
+		return gs.ReadRecord(req)
 	}
 
-	// Make new request-response streams
-	var reqStream, resStream *achaemenid.Stream
-	reqStream, resStream, err = node.Conn.MakeBidirectionalStream(0)
+	var st *achaemenid.Stream
+	st, err = node.Conn.MakeOutcomeStream(0)
 	if err != nil {
 		return nil, err
 	}
 
-	// Set ReadRecord ServiceID
-	reqStream.ServiceID = 108857663
-	reqStream.Payload = req.SyllabEncoder()
+	st.Service = &gs.ReadRecordService
+	st.OutcomePayload = req.SyllabEncoder()
 
-	err = achaemenid.SrpcOutcomeRequestHandler(c.Server, reqStream)
+	err = achaemenid.SrpcOutcomeRequestHandler(c.Server, st)
 	if err != nil {
 		return nil, err
 	}
 
 	res = &gs.ReadRecordRes{}
-	err = res.SyllabDecoder(resStream.Payload[4:])
-	if err != nil {
-		return nil, err
-	}
-
-	return res, resStream.Err
+	res.SyllabDecoder(srpc.GetPayload(st.IncomePayload))
+	return res, st.Err
 }

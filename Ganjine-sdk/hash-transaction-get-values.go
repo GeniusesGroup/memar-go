@@ -9,18 +9,16 @@ import (
 	"../srpc"
 )
 
-// GetRecord get the specific record by its ID!
-func GetRecord(c *ganjine.Cluster, req *gs.GetRecordReq) (res *gs.GetRecordRes, err error) {
-	// TODO::: First read from local OS (related lib) as cache
-	// TODO::: Write to local OS as cache if not enough storage exist do GC(Garbage Collector)
-
-	var node *ganjine.Node = c.GetNodeByRecordID(req.RecordID)
+// HashTransactionGetValues find records by indexes that store before in consistently!
+// It will get index from transaction managers not indexes nodes!
+func HashTransactionGetValues(c *ganjine.Cluster, req *gs.HashTransactionGetValuesReq) (res *gs.HashTransactionGetValuesRes, err error) {
+	var node *ganjine.Node = c.GetNodeByRecordID(req.IndexKey)
 	if node == nil {
 		return nil, ganjine.ErrGanjineNoNodeAvailable
 	}
 
 	if node.Node.State == achaemenid.NodeStateLocalNode {
-		return gs.GetRecord(req)
+		return gs.HashTransactionGetValues(req)
 	}
 
 	var st *achaemenid.Stream
@@ -29,7 +27,7 @@ func GetRecord(c *ganjine.Cluster, req *gs.GetRecordReq) (res *gs.GetRecordRes, 
 		return nil, err
 	}
 
-	st.Service = &gs.GetRecordService
+	st.Service = &gs.HashTransactionGetValuesService
 	st.OutcomePayload = req.SyllabEncoder()
 
 	err = achaemenid.SrpcOutcomeRequestHandler(c.Server, st)
@@ -37,7 +35,7 @@ func GetRecord(c *ganjine.Cluster, req *gs.GetRecordReq) (res *gs.GetRecordRes, 
 		return nil, err
 	}
 
-	res = &gs.GetRecordRes{}
+	res = &gs.HashTransactionGetValuesRes{}
 	res.SyllabDecoder(srpc.GetPayload(st.IncomePayload))
 	return res, st.Err
 }

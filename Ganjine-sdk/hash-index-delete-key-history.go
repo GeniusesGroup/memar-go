@@ -8,17 +8,15 @@ import (
 	gs "../ganjine-services"
 )
 
-// DeleteRecord delete specific record by given ID in all cluster!
-// We don't suggest use this service, due to we strongly suggest think about data as immutable entity(stream and time)
-// It won't delete record history or indexes associate to it!
-func DeleteRecord(c *ganjine.Cluster, req *gs.DeleteRecordReq) (err error) {
-	var node *ganjine.Node = c.GetNodeByRecordID(req.RecordID)
+// HashIndexDeleteKeyHistory delete all record associate to given index and delete index itself!
+func HashIndexDeleteKeyHistory(c *ganjine.Cluster, req *gs.HashIndexDeleteKeyHistoryReq) (err error) {
+	var node *ganjine.Node = c.GetNodeByRecordID(req.IndexKey)
 	if node == nil {
 		return ganjine.ErrGanjineNoNodeAvailable
 	}
 
 	if node.Node.State == achaemenid.NodeStateLocalNode {
-		return gs.DeleteRecord(req)
+		return gs.HashIndexDeleteKeyHistory(req)
 	}
 
 	var st *achaemenid.Stream
@@ -27,7 +25,7 @@ func DeleteRecord(c *ganjine.Cluster, req *gs.DeleteRecordReq) (err error) {
 		return err
 	}
 
-	st.Service = &gs.DeleteRecordService
+	st.Service = &gs.HashIndexDeleteKeyHistoryService
 	st.OutcomePayload = req.SyllabEncoder()
 
 	err = achaemenid.SrpcOutcomeRequestHandler(c.Server, st)
