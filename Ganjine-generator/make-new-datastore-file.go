@@ -9,6 +9,7 @@ import (
 	"text/template"
 
 	"../assets"
+	etime "../earth-time"
 )
 
 var hash64 = crc64.New(crc64.MakeTable(crc64.ISO))
@@ -37,11 +38,13 @@ func MakeNewDatastoreFile(file *assets.File) (err error) {
 		StructureUpperName string
 		StructureLowerName string
 		ReceiverName       string
+		IssueDate          int64
 	}{
 		StructureID:        hash64.Sum64(), // hash sn for its ID
 		StructureUpperName: sn,
 		StructureLowerName: strings.ToLower(sn[0:1]) + sn[1:],
 		ReceiverName:       rn,
+		IssueDate:          etime.Now(),
 	}
 
 	var sf = new(bytes.Buffer)
@@ -68,16 +71,36 @@ import (
 	"../libgo/ganjine"
 	gsdk "../libgo/ganjine-sdk"
 	gs "../libgo/ganjine-services"
+	lang "../libgo/language"
+	"../libgo/log"
 	"../libgo/syllab"
 )
 
 const (
 	{{.StructureLowerName}}StructureID uint64 = {{.StructureID}}
-	{{.StructureLowerName}}FixedSize   uint64 = ??? // 72 + ??? + (??? * 8) >> Common header + Unique data + vars add&&len
-	{{.StructureLowerName}}State       uint8  = ganjine.DataStructureStatePreAlpha
 )
 
-// {{.StructureUpperName}} store 
+var {{.StructureLowerName}}Structure = ganjine.DataStructure{
+	ID:                {{.StructureID}},
+	IssueDate:         {{.IssueDate}},
+	ExpiryDate:        0,
+	ExpireInFavorOf:   "", // Other structure name
+	ExpireInFavorOfID: 0,  // Other StructureID! Handy ID or Hash of ExpireInFavorOf!
+	Status:            ganjine.DataStructureStatePreAlpha,
+	Structure:         {{.StructureUpperName}}{},
+
+	Name: map[lang.Language]string{
+		lang.EnglishLanguage: "{{.StructureUpperName}}",
+	},
+	Description: map[lang.Language]string{
+		lang.EnglishLanguage: "",
+	},
+	TAGS: []string{
+		"",
+	},
+}
+
+// {{.StructureUpperName}} ---Read locale description in {{.StructureLowerName}}Structure---
 type {{.StructureUpperName}} struct {
 	/* Common header data */
 	RecordID          [32]byte
@@ -89,13 +112,15 @@ type {{.StructureUpperName}} struct {
 	/* Unique data */
 	AppInstanceID    [16]byte // Store to remember which app instance set||chanaged this record!
 	UserConnectionID [16]byte // Store to remember which user connection set||chanaged this record!
+	ID               [16]byte ` + "`" + `ganjine:"Immutable,Unique"` + "`" + ` // {{.StructureUpperName}}ID
+	OwnerID          [16]byte ` + "`" + `ganjine:"Immutable"` + "`" + ` // Owner User ID
 	Remove me and add more data structure here! Also can delete two above items!
 }
 
 // Set method set some data and write entire {{.StructureUpperName}} record!
 func ({{.ReceiverName}} *{{.StructureUpperName}}) Set() (err error) {
 	{{.ReceiverName}}.RecordStructureID = {{.StructureLowerName}}StructureID
-	{{.ReceiverName}}.RecordSize = {{.ReceiverName}}.len()
+	{{.ReceiverName}}.RecordSize = {{.ReceiverName}}.syllabLen()
 	{{.ReceiverName}}.WriteTime = etime.Now()
 	{{.ReceiverName}}.OwnerAppID = server.Manifest.AppID
 
@@ -108,13 +133,16 @@ func ({{.ReceiverName}} *{{.StructureUpperName}}) Set() (err error) {
 
 	err = gsdk.SetRecord(cluster, &req)
 	if err != nil {
+		if log.DebugMode {
+			log.Debug("Ganjine - Set Record Error:", err)
+		}
 		// TODO::: Handle error situation
 	}
 
 	return
 }
 
-// GetByRecordID method read all existing record data by given RecordID!
+// GetByRecordID read existing record data by given RecordID!
 func ({{.ReceiverName}} *{{.StructureUpperName}}) GetByRecordID() (err error) {
 	var req = gs.GetRecordReq{
 		RecordID: {{.ReceiverName}}.RecordID,
@@ -122,136 +150,209 @@ func ({{.ReceiverName}} *{{.StructureUpperName}}) GetByRecordID() (err error) {
 	var res *gs.GetRecordRes
 	res, err = gsdk.GetRecord(cluster, &req)
 	if err != nil {
-		return err
+		return
 	}
 
 	err = {{.ReceiverName}}.syllabDecoder(res.Record)
 	if err != nil {
-		return err
+		return
 	}
 
 	if {{.ReceiverName}}.RecordStructureID != {{.StructureLowerName}}StructureID {
-		err = ganjine.ErrRecordMisMatchedStructureID
+		err = ganjine.ErrGanjineMisMatchedStructureID
 	}
 	return
 }
 
-// GetBy?????? method find and read last version of record by given ??????
-func ({{.ReceiverName}} *{{.StructureUpperName}}) GetBy??????() (err error) {
-	var indexReq = &gs.FindRecordsReq{
-		IndexHash: {{.ReceiverName}}.hash??????(),
+// GetLastByID find and read last version of record by given ID
+func ({{.ReceiverName}} *{{.StructureUpperName}}) GetLastByID() (err error) {
+	var indexReq = &gs.HashIndexGetValuesReq{
+		IndexKey: {{.ReceiverName}}.HashID(),
 		Offset:    18446744073709551615,
-		Limit:     0,
+		Limit:     1,
 	}
-	var indexRes *gs.FindRecordsRes
-	indexRes, err = gsdk.FindRecords(cluster, indexReq)
+	var indexRes *gs.HashIndexGetValuesRes
+	indexRes, err = gsdk.HashIndexGetValues(cluster, indexReq)
+	if err != nil {
+		return
+	}
+
+	pn.RecordID = indexRes.IndexValues[0]
+	err = pn.GetByRecordID()
+	if err == ganjine.ErrGanjineMisMatchedStructureID {
+		log.Warn("Platform collapsed!! HASH Collision Occurred on", {{.StructureLowerName}}StructureID)
+	}
+	return
+}
+
+// GetLastBy?????? find and read last version of record by given ??????
+func ({{.ReceiverName}} *{{.StructureUpperName}}) GetLastBy??????() (err error) {
+	var indexReq = &gs.HashIndexGetValuesReq{
+		IndexKey: {{.ReceiverName}}.Hash??????(),
+		Offset:    18446744073709551615,
+		Limit:     1,
+	}
+	var indexRes *gs.HashIndexGetValuesRes
+	indexRes, err = gsdk.HashIndexGetValues(cluster, indexReq)
 	if err != nil {
 		return err
 	}
 
-	var ln = len(indexRes.RecordIDs)
-	// TODO::: Need to handle this here?? if collision ocurred and last record ID is not our purpose??
-	for {
-		ln--
-		{{.ReceiverName}}.RecordID = indexRes.RecordIDs[ln]
-		err = {{.ReceiverName}}.GetByRecordID()
-		if err != ganjine.ErrRecordMisMatchedStructureID {
-			return
-		}
+	copy(pn.ID[:], indexRes.IndexValues[0][:])
+	err = pn.GetLastByID()
+	if err == ganjine.ErrGanjineMisMatchedStructureID {
+		log.Warn("Platform collapsed!! HASH Collision Occurred on", {{.StructureLowerName}}StructureID)
 	}
+	return
 }
 
-// Delete method use to delete existing record just by given RecordID!
+// Delete existing record just by given RecordID!
 func ({{.ReceiverName}} *{{.StructureUpperName}}) Delete() (err error) {
 	return
 }
 
-// Index?????? index {{.ReceiverName}}.?????? to retrieve record fast later.
-func ({{.ReceiverName}} *{{.StructureUpperName}}) Index??????() {
-	var ??????Index = gs.SetIndexHashReq{
+/*
+	-- PRIMARY INDEXES --
+*/
+
+// IndexID index Unique-Field(ID???) chain to retrieve last record version fast later.
+// Call in each update to the exiting record!
+func ({{.ReceiverName}} *{{.StructureUpperName}}) IndexID() {
+	var indexRequest = gs.HashIndexSetValueReq{
 		Type:      gs.RequestTypeBroadcast,
-		IndexHash: {{.ReceiverName}}.hash??????(),
-		RecordID:  {{.ReceiverName}}.RecordID,
+		IndexKey: {{.ReceiverName}}.HashID(),
+		IndexValue:  {{.ReceiverName}}.RecordID,
 	}
-	var err = gsdk.SetIndexHash(cluster, &??????Index)
+	var err = gsdk.HashIndexSetValue(cluster, &indexRequest)
 	if err != nil {
+		if log.DebugMode {
+			log.Debug("Ganjine - Set Index Error:", err)
+		}
 		// TODO::: we must retry more due to record wrote successfully!
 	}
 }
 
-func ({{.ReceiverName}} *{{.StructureUpperName}}) hash??????() (hash [32]byte) {
-	var buf = make([]byte, ??) // 8+??
 
-	buf[0] = byte({{.ReceiverName}}.RecordStructureID)
-	buf[1] = byte({{.ReceiverName}}.RecordStructureID >> 8)
-	buf[2] = byte({{.ReceiverName}}.RecordStructureID >> 16)
-	buf[3] = byte({{.ReceiverName}}.RecordStructureID >> 24)
-	buf[4] = byte({{.ReceiverName}}.RecordStructureID >> 32)
-	buf[5] = byte({{.ReceiverName}}.RecordStructureID >> 40)
-	buf[6] = byte({{.ReceiverName}}.RecordStructureID >> 48)
-	buf[7] = byte({{.ReceiverName}}.RecordStructureID >> 56)
-
-	remove me and add desire data to buff to index it||them
-
+// HashID hash {{.StructureLowerName}}StructureID + {{.ReceiverName}}.ID
+func ({{.ReceiverName}} *{{.StructureUpperName}}) HashID() (hash [32]byte) {
+	var buf = make([]byte, 24) // 8+16
+	syllab.SetUInt64(buf, 0, {{.StructureLowerName}}StructureID)
+	copy(buf[8:], {{.ReceiverName}}.ID[:])
 	return sha512.Sum512_256(buf)
 }
 
-func ({{.ReceiverName}} *{{.StructureUpperName}}) syllabDecoder(buf []byte) (err error) {
-	if uint64(len(buf)) < {{.StructureLowerName}}FixedSize {
-		err = syllab.ErrSyllabDecodingFailedSmallSlice
-		return
+/*
+	-- SECONDARY INDEXES --
+*/
+
+// IndexOwner index to retrieve all Unique-Field(ID???) owned by given OwnerID later.
+// Don't call in update to an exiting record!
+func ({{.ReceiverName}} *{{.StructureUpperName}}) IndexOwner() {
+	var indexRequest = gs.HashIndexSetValueReq{
+		Type:      gs.RequestTypeBroadcast,
+		IndexKey: {{.ReceiverName}}.HashOwnerID(),
 	}
+	copy(indexRequest.IndexValue[:], {{.ReceiverName}}.ID[:])
+	var err = gsdk.HashIndexSetValue(cluster, &indexRequest)
+	if err != nil {
+		if log.DebugMode {
+			log.Debug("Ganjine - Set Index Error:", err)
+		}
+		// TODO::: we must retry more due to record wrote successfully!
+	}
+}
 
-	copy({{.ReceiverName}}.RecordID[:], buf[:])
-	{{.ReceiverName}}.RecordStructureID = uint64(buf[32]) | uint64(buf[33])<<8 | uint64(buf[34])<<16 | uint64(buf[35])<<24 | uint64(buf[36])<<32 | uint64(buf[37])<<40 | uint64(buf[38])<<48 | uint64(buf[39])<<56
-	{{.ReceiverName}}.RecordSize = uint64(buf[40]) | uint64(buf[41])<<8 | uint64(buf[42])<<16 | uint64(buf[43])<<24 | uint64(buf[44])<<32 | uint64(buf[45])<<40 | uint64(buf[46])<<48 | uint64(buf[47])<<56
-	{{.ReceiverName}}.WriteTime = int64(buf[48]) | int64(buf[49])<<8 | int64(buf[50])<<16 | int64(buf[51])<<24 | int64(buf[52])<<32 | int64(buf[53])<<40 | int64(buf[54])<<48 | int64(buf[55])<<56
-	copy({{.ReceiverName}}.OwnerAppID[:], buf[56:])
+// HashOwnerID hash {{.StructureLowerName}}StructureID + OwnerID
+func ({{.ReceiverName}} *{{.StructureUpperName}}) HashOwnerID() (hash [32]byte) {
+	var buf = make([]byte, 24) // 8+16
+	syllab.SetUInt64(buf, 0, {{.StructureLowerName}}StructureID)
+	copy(buf[8:], {{.ReceiverName}}.OwnerID[:])
+	return sha512.Sum512_256(buf)
+}
 
-	copy({{.ReceiverName}}.AppInstanceID[:], buf[72:])
-	copy({{.ReceiverName}}.UserConnectionID[:], buf[88:])
+// Index?????? index to retrieve all Unique-Field(ID???) owned by given ?????? later.
+// Don't call in update to an exiting record!
+func ({{.ReceiverName}} *{{.StructureUpperName}}) Index??????() {
+	var indexRequest = gs.HashIndexSetValueReq{
+		Type:      gs.RequestTypeBroadcast,
+		IndexKey: {{.ReceiverName}}.Hash??????(),
+	}
+	copy(indexRequest.IndexValue[:], {{.ReceiverName}}.ID[:])
+	var err = gsdk.HashIndexSetValue(cluster, &indexRequest)
+	if err != nil {
+		if log.DebugMode {
+			log.Debug("Ganjine - Set Index Error:", err)
+		}
+		// TODO::: we must retry more due to record wrote successfully!
+	}
+}
 
+// Hash?????? hash {{.StructureLowerName}}StructureID + ??????
+func ({{.ReceiverName}} *{{.StructureUpperName}}) Hash??????() (hash [32]byte) {
+	var buf = make([]byte, ??) // 8+??
+	syllab.SetUInt64(buf, 0, {{.StructureLowerName}}StructureID)
+	remove me and add desire data to buff to index it||them
+	return sha512.Sum512_256(buf)
+}
+
+/*
+	-- LIST FIELDS --
+*/
+
+// List??????  store all ?????? own by specific ??????.
+// Don't call in update to an exiting record!
+func ({{.ReceiverName}} *{{.StructureUpperName}}) List??????() {
+	var indexRequest = gs.HashIndexSetValueReq{
+		Type:      gs.RequestTypeBroadcast,
+		IndexKey: {{.ReceiverName}}.Hash??????(),
+	}
+	copy(indexRequest.IndexValue[:], {{.ReceiverName}}.??????ID[:])
+	var err = gsdk.HashIndexSetValue(cluster, &indexRequest)
+	if err != nil {
+		if log.DebugMode {
+			log.Debug("Ganjine - Set Index Error:", err)
+		}
+		// TODO::: we must retry more due to record wrote successfully!
+	}
+}
+
+// HashOwner??????Field hash {{.StructureLowerName}}StructureID + ?????? + "??????" field
+func ({{.ReceiverName}} *{{.StructureUpperName}}) Hash??????Field() (hash [32]byte) {
+	const field = "??????"
+	var buf = make([]byte, 24+len(field)) // 8+16
+	syllab.SetUInt64(buf, 0, {{.StructureLowerName}}StructureID)
+	copy(buf[8:], {{.ReceiverName}}.??????[:])
+	copy(buf[24:], field)
+	return sha512.Sum512_256(buf)
+}
+
+/*
+	-- Temporary INDEXES & LIST --
+*/
+
+// ??
+
+/*
+	-- Syllab Encoder & Decoder --
+*/
+
+func ({{.ReceiverName}} *{{.StructureUpperName}}) syllabDecoder(buf []byte) (err error) {
 	return
 }
 
 func ({{.ReceiverName}} *{{.StructureUpperName}}) syllabEncoder() (buf []byte) {
-	buf = make([]byte, {{.ReceiverName}}.len())
-
-	// copy(buf[0:], {{.ReceiverName}}.RecordID[:])
-	buf[32] = byte({{.ReceiverName}}.RecordSize)
-	buf[33] = byte({{.ReceiverName}}.RecordSize >> 8)
-	buf[34] = byte({{.ReceiverName}}.RecordSize >> 16)
-	buf[35] = byte({{.ReceiverName}}.RecordSize >> 24)
-	buf[36] = byte({{.ReceiverName}}.RecordSize >> 32)
-	buf[37] = byte({{.ReceiverName}}.RecordSize >> 40)
-	buf[38] = byte({{.ReceiverName}}.RecordSize >> 48)
-	buf[39] = byte({{.ReceiverName}}.RecordSize >> 56)
-	buf[40] = byte({{.ReceiverName}}.RecordStructureID)
-	buf[41] = byte({{.ReceiverName}}.RecordStructureID >> 8)
-	buf[42] = byte({{.ReceiverName}}.RecordStructureID >> 16)
-	buf[43] = byte({{.ReceiverName}}.RecordStructureID >> 24)
-	buf[44] = byte({{.ReceiverName}}.RecordStructureID >> 32)
-	buf[45] = byte({{.ReceiverName}}.RecordStructureID >> 40)
-	buf[46] = byte({{.ReceiverName}}.RecordStructureID >> 48)
-	buf[47] = byte({{.ReceiverName}}.RecordStructureID >> 56)
-	buf[48] = byte({{.ReceiverName}}.WriteTime)
-	buf[49] = byte({{.ReceiverName}}.WriteTime >> 8)
-	buf[50] = byte({{.ReceiverName}}.WriteTime >> 16)
-	buf[51] = byte({{.ReceiverName}}.WriteTime >> 24)
-	buf[52] = byte({{.ReceiverName}}.WriteTime >> 32)
-	buf[53] = byte({{.ReceiverName}}.WriteTime >> 40)
-	buf[54] = byte({{.ReceiverName}}.WriteTime >> 48)
-	buf[55] = byte({{.ReceiverName}}.WriteTime >> 56)
-	copy(buf[56:], {{.ReceiverName}}.OwnerAppID[:])
-
-	copy(buf[72:], {{.ReceiverName}}.AppInstanceID[:])
-	copy(buf[88:], {{.ReceiverName}}.UserConnectionID[:])
-
 	return
 }
 
-func ({{.ReceiverName}} *{{.StructureUpperName}}) len() uint64 {
-	return {{.StructureLowerName}}FixedSize + uint64(len({{.ReceiverName}}.??????))
+func ({{.ReceiverName}} *{{.StructureUpperName}}) syllabStackLen() (ln uint32) {
+	return 0 // 72 + ??? + (?? * 8) >> Common header + Unique data + vars add&&len
 }
 
+func ({{.ReceiverName}} *{{.StructureUpperName}}) syllabHeapLen() (ln uint32) {
+	return
+}
+
+func ({{.ReceiverName}} *{{.StructureUpperName}}) syllabLen() (ln uint64) {
+	return uint64({{.ReceiverName}}.syllabStackLen() + {{.ReceiverName}}.syllabHeapLen())
+}
 `))
