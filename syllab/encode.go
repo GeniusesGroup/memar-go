@@ -2,14 +2,13 @@
 
 package syllab
 
+import "../convert"
+
 /*
-		************************************************************
-		**********************Fixed Size ARRAY**********************
-		************************************************************
-		***********************PAY ATTENTION************************
-	By use below helper functions you can't achieve max performance!
-	Use code generation to prevent unneeded memory alloc by CompleteMethods()!
-*/
+**************************************************************************************************
+*****************************************Fixed Size ARRAY*****************************************
+**************************************************************************************************
+ */
 
 // SetArray encode fixed sized byte array to the payload buffer.
 func SetArray(p []byte, stackIndex uint32, a []byte) {
@@ -100,6 +99,16 @@ func SetUInt64(p []byte, stackIndex uint32, n uint64) {
 // SetFloat64 encode FLOAT64 to the payload buffer.
 func SetFloat64(p []byte, stackIndex uint32, n float64) {
 	SetUInt64(p, stackIndex, uint64(n))
+	// TODO::: below code instead up func call not allow go compiler to inline this func! WHY???
+	// var un = uint64(n)
+	// p[stackIndex] = byte(un)
+	// p[stackIndex+1] = byte(un >> 8)
+	// p[stackIndex+2] = byte(un >> 16)
+	// p[stackIndex+3] = byte(un >> 24)
+	// p[stackIndex+4] = byte(un >> 32)
+	// p[stackIndex+5] = byte(un >> 40)
+	// p[stackIndex+6] = byte(un >> 48)
+	// p[stackIndex+7] = byte(un >> 56)
 }
 
 // SetComplex64 encode COMPLEX64 to the payload buffer.
@@ -115,164 +124,165 @@ func SetComplex128(p []byte, stackIndex uint32, n complex128) {
 }
 
 /*
-************************************************************
-*******************Dynamically size ARRAY*******************
-************************************************************
+**************************************************************************************************
+**************************************Dynamically size ARRAY**************************************
+**************************************************************************************************
  */
 
 // SetString encode string to the payload buffer!
-func SetString(p []byte, s string, stackIndex uint32, heapAddr uint32) {
-	SetUInt32(p, stackIndex, heapAddr)
-	SetUInt32(p, stackIndex+4, uint32(len(s)))
+func SetString(p []byte, s string, stackIndex uint32, heapAddr uint32) (nextHeapAddr uint32) {
+	var ln = uint32(len(s))
+	// SetUInt32(p, stackIndex, heapAddr)
+	p[stackIndex] = byte(heapAddr)
+	p[stackIndex+1] = byte(heapAddr >> 8)
+	p[stackIndex+2] = byte(heapAddr >> 16)
+	p[stackIndex+3] = byte(heapAddr >> 24)
+	// SetUInt32(p, stackIndex+4, ln)
+	p[stackIndex+4] = byte(ln)
+	p[stackIndex+5] = byte(ln >> 8)
+	p[stackIndex+6] = byte(ln >> 16)
+	p[stackIndex+7] = byte(ln >> 24)
 	copy(p[heapAddr:], s)
+	return heapAddr + ln
 }
 
-// SetByteArray encode byte array to the payload buffer!
-func SetByteArray(p []byte, s []byte, stackIndex uint32, heapAddr uint32) {
+// SetByteArray encode byte array || uint8 array to the payload buffer!
+func SetByteArray(p []byte, s []byte, stackIndex uint32, heapAddr uint32) (nextHeapAddr uint32) {
+	var ln = uint32(len(s))
 	SetUInt32(p, stackIndex, heapAddr)
-	SetUInt32(p, stackIndex+4, uint32(len(s)))
+	SetUInt32(p, stackIndex+4, ln)
 	copy(p[heapAddr:], s)
+	return heapAddr + ln
 }
 
 // SetInt8Array encode int8 array to the payload buffer!
-func SetInt8Array(p []byte, s []int8, stackIndex uint32, heapAddr uint32) {
-	var ln = len(s)
+func SetInt8Array(p []byte, s []int8, stackIndex uint32, heapAddr uint32) (nextHeapAddr uint32) {
+	var ln = uint32(len(s))
 	SetUInt32(p, stackIndex, heapAddr)
-	SetUInt32(p, stackIndex+4, uint32(ln))
-	for i := 0; i < ln; i++ {
-		p[heapAddr] = byte(s[i])
-		heapAddr++
-	}
-}
-
-// SetUInt8Array encode uint8 array to the payload buffer!
-func SetUInt8Array(p []byte, s []uint8, stackIndex uint32, heapAddr uint32) {
-	var ln = len(s)
-	SetUInt32(p, stackIndex, heapAddr)
-	SetUInt32(p, stackIndex+4, uint32(ln))
-	for i := 0; i < ln; i++ {
-		p[heapAddr] = byte(s[i])
-		heapAddr++
-	}
+	SetUInt32(p, stackIndex+4, ln)
+	copy(p[heapAddr:], convert.UnsafeInt8SliceToByteSlice(s))
+	return heapAddr + ln
 }
 
 // SetBoolArray encode bool array to the payload buffer!
-func SetBoolArray(p []byte, s []bool, stackIndex uint32, heapAddr uint32) {
-	var ln = len(s)
+func SetBoolArray(p []byte, s []bool, stackIndex uint32, heapAddr uint32) (nextHeapAddr uint32) {
+	var ln = uint32(len(s))
 	SetUInt32(p, stackIndex, heapAddr)
-	SetUInt32(p, stackIndex+4, uint32(ln))
-	for i := 0; i < ln; i++ {
-		SetBool(p, heapAddr, s[i])
-		heapAddr += 2
-	}
+	SetUInt32(p, stackIndex+4, ln)
+	copy(p[heapAddr:], convert.UnsafeBoolSliceToByteSlice(s))
+	return heapAddr + ln
 }
 
 // SetInt16Array encode int16 array to the payload buffer!
-func SetInt16Array(p []byte, s []int16, stackIndex uint32, heapAddr uint32) {
-	var ln = len(s)
+func SetInt16Array(p []byte, s []int16, stackIndex uint32, heapAddr uint32) (nextHeapAddr uint32) {
+	var ln = uint32(len(s))
 	SetUInt32(p, stackIndex, heapAddr)
-	SetUInt32(p, stackIndex+4, uint32(ln))
-	for i := 0; i <= ln; i++ {
-		SetInt16(p, heapAddr, s[i])
-		heapAddr += 2
-	}
+	SetUInt32(p, stackIndex+4, ln)
+	copy(p[heapAddr:], convert.UnsafeInt16SliceToByteSlice(s))
+	return heapAddr + (ln * 2)
 }
 
 // SetUInt16Array encode uint16 array to the payload buffer!
-func SetUInt16Array(p []byte, s []uint16, stackIndex uint32, heapAddr uint32) {
-	var ln = len(s)
+func SetUInt16Array(p []byte, s []uint16, stackIndex uint32, heapAddr uint32) (nextHeapAddr uint32) {
+	var ln = uint32(len(s))
 	SetUInt32(p, stackIndex, heapAddr)
-	SetUInt32(p, stackIndex+4, uint32(ln))
-	for i := 0; i <= ln; i++ {
-		SetUInt16(p, heapAddr, s[i])
-		heapAddr += 2
-	}
+	SetUInt32(p, stackIndex+4, ln)
+	copy(p[heapAddr:], convert.UnsafeUInt16SliceToByteSlice(s))
+	return heapAddr + (ln * 2)
 }
 
 // SetInt32Array encode int32 array to the payload buffer!
-func SetInt32Array(p []byte, s []int32, stackIndex uint32, heapAddr uint32) {
-	var ln = len(s)
+func SetInt32Array(p []byte, s []int32, stackIndex uint32, heapAddr uint32) (nextHeapAddr uint32) {
+	var ln = uint32(len(s))
 	SetUInt32(p, stackIndex, heapAddr)
-	SetUInt32(p, stackIndex+4, uint32(ln))
-	for i := 0; i <= ln; i++ {
-		SetInt32(p, heapAddr, s[i])
-		heapAddr += 4
-	}
+	SetUInt32(p, stackIndex+4, ln)
+	copy(p[heapAddr:], convert.UnsafeInt32SliceToByteSlice(s))
+	return heapAddr + (ln * 4)
 }
 
 // SetUInt32Array encode uint32 array to the payload buffer!
-func SetUInt32Array(p []byte, s []uint32, stackIndex uint32, heapAddr uint32) {
-	var ln = len(s)
+func SetUInt32Array(p []byte, s []uint32, stackIndex uint32, heapAddr uint32) (nextHeapAddr uint32) {
+	var ln = uint32(len(s))
 	SetUInt32(p, stackIndex, heapAddr)
-	SetUInt32(p, stackIndex+4, uint32(ln))
-	for i := 0; i <= ln; i++ {
-		SetUInt32(p, heapAddr, s[i])
-		heapAddr += 4
-	}
-}
-
-// SetFloat32Array encode float32 array to the payload buffer!
-func SetFloat32Array(p []byte, s []float32, stackIndex uint32, heapAddr uint32) {
-	var ln = len(s)
-	SetUInt32(p, stackIndex, heapAddr)
-	SetUInt32(p, stackIndex+4, uint32(ln))
-	for i := 0; i <= ln; i++ {
-		SetFloat32(p, heapAddr, s[i])
-		heapAddr += 4
-	}
+	SetUInt32(p, stackIndex+4, ln)
+	copy(p[heapAddr:], convert.UnsafeUInt32SliceToByteSlice(s))
+	return heapAddr + (ln * 4)
 }
 
 // SetInt64Array encode int64 array to the payload buffer!
-func SetInt64Array(p []byte, s []int64, stackIndex uint32, heapAddr uint32) {
-	var ln = len(s)
+func SetInt64Array(p []byte, s []int64, stackIndex uint32, heapAddr uint32) (nextHeapAddr uint32) {
+	var ln = uint32(len(s))
 	SetUInt32(p, stackIndex, heapAddr)
-	SetUInt32(p, stackIndex+4, uint32(ln))
-	for i := 0; i <= ln; i++ {
-		SetInt64(p, heapAddr, s[i])
-		heapAddr += 8
-	}
+	SetUInt32(p, stackIndex+4, ln)
+	copy(p[heapAddr:], convert.UnsafeInt64SliceToByteSlice(s))
+	return heapAddr + (ln * 8)
 }
 
 // SetUInt64Array encode uint64 array to the payload buffer!
-func SetUInt64Array(p []byte, s []uint64, stackIndex uint32, heapAddr uint32) {
-	var ln = len(s)
+func SetUInt64Array(p []byte, s []uint64, stackIndex uint32, heapAddr uint32) (nextHeapAddr uint32) {
+	var ln = uint32(len(s))
 	SetUInt32(p, stackIndex, heapAddr)
-	SetUInt32(p, stackIndex+4, uint32(ln))
-	for i := 0; i <= ln; i++ {
-		SetUInt64(p, heapAddr, s[i])
-		heapAddr += 8
-	}
+	SetUInt32(p, stackIndex+4, ln)
+	copy(p[heapAddr:], convert.UnsafeUInt64SliceToByteSlice(s))
+	return heapAddr + (ln * 8)
+}
+
+// SetFloat32Array encode float32 array to the payload buffer!
+func SetFloat32Array(p []byte, s []float32, stackIndex uint32, heapAddr uint32) (nextHeapAddr uint32) {
+	var ln = uint32(len(s))
+	SetUInt32(p, stackIndex, heapAddr)
+	SetUInt32(p, stackIndex+4, ln)
+	copy(p[heapAddr:], convert.UnsafeFloat32SliceToByteSlice(s))
+	return heapAddr + (ln * 4)
 }
 
 // SetFloat64Array encode float64 array to the payload buffer!
-func SetFloat64Array(p []byte, s []float64, stackIndex uint32, heapAddr uint32) {
-	var ln = len(s)
+func SetFloat64Array(p []byte, s []float64, stackIndex uint32, heapAddr uint32) (nextHeapAddr uint32) {
+	var ln = uint32(len(s))
 	SetUInt32(p, stackIndex, heapAddr)
-	SetUInt32(p, stackIndex+4, uint32(ln))
-	for i := 0; i <= ln; i++ {
-		SetFloat64(p, heapAddr, s[i])
-		heapAddr += 8
-	}
+	SetUInt32(p, stackIndex+4, ln)
+	copy(p[heapAddr:], convert.UnsafeFloat64SliceToByteSlice(s))
+	return heapAddr + (ln * 8)
 }
 
 // SetComplex64Array encode complex64 array to the payload buffer!
-func SetComplex64Array(p []byte, s []complex64, stackIndex uint32, heapAddr uint32) {
-	var ln = len(s)
+func SetComplex64Array(p []byte, s []complex64, stackIndex uint32, heapAddr uint32) (nextHeapAddr uint32) {
+	var ln = uint32(len(s))
 	SetUInt32(p, stackIndex, heapAddr)
-	SetUInt32(p, stackIndex+4, uint32(ln))
-	for i := 0; i <= ln; i++ {
-		SetComplex64(p, heapAddr, s[i])
-		heapAddr += 8
-	}
+	SetUInt32(p, stackIndex+4, ln)
+	copy(p[heapAddr:], convert.UnsafeComplex64SliceToByteSlice(s))
+	return heapAddr + (ln * 8)
 }
 
 // SetComplex128Array encode complex128 array to the payload buffer!
-func SetComplex128Array(p []byte, s []complex128, stackIndex uint32, heapAddr uint32) {
-	var ln = len(s)
+func SetComplex128Array(p []byte, s []complex128, stackIndex uint32, heapAddr uint32) (nextHeapAddr uint32) {
+	var ln = uint32(len(s))
 	SetUInt32(p, stackIndex, heapAddr)
-	SetUInt32(p, stackIndex+4, uint32(ln))
-	for i := 0; i <= ln; i++ {
-		SetComplex128(p, heapAddr, s[i])
-		heapAddr += 16
+	SetUInt32(p, stackIndex+4, ln)
+	copy(p[heapAddr:], convert.UnsafeComplex128SliceToByteSlice(s))
+	return heapAddr + (ln * 16)
+}
+
+/*
+**************************************************************************************************
+*******************Dynamically size ARRAY inside other Dynamically size Array*******************
+**************************************************************************************************
+ */
+
+// SetStringArray encode string array to the payload buffer!
+func SetStringArray(p []byte, s []string, stackIndex uint32, heapAddr uint32) (nextHeapAddr uint32) {
+	var ln = uint32(len(s))
+	SetUInt32(p, stackIndex, heapAddr)
+	SetUInt32(p, stackIndex+4, ln)
+	nextHeapAddr = heapAddr + (ln * 8)
+	var eln uint32
+	for i := 0; i < int(ln); i++ {
+		eln = uint32(len(s[i]))
+		SetUInt32(p, heapAddr, nextHeapAddr)
+		SetUInt32(p, heapAddr+4, eln)
+		copy(p[nextHeapAddr:], s[i])
+		heapAddr += 8
+		nextHeapAddr += eln
 	}
+	return
 }

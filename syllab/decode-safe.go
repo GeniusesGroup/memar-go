@@ -2,14 +2,13 @@
 
 package syllab
 
+import "../convert"
+
 /*
-	************************************************************
-	**********************Fixed Size Data**********************
-	************************************************************
-	***********************PAY ATTENTION************************
-	By use below helper functions you can't achieve max performance!
-	Use code generation to prevent unneeded memory alloc by CompleteMethods()!
-*/
+**************************************************************************************************
+*****************************************Fixed Size Data******************************************
+**************************************************************************************************
+ */
 
 // GetFixedByteArray decodes fixed sized byte array from the payload buffer.
 // If you want array instead of slice from function below, You can copy function and edit it for your usage! e.g.
@@ -93,9 +92,9 @@ func GetComplex128(p []byte, stackIndex uint32) complex128 {
 }
 
 /*
-************************************************************
-*******************Dynamically size Data*******************
-************************************************************
+**************************************************************************************************
+**************************************Dynamically size Data**************************************
+**************************************************************************************************
  */
 
 // GetString decodes string from the payload buffer!
@@ -103,180 +102,140 @@ func GetString(p []byte, stackIndex uint32) string {
 	return string(GetByteArray(p, stackIndex))
 }
 
-// GetByteArray decodes byte array from the payload buffer!
+// GetByteArray decodes byte||uint8 array from the payload buffer!
 func GetByteArray(p []byte, stackIndex uint32) (slice []byte) {
 	var add uint32 = GetUInt32(p, stackIndex)
 	var ln uint32 = GetUInt32(p, stackIndex+4)
 	slice = make([]byte, ln)
-	copy(slice, p[add : add+ln])
+	copy(slice, p[add:])
 	return
 }
 
 // GetInt8Array decodes int8 array from the payload buffer!
-func GetInt8Array(p []byte, stackIndex uint32) []int8 {
+func GetInt8Array(p []byte, stackIndex uint32) (slice []int8) {
 	var add uint32 = GetUInt32(p, stackIndex)
 	var ln uint32 = GetUInt32(p, stackIndex+4)
-	var int8Array = make([]int8, ln)
-	var i uint32
-	for i = 0; i <= ln; i++ {
-		int8Array[i] = GetInt8(p, add)
-		add++
-	}
-	return int8Array
-}
-
-// GetUInt8Array decodes uint8 array from the payload buffer!
-func GetUInt8Array(p []byte, stackIndex uint32) []uint8 {
-	var add uint32 = GetUInt32(p, stackIndex)
-	var ln uint32 = GetUInt32(p, stackIndex+4)
-	var uint8Array = make([]uint8, ln)
-	var i uint32
-	for i = 0; i <= ln; i++ {
-		uint8Array[i] = GetUInt8(p, add)
-		add++
-	}
-	return uint8Array
+	slice = make([]int8, ln)
+	copy(slice, convert.UnsafeByteSliceToInt8Slice(p[add:]))
+	return
 }
 
 // GetBoolArray decodes bool array from the payload buffer!
-func GetBoolArray(p []byte, stackIndex uint32) []bool {
+func GetBoolArray(p []byte, stackIndex uint32) (slice []bool) {
 	var add uint32 = GetUInt32(p, stackIndex)
 	var ln uint32 = GetUInt32(p, stackIndex+4)
-	var boolArray = make([]bool, ln)
-	var i uint32
-	for i = 0; i <= ln; i++ {
-		boolArray[i] = GetBool(p, add)
-		add++
-	}
-	return boolArray
+	slice = make([]bool, ln)
+	copy(slice, convert.UnsafeByteSliceToBoolSlice(p[add:]))
+	return
 }
 
 // GetInt16Array decode Int16 array from the payload buffer
-func GetInt16Array(p []byte, stackIndex uint32) []int16 {
+func GetInt16Array(p []byte, stackIndex uint32) (slice []int16) {
 	var add uint32 = GetUInt32(p, stackIndex)
 	var ln uint32 = GetUInt32(p, stackIndex+4)
-	var int16Array = make([]int16, ln)
-	var i uint32
-	for i = 0; i <= ln; i++ {
-		int16Array[i] = GetInt16(p, add)
-		add += 2
-	}
-	return int16Array
+	slice = make([]int16, ln)
+	copy(slice, convert.UnsafeByteSliceToInt16Slice(p[add:]))
+	return
 }
 
 // GetUInt16Array decode UInt16 array from the payload buffer
-func GetUInt16Array(p []byte, stackIndex uint32) []uint16 {
+func GetUInt16Array(p []byte, stackIndex uint32) (slice []uint16) {
 	var add uint32 = GetUInt32(p, stackIndex)
 	var ln uint32 = GetUInt32(p, stackIndex+4)
-	var uint16Array = make([]uint16, ln)
-	var i uint32
-	for i = 0; i <= ln; i++ {
-		uint16Array[i] = GetUInt16(p, add)
-		add += 2
-	}
-	return uint16Array
+	slice = make([]uint16, ln)
+	copy(slice, convert.UnsafeByteSliceToUInt16Slice(p[add:]))
+	return
 }
 
 // GetInt32Array decode fixed size Int32 array from the payload buffer
-func GetInt32Array(p []byte, stackIndex uint32) []int32 {
+func GetInt32Array(p []byte, stackIndex uint32) (slice []int32) {
 	var add uint32 = GetUInt32(p, stackIndex)
 	var ln uint32 = GetUInt32(p, stackIndex+4)
-	var int32Array = make([]int32, ln)
-	var i uint32
-	for i = 0; i <= ln; i++ {
-		int32Array[i] = GetInt32(p, add)
-		add += 4
-	}
-	return int32Array
+	slice = make([]int32, ln)
+	copy(slice, convert.UnsafeByteSliceToInt32Slice(p[add:]))
+	return
 }
 
 // GetUInt32Array decode fixed size UInt32 array from the payload buffer
-func GetUInt32Array(p []byte, stackIndex uint32) []uint32 {
+func GetUInt32Array(p []byte, stackIndex uint32) (slice []uint32) {
 	var add uint32 = GetUInt32(p, stackIndex)
 	var ln uint32 = GetUInt32(p, stackIndex+4)
-	var uint32Array = make([]uint32, ln)
-	var i uint32
-	for i = 0; i <= ln; i++ {
-		uint32Array[i] = GetUInt32(p, add)
-		add += 4
-	}
-	return uint32Array
-}
-
-// GetFloat32Array decode fixed size Float32 array from the payload buffer
-func GetFloat32Array(p []byte, stackIndex uint32) []float32 {
-	var add uint32 = GetUInt32(p, stackIndex)
-	var ln uint32 = GetUInt32(p, stackIndex+4)
-	var float32Array = make([]float32, ln)
-	var i uint32
-	for i = 0; i <= ln; i++ {
-		float32Array[i] = GetFloat32(p, add)
-		p = p[4:]
-	}
-	return float32Array
+	slice = make([]uint32, ln)
+	copy(slice, convert.UnsafeByteSliceToUInt32Slice(p[add:]))
+	return
 }
 
 // GetInt64Array decode fixed size Int64 array from the payload buffer
-func GetInt64Array(p []byte, stackIndex uint32) []int64 {
+func GetInt64Array(p []byte, stackIndex uint32) (slice []int64) {
 	var add uint32 = GetUInt32(p, stackIndex)
 	var ln uint32 = GetUInt32(p, stackIndex+4)
-	var int64Array = make([]int64, ln)
-	var i uint32
-	for i = 0; i <= ln; i++ {
-		int64Array[i] = GetInt64(p, add)
-		add += 8
-	}
-	return int64Array
+	slice = make([]int64, ln)
+	copy(slice, convert.UnsafeByteSliceToInt64Slice(p[add:]))
+	return
 }
 
 // GetUInt64Array decode fixed size UInt64 array from the payload buffer
-func GetUInt64Array(p []byte, stackIndex uint32) []uint64 {
+func GetUInt64Array(p []byte, stackIndex uint32) (slice []uint64) {
 	var add uint32 = GetUInt32(p, stackIndex)
 	var ln uint32 = GetUInt32(p, stackIndex+4)
-	var uint64Array = make([]uint64, ln)
-	var i uint32
-	for i = 0; i <= ln; i++ {
-		uint64Array[i] = GetUInt64(p, add)
-		add += 8
-	}
-	return uint64Array
+	slice = make([]uint64, ln)
+	copy(slice, convert.UnsafeByteSliceToUInt64Slice(p[add:]))
+	return
+}
+
+// GetFloat32Array decode fixed size Float32 array from the payload buffer
+func GetFloat32Array(p []byte, stackIndex uint32) (slice []float32) {
+	var add uint32 = GetUInt32(p, stackIndex)
+	var ln uint32 = GetUInt32(p, stackIndex+4)
+	slice = make([]float32, ln)
+	copy(slice, convert.UnsafeByteSliceToFloat32Slice(p[add:]))
+	return
 }
 
 // GetFloat64Array decode fixed size Float64 array from the payload buffer
-func GetFloat64Array(p []byte, stackIndex uint32) []float64 {
+func GetFloat64Array(p []byte, stackIndex uint32) (slice []float64) {
 	var add uint32 = GetUInt32(p, stackIndex)
 	var ln uint32 = GetUInt32(p, stackIndex+4)
-	var float64Array = make([]float64, ln)
-	var i uint32
-	for i = 0; i <= ln; i++ {
-		float64Array[i] = GetFloat64(p, add)
-		add += 8
-	}
-	return float64Array
+	slice = make([]float64, ln)
+	copy(slice, convert.UnsafeByteSliceToFloat64Slice(p[add:]))
+	return
 }
 
 // GetComplex64Array decode fixed size Complex64 array from the payload buffer
-func GetComplex64Array(p []byte, stackIndex uint32) []complex64 {
+func GetComplex64Array(p []byte, stackIndex uint32) (slice []complex64) {
 	var add uint32 = GetUInt32(p, stackIndex)
 	var ln uint32 = GetUInt32(p, stackIndex+4)
-	var complex64Array = make([]complex64, ln)
-	var i uint32
-	for i = 0; i <= ln; i++ {
-		complex64Array[i] = GetComplex64(p, add)
-		add += 8
-	}
-	return complex64Array
+	slice = make([]complex64, ln)
+	copy(slice, convert.UnsafeByteSliceToComplex64Slice(p[add:]))
+	return
 }
 
 // GetComplex128Array decode fixed size Complex128 array from the payload buffer
-func GetComplex128Array(p []byte, stackIndex uint32) []complex128 {
+func GetComplex128Array(p []byte, stackIndex uint32) (slice []complex128) {
 	var add uint32 = GetUInt32(p, stackIndex)
 	var ln uint32 = GetUInt32(p, stackIndex+4)
-	var complex128Array = make([]complex128, ln)
-	var i uint32
-	for i = 0; i <= ln; i++ {
-		complex128Array[i] = GetComplex128(p, add)
-		add += 16
+	slice = make([]complex128, ln)
+	copy(slice, convert.UnsafeByteSliceToComplex128Slice(p[add:]))
+	return
+}
+
+/*
+**************************************************************************************************
+*******************Dynamically size ARRAY inside other Dynamically size Array*******************
+**************************************************************************************************
+ */
+
+// GetStringArray encode string array to the payload buffer!
+func GetStringArray(p []byte, stackIndex uint32) (slice []string) {
+	var add uint32 = GetUInt32(p, stackIndex)
+	var ln uint32 = GetUInt32(p, stackIndex+4)
+	slice = make([]string, ln)
+
+	for i := 0; i < int(ln); i++ {
+		var eachAdd uint32 = GetUInt32(p, add)
+		var eachLn uint32 = GetUInt32(p, add+4)
+		slice[i] = string(p[eachAdd : eachAdd+eachLn])
+		add += 8
 	}
-	return complex128Array
+	return
 }
