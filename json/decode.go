@@ -6,7 +6,8 @@ import (
 	"bytes"
 	"encoding/base64"
 	"strconv"
-	"unsafe"
+
+	"../convert"
 )
 
 // Decoder store data to decode data by each method!
@@ -77,7 +78,7 @@ func (d *Decoder) DecodeKey() string {
 func (d *Decoder) DecodeUInt8() (ui uint8, err error) {
 	d.FindEndToken()
 	var num uint64
-	num, err = strconv.ParseUint(*(*string)(unsafe.Pointer(&d.LastItem)), 10, 8)
+	num, err = strconv.ParseUint(convert.UnsafeByteSliceToString(d.LastItem), 10, 8)
 	ui = uint8(num)
 	return
 }
@@ -85,14 +86,14 @@ func (d *Decoder) DecodeUInt8() (ui uint8, err error) {
 // DecodeUInt64 convert 64bit integer number string to number. pass d.Buf start from after : and receive from after ,
 func (d *Decoder) DecodeUInt64() (ui uint64, err error) {
 	d.FindEndToken()
-	ui, err = strconv.ParseUint(*(*string)(unsafe.Pointer(&d.LastItem)), 10, 64)
+	ui, err = strconv.ParseUint(convert.UnsafeByteSliceToString(d.LastItem), 10, 64)
 	return
 }
 
 // DecodeFloat64AsNumber convert float64 number string to float64 number. pass d.Buf start from after : and receive from ,
 func (d *Decoder) DecodeFloat64AsNumber() (f float64, err error) {
 	d.FindEndToken()
-	f, err = strconv.ParseFloat(*(*string)(unsafe.Pointer(&d.LastItem)), 64)
+	f, err = strconv.ParseFloat(convert.UnsafeByteSliceToString(d.LastItem), 64)
 	return
 }
 
@@ -120,7 +121,6 @@ func (d *Decoder) DecodeSliceAsNumber() (slice []byte, err error) {
 // DecodeSliceAsBase64 convert base64 string to []byte
 func (d *Decoder) DecodeSliceAsBase64() (slice []byte, err error) {
 	var loc int // Coma, Colon, bracket, ... location
-
 	loc = bytes.IndexByte(d.Buf, '"')
 
 	slice = make([]byte, base64.StdEncoding.DecodedLen(len(d.Buf[:loc])))
@@ -130,6 +130,19 @@ func (d *Decoder) DecodeSliceAsBase64() (slice []byte, err error) {
 		return
 	}
 	slice = slice[:n]
+
+	d.Buf = d.Buf[loc+1:]
+	return
+}
+
+// DecodeArrayAsBase64 convert base64 string to [n]byte
+func (d *Decoder) DecodeArrayAsBase64(array []byte) (err error) {
+	var loc int // Coma, Colon, bracket, ... location
+	loc = bytes.IndexByte(d.Buf, '"')
+	_, err = base64.StdEncoding.Decode(array, d.Buf[:loc])
+	if err != nil {
+		return
+	}
 
 	d.Buf = d.Buf[loc+1:]
 	return
@@ -149,5 +162,5 @@ func (d *Decoder) DecodeString() (s string) {
 	slice = slice[:loc]
 
 	d.Buf = d.Buf[loc+1:]
-	return *(*string)(unsafe.Pointer(&slice))
+	return convert.UnsafeByteSliceToString(slice)
 }

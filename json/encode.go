@@ -31,6 +31,12 @@ func (e *Encoder) EncodeBoolean(b bool) {
 	}
 }
 
+// EncodeUInt8 append given uint8 number as number string
+// TODO::: not efficient enough code
+func (e *Encoder) EncodeUInt8(ui uint8) {
+	e.Buf = strconv.AppendUint(e.Buf, uint64(ui), 10)
+}
+
 // EncodeInt64 append given int64 number as number string
 func (e *Encoder) EncodeInt64(i int64) {
 	e.Buf = strconv.AppendInt(e.Buf, i, 10)

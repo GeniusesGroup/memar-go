@@ -17,21 +17,21 @@ import (
 )
 
 /*
-Benchmark1JsonDecode-8       	   28238	     42080 ns/op	    3000 B/op	      21 allocs/op
-Benchmark1LibgoDecode-8      	  196774	      5992 ns/op	    2688 B/op	       1 allocs/op
-Benchmark1EasyDecode-8       	  188838	      5982 ns/op	    2720 B/op	       2 allocs/op
-Benchmark1FFDecode-8         	   89182	     13443 ns/op	    7140 B/op	       8 allocs/op
-Benchmark1JsoniterDecode-8   	   81746	     14824 ns/op	    9154 B/op	       6 allocs/op
+Benchmark1JsonDecode-8       	   22827	     45965 ns/op	    3000 B/op	      21 allocs/op
+Benchmark1LibgoDecode-8      	  210447	      5665 ns/op	    2688 B/op	       1 allocs/op
+Benchmark1EasyDecode-8       	  184730	      6001 ns/op	    2720 B/op	       2 allocs/op
+Benchmark1FFDecode-8         	   87891	     13679 ns/op	    7140 B/op	       8 allocs/op
+Benchmark1JsoniterDecode-8   	   78867	     15014 ns/op	    9154 B/op	       6 allocs/op
 
-Benchmark1JsonEncode-8       	  168676	      7142 ns/op	    4609 B/op	       2 allocs/op
-Benchmark1LibgoEncode-8      	  222344	      5504 ns/op	    3456 B/op	       1 allocs/op
-Benchmark1EasyEncode-8       	  117834	     10302 ns/op	   18112 B/op	      11 allocs/op
-Benchmark1FFEncode-8         	  108514	     11179 ns/op	   10070 B/op	      23 allocs/op
-Benchmark1JsoniterEncode-8   	  168082	      7236 ns/op	    6665 B/op	       3 allocs/op
+Benchmark1JsonEncode-8       	  167131	      7272 ns/op	    4609 B/op	       2 allocs/op
+Benchmark1LibgoEncode-8      	  230906	      5157 ns/op	    3456 B/op	       1 allocs/op
+Benchmark1EasyEncode-8       	  117720	     10600 ns/op	   18112 B/op	      11 allocs/op
+Benchmark1FFEncode-8         	  107139	     11382 ns/op	   10070 B/op	      23 allocs/op
+Benchmark1JsoniterEncode-8   	  163782	      7301 ns/op	    6666 B/op	       3 allocs/op
 
-note1: This benchmark is not apple to apple due to EasyJson encode||decode array as base64 string!
-note2: Libgo decoder performance better by: 7X from standard GO, 0X from EasyJson, 2.2X from FFJson and 2.5X from Jsoniter
-note3: Libgo encoder performance better by: 0.3X from standard GO, 1.9X from EasyJson, 2X from FFJson and 1.3X from Jsoniter
+note1: This benchmark is not apple to apple due to EasyJson&&Libgo encode||decode array as base64 string!
+note2: Libgo decoder performance better by: 8X from standard GO, 0.1X from EasyJson, 2.4X from FFJson and 2.7X from Jsoniter
+note3: Libgo encoder performance better by: 1.4X from standard GO, 2.1X from EasyJson, 2.2X from FFJson and 1.4X from Jsoniter
 */
 
 /*
@@ -39,14 +39,15 @@ note3: Libgo encoder performance better by: 0.3X from standard GO, 1.9X from Eas
 */
 
 type test1 struct {
-	CaptchaID [16]byte
-	Image     []byte
+	CaptchaID [16]byte // `json:",string"`
+	Image     []byte   // `json:",string"`
 }
 
 var unMarshaledTest1 = test1{
 	CaptchaID: [16]byte{167, 7, 56, 140, 146, 65, 70, 25, 183, 113, 230, 83, 166, 148, 108, 210},
 }
 var marshaledTest1 []byte
+var marshaledTest1Libgo []byte
 var marshaledTest1Easy []byte
 
 func init() {
@@ -59,6 +60,7 @@ func init() {
 	}
 
 	marshaledTest1, _ = json.Marshal(&unMarshaledTest1)
+	marshaledTest1Libgo = unMarshaledTest1.libgoEncoder()
 	marshaledTest1Easy, _ = unMarshaledTest1.easyEncoder()
 	// marshaledTest1 = unMarshaledTest1.libgoEncoder()
 	// fmt.Print("Syllab test initialized!!", "\n")
@@ -78,7 +80,7 @@ func Benchmark1JsonDecode(b *testing.B) {
 func Benchmark1LibgoDecode(b *testing.B) {
 	for n := 0; n < b.N; n++ {
 		var t test1
-		t.libgoDecoder(marshaledTest1)
+		t.libgoDecoder(marshaledTest1Libgo)
 	}
 }
 
@@ -124,7 +126,7 @@ func Test1JsonDecode(b *testing.T) {
 
 func Test1LibgoDecode(b *testing.T) {
 	var t test1
-	var err = t.libgoDecoder(marshaledTest1)
+	var err = t.libgoDecoder(marshaledTest1Libgo)
 	if err != nil {
 		fmt.Print(err, "\n")
 		b.Fail()
@@ -220,17 +222,18 @@ func Benchmark1JsoniterEncode(b *testing.B) {
 	Encode Tests
 */
 
-func Test1LibgoEncode(b *testing.T) {
+func Test1LibgoEncode(t *testing.T) {
 	var buf []byte
 	buf = unMarshaledTest1.libgoEncoder()
-	if !bytes.Equal(buf, marshaledTest1) {
-		fmt.Print("Encoded unMarshaledTest1 not same\n")
-		fmt.Print("len--cap of test: ", len(buf), "--", cap(buf), "\n")
-		fmt.Print("len--cap of base: ", len(marshaledTest1), "--", cap(marshaledTest1), "\n")
-		fmt.Print(string(buf), "\n")
-		fmt.Print(string(marshaledTest1), "\n")
-		b.Fail()
+	if !bytes.Equal(buf, marshaledTest1Libgo) {
+		t.Error("Encoded unMarshaledTest1 not same\n")
+		t.Error("len--cap of test: ", len(buf), "--", cap(buf), "\n")
+		t.Error("len--cap of base: ", len(marshaledTest1Libgo), "--", cap(marshaledTest1Libgo), "\n")
+		t.Error(string(buf), "\n")
+		t.Error(string(marshaledTest1Libgo), "\n")
+		t.Fail()
 	}
+	// fmt.Print(string(buf))
 }
 
 // TODO:::
@@ -243,21 +246,15 @@ func (t *test1) libgoDecoder(buf []byte) (err error) {
 	var decoder = DecoderUnsafeMinifed{
 		Buf: buf,
 	}
-	for {
+	for len(decoder.Buf) > 2 {
 		decoder.Offset(2)       // remove >>	'{"' 	&& 		',"'	due to don't need them
 		switch decoder.Buf[0] { // Just check first letter first!
 		case 'C':
-			// CaptchaID":[0,0,0,0,0,0,0,0,0,0,0,0]
 			decoder.SetFounded()
 			decoder.Offset(12)
-			for i := 0; i < 16; i++ {
-				var value uint8
-				value, err = decoder.DecodeUInt8()
-				if err != nil {
-					return
-				}
-				t.CaptchaID[i] = value
-				decoder.Offset(1)
+			err = decoder.DecodeArrayAsBase64(t.CaptchaID[:])
+			if err != nil {
+				return
 			}
 		case 'I':
 			decoder.SetFounded()
@@ -268,15 +265,12 @@ func (t *test1) libgoDecoder(buf []byte) (err error) {
 			}
 		}
 
-		if len(decoder.Buf) < 2 {
-			// Reach last item!
-			return
-		}
 		err = decoder.IterationCheck()
 		if err != nil {
 			return
 		}
 	}
+	return
 }
 
 func (t *test1) libgoEncoder() []byte {
@@ -284,19 +278,19 @@ func (t *test1) libgoEncoder() []byte {
 		Buf: make([]byte, 0, t.jsonLen()),
 	}
 
-	encoder.EncodeString(`{"CaptchaID":[`)
-	encoder.EncodeByteSliceAsNumber(t.CaptchaID[:])
+	encoder.EncodeString(`{"CaptchaID":"`)
+	encoder.EncodeByteSliceAsBase64(t.CaptchaID[:])
 
-	encoder.EncodeString(`],"Image":"`)
+	encoder.EncodeString(`","Image":"`)
 	encoder.EncodeByteSliceAsBase64(t.Image)
-	encoder.EncodeString(`"}`)
 
+	encoder.EncodeString(`"}`)
 	return encoder.Buf
 }
 
 func (t *test1) jsonLen() (ln int) {
-	ln = 27      // len(`{"CaptchaID":[],"Image":""}`)
-	ln += 16 * 4 // [16]bye array
+	ln = 27                                 // len(`{"CaptchaID":"","Image":""}`)
+	ln += base64.StdEncoding.EncodedLen(16) // [16]bye array
 	ln += base64.StdEncoding.EncodedLen(len(t.Image))
 	return
 }
