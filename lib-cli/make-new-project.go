@@ -84,14 +84,6 @@ func MakeNewProject(req *MakeNewProjectReq) (res *MakeNewProjectRes, err error) 
 	req.Repo.SetFile(splashCSS)
 	req.Repo.SetFile(splashJSON)
 
-	// /gui/main-dev.go
-	var MainDevGo = &assets.File{}
-	err = ag.MakeMainDevFile(MainDevGo)
-	if err != nil {
-		return nil, err
-	}
-	req.Repo.SetFile(MainDevGo)
-
 	/* SDK */
 	var goSDKRepo = assets.NewFolder("sdk-go")
 	goSDKRepo.State = assets.StateChanged
@@ -108,13 +100,13 @@ func MakeNewProject(req *MakeNewProjectReq) (res *MakeNewProjectRes, err error) 
 		return nil, err
 	}
 	req.Repo.SetFile(MainGo)
-	// get-connection.go
-	var getConnectionGo = &assets.File{}
-	err = ag.MakeGetConnectionFile(getConnectionGo)
+	// connections.go
+	var connectionsGo = &assets.File{}
+	err = ag.MakeConnectionsFile(connectionsGo)
 	if err != nil {
 		return nil, err
 	}
-	req.Repo.SetFile(getConnectionGo)
+	req.Repo.SetFile(connectionsGo)
 
 	// .gitignore
 	var ob3 assets.File
@@ -162,7 +154,6 @@ assets--g.go
 *.dylib
 
 # Executables
-gui-dev
 *.exe
 *.out
 *.app
@@ -201,6 +192,7 @@ _testmain.go
 *.prof
 
 # external packages folder
+datastore-files/
 images/
 vendor/
 *node_modules*
@@ -210,5 +202,6 @@ vendor/
 *yarn\.lock
 
 # Log data
+/log*
 *.log
 `

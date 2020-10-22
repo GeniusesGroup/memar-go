@@ -11,6 +11,7 @@ import (
 	ag "../Achaemenid-generator"
 	gg "../Ganjine-generator"
 	"../assets"
+	"../json"
 	"../log"
 	"../syllab"
 	wg "../www-generator"
@@ -18,7 +19,7 @@ import (
 
 const (
 	// it is better to update version in each release!
-	version = "v0.7.1"
+	version = "v0.7.6"
 )
 
 // Some mutable folder name!
@@ -49,11 +50,13 @@ func init() {
 		return
 	}
 	ServiceRootLocation = filepath.Dir(ex)
+
+	log.Init("lib-cli", ServiceRootLocation, 10*60)
 }
 
 // TODO::: improve architecture by split main function!
 func main() {
-	defer log.SaveToStorage("lib-cli", ServiceRootLocation)
+	defer log.SaveToStorage()
 
 	// Add some generic data to first of file.
 	log.Info("Generator version:", version)
@@ -72,13 +75,14 @@ func main() {
 	// Parse repository
 	var repo = assets.NewFolder("")
 	var err error
-	err = repo.ReadRepositoryFromFileSystem(ServiceRootLocation)
+	err = repo.ReadRepositoryFromFileSystem(ServiceRootLocation, false)
 	if err != nil {
 		log.Fatal("Read repository face this error:", err)
 	}
 
 	log.Info("-------------------------------------------------------------------------------------")
-	log.Info("Enter desire chaparkhane CLI service ID. You can select:")
+	log.Info("****************************** Available CLI services *******************************")
+	log.Info("-------------------------------------------------------------------------------------")
 	log.Info("0  : Nothing DO!!! Prevent mistakes!!!")
 	log.Info("1  : Quit without save changes")
 	log.Info("2  : Save changes and quit")
@@ -94,24 +98,29 @@ func main() {
 	log.Info(" *************** Ganjine Services *************** ")
 	log.Info("50  : Add new Ganjine file to ./datastore/ folder")
 	log.Info("51  : Update exiting Ganjine file in ./datastore/ folder")
-	log.Info(" *************** Syllab Services *************** ")
-	log.Info("70  : Update Syllab encoder||decoder methods in given file name by safe manner")
-	log.Info("71  : Update Syllab encoder||decoder methods in given file name by unsafe manner")
 	log.Info(" *************** GUI Services *************** ")
-	log.Info("80  : Add new GUI raw page")
+	log.Info("70  : Add new GUI raw page")
+	log.Info(" *************** Syllab Services *************** ")
+	log.Info("80  : Update Syllab encoder||decoder methods in given file name")
 	log.Info(" *************** JSON Services *************** ")
-	log.Info("-------------------------------------------------------------------------------------")
+	log.Info("90  : Update JSON encoder||decoder methods in given file name")
+
 Choose:
-	var requestedService int
-	fmt.Scanln(&requestedService)
-	log.Info("You choose ", requestedService)
+	log.Info("-------------------------------------------------------------------------------------")
+	log.Info("Enter desire CLI service ID:")
+	var requestedService uint
+	_, err = fmt.Scanln(&requestedService)
+	if err != nil {
+		log.Warn("Unable to parse given ID:", err)
+		goto Choose
+	}
+	log.Info("You choose:", requestedService)
 
 	switch requestedService {
 	case 0:
 		log.Info("Nothing DO in this ID to prevent often mistakes enter multi times!!!")
 		goto Choose
 	case 1:
-		log.Info("See you soon!")
 		goto Exit
 	case 2:
 		err = repo.WriteRepositoryToFileSystem(ServiceRootLocation)
@@ -119,7 +128,6 @@ Choose:
 			log.Warn("Unable to write to repo:", err)
 		}
 		log.Info("All changes write to disk as you desire!")
-		log.Info("See you soon!")
 		goto Exit
 	case 3:
 		err = repo.WriteRepositoryToFileSystem(ServiceRootLocation)
@@ -257,44 +265,8 @@ Choose:
 		}
 		log.Info("Update exiting Ganjine file had been succeed!!")
 
-	// *************** Syllab Services ***************
-	case 70:
-		log.Info("Enter desire full file name with extension!")
-		var fileName string
-		fmt.Scanln(&fileName)
-		log.Info("Desire file name: ", fileName)
-
-		var file = repo.GetFileRecursively(fileName)
-		if file == nil {
-			log.Warn("Desire file name not exist in repo!!")
-			break
-		}
-
-		err = syllab.CompleteEncoderMethodSafe(file)
-		if err != nil {
-			log.Warn("Update Syllab encoder||decoder safe face this error:", err)
-		}
-		log.Info("Update Syllab encoder||decoder safe had been succeed!!")
-	case 71:
-		log.Info("Enter desire full file name with extension!")
-		var fileName string
-		fmt.Scanln(&fileName)
-		log.Info("Desire file name: ", fileName)
-
-		var file = repo.GetFileRecursively(fileName)
-		if file == nil {
-			log.Warn("Desire file name not exist in repo!!")
-			break
-		}
-
-		err = syllab.CompleteEncoderMethodUnsafe(file)
-		if err != nil {
-			log.Warn("Update Syllab encoder||decoder unsafe face this error:", err)
-		}
-		log.Info("Update Syllab encoder||decoder unsafe had been succeed!!")
-
 		// *************** GUI Services ***************
-	case 80:
+	case 70:
 		log.Info("Enter desire full page name like 'store'")
 		var pageName string
 		fmt.Scanln(&pageName)
@@ -315,15 +287,89 @@ Choose:
 		repo.Dependencies[FolderNameGUI].Dependencies[FolderNameGUIPages].SetFile(&jsonFile)
 		log.Info("Add new GUI raw page had been succeed!!")
 
+	// *************** Syllab Services ***************
+	case 80:
+		log.Info("Enter desire full file name with extension:")
+		var cmd string
+		fmt.Scanln(&cmd)
+		log.Info("Desire file name: ", cmd)
+
+		var file = repo.GetFileRecursively(cmd)
+		if file == nil {
+			log.Warn("Desire file name not exist in repo!!")
+			break
+		}
+
+		var sgo = syllab.GenerationOptions{
+			ForceUpdate: true,
+		}
+		log.Info("Use unsafe codes means don't copy data from given payload||buffer and just point to it for decoding fields! buffer can't GC until decoded struct free!")
+		log.Info("Use unsafe codes Y|N :")
+		fmt.Scanln(&cmd)
+		log.Info("You choose: ", cmd)
+		if cmd == "y" || cmd == "Y" {
+			sgo.UnSafe = true
+		}
+
+		err = syllab.CompleteMethods(file, &sgo)
+		if err != nil {
+			log.Warn("Update Syllab encoder||decoder face this error:", err)
+		}
+		log.Info("Update Syllab encoder||decoder had been succeed!!")
+
+		// *************** JSON Services ***************
+	case 90:
+		log.Info("Enter desire full file name with extension:")
+		var cmd string
+		fmt.Scanln(&cmd)
+		log.Info("Desire file name: ", cmd)
+
+		var file = repo.GetFileRecursively(cmd)
+		if file == nil {
+			log.Warn("Desire file name not exist in repo!!")
+			break
+		}
+
+		var jgo = json.GenerationOptions{
+			ForceUpdate: true,
+		}
+
+		log.Info("Just accept minifed encoded data to decode Y|N :")
+		fmt.Scanln(&cmd)
+		log.Info("You choose: ", cmd)
+		if cmd == "y" || cmd == "Y" {
+			jgo.Minifed = true
+		}
+
+		log.Info("Strict mode to decode data Y|N :")
+		fmt.Scanln(&cmd)
+		log.Info("You choose: ", cmd)
+		if cmd == "y" || cmd == "Y" {
+			jgo.Strict = true
+		}
+
+		log.Info("Use unsafe codes Y|N :")
+		fmt.Scanln(&cmd)
+		log.Info("You choose: ", cmd)
+		if cmd == "y" || cmd == "Y" {
+			jgo.UnSafe = true
+		}
+
+		err = json.CompleteMethods(file, &jgo)
+		if err != nil {
+			log.Warn("Update JSON encoder||decoder safe face this error:", err)
+		}
+		log.Info("Update JSON encoder||decoder safe had been succeed!!")
+
 	default:
 		log.Info("Nothing DO in given ID to prevent often mistakes enter bad ID!!!")
 		goto Choose
 	}
 
-	log.Info("-------------------------------------------------------------------------------------")
-	log.Info("Enter new desire chaparkhane service ID:")
 	goto Choose
 
 Exit:
-	defer log.Info("CLI app run duration:", time.Since(start))
+	log.Info("-------------------------------------------------------------------------------------")
+	log.Info("CLI app run duration:", time.Since(start))
+	log.Info("See you soon!")
 }
