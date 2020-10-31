@@ -56,16 +56,18 @@ func localizeHTMLFile(htmlFile *assets.File, lj localize) (files map[string]*ass
 	htmlFile.Minify()
 
 	files = make(map[string]*assets.File, len(lj))
-	for lang, text := range lj {
-		files[lang] = replaceLocalizeTextInHTML(htmlFile, text, lang)
+	if len(lj) == 0 {
+		files[""] = htmlFile
+	} else {
+		for lang, text := range lj {
+			files[lang] = replaceLocalizeTextInHTML(htmlFile, text, lang)
+		}
 	}
 	return
 }
 
 func replaceLocalizeTextInHTML(html *assets.File, text []string, lang string) (newFile *assets.File) {
 	newFile = html.Copy()
-	newFile.Name += "-" + lang
-	newFile.FullName = newFile.Name + "." + newFile.Extension
 	newFile.Data = nil
 
 	var htmlData = html.Data
