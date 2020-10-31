@@ -5,6 +5,8 @@ package json
 import (
 	"encoding/base64"
 	"strconv"
+
+	"../convert"
 )
 
 // Encoder store data to encode given data by each method!
@@ -14,7 +16,9 @@ type Encoder struct {
 
 // RemoveTrailingComma remove last value in Buf as trailing comma
 func (e *Encoder) RemoveTrailingComma() {
-	e.Buf = e.Buf[:len(e.Buf)-1]
+	if e.Buf[len(e.Buf)-1] == ',' {
+		e.Buf = e.Buf[:len(e.Buf)-1]
+	}
 }
 
 // EncodeByte append given byte to Buf
@@ -76,6 +80,10 @@ func (e *Encoder) EncodeStringValue(s string) {
 	e.Buf = append(e.Buf, `",`...)
 }
 
+/*
+	Slice as Number
+*/
+
 // EncodeByteSliceAsNumber append given byte slice as number string
 func (e *Encoder) EncodeByteSliceAsNumber(slice []byte) {
 	var ln = len(slice)
@@ -86,12 +94,24 @@ func (e *Encoder) EncodeByteSliceAsNumber(slice []byte) {
 	e.RemoveTrailingComma()
 }
 
-// EncodeByteSliceAsBase64 use to append []byte as base64 string
-func (e *Encoder) EncodeByteSliceAsBase64(slice []byte) {
-	var base64Len int = base64.StdEncoding.EncodedLen(len(slice))
-	var ln = len(e.Buf)
-	e.Buf = e.Buf[:ln+base64Len]
-	base64.StdEncoding.Encode(e.Buf[ln:], slice)
+// EncodeUInt16SliceAsNumber append given uint16 slice as number string
+func (e *Encoder) EncodeUInt16SliceAsNumber(slice []uint16) {
+	var ln = len(slice)
+	for i := 0; i < ln; i++ {
+		e.Buf = strconv.AppendUint(e.Buf, uint64(slice[i]), 10)
+		e.Buf = append(e.Buf, ',')
+	}
+	e.RemoveTrailingComma()
+}
+
+// EncodeUInt32SliceAsNumber append given uint32 slice as number string
+func (e *Encoder) EncodeUInt32SliceAsNumber(slice []uint32) {
+	var ln = len(slice)
+	for i := 0; i < ln; i++ {
+		e.Buf = strconv.AppendUint(e.Buf, uint64(slice[i]), 10)
+		e.Buf = append(e.Buf, ',')
+	}
+	e.RemoveTrailingComma()
 }
 
 // EncodeUInt64SliceAsNumber append given byte slice as number string
@@ -100,6 +120,47 @@ func (e *Encoder) EncodeUInt64SliceAsNumber(slice []uint64) {
 	for i := 0; i < ln; i++ {
 		e.Buf = strconv.AppendUint(e.Buf, slice[i], 10)
 		e.Buf = append(e.Buf, ',')
+	}
+	e.RemoveTrailingComma()
+}
+
+/*
+	Slice as Base64
+*/
+
+// EncodeByteSliceAsBase64 use to append []byte as base64 string
+func (e *Encoder) EncodeByteSliceAsBase64(slice []byte) {
+	var base64Len int = base64.RawStdEncoding.EncodedLen(len(slice))
+	var ln = len(e.Buf)
+	e.Buf = e.Buf[:ln+base64Len]
+	base64.RawStdEncoding.Encode(e.Buf[ln:], slice)
+}
+
+// EncodeUInt16SliceAsBase64 use to append []byte as base64 string
+func (e *Encoder) EncodeUInt16SliceAsBase64(slice []uint16) {
+	var base64Len int = base64.RawStdEncoding.EncodedLen(len(slice) * 2)
+	var ln = len(e.Buf)
+	e.Buf = e.Buf[:ln+base64Len]
+	base64.RawStdEncoding.Encode(e.Buf[ln:], convert.UnsafeUInt16SliceToByteSlice(slice))
+}
+
+// EncodeUInt32SliceAsBase64 use to append []byte as base64 string
+func (e *Encoder) EncodeUInt32SliceAsBase64(slice []uint32) {
+	var base64Len int = base64.RawStdEncoding.EncodedLen(len(slice) * 4)
+	var ln = len(e.Buf)
+	e.Buf = e.Buf[:ln+base64Len]
+	base64.RawStdEncoding.Encode(e.Buf[ln:], convert.UnsafeUInt32SliceToByteSlice(slice))
+}
+
+// Encode32ByteArraySliceAsBase64 use to append [][32]byte as base64 string
+func (e *Encoder) Encode32ByteArraySliceAsBase64(slice [][32]byte) {
+	const base64Len = 43 // base64.RawStdEncoding.EncodedLen(len(32))	>>	(32*8 + 5) / 6
+	for _, s := range slice {
+		e.Buf = append(e.Buf, '"')
+		var ln = len(e.Buf)
+		e.Buf = e.Buf[:ln+base64Len]
+		base64.RawStdEncoding.Encode(e.Buf[ln:], s[:])
+		e.Buf = append(e.Buf, `",`...)
 	}
 	e.RemoveTrailingComma()
 }

@@ -8,6 +8,7 @@ import (
 	"strconv"
 
 	"../convert"
+	er "../error"
 )
 
 // Decoder store data to decode data by each method!
@@ -75,30 +76,50 @@ func (d *Decoder) DecodeKey() string {
 }
 
 // DecodeUInt8 convert 8bit integer number string to number. pass d.Buf start from number and receive from after ,
-func (d *Decoder) DecodeUInt8() (ui uint8, err error) {
+func (d *Decoder) DecodeUInt8() (ui uint8, err *er.Error) {
 	d.FindEndToken()
-	var num uint64
-	num, err = strconv.ParseUint(convert.UnsafeByteSliceToString(d.LastItem), 10, 8)
-	ui = uint8(num)
+	ui, err = convert.Base10StringToUint8(convert.UnsafeByteSliceToString(d.LastItem))
+	if err != nil {
+		return 0, ErrJSONEncodedStringCorrupted
+	}
 	return
 }
 
 // DecodeUInt64 convert 64bit integer number string to number. pass d.Buf start from after : and receive from after ,
-func (d *Decoder) DecodeUInt64() (ui uint64, err error) {
+func (d *Decoder) DecodeUInt64() (ui uint64, err *er.Error) {
 	d.FindEndToken()
-	ui, err = strconv.ParseUint(convert.UnsafeByteSliceToString(d.LastItem), 10, 64)
+	var goErr error
+	ui, goErr = strconv.ParseUint(convert.UnsafeByteSliceToString(d.LastItem), 10, 64)
+	if goErr != nil {
+		return 0, ErrJSONEncodedStringCorrupted
+	}
+	return
+}
+
+// DecodeInt64 convert 64bit number string to number. pass d.Buf start from number and receive from after ,
+func (d *Decoder) DecodeInt64() (i int64, err *er.Error) {
+	d.FindEndToken()
+	var goErr error
+	i, goErr = strconv.ParseInt(convert.UnsafeByteSliceToString(d.LastItem), 10, 64)
+	if goErr != nil {
+		return 0, ErrJSONEncodedStringCorrupted
+	}
 	return
 }
 
 // DecodeFloat64AsNumber convert float64 number string to float64 number. pass d.Buf start from after : and receive from ,
-func (d *Decoder) DecodeFloat64AsNumber() (f float64, err error) {
+func (d *Decoder) DecodeFloat64AsNumber() (f float64, err *er.Error) {
 	d.FindEndToken()
-	f, err = strconv.ParseFloat(convert.UnsafeByteSliceToString(d.LastItem), 64)
+	var goErr error
+	f, goErr = strconv.ParseFloat(convert.UnsafeByteSliceToString(d.LastItem), 64)
+	if goErr != nil {
+		return 0, ErrJSONEncodedStringCorrupted
+	}
 	return
 }
 
-// DecodeSliceAsNumber convert number string slice to []byte. pass buf start from after [ and receive from after ]
-func (d *Decoder) DecodeSliceAsNumber() (slice []byte, err error) {
+// DecodeByteSliceAsNumber convert number string slice to []byte. pass buf start from after [ and receive from after ]
+func (d *Decoder) DecodeByteSliceAsNumber() (slice []byte, err *er.Error) {
 	var loc int // Coma, Colon, bracket, ... location
 	var num uint8
 
@@ -118,16 +139,17 @@ func (d *Decoder) DecodeSliceAsNumber() (slice []byte, err error) {
 	return
 }
 
-// DecodeSliceAsBase64 convert base64 string to []byte
-func (d *Decoder) DecodeSliceAsBase64() (slice []byte, err error) {
+// DecodeByteSliceAsBase64 convert base64 string to []byte
+func (d *Decoder) DecodeByteSliceAsBase64() (slice []byte, err *er.Error) {
 	var loc int // Coma, Colon, bracket, ... location
 	loc = bytes.IndexByte(d.Buf, '"')
 
-	slice = make([]byte, base64.StdEncoding.DecodedLen(len(d.Buf[:loc])))
+	slice = make([]byte, base64.RawStdEncoding.DecodedLen(len(d.Buf[:loc])))
 	var n int
-	n, err = base64.StdEncoding.Decode(slice, d.Buf[:loc])
-	if err != nil {
-		return
+	var goErr error
+	n, goErr = base64.RawStdEncoding.Decode(slice, d.Buf[:loc])
+	if goErr != nil {
+		return slice, ErrJSONEncodedStringCorrupted
 	}
 	slice = slice[:n]
 
@@ -135,13 +157,14 @@ func (d *Decoder) DecodeSliceAsBase64() (slice []byte, err error) {
 	return
 }
 
-// DecodeArrayAsBase64 convert base64 string to [n]byte
-func (d *Decoder) DecodeArrayAsBase64(array []byte) (err error) {
+// DecodeByteArrayAsBase64 convert base64 string to [n]byte
+func (d *Decoder) DecodeByteArrayAsBase64(array []byte) (err *er.Error) {
 	var loc int // Coma, Colon, bracket, ... location
 	loc = bytes.IndexByte(d.Buf, '"')
-	_, err = base64.StdEncoding.Decode(array, d.Buf[:loc])
-	if err != nil {
-		return
+	var goErr error
+	_, goErr = base64.RawStdEncoding.Decode(array, d.Buf[:loc])
+	if goErr != nil {
+		return ErrJSONEncodedStringCorrupted
 	}
 
 	d.Buf = d.Buf[loc+1:]

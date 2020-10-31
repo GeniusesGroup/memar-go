@@ -12,6 +12,8 @@ import (
 	"strings"
 
 	"../assets"
+	"../convert"
+	er "../error"
 	"../log"
 )
 
@@ -20,7 +22,7 @@ Before pass file to safe||unsafe function, dev must add needed methods to desire
 Otherwise panic may occur due to improve performance we don't check some bad situation!!
 for just decoder method, jsonlen() can omit!
 
-func ({{DesireName}} *{{DesireType}}) jsonDecoder(buf []byte) (err error) {
+func ({{DesireName}} *{{DesireType}}) jsonDecoder(buf []byte) (err *er.Error) {
 	return
 }
 
@@ -38,7 +40,7 @@ Standards by https://www.json.org/json-en.html
 // GenerationOptions indicate jsonMaker behavior!
 type GenerationOptions struct {
 	Minifed           bool // without any space or new line, false for stylish version
-	Strict            bool // Full check of key names && decode in any order not force by its struct(just last pair is important to check)
+	Strict            bool // Full check of key names!
 	UnSafe            bool
 	AllowNoDefinedKey bool // allow not defined key in json encoded string to decode it! true return related error.
 	NilMapAsNil       bool // false(empty map) >> "map":{},	true >> "map":nil,
@@ -47,11 +49,13 @@ type GenerationOptions struct {
 
 // CompleteMethods use to update given go files and complete json encoder&&decoder to any struct type in it!
 // It will overwrite given file methods! If you need it clone it before pass it here!
-func CompleteMethods(file *assets.File, gos *GenerationOptions) (err error) {
+func CompleteMethods(file *assets.File, gos *GenerationOptions) (err *er.Error) {
 	var fileSet *token.FileSet = token.NewFileSet()
 	var fileParsed *ast.File
-	fileParsed, err = parser.ParseFile(fileSet, "", file.Data, parser.ParseComments)
-	if err != nil {
+	var goErr error
+	fileParsed, goErr = parser.ParseFile(fileSet, "", file.Data, parser.ParseComments)
+	if goErr != nil {
+		log.Warn("JSON generator error:", goErr)
 		return
 	}
 
@@ -89,8 +93,9 @@ func CompleteMethods(file *assets.File, gos *GenerationOptions) (err error) {
 						"		err = decoder.IterationCheck()\n		if err != nil {\n		return\n		}" +
 						"	}\n" +
 						"	return\n")
+
 					jm.TemplateSize-- // due to one unneeded leading comma!
-					jm.Len.WriteString("	ln += " + strconv.FormatUint(uint64(jm.TemplateSize), 10) + "\n	return\n")
+					jm.Len.WriteString("\n ln += " + strconv.FormatUint(uint64(jm.TemplateSize), 10) + "\n	return\n")
 				}
 
 				// Just needed methods!
@@ -147,7 +152,7 @@ func (jm *jsonMaker) reset() {
 	jm.LastField = false
 }
 
-func (jm *jsonMaker) make() (err error) {
+func (jm *jsonMaker) make() (err *er.Error) {
 	// Check needed type exist!!
 	typ, found := jm.Types[jm.RTN]
 	if !found {
@@ -159,21 +164,23 @@ func (jm *jsonMaker) make() (err error) {
 		jm.TemplateSize += 2 // due to have len("{}") || len("[]")
 
 		jm.Decoder.WriteString(
-			"\n	var decoder = json.DecoderUnsafeMinifed{\n		Buf: buf,\n	}\n" +
-				"	for len(decoder.Buf) > 2 {\n")
+			"\n	var decoder = json.DecoderUnsafeMinifed{\n		Buf: buf,\n	}\n")
 		if jm.Options.Strict {
-
+			jm.Decoder.WriteString("	var keyName string\n")
+			jm.Decoder.WriteString("	for len(decoder.Buf) > 2 {\n")
+			jm.Decoder.WriteString("	keyName = decoder.DecodeKey()\n")
+			jm.Decoder.WriteString("	switch keyName {\n")
 		} else {
-			jm.Decoder.WriteString("decoder.Offset(2)\n")
-			jm.Decoder.WriteString("switch decoder.Buf[0] {\n")
-
+			jm.Decoder.WriteString("	for len(decoder.Buf) > 2 {\n")
+			jm.Decoder.WriteString("	decoder.Offset(2)\n")
+			jm.Decoder.WriteString("	switch decoder.Buf[0] {\n")
 		}
 
 		jm.Encoder.WriteString(
 			"\n	var encoder = json.Encoder{\n		Buf: make([]byte, 0, " + jm.RN + ".jsonLen()),\n	}\n" +
 				"\n	encoder.EncodeString(`{\"")
 
-		jm.Len.WriteString("\n")
+		jm.Len.WriteString("\n	ln += 0")
 	}
 
 	switch structType := typ.Type.(type) {
@@ -204,17 +211,19 @@ func (jm *jsonMaker) make() (err error) {
 				jm.TemplateSize += len(field.Name) + 4 // +4 due to have len(,"":)
 
 				if jm.Options.Strict {
-
+					jm.Decoder.WriteString("case \"" + jm.FieldName + "\":\n")
 				} else {
 					jm.Decoder.WriteString("case '" + string(jm.FieldName[0]) + "':\n")
-					jm.Decoder.WriteString("decoder.SetFounded()\n")
 				}
+				jm.Decoder.WriteString("decoder.SetFounded()\n")
 
 				switch fieldType := structField.Type.(type) {
 				case *ast.FuncType, *ast.InterfaceType, *ast.ChanType:
 					log.Warn(ErrJSONFieldType, field.Name)
 				case *ast.ArrayType:
-					jm.Decoder.WriteString("	decoder.Offset(" + strconv.FormatUint(uint64(len(jm.FieldName)+3), 10) + ")\n") // +3 due to have ":[ after name
+					if !jm.Options.Strict {
+						jm.Decoder.WriteString("	decoder.Offset(" + strconv.FormatUint(uint64(len(jm.FieldName)+3), 10) + ")\n") // +3 due to have ":[ after name
+					}
 					// Check array is slice?
 					if fieldType.Len == nil {
 						// Slice generator
@@ -227,40 +236,95 @@ func (jm *jsonMaker) make() (err error) {
 						case *ast.Ident:
 							switch sliceType.Name {
 							case "int", "uint":
-							case "bool", "uint8", "int8":
-							case "byte":
+							case "bool":
+							case "byte", "uint8":
 								if jm.String {
 									jm.Encoder.WriteString("\"`)\n")
 									jm.Encoder.WriteString("	encoder.EncodeByteSliceAsBase64(" + jm.FRN + field.Name + ")\n")
 									if jm.LastField {
 										jm.Encoder.WriteString("\n	encoder.EncodeString(`\"}`)\n")
 									} else {
-										jm.Encoder.WriteString("\n	encoder.EncodeString(\",\"")
+										jm.Encoder.WriteString("\n	encoder.EncodeString(`\",\"")
 									}
 
-									jm.Len.WriteString("	ln += base64.StdEncoding.EncodedLen(len(" + jm.FRN + field.Name + "))\n")
+									jm.Len.WriteString(" + ((len(" + jm.FRN + field.Name + ")*8+5)/6)")
 								} else {
 									jm.Encoder.WriteString("[`)\n")
 									jm.Encoder.WriteString("	encoder.EncodeByteSliceAsNumber(" + jm.FRN + field.Name + ")\n")
 									if jm.LastField {
 										jm.Encoder.WriteString("\n	encoder.EncodeString(`]}`)\n")
 									} else {
-										jm.Encoder.WriteString("\n	encoder.EncodeString(],\"")
+										jm.Encoder.WriteString("\n	encoder.EncodeString(`],\"")
 									}
 
-									jm.Len.WriteString("	ln += len(" + jm.FRN + field.Name + ") * 4\n")
+									jm.Len.WriteString(" + (len(" + jm.FRN + field.Name + ") * 4)") // 4 = 3(uint8 digits) + 1(comma)
 								}
+							case "int8":
+							case "uint16":
+								if jm.String {
+									jm.Encoder.WriteString("\"`)\n")
+									jm.Encoder.WriteString("	encoder.EncodeUInt16SliceAsBase64(" + jm.FRN + field.Name + ")\n")
+									if jm.LastField {
+										jm.Encoder.WriteString("\n	encoder.EncodeString(`\"}`)\n")
+									} else {
+										jm.Encoder.WriteString("\n	encoder.EncodeString(`\",\"")
+									}
 
-								jm.TemplateSize += 2 // len(`[]`) || len(`""`)
-							case "uint16", "int16":
-							case "uint32", "int32":
-							case "uint64", "int64":
+									jm.Decoder.WriteString("		err = decoder.DecodeUInt16ArrayAsBase64(" + jm.FRN + field.Name + ")\n			if err != nil {\n				return\n				}\n")
+
+									jm.Len.WriteString(" + (len(" + jm.FRN + field.Name + ")*2*8+5)/6)")
+								} else {
+									jm.Encoder.WriteString("[`)\n")
+									jm.Encoder.WriteString("	encoder.EncodeUInt16SliceAsNumber(" + jm.FRN + field.Name + ")\n")
+									if jm.LastField {
+										jm.Encoder.WriteString("\n	encoder.EncodeString(`]}`)\n")
+									} else {
+										jm.Encoder.WriteString("\n	encoder.EncodeString(`],\"")
+									}
+
+									jm.Decoder.WriteString("		" + jm.FRN + field.Name + ", err = decoder.DecodeUInt16SliceAsNumber()\n			if err != nil {\n				return\n				}\n")
+
+									jm.Len.WriteString(" + (len(" + jm.FRN + field.Name + ") * 6)") // 6 = 5(uint16 digits) + 1(comma)
+								}
+							case "int16":
+							case "uint32":
+								if jm.String {
+									jm.Encoder.WriteString("\"`)\n")
+									jm.Encoder.WriteString("	encoder.EncodeUInt32SliceAsBase64(" + jm.FRN + field.Name + ")\n")
+									if jm.LastField {
+										jm.Encoder.WriteString("\n	encoder.EncodeString(`\"}`)\n")
+									} else {
+										jm.Encoder.WriteString("\n	encoder.EncodeString(`\",\"")
+									}
+
+									jm.Decoder.WriteString("		err = decoder.DecodeUInt32ArrayAsBase64(" + jm.FRN + field.Name + ")\n			if err != nil {\n				return\n				}\n")
+
+									jm.Len.WriteString(" + (len(" + jm.FRN + field.Name + ")*4*8+5)/6)")
+								} else {
+									jm.Encoder.WriteString("[`)\n")
+									jm.Encoder.WriteString("	encoder.EncodeUInt32SliceAsNumber(" + jm.FRN + field.Name + ")\n")
+									if jm.LastField {
+										jm.Encoder.WriteString("\n	encoder.EncodeString(`]}`)\n")
+									} else {
+										jm.Encoder.WriteString("\n	encoder.EncodeString(`],\"")
+									}
+
+									jm.Decoder.WriteString("		" + jm.FRN + field.Name + ", err = decoder.DecodeUInt32SliceAsNumber()\n			if err != nil {\n				return\n				}\n")
+
+									jm.Len.WriteString(" + (len(" + jm.FRN + field.Name + ") * 11)") // 11 = 10(uint32 digits) + 1(comma)
+								}
+							case "int32":
+							case "uint64":
+							case "int64":
 							case "string":
 							default:
 								// TODO::: get related type by its name as t.Elt.(*ast.Ident).Name
 							}
+							jm.TemplateSize += 2 // len(`[]`) || len(`""`)
 						}
 					} else {
+						var arrayLen, _ = convert.Base10StringToUint32(fieldType.Len.(*ast.BasicLit).Value)
+
 						switch arrayType := fieldType.Elt.(type) {
 						case *ast.BasicLit:
 							if arrayType.Kind == token.STRING {
@@ -276,7 +340,7 @@ func (jm *jsonMaker) make() (err error) {
 							switch arrayType.Name {
 							case "int", "uint":
 							case "bool":
-							case "byte":
+							case "byte", "uint8":
 								if jm.String {
 									jm.Encoder.WriteString("\"`)\n")
 									jm.Encoder.WriteString("	encoder.EncodeByteSliceAsBase64(" + jm.FRN + field.Name + "[:])\n")
@@ -286,16 +350,16 @@ func (jm *jsonMaker) make() (err error) {
 										jm.Encoder.WriteString("\n	encoder.EncodeString(`\",\"")
 									}
 
-									jm.Decoder.WriteString("		err = decoder.DecodeArrayAsBase64(" + jm.FRN + field.Name + "[:])\n			if err != nil {\n				return\n				}\n")
+									jm.Decoder.WriteString("		err = decoder.DecodeByteArrayAsBase64(" + jm.FRN + field.Name + "[:])\n			if err != nil {\n				return\n				}\n")
 
-									jm.Len.WriteString("	ln += base64.StdEncoding.EncodedLen(" + fieldType.Len.(*ast.BasicLit).Value + ")\n")
+									jm.TemplateSize += (int(arrayLen)*8 + 5) / 6 // base64 encode len
 								} else {
 									jm.Encoder.WriteString("[`)\n")
 									jm.Encoder.WriteString("	encoder.EncodeByteSliceAsNumber(" + jm.FRN + field.Name + "[:])\n")
 									if jm.LastField {
 										jm.Encoder.WriteString("\n	encoder.EncodeString(`]}`)\n")
 									} else {
-										jm.Encoder.WriteString("\n	encoder.EncodeString(],\"")
+										jm.Encoder.WriteString("\n	encoder.EncodeString(`],\"")
 									}
 
 									jm.Decoder.WriteString("		for i := 0; i <" + fieldType.Len.(*ast.BasicLit).Value +
@@ -305,11 +369,8 @@ func (jm *jsonMaker) make() (err error) {
 										jm.Decoder.WriteString("	decoder.Offset(1)\n")
 									}
 
-									jm.Len.WriteString("	ln += " + fieldType.Len.(*ast.BasicLit).Value + " * 4\n")
+									jm.TemplateSize += int(arrayLen) * 4 // 4 = 3(uint8 digits) + 1(comma)
 								}
-
-								jm.TemplateSize += 2 // len(`[]`) || len(`""`)
-							case "uint8":
 							case "int8":
 							case "uint16":
 							case "int16":
@@ -321,11 +382,13 @@ func (jm *jsonMaker) make() (err error) {
 							default:
 								// TODO::: get related type by its name as fieldType.Elt.(*ast.Ident).Name
 							}
+							jm.TemplateSize += 2 // len(`[]`) || len(`""`)
 						}
 					}
 				case *ast.MapType:
-					jm.Decoder.WriteString("	decoder.Offset(" + strconv.FormatUint(uint64(len(jm.FieldName)+3), 10) + ")\n") // +3 due to have ":{ after name
-
+					if !jm.Options.Strict {
+						jm.Decoder.WriteString("	decoder.Offset(" + strconv.FormatUint(uint64(len(jm.FieldName)+3), 10) + ")\n") // +3 due to have ":{ after name
+					}
 				case *ast.Ident:
 					switch fieldType.Name {
 					case "bool":
@@ -334,55 +397,95 @@ func (jm *jsonMaker) make() (err error) {
 						if jm.LastField {
 							jm.Encoder.WriteString("\n	encoder.EncodeByte('}')\n")
 						} else {
-							jm.Encoder.WriteString("\n	encoder.EncodeString(',\"")
+							jm.Encoder.WriteString("\n	encoder.EncodeString(`,\"")
 						}
 
-						jm.Decoder.WriteString("	decoder.Offset(" + strconv.FormatUint(uint64(len(jm.FieldName)+2), 10) + ")\n") // +2 due to have ": after name
+						if !jm.Options.Strict {
+							jm.Decoder.WriteString("	decoder.Offset(" + strconv.FormatUint(uint64(len(jm.FieldName)+2), 10) + ")\n") // +2 due to have ": after name
+						}
 						jm.Decoder.WriteString("	" + jm.FRN + field.Name + ", err = decoder.DecodeBool()\n	if err != nil {\n	return\n	}\n")
 
-						jm.Len.WriteString("	ln += 5\n")
-					case "uint", "byte", "uint8", "uint16", "uint32", "uint64":
+						jm.TemplateSize += 5
+					case "uint", "byte", "uint8", "uint16", "uint32":
 						jm.Encoder.WriteString("`)\n")
 						jm.Encoder.WriteString("	encoder.EncodeUInt64(uint64(" + jm.FRN + field.Name + "))\n")
 						if jm.LastField {
 							jm.Encoder.WriteString("\n	encoder.EncodeByte('}')\n")
 						} else {
-							jm.Encoder.WriteString("\n	encoder.EncodeString(',\"")
+							jm.Encoder.WriteString("\n	encoder.EncodeString(`,\"")
 						}
 
-						jm.Decoder.WriteString("	decoder.Offset(" + strconv.FormatUint(uint64(len(jm.FieldName)+2), 10) + ")\n") // +2 due to have ": after name
+						if !jm.Options.Strict {
+							jm.Decoder.WriteString("	decoder.Offset(" + strconv.FormatUint(uint64(len(jm.FieldName)+2), 10) + ")\n") // +2 due to have ": after name
+						}
 						jm.Decoder.WriteString("		var num uint64\n	num, err = decoder.DecodeUInt64()\n		if err != nil {\n" +
 							"		return\n		}\n		" + jm.FRN + field.Name + " = " + fieldType.Name + "(num)\n")
 
-						jm.Len.WriteString("	ln += 20\n")
-					case "int", "int8", "int16", "int32", "int64":
+						jm.TemplateSize += 20
+					case "uint64":
 						jm.Encoder.WriteString("`)\n")
-						jm.Encoder.WriteString("	encoder.EncodeInt64(uint64(" + jm.FRN + field.Name + "))\n")
+						jm.Encoder.WriteString("	encoder.EncodeUInt64(" + jm.FRN + field.Name + ")\n")
 						if jm.LastField {
 							jm.Encoder.WriteString("\n	encoder.EncodeByte('}')\n")
 						} else {
-							jm.Encoder.WriteString("\n	encoder.EncodeString(',\"")
+							jm.Encoder.WriteString("\n	encoder.EncodeString(`,\"")
 						}
 
-						jm.Decoder.WriteString("	decoder.Offset(" + strconv.FormatUint(uint64(len(jm.FieldName)+2), 10) + ")\n") // +2 due to have ": after name
+						if !jm.Options.Strict {
+							jm.Decoder.WriteString("	decoder.Offset(" + strconv.FormatUint(uint64(len(jm.FieldName)+2), 10) + ")\n") // +2 due to have ": after name
+						}
+						jm.Decoder.WriteString("		" + jm.FRN + field.Name + ", err = decoder.DecodeUInt64()\n		if err != nil {\n" +
+							"		return\n		}\n		")
+
+						jm.TemplateSize += 20
+					case "int", "int8", "int16", "int32":
+						jm.Encoder.WriteString("`)\n")
+						jm.Encoder.WriteString("	encoder.EncodeInt64(int64(" + jm.FRN + field.Name + "))\n")
+						if jm.LastField {
+							jm.Encoder.WriteString("\n	encoder.EncodeByte('}')\n")
+						} else {
+							jm.Encoder.WriteString("\n	encoder.EncodeString(`,\"")
+						}
+
+						if !jm.Options.Strict {
+							jm.Decoder.WriteString("	decoder.Offset(" + strconv.FormatUint(uint64(len(jm.FieldName)+2), 10) + ")\n") // +2 due to have ": after name
+						}
 						jm.Decoder.WriteString("		var num int64\n	num, err = decoder.DecodeInt64()\n		if err != nil {\n" +
 							"		return\n		}\n		" + jm.FRN + field.Name + " = " + fieldType.Name + "(num)\n")
 
-						jm.Len.WriteString("	ln += 20\n")
+						jm.TemplateSize += 20
+					case "int64":
+						jm.Encoder.WriteString("`)\n")
+						jm.Encoder.WriteString("	encoder.EncodeInt64(" + jm.FRN + field.Name + ")\n")
+						if jm.LastField {
+							jm.Encoder.WriteString("\n	encoder.EncodeByte('}')\n")
+						} else {
+							jm.Encoder.WriteString("\n	encoder.EncodeString(`,\"")
+						}
+
+						if !jm.Options.Strict {
+							jm.Decoder.WriteString("	decoder.Offset(" + strconv.FormatUint(uint64(len(jm.FieldName)+2), 10) + ")\n") // +2 due to have ": after name
+						}
+						jm.Decoder.WriteString("		" + jm.FRN + field.Name + ", err = decoder.DecodeInt64()\n		if err != nil {\n" +
+							"		return\n		}\n		")
+
+						jm.TemplateSize += 20
 					case "string":
 						jm.Encoder.WriteString("\"`)\n")
 						jm.Encoder.WriteString("	encoder.EncodeString(" + jm.FRN + field.Name + ")\n")
 						if jm.LastField {
 							jm.Encoder.WriteString("	encoder.EncodeString(`\"}`)\n")
 						} else {
-							jm.Encoder.WriteString("\n	encoder.EncodeString(`\",\"`")
+							jm.Encoder.WriteString("\n	encoder.EncodeString(`\",\"")
 						}
 
-						jm.Decoder.WriteString("	decoder.Offset(" + strconv.FormatUint(uint64(len(jm.FieldName)+3), 10) + ")\n") // +3 due to have ":" after name
+						if !jm.Options.Strict {
+							jm.Decoder.WriteString("	decoder.Offset(" + strconv.FormatUint(uint64(len(jm.FieldName)+3), 10) + ")\n") // +3 due to have ":" after name
+						}
 						jm.Decoder.WriteString("			" + jm.FRN + field.Name + " = decoder.DecodeString()\n")
 
 						jm.TemplateSize += 2 // len(`""`)
-						jm.Len.WriteString("	ln += len(" + jm.FRN + field.Name + ")\n")
+						jm.Len.WriteString(" + len(" + jm.FRN + field.Name + ")")
 					default:
 					}
 				case *ast.SelectorExpr:
@@ -392,14 +495,16 @@ func (jm *jsonMaker) make() (err error) {
 					if jm.LastField {
 						jm.Encoder.WriteString("\n	encoder.EncodeByte('}')\n")
 					} else {
-						jm.Encoder.WriteString("\n	encoder.EncodeString(',\"")
+						jm.Encoder.WriteString("\n	encoder.EncodeString(`,\"")
 					}
 
-					jm.Decoder.WriteString("	decoder.Offset(" + strconv.FormatUint(uint64(len(jm.FieldName)+2), 10) + ")\n") // +2 due to have ": after name
+					if !jm.Options.Strict {
+						jm.Decoder.WriteString("	decoder.Offset(" + strconv.FormatUint(uint64(len(jm.FieldName)+2), 10) + ")\n") // +2 due to have ": after name
+					}
 					jm.Decoder.WriteString("		var num uint8\n	num, err = decoder.DecodeUInt8()\n		if err != nil {\n" +
 						"		return\n		}\n		" + jm.FRN + field.Name + " = " + fieldType.X.(*ast.Ident).Name + "." + fieldType.Sel.Name + "(num)\n")
 
-					jm.Len.WriteString("	ln += 3\n")
+					jm.TemplateSize += 3
 				case *ast.BasicLit:
 					// TODO::: below code is not what it must be!
 					jm.Encoder.WriteString("`)\n")
@@ -407,14 +512,16 @@ func (jm *jsonMaker) make() (err error) {
 					if jm.LastField {
 						jm.Encoder.WriteString("\n	encoder.EncodeByte('}')\n")
 					} else {
-						jm.Encoder.WriteString("\n	encoder.EncodeString(',\"")
+						jm.Encoder.WriteString("\n	encoder.EncodeString(`,\"")
 					}
 
-					jm.Decoder.WriteString("	decoder.Offset(" + strconv.FormatUint(uint64(len(jm.FieldName)+2), 10) + ")\n") // +2 due to have ": after name
+					if !jm.Options.Strict {
+						jm.Decoder.WriteString("	decoder.Offset(" + strconv.FormatUint(uint64(len(jm.FieldName)+2), 10) + ")\n") // +2 due to have ": after name
+					}
 					jm.Decoder.WriteString("		var num uint8\n	num, err = decoder.DecodeUInt8()\n		if err != nil {\n" +
 						"		return\n		}\n		" + jm.FRN + field.Name + " = " + fieldType.Value + "(num)\n")
 
-					jm.Len.WriteString("	ln += 3\n")
+					jm.TemplateSize += 3
 				}
 			}
 		}
