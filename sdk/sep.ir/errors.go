@@ -17,6 +17,16 @@ func getErrorByResCode(code int64) (err *er.Error) {
 		return ErrAmountMinimum
 	case 3:
 		return ErrPOSNotReachable
+	case 4:
+		return ErrPOSNotValidData
+	case 9:
+		return ErrPOSNotValidTerminalID
+	case 51:
+		return ErrPOSNotEnoughBalance
+	case 55:
+		return ErrPOSCardPassword
+	case 96:
+		return ErrPOSNotIndicated
 	case 99:
 		return ErrPOSNotResponse
 	default:
@@ -54,6 +64,21 @@ var (
 
 	ErrPOSNotReachable = er.New().SetDetail(lang.EnglishLanguage, "sep.ir - POS Not Reachable",
 		"Transaction canceled due to selected POS not reachable").Save()
+
+	ErrPOSNotValidData = er.New().SetDetail(lang.EnglishLanguage, "sep.ir - POS Not Valid Data",
+		"Transaction canceled due to not valid data received").Save()
+
+	ErrPOSNotValidTerminalID = er.New().SetDetail(lang.EnglishLanguage, "sep.ir - POS Not Valid TerminalID",
+		"Transaction canceled due to TerminalID not valid").Save()
+
+	ErrPOSNotEnoughBalance = er.New().SetDetail(lang.EnglishLanguage, "sep.ir - POS Not Enough Balance",
+		"Transaction canceled due to user don't has enough balance").Save()
+
+	ErrPOSCardPassword = er.New().SetDetail(lang.EnglishLanguage, "sep.ir - POS Card Password",
+		"Transaction canceled due to user not enter right password of its card").Save()
+
+	ErrPOSNotIndicated = er.New().SetDetail(lang.EnglishLanguage, "sep.ir - POS Not Indicated",
+		"Transaction canceled due to not indicate POS order service error").Save()
 
 	ErrPOSNotResponse = er.New().SetDetail(lang.EnglishLanguage, "sep.ir - POS Not Response",
 		"Transaction canceled due to POS not response in proper time").Save()

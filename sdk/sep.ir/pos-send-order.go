@@ -13,20 +13,19 @@ import (
 type POSSendOrderReq struct {
 	TerminalID           string
 	Amount               string
-	AccountType          accountType
-	Additional           string
-	TimeOut              string // in minutes
-	ResNum               string // e.g. InvoiceID that can be check later if needed
+	AccountType          posAccountType
+	TimeOut              string `json:",optional"` // in minutes but not implement yet by SEP so don't send it now!
+	ResNum               string // e.g. InvoiceID that can be check later if needed.
 	Identifier           string
 	UserNotifiable       POSUserNotifiable
-	TransactionType      transactionType
-	BillID               string
-	PayID                string
-	PurchaseID           string
-	ReferenceData        string
-	AmountIBAN           string
-	TotalAmount          string `json:"totalAmount"`
-	PurchaseIDAmountIBAN string `json:"PurchaseId_Amont_Iban"`
+	TransactionType      posTransactionType
+	BillID               string `json:",optional"`
+	PayID                string `json:",optional"`
+	PurchaseID           string `json:",optional"`             // set just if TransactionType==POSTransactionPurchaseID
+	ReferenceData        string `json:"RefrenceData,optional"` // store by switch for analytics purpose
+	AmountIBAN           string `json:"Amount_Iban,optional"`
+	TotalAmount          string `json:"totalAmount,optional"`
+	PurchaseIDAmountIBAN string `json:"PurchaseID_Amount_Iban,optional"`
 	// SwitchID             string
 }
 
@@ -38,7 +37,10 @@ type POSSendOrderRes struct {
 
 	Identifier          string
 	TerminalID          string
-	CreatedOn           string
+	TransactionType     string // name of request transaction type!! really WHY???
+	AccountType         string // name of request account type!! really WHY???
+	CreateOn            string
+	CreateBy            string
 	ResponseCode        string
 	ResponseDescription string
 	TraceNumber         string
@@ -46,8 +48,12 @@ type POSSendOrderRes struct {
 	RRN                 string // Shaparak.ir Universal ID
 	State               int64
 	StateDescription    string
-	HashData            string
-	Amount              string // May be different from request Amount just & only if you have contract with SEP.ir to have some discount debit cards!
+	Amount              string
+	AffectiveAmount     string // May be different from request Amount just & only if you have contract with SEP.ir to have some discount debit cards!
+	PosAppVersion       string
+	PosProtocolVersion  string
+	CardHashNumber      string
+	CardMaskNumber      string
 }
 
 // POSSendOrder use to send order to pos
@@ -65,6 +71,17 @@ func (pos *POS) POSSendOrder(req *POSSendOrderReq) (res *POSSendOrderRes, err *e
 	req.Identifier, err = pos.posGetIdentifier()
 	if err != nil {
 		return
+	}
+
+	if req.UserNotifiable.PrintItems == nil {
+		req.UserNotifiable.PrintItems = []POSPrintItem{
+			{
+				Item:        "",
+				Value:       "",
+				Alignment:   POSPrintAlignmentCenter,
+				ReceiptType: POSPrintReceiptTypeBoth,
+			},
+		}
 	}
 
 	var httpReq = http.MakeNewRequest()
@@ -136,13 +153,13 @@ func (req *POSSendOrderReq) jsonEncoder() (buf []byte) {
 	encoder.EncodeString(`","AccountType":`)
 	encoder.EncodeUInt8(uint8(req.AccountType))
 
-	encoder.EncodeString(`,"Additional":"`)
-	encoder.EncodeString(req.Additional)
+	if req.TimeOut != "" {
+		encoder.EncodeString(`,"TimeOut":"`)
+		encoder.EncodeString(req.TimeOut)
+		encoder.EncodeByte('"')
+	}
 
-	encoder.EncodeString(`","TimeOut":"`)
-	encoder.EncodeString(req.TimeOut)
-
-	encoder.EncodeString(`","ResNum":"`)
+	encoder.EncodeString(`,"ResNum":"`)
 	encoder.EncodeString(req.ResNum)
 
 	encoder.EncodeString(`","Identifier":"`)
@@ -172,28 +189,38 @@ func (req *POSSendOrderReq) jsonEncoder() (buf []byte) {
 		encoder.EncodeByte('"')
 	}
 
-	encoder.EncodeString(`,"ReferenceData":"`)
-	encoder.EncodeString(req.ReferenceData)
+	if req.ReferenceData != "" {
+		encoder.EncodeString(`,"ReferenceData":"`)
+		encoder.EncodeString(req.ReferenceData)
+		encoder.EncodeByte('"')
+	}
 
-	encoder.EncodeString(`","AmountIBAN":"`)
-	encoder.EncodeString(req.AmountIBAN)
+	if req.AmountIBAN != "" {
+		encoder.EncodeString(`","Amount_Iban":"`)
+		encoder.EncodeString(req.AmountIBAN)
+		encoder.EncodeByte('"')
+	}
 
 	if req.TotalAmount != "" {
 		encoder.EncodeString(`","totalAmount":"`)
 		encoder.EncodeString(req.TotalAmount)
+		encoder.EncodeByte('"')
 	}
 
-	encoder.EncodeString(`","PurchaseId_Amont_Iban":"`)
-	encoder.EncodeString(req.PurchaseIDAmountIBAN)
+	if req.PurchaseIDAmountIBAN != "" {
+		encoder.EncodeString(`","PurchaseID_Amount_Iban":"`)
+		encoder.EncodeString(req.PurchaseIDAmountIBAN)
+		encoder.EncodeByte('"')
+	}
 
-	encoder.EncodeString("\"}")
+	encoder.EncodeByte('}')
 	return encoder.Buf
 }
 
 func (req *POSSendOrderReq) jsonLen() (ln int) {
-	ln = len(req.TerminalID) + len(req.Amount) + len(req.Additional) + len(req.TimeOut) + len(req.ResNum) + len(req.Identifier) + len(req.BillID) + len(req.PayID) + len(req.PurchaseID) + len(req.ReferenceData) + len(req.AmountIBAN) + len(req.TotalAmount) + len(req.PurchaseIDAmountIBAN)
+	ln = len(req.TerminalID) + len(req.Amount) + len(req.TimeOut) + len(req.ResNum) + len(req.Identifier) + len(req.BillID) + len(req.PayID) + len(req.PurchaseID) + len(req.ReferenceData) + len(req.AmountIBAN) + len(req.TotalAmount) + len(req.PurchaseIDAmountIBAN)
 	ln += req.UserNotifiable.jsonLen()
-	ln += 275
+	ln += 260
 	return
 }
 
@@ -235,8 +262,23 @@ func (res *POSSendOrderRes) jsonDecoder(buf []byte) (err *er.Error) {
 			if err != nil {
 				return
 			}
-		case "CreatedOn":
-			res.CreatedOn, err = decoder.DecodeString()
+		case "TransactionType":
+			res.TransactionType, err = decoder.DecodeString()
+			if err != nil {
+				return
+			}
+		case "AccountType":
+			res.AccountType, err = decoder.DecodeString()
+			if err != nil {
+				return
+			}
+		case "CreateOn":
+			res.CreateOn, err = decoder.DecodeString()
+			if err != nil {
+				return
+			}
+		case "CreateBy":
+			res.CreateBy, err = decoder.DecodeString()
 			if err != nil {
 				return
 			}
@@ -275,13 +317,33 @@ func (res *POSSendOrderRes) jsonDecoder(buf []byte) (err *er.Error) {
 			if err != nil {
 				return
 			}
-		case "HashData":
-			res.HashData, err = decoder.DecodeString()
+		case "Amount":
+			res.Amount, err = decoder.DecodeString()
 			if err != nil {
 				return
 			}
-		case "Amount":
-			res.Amount, err = decoder.DecodeString()
+		case "AffectiveAmount":
+			res.AffectiveAmount, err = decoder.DecodeString()
+			if err != nil {
+				return
+			}
+		case "PosAppVersion":
+			res.PosAppVersion, err = decoder.DecodeString()
+			if err != nil {
+				return
+			}
+		case "PosProtocolVersion":
+			res.PosProtocolVersion, err = decoder.DecodeString()
+			if err != nil {
+				return
+			}
+		case "CardHashNumber":
+			res.CardHashNumber, err = decoder.DecodeString()
+			if err != nil {
+				return
+			}
+		case "CardMaskNumber":
+			res.CardMaskNumber, err = decoder.DecodeString()
 			if err != nil {
 				return
 			}
@@ -330,8 +392,8 @@ func (pos *POSUserNotifiable) jsonLen() (ln int) {
 type POSPrintItem struct {
 	Item        string
 	Value       string
-	Alignment   int
-	ReceiptType int
+	Alignment   posPrintAlignment
+	ReceiptType posPrintReceiptType
 }
 
 // JSONEncoder encode given POSPrintItem to json format.
@@ -343,10 +405,10 @@ func (pos *POSPrintItem) jsonEncoder(encoder *json.Encoder) {
 	encoder.EncodeString(pos.Value)
 
 	encoder.EncodeString(`","Alignment":`)
-	encoder.EncodeInt64(int64(pos.Alignment))
+	encoder.EncodeUInt8(uint8(pos.Alignment))
 
 	encoder.EncodeString(`,"ReceiptType":`)
-	encoder.EncodeInt64(int64(pos.ReceiptType))
+	encoder.EncodeUInt8(uint8(pos.ReceiptType))
 
 	encoder.EncodeString("},")
 }
@@ -358,20 +420,38 @@ func (pos *POSPrintItem) jsonLen() (ln int) {
 	return
 }
 
-type accountType uint8
+type posPrintAlignment uint8
+
+// POSPrintAlignment items
+const (
+	POSPrintAlignmentRight  posPrintAlignment = 0
+	POSPrintAlignmentLeft   posPrintAlignment = 1
+	POSPrintAlignmentCenter posPrintAlignment = 2
+)
+
+type posPrintReceiptType uint8
+
+// POSPrintReceiptType items
+const (
+	POSPrintReceiptTypeCustomer posPrintReceiptType = 0
+	POSPrintReceiptTypeMerchant posPrintReceiptType = 1
+	POSPrintReceiptTypeBoth     posPrintReceiptType = 2
+)
+
+type posAccountType uint8
 
 // Account Types
 const (
-	AccountTypeSingle            accountType = 0
-	AccountTypeShare             accountType = 1
-	AccountTypeShareByAmountIBAN accountType = 2
+	POSAccountTypeSingle            posAccountType = 0
+	POSAccountTypeShare             posAccountType = 1
+	POSAccountTypeShareByAmountIBAN posAccountType = 2
 )
 
-type transactionType uint8
+type posTransactionType uint8
 
-// Order Transaction Types
+// POS Transaction Types
 const (
-	OrderTransactionPurchase   transactionType = 0
-	OrderTransactionBill       transactionType = 1
-	OrderTransactionPurchaseID transactionType = 2
+	POSTransactionPurchase   posTransactionType = 0
+	POSTransactionBill       posTransactionType = 1
+	POSTransactionPurchaseID posTransactionType = 2
 )
