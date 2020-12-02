@@ -12,7 +12,9 @@ import (
 )
 
 // LoadAssetsFromStorage use to load assets from gui folder.
-func LoadAssetsFromStorage(ass, repo *assets.Folder, repoLocation string) (main *assets.File) {
+func LoadAssetsFromStorage(repoLocation string) (ass *assets.Folder, main *assets.File) {
+	var repo = assets.NewFolder("repo")
+	ass = assets.NewFolder("www")
 	readRepositoryFromFileSystem(repoLocation, repo)
 	main = AddRepoToAsset(ass, repo)
 	log.Info("WWW - GUI assets successfully updated in server and ready to serve")
@@ -21,25 +23,12 @@ func LoadAssetsFromStorage(ass, repo *assets.Folder, repoLocation string) (main 
 
 // ReadRepositoryFromFileSystem use to get all repository by its name!
 func readRepositoryFromFileSystem(dirname string, repo *assets.Folder) (err error) {
-	var gui, sdk *assets.Folder
-
 	// gui folder
-	gui = repo.GetDependency("gui")
-	if gui == nil {
-		gui = assets.NewFolder("gui")
-		gui.Dep = repo
-		repo.SetDependency(gui)
-	}
+	var gui *assets.Folder
+	gui = assets.NewFolder("gui")
+	gui.Dep = repo
+	repo.SetDependency(gui)
 	err = gui.ReadRepositoryFromFileSystem(dirname+"/gui", false)
-
-	// sdk-js folder
-	sdk = repo.GetDependency("sdk-js")
-	if sdk == nil {
-		sdk = assets.NewFolder("sdk-js")
-		sdk.Dep = repo
-		repo.SetDependency(sdk)
-	}
-	err = sdk.ReadRepositoryFromFileSystem(dirname+"/sdk-js", false)
 
 	return
 }
@@ -53,8 +42,24 @@ func AddRepoToAsset(ass, repo *assets.Folder) (main *assets.File) {
 
 	// set design-languages
 	var dl = c.repoGUI.GetDependency("design-languages")
-	var file *assets.File
-	for _, file = range dl.Files {
+	for _, folder := range dl.Dependencies {
+		var combinedFile = assets.File{
+			Name:      "design-language--" + folder.Name,
+			Extension: "css",
+		}
+		combinedFile.CheckAndFix()
+		var fullName = combinedFile.FullName
+		for _, file := range folder.Files {
+			if file.Extension == "css" {
+				combinedFile.Data = append(combinedFile.Data, file.Data...)
+			}
+		}
+		combinedFile.AddHashToName()
+		ass.MinifyCompressSet(&combinedFile, assets.CompressTypeGZIP)
+
+		c.mainJS.Data = bytes.ReplaceAll(c.mainJS.Data, convert.UnsafeStringToByteSlice(fullName), convert.UnsafeStringToByteSlice(combinedFile.FullName))
+	}
+	for _, file := range dl.Files {
 		if file.Extension == "css" {
 			var fullName = file.FullName
 			file.AddHashToName()
@@ -86,6 +91,11 @@ func AddRepoToAsset(ass, repo *assets.Folder) (main *assets.File) {
 	// set images from gui
 	var images = c.repoGUI.GetDependency("images")
 	for _, file := range images.Files {
+		ass.MinifyCompressSet(file, assets.CompressTypeGZIP)
+	}
+
+	for _, file := range c.otherFiles {
+		// file.AddHashToName()
 		ass.MinifyCompressSet(file, assets.CompressTypeGZIP)
 	}
 

@@ -17,8 +17,11 @@ func mixHTMLToJS(jsFile, htmlFile *assets.File) {
 
 	var loc = bytes.Index(jsFile.Data, []byte("HTML: ("))
 	if loc < 0 {
-		log.Warn(htmlFile.FullName, "html file can't add to", jsFile.FullName, "file due to bad JS.")
-		return
+		loc = bytes.Index(jsFile.Data, []byte("HTML = ("))
+		if loc < 0 {
+			log.Warn(htmlFile.FullName, "html file can't add to", jsFile.FullName, "file due to bad JS.")
+			return
+		}
 	}
 
 	var graveAccentIndex int

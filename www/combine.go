@@ -9,30 +9,31 @@ import (
 
 	"../assets"
 	"../convert"
+	er "../error"
 	"../log"
 )
 
 type combine struct {
 	repo         *assets.Folder
-	repoSDK      *assets.Folder
 	repoGUI      *assets.Folder
 	repoPages    *assets.Folder
 	repoWidgets  *assets.Folder
 	repoLandings *assets.Folder
 
-	inlined map[string]*assets.File // map key is file FullName
+	inlined    map[string]*assets.File // map key is file FullName
+	initsFiles map[string]*assets.File
 
-	mainHTML *assets.File
-	mainJS   *assets.File
-	initsJS  []*assets.File
-	landings []*assets.File
+	mainHTML   *assets.File
+	mainJS     *assets.File
+	initsJS    []*assets.File
+	landings   []*assets.File
+	otherFiles []*assets.File
 }
 
 func (c *combine) init(repo *assets.Folder) {
 	c.inlined = make(map[string]*assets.File)
 
 	c.repo = repo
-	c.repoSDK = repo.GetDependency("sdk-js")
 	c.repoGUI = repo.GetDependency("gui")
 	c.repoPages = c.repoGUI.GetDependency("pages")
 	c.repoWidgets = c.repoGUI.GetDependency("widgets")
@@ -40,11 +41,19 @@ func (c *combine) init(repo *assets.Folder) {
 }
 
 func (c *combine) readyAppJSFiles() {
-	c.mainJS = c.repoGUI.GetFile("main.js")
-	var mainImports, _ = extractJSImportsRecursively(c.mainJS)
+	var mainJSFile = c.repoGUI.GetFile("main.js")
+	c.mainJS = mainJSFile.Copy()
+	c.mainJS.Data = nil
+
+	var mainJSCreator = JS{
+		imports: make([]*assets.File, 0, 100),
+		inlined: c.inlined,
+	}
+	mainJSCreator.imports = append(mainJSCreator.imports, mainJSFile)
+	_ = mainJSCreator.extractJSImportsRecursively(mainJSFile)
 	if log.DevMode {
 		var name strings.Builder
-		for _, imp := range mainImports {
+		for _, imp := range mainJSCreator.imports {
 			name.WriteString(imp.FullName)
 			name.WriteByte(',')
 		}
@@ -60,69 +69,103 @@ func (c *combine) readyAppJSFiles() {
 	lj.jsonDecoder(jsonFile.Data)
 
 	var initRepoFile = c.repoGUI.GetFile("init.js")
-	var initImports, _ = extractJSImportsRecursively(initRepoFile)
+	var initJSCreator = JS{
+		imports: make([]*assets.File, 0, 100),
+		inlined: c.inlined,
+	}
+	initJSCreator.imports = append(initJSCreator.imports, initRepoFile)
+	_ = initJSCreator.extractJSImportsRecursively(initRepoFile)
 	if log.DevMode {
 		var name strings.Builder
-		for _, imp := range initImports {
+		for _, imp := range initJSCreator.imports {
 			name.WriteString(imp.FullName)
 			name.WriteByte(',')
 		}
 		log.Warn("WWW - init.js imports recursively:", name.String())
 	}
-	var initsFiles = localizeJSFile(initRepoFile, lj)
-
-	for i := 0; i < len(mainImports); i++ {
-		if c.isInlined(mainImports[i].FullName) {
-			continue
-		}
-		c.inlined[mainImports[i].FullName] = mainImports[i]
-		var files = localeAndMixJSFile(mainImports[i])
-		if len(files) < 2 {
-			c.mainJS.Data = append(files[""].Data, c.mainJS.Data...)
-		} else {
-			for lang, initFile := range initsFiles {
-				var localeFile = files[lang]
-				if localeFile == nil {
-					if log.DevMode {
-						log.Warn("WWW - ", mainImports[i].FullName, "don't have locale files in '", lang, "' language that init.js support this language. Use pure file in combine proccess.")
-					}
-					localeFile = files[""]
-				}
-				initFile.Data = append(localeFile.Data, initFile.Data...)
-			}
-		}
+	c.initsFiles = localizeJSFile(initRepoFile, lj)
+	for _, initFile := range c.initsFiles {
+		initFile.Data = nil
 	}
-	for i := 0; i < len(initImports); i++ {
-		if c.isInlined(initImports[i].FullName) {
+
+	for i := len(mainJSCreator.imports) - 1; i >= 0; i-- {
+		if c.isInlined(mainJSCreator.imports[i].FullName) {
 			continue
 		}
-		c.inlined[initImports[i].FullName] = initImports[i]
-		var files = localeAndMixJSFile(initImports[i])
-		if len(files) < 2 {
-			c.mainJS.Data = append(files[""].Data, c.mainJS.Data...)
-		} else {
-			for lang, initFile := range initsFiles {
-				var localeFile = files[lang]
-				if localeFile == nil {
-					if log.DevMode {
-						log.Warn("WWW - ", initImports[i].FullName, "don't have locale files in '", lang, "' language that init.js support this language. Use pure file in combine proccess.")
-					}
-					localeFile = files[""]
-				}
-				initFile.Data = append(localeFile.Data, initFile.Data...)
+		if c.isLocalize(mainJSCreator.imports[i]) {
+			c.addLocalized(mainJSCreator.imports[i])
+			continue
+		}
+		c.inlined[mainJSCreator.imports[i].FullName] = mainJSCreator.imports[i]
+		var files = localeAndMixJSFile(mainJSCreator.imports[i])
+		c.mainJS.Data = append(c.mainJS.Data, files[""].Data...)
+	}
+
+	for i := len(initJSCreator.imports) - 1; i >= 0; i-- {
+		c.addLocalized(initJSCreator.imports[i])
+	}
+
+	for _, err := range er.ERRPoolSlice {
+		var domain, short, long, idAsString string
+		for lang, initFile := range c.initsFiles {
+			if lang == "en" {
+				domain, short, long, idAsString = err.GetDetail(0)
+			} else {
+				domain, short, long, idAsString = err.GetDetail(1)
 			}
+			if short == "" {
+				domain, short, long, idAsString = err.GetDetail(0)
+			}
+			var textOfError = "errors.New(" + idAsString + ",\"" + domain + "\",\"" + short + "\",\"" + long + "\")\n"
+			initFile.Data = append(initFile.Data, textOfError...)
 		}
 	}
 
-	var hashedName = "init-" + initsFiles["en"].GetHashOfData() + "-"
-	for lang, initFile := range initsFiles {
+	var hashedName = "init-" + c.initsFiles["en"].GetHashOfData() + "-"
+	for lang, initFile := range c.initsFiles {
 		initFile.Rename(hashedName + lang)
 		c.initsJS = append(c.initsJS, initFile)
 	}
 }
 
+func (c *combine) addLocalized(file *assets.File) {
+	if c.isInlined(file.FullName) {
+		return
+	}
+	c.inlined[file.FullName] = file
+
+	if file.Extension != "js" {
+		c.otherFiles = append(c.otherFiles, file)
+		return
+	}
+
+	var files = localeAndMixJSFile(file)
+	if len(files) < 2 {
+		c.mainJS.Data = append(c.mainJS.Data, files[""].Data...)
+	} else {
+		for lang, initFile := range c.initsFiles {
+			var localeFile = files[lang]
+			if localeFile == nil {
+				if log.DevMode {
+					log.Warn("WWW - ", file.FullName, "don't have locale files in '", lang, "' language that init.js support this language. Use pure file in combine proccess.")
+				}
+				localeFile = files[""]
+			}
+			initFile.Data = append(initFile.Data, localeFile.Data...)
+		}
+	}
+}
+
 func (c *combine) isInlined(fullName string) (ok bool) {
 	_, ok = c.inlined[fullName]
+	return
+}
+
+func (c *combine) isLocalize(file *assets.File) (ok bool) {
+	var jsonFile *assets.File = file.Dep.GetFile(file.Name + ".json")
+	if jsonFile != nil {
+		return true
+	}
 	return
 }
 

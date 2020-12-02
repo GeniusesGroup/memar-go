@@ -22,13 +22,19 @@ func mixCSSToHTML(htmlFile, cssFile *assets.File) *assets.File {
 }
 
 // mixCSSToJS add given CSS file to specific part of JS file and returns new js file.
-func mixCSSToJS(jsFile, cssFile *assets.File) *assets.File {
+func mixCSSToJS(jsFile, cssFile *assets.File) (f *assets.File) {
 	cssFile.Minify()
+	f = jsFile.Copy()
 
-	var minifiedCSS = append([]byte(`CSS: '`), cssFile.Data...)
+	var funcLoc = bytes.Index(jsFile.Data, []byte("CSS: '"))
+	if funcLoc < 0 {
+		var minifiedCSS = append([]byte(`CSS = '`), cssFile.Data...)
+		f.Data = bytes.Replace(jsFile.Data, []byte(`CSS = '`), minifiedCSS, 1)
+	} else {
+		var minifiedCSS = append([]byte(`CSS: '`), cssFile.Data...)
+		f.Data = bytes.Replace(jsFile.Data, []byte(`CSS: '`), minifiedCSS, 1)
+	}
 
-	var f = jsFile.Copy()
 	// f.Data = make([]byte, 0, len(jsFile.Data)+len(minifiedCSS))
-	f.Data = bytes.Replace(jsFile.Data, []byte(`CSS: '`), minifiedCSS, 1)
 	return f
 }
