@@ -2,6 +2,11 @@
 
 package authorization
 
+import (
+	etime "../earth-time"
+	er "../error"
+)
+
 // AccessControl store needed data to authorize a request to a platform!
 // Use add methods due to arrays must store in sort for easy read and comparison
 // Some standards: ABAC, ACL, RBAC, ... features for AccessControl fields,
@@ -13,10 +18,10 @@ type AccessControl struct {
 	DenyRouters    []uint32 // Part of GP address
 
 	// Authorize When:
-	AllowDays Day      // Any day of the week
-	DenyDays  Day      // Any day of the week
-	AllowTime []uint16 // Any Time of the Day in minute
-	DenyTime  []uint16 // Any Time of the Day in minute
+	AllowWeekdays etime.Weekdays // Any day of the week
+	DenyWeekdays  etime.Weekdays // Any day of the week
+	AllowDayhours etime.Dayhours // Any hour of the day
+	DenyDayhours  etime.Dayhours // Any hour of the day
 
 	// Authorize Which:
 	AllowServices []uint32 // ["ServiceID", "ServiceID"]
@@ -29,20 +34,34 @@ type AccessControl struct {
 	// Authorize If:
 }
 
-// AddDays store given days by check order.
-func (ac *AccessControl) AddDays(allow, deny []uint8) {
-}
+// GiveFullAccess set some data to given AccessControl to be full access
+func (ac *AccessControl) GiveFullAccess() {
+	ac.AllowSocieties = nil
+	ac.DenySocieties = nil
+	ac.AllowRouters = nil
+	ac.DenyRouters = nil
 
-// AddTime store given times by check order.
-func (ac *AccessControl) AddTime(allow, deny []int64) {
-	// Remove Useless Inner interval in When key in AccessControl.
-	// e.g. 150000/160000 and 151010/153030 the second one is useless!
-	// Iso8601 Time intervals <start>/<end> ["hhmmss/hhmmss", "hhmmss/hhmmss"]!!!
-	// Just use GMT0!!!
+	ac.AllowWeekdays = etime.WeekdaysAll
+	ac.DenyWeekdays = etime.WeekdaysNone
+	ac.AllowDayhours = etime.DayhoursAll
+	ac.DenyDayhours = etime.DayhoursNone
+
+	ac.AllowServices = nil
+	ac.DenyServices = nil
+	ac.AllowCRUD = CRUDAll
+	ac.DenyCRUD = CRUDNone
 }
 
 // AuthorizeWhich authorize by ServiceID and CRUD that allow or denied by access control table!
-func (ac *AccessControl) AuthorizeWhich(serviceID uint32, crud CRUD) (err error) {
+func (ac *AccessControl) AuthorizeWhich(serviceID uint32, crud CRUD) (err *er.Error) {
+	if !ac.AllowCRUD.Check(crud) {
+		return ErrCrudNotAllow
+	}
+
+	if ac.DenyCRUD.Check(crud) {
+		return ErrCRUDDenied
+	}
+
 	var i int
 	var notAuthorize bool
 
@@ -56,7 +75,7 @@ func (ac *AccessControl) AuthorizeWhich(serviceID uint32, crud CRUD) (err error)
 			}
 		}
 		if notAuthorize {
-			return ErrAuthorizationServiceNotAllow
+			return ErrServiceNotAllow
 		}
 	}
 
@@ -65,30 +84,36 @@ DS:
 	if ln > 0 {
 		for i = 0; i < ln; i++ {
 			if ac.DenyServices[i] == serviceID {
-				return ErrAuthorizationServiceDenied
+				return ErrServiceDenied
 			}
 		}
-	}
-
-	if ac.AllowCRUD != CRUDAll {
-		// TODO:::
-	}
-
-	if ac.DenyCRUD != CRUDNone {
-		// TODO:::
 	}
 
 	return
 }
 
 // AuthorizeWhen --
-func (ac *AccessControl) AuthorizeWhen(day Day, time int64) (err error) {
+func (ac *AccessControl) AuthorizeWhen(day etime.Weekdays, hours etime.Dayhours) (err *er.Error) {
+	if !ac.AllowWeekdays.Check(day) {
+		return ErrDayNotAllow
+	}
 
+	if ac.DenyWeekdays.Check(day) {
+		return ErrDayDenied
+	}
+
+	if !ac.AllowDayhours.Check(hours) {
+		return ErrHourNotAllow
+	}
+
+	if ac.DenyDayhours.Check(hours) {
+		return ErrHourDenied
+	}
 	return
 }
 
 // AuthorizeWhere --
-func (ac *AccessControl) AuthorizeWhere(societyID, RouterID uint32) (err error) {
+func (ac *AccessControl) AuthorizeWhere(societyID, RouterID uint32) (err *er.Error) {
 	var i int
 	var notAuthorize bool
 
@@ -102,7 +127,7 @@ func (ac *AccessControl) AuthorizeWhere(societyID, RouterID uint32) (err error) 
 			}
 		}
 		if notAuthorize {
-			return ErrAuthorizationNotAllowSociety
+			return ErrNotAllowSociety
 		}
 	}
 
@@ -111,7 +136,7 @@ DS:
 	if ln > 0 {
 		for i = 0; i < ln; i++ {
 			if ac.DenySocieties[i] == societyID {
-				return ErrAuthorizationDeniedSociety
+				return ErrDeniedSociety
 			}
 		}
 	}
@@ -126,7 +151,7 @@ DS:
 			}
 		}
 		if notAuthorize {
-			return ErrAuthorizationNotAllowRouter
+			return ErrNotAllowRouter
 		}
 	}
 
@@ -135,7 +160,7 @@ DR:
 	if ln > 0 {
 		for i = 0; i < ln; i++ {
 			if ac.DenyRouters[i] == RouterID {
-				return ErrAuthorizationDeniedRouter
+				return ErrDeniedRouter
 			}
 		}
 	}
@@ -144,7 +169,7 @@ DR:
 }
 
 // AuthorizeWhat --
-func (ac *AccessControl) AuthorizeWhat() (err error) {
+func (ac *AccessControl) AuthorizeWhat() (err *er.Error) {
 	// TODO::: can be implement?
 
 	// AllowRecords   [][16]byte // ["RecordUUID", "RecordUUID"]
@@ -153,7 +178,7 @@ func (ac *AccessControl) AuthorizeWhat() (err error) {
 }
 
 // AuthorizeHow --
-func (ac *AccessControl) AuthorizeHow() (err error) {
+func (ac *AccessControl) AuthorizeHow() (err *er.Error) {
 	// TODO::: can be implement?
 
 	// How []string
@@ -161,7 +186,7 @@ func (ac *AccessControl) AuthorizeHow() (err error) {
 }
 
 // AuthorizeIf --
-func (ac *AccessControl) AuthorizeIf() (err error) {
+func (ac *AccessControl) AuthorizeIf() (err *er.Error) {
 	// TODO::: can be implement?
 
 	// If  []string
