@@ -5,7 +5,9 @@ package http
 import (
 	"strconv"
 	"strings"
-	"unsafe"
+
+	"../convert"
+	er "../error"
 )
 
 // Response is represent response protocol structure!
@@ -43,30 +45,30 @@ func (r *Response) Marshal() (httpPacket []byte) {
 
 // UnMarshal parses and decodes data of given httpPacket to r *Response.
 // In some bad packet may occur panic, handle panic by recover otherwise app will crash and exit!
-func (r *Response) UnMarshal(httpPacket []byte) (err error) {
+func (r *Response) UnMarshal(httpPacket []byte) (err *er.Error) {
 	// By use unsafe pointer here all strings assign in Request will just point to httpPacket slice
 	// and no need to alloc lot of new memory locations and copy response line and headers keys & values!
-	var s = *(*string)(unsafe.Pointer(&httpPacket))
+	var s = convert.UnsafeByteSliceToString(httpPacket)
 
 	// First line: HTTP/1.0 200 OK
 	var index int
 	index = strings.IndexByte(s, ' ')
 	if index == -1 {
-		return ErrParsedErrorOnVersion
+		return ErrParseVersion
 	}
 	r.Version = s[:index]
 	s = s[index+1:]
 
 	index = strings.IndexByte(s, ' ')
 	if index == -1 {
-		return ErrParsedErrorOnStatusCode
+		return ErrParseStatusCode
 	}
 	r.StatusCode = s[:index]
 	s = s[index+1:]
 
 	index = strings.IndexByte(s, '\r')
 	if index == -1 {
-		return ErrParsedErrorOnReasonPhrase
+		return ErrParseReasonPhrase
 	}
 	r.ReasonPhrase = s[:index]
 	s = s[index+2:] // +2 due to "\r\n"
@@ -86,10 +88,13 @@ func (r *Response) UnMarshal(httpPacket []byte) (err error) {
 }
 
 // GetStatusCode get status code as uit16
-func (r *Response) GetStatusCode() (uint16, error) {
+func (r *Response) GetStatusCode() (code uint16, err *er.Error) {
 	// TODO::: don't use strconv for such simple task
-	var c, err = strconv.ParseUint(r.StatusCode, 10, 16)
-	return uint16(c), err
+	var c, goErr = strconv.ParseUint(r.StatusCode, 10, 16)
+	if goErr != nil {
+		return 0, ErrParseStatusCode
+	}
+	return uint16(c), nil
 }
 
 // SetStatus set given status code and phrase
@@ -98,9 +103,14 @@ func (r *Response) SetStatus(code, phrase string) {
 	r.ReasonPhrase = phrase
 }
 
-// SetError set given error to body of response
-func (r *Response) SetError(err error) {
-	r.Body = []byte(err.Error())
+// SetError set given er.Error to header of the response
+func (r *Response) SetError(err *er.Error) {
+	r.Header.Set(HeaderKeyErrorID, err.IDasString())
+}
+
+// SetContentLength set body length to header.
+func (r *Response) SetContentLength() {
+	r.Header.Set(HeaderKeyContentLength, strconv.FormatUint(uint64(len(r.Body)), 10))
 }
 
 // Len return length of response
@@ -111,6 +121,5 @@ func (r *Response) Len() (ln int) {
 	ln += r.Header.Len()
 	ln += 6 // 6=1+1+2+2=len(SP)+len(SP)+len(CRLF)+len(CRLF)
 	ln += len(r.Body)
-
 	return
 }

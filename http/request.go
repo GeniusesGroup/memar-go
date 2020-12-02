@@ -3,8 +3,11 @@
 package http
 
 import (
+	"strconv"
 	"strings"
-	"unsafe"
+
+	"../convert"
+	er "../error"
 )
 
 // Request is represent HTTP request protocol structure!
@@ -46,16 +49,16 @@ func (r *Request) Marshal() (httpPacket []byte) {
 
 // UnMarshal parses and decodes data of given httpPacket to r *Request.
 // In some bad packet may occur panic, handle panic by recover otherwise app will crash and exit!
-func (r *Request) UnMarshal(httpPacket []byte) (err error) {
+func (r *Request) UnMarshal(httpPacket []byte) (err *er.Error) {
 	// By use unsafe pointer here all strings assign in Request will just point to httpPacket slice
 	// and no need to alloc lot of new memory locations and copy request line and headers keys & values!
-	var s = *(*string)(unsafe.Pointer(&httpPacket))
+	var s = convert.UnsafeByteSliceToString(httpPacket)
 
 	// First line: GET /index.html HTTP/1.0
 	var index int
 	index = strings.IndexByte(s, ' ')
 	if index == -1 {
-		return ErrParsedErrorOnMethod
+		return ErrParseMethod
 	}
 	r.Method = s[:index]
 	s = s[index+1:]
@@ -65,7 +68,7 @@ func (r *Request) UnMarshal(httpPacket []byte) (err error) {
 
 	index = strings.IndexByte(s, '\r')
 	if index == -1 {
-		return ErrParsedErrorOnVersion
+		return ErrParseVersion
 	}
 	r.Version = s[:index]
 	s = s[index+2:] // +2 due to have "\r\n"
@@ -92,10 +95,15 @@ func (r *Request) UnMarshal(httpPacket []byte) (err error) {
 //		Host: apis.sabz.city
 // the same. In the second case, any Host line is ignored.
 func (r *Request) GetHost() (host string) {
-	if len(r.URI.Authority) == 0 {
+	if r.URI.Authority == "" {
 		return r.Header.Get(HeaderKeyHost)
 	}
 	return r.URI.Authority
+}
+
+// SetContentLength set body length to header.
+func (r *Request) SetContentLength() {
+	r.Header.Set(HeaderKeyContentLength, strconv.FormatUint(uint64(len(r.Body)), 10))
 }
 
 // Len return length of request

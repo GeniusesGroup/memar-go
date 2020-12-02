@@ -7,7 +7,9 @@ import (
 	"strconv"
 	"strings"
 	"time"
-	"unsafe"
+
+	"../convert"
+	er "../error"
 )
 
 /*
@@ -34,7 +36,7 @@ type SetCookie struct {
 }
 
 // CheckAndSanitize use to check if the set-cookie is in standard by related RFCs.
-func (sc *SetCookie) CheckAndSanitize() (err error) {
+func (sc *SetCookie) CheckAndSanitize() (err *er.Error) {
 	sc.Name, err = sanitizeCookieName(sc.Name)
 	sc.Value, err = sanitizeCookieValue(sc.Value)
 	sc.Path, err = sanitizeCookiePath(sc.Path)
@@ -91,8 +93,12 @@ type SetCookieSameSite int
 //
 const (
 	SetCookieSameSiteDefaultMode SetCookieSameSite = iota + 1
+	// Cookies are allowed to be sent with top-level navigations and will be sent along with GET request
+	// initiated by third party website. This is the default value in modern browsers.
 	SetCookieSameSiteLaxMode
+	// Cookies will only be sent in a first-party context and not be sent along with requests initiated by third party websites.
 	SetCookieSameSiteStrictMode
+	// Cookies will be sent in all contexts, i.e sending cross-origin is allowed.
 	SetCookieSameSiteNoneMode
 )
 
@@ -234,7 +240,7 @@ func (sc *SetCookie) UnMarshal(setCookie string) {
 // path-av           = "Path=" path-value
 // path-value        = <any CHAR except CTLs or ";">
 // Don't check for ; due to UnMarshal will panic for bad cookie!!
-func sanitizeCookiePath(v string) (path string, err error) {
+func sanitizeCookiePath(v string) (path string, err *er.Error) {
 	var ln = len(v)
 	var buf = make([]byte, 0, ln)
 	var b byte
@@ -246,13 +252,13 @@ func sanitizeCookiePath(v string) (path string, err error) {
 			err = ErrCookieBadPath
 		}
 	}
-	path = *(*string)(unsafe.Pointer(&buf))
+	path = convert.UnsafeByteSliceToString(buf)
 	return
 }
 
 // A sc.Domain containing illegal characters is not sanitized but simply dropped which turns the cookie
 // into a host-only cookie. A leading dot is okay but won't be sent.
-func sanitizeCookieDomain(d string) (domain string, err error) {
+func sanitizeCookieDomain(d string) (domain string, err *er.Error) {
 	var ln = len(d)
 	if ln == 0 || ln > 255 {
 		return domain, ErrCookieBadDomain

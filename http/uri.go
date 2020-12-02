@@ -2,7 +2,7 @@
 
 package http
 
-import "unsafe"
+import "../convert"
 
 // URI store raw URI and all parts of it.
 // https://tools.ietf.org/html/rfc2616#section-3.2
@@ -38,7 +38,7 @@ func (u *URI) Marshal(httpPacket []byte) []byte {
 	}
 
 	var raw []byte = httpPacket[startLen:]
-	u.Raw = *(*string)(unsafe.Pointer(&raw))
+	u.Raw = convert.UnsafeByteSliceToString(raw)
 
 	return httpPacket
 }
@@ -51,6 +51,11 @@ func (u *URI) UnMarshal(s string) (uriEnd int) {
 		return 1
 	}
 
+	var originForm bool
+	if s[0] == '/' {
+		originForm = true
+	}
+
 	var authorityStartIndex, pathStartIndex, questionIndex, numberSignIndex int
 	var ln = len(s)
 	for i := 0; i < ln; i++ {
@@ -59,13 +64,17 @@ func (u *URI) UnMarshal(s string) (uriEnd int) {
 			// Check : mark is first appear before any start||end sign or it is part of others!
 			if authorityStartIndex == 0 {
 				u.Scheme = s[:i]
-				i += 2
+				i += 2                      // next loop will i+=1 so we just add i+=2
 				authorityStartIndex = i + 1 // +3 due to have ://
 			}
 		case Slash:
-			if pathStartIndex == 0 {
+			// Just check slash in middle of URI! If URI in origin form pathStartIndex always be 0!
+			if authorityStartIndex != 0 && pathStartIndex == 0 {
 				pathStartIndex = i
 				u.Authority = s[authorityStartIndex:pathStartIndex]
+			} else if !originForm && pathStartIndex == 0 && i != 0 {
+				pathStartIndex = i
+				u.Authority = s[:i]
 			}
 		case Question:
 			// Check ? mark is first appear or it is part of some query key||value!

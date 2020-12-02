@@ -77,6 +77,7 @@ const (
 	// Response context
 	HeaderKeyAllow  = "Allow"
 	HeaderKeyServer = "Server"
+	HeaderKeyErrorID = "Error-ID"
 
 	// Authentication
 	HeaderKeyAuthorization      = "Authorization"

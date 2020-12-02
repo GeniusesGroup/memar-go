@@ -174,14 +174,23 @@ func (h *header) Exclude(exclude map[string]bool) {
 func (h *header) Marshal(httpPacket []byte) []byte {
 	// TODO::: some header key must not inline by coma like set-cookie, ...
 	for key, values := range h.headers {
-		httpPacket = append(httpPacket, key...)
-		httpPacket = append(httpPacket, ColonSpace...)
-		for _, value := range values {
-			httpPacket = append(httpPacket, value...)
-			httpPacket = append(httpPacket, Coma)
+		if key == HeaderKeySetCookie {
+			for _, value := range values {
+				httpPacket = append(httpPacket, key...)
+				httpPacket = append(httpPacket, ColonSpace...)
+				httpPacket = append(httpPacket, value...)
+				httpPacket = append(httpPacket, CRLF...)
+			}
+		} else {
+			httpPacket = append(httpPacket, key...)
+			httpPacket = append(httpPacket, ColonSpace...)
+			for _, value := range values {
+				httpPacket = append(httpPacket, value...)
+				httpPacket = append(httpPacket, Coma)
+			}
+			httpPacket = httpPacket[:len(httpPacket)-1] // Remove trailing comma
+			httpPacket = append(httpPacket, CRLF...)
 		}
-		httpPacket = httpPacket[:len(httpPacket)-1] // Remove trailing comma
-		httpPacket = append(httpPacket, CRLF...)
 	}
 	return httpPacket
 }
@@ -212,7 +221,7 @@ func (h *header) UnMarshal(s string) (headerEnd int) {
 
 		key = s[:colonIndex]
 		value = s[colonIndex+2 : newLine] // +2 due to have a space after colon force by RFC &&
-		h.Add(key, value)
+		h.Add(key, value)                 // TODO::: is legal to have multiple key in request header or use h.Set()??
 
 		newLine += 2 // +2 due to have "\r\n" at end of each *header line
 		s = s[newLine:]

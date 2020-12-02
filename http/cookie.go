@@ -4,7 +4,9 @@ package http
 
 import (
 	"strings"
-	"unsafe"
+
+	"../convert"
+	er "../error"
 )
 
 // Cookie represents an HTTP cookie as sent in the Cookie header of an HTTP request.
@@ -15,7 +17,7 @@ type Cookie struct {
 }
 
 // CheckAndSanitize check if the cookie is in standard by RFC and try to fix them. It returns last error!
-func (c *Cookie) CheckAndSanitize() (err error) {
+func (c *Cookie) CheckAndSanitize() (err *er.Error) {
 	c.Name, err = sanitizeCookieName(c.Name)
 	c.Value, err = sanitizeCookieValue(c.Value)
 	return
@@ -37,7 +39,7 @@ func (c *Cookie) UnMarshal(cookie string) {
 	c.Value = cookie[equalIndex+1:]
 }
 
-func sanitizeCookieName(n string) (name string, err error) {
+func sanitizeCookieName(n string) (name string, err *er.Error) {
 	var ln = len(n)
 	var buf = make([]byte, 0, ln)
 	var b byte
@@ -50,7 +52,7 @@ func sanitizeCookieName(n string) (name string, err error) {
 			buf = append(buf, b)
 		}
 	}
-	name = *(*string)(unsafe.Pointer(&buf))
+	name = convert.UnsafeByteSliceToString(buf)
 	return
 }
 
@@ -61,7 +63,7 @@ func sanitizeCookieName(n string) (name string, err error) {
 //           ; whitespace, DQUOTE, comma, semicolon,
 //           ; and backslash
 // Don't check for ; due to UnMarshal will panic for bad cookie!!
-func sanitizeCookieValue(v string) (value string, err error) {
+func sanitizeCookieValue(v string) (value string, err *er.Error) {
 	var ln = len(v)
 	var buf = make([]byte, 0, ln)
 	var b byte
@@ -73,6 +75,6 @@ func sanitizeCookieValue(v string) (value string, err error) {
 			err = ErrCookieBadValue
 		}
 	}
-	value = *(*string)(unsafe.Pointer(&buf))
+	value = convert.UnsafeByteSliceToString(buf)
 	return
 }
