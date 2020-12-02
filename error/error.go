@@ -6,13 +6,15 @@ import (
 	"fmt"
 	"hash/crc32"
 	"strconv"
-	"unsafe"
 
 	lang "../language"
 	"../log"
 )
 
 var errPool = map[uint32]*Error{}
+
+// ERRPoolSlice store to access all errors in order
+var ERRPoolSlice = []*Error{}
 
 // Error is a extended implementation of error.
 // Never change english name due to it adds unnecessary complicated troubleshooting errors on SDK!
@@ -28,8 +30,9 @@ type Error struct {
 
 // Detail store detail about an error
 type Detail struct {
-	Short string
-	Long  string
+	Domain string
+	Short  string
+	Long   string
 }
 
 // New returns a new error!
@@ -46,7 +49,7 @@ func GetErrByCode(id uint32) (err *Error) {
 	if err == nil {
 		return ErrErrorNotFound
 	}
-	return err
+	return
 }
 
 // GetCode return id of error if err id exist.
@@ -65,48 +68,75 @@ func GetCode(err error) uint32 {
 
 // Save finalize needed logic on given error and save to errPool.
 func (e *Error) Save() *Error {
-	var englishName = e.detail[lang.EnglishLanguage].Short
-	if englishName == "" {
-		log.Fatal("Error must have english name >> ", e)
+	var englishDetail = e.detail[lang.EnglishLanguage]
+	if englishDetail.Short == "" {
+		log.Fatal("Error must have english name >> ", *e)
+	}
+	if englishDetail.Domain == "" {
+		log.Fatal("Error must have Domain >> ", *e)
 	}
 
-	e.id = crc32.ChecksumIEEE(*(*[]byte)(unsafe.Pointer(&englishName)))
+	var buf = make([]byte, len(englishDetail.Domain)+len(englishDetail.Short))
+	copy(buf, englishDetail.Domain)
+	copy(buf[len(englishDetail.Domain):], englishDetail.Short)
+
+	e.id = crc32.ChecksumIEEE(buf)
 	e.idAsString = strconv.FormatUint(uint64(e.id), 10)
 	e.Syllab = e.syllabEncoder()
 	e.JSON = e.jsonEncoder()
 
 	if errPool[e.id] != nil {
 		log.Warn("Duplicate Error id exist, Check it now!!!!!!!!!!!!!!!!!")
-		log.Warn("Exiting error >> ", errPool[e.id].detail[lang.EnglishLanguage].Short, " New error >> ", englishName)
+		log.Warn("Exiting error >> ", *errPool[e.id], " New error >> ", englishDetail)
 	}
+
 	errPool[e.id] = e
+	ERRPoolSlice = append(ERRPoolSlice, e)
 	return e
 }
 
 // SetDetail add short and long text detail to existing error and return it.
-func (e *Error) SetDetail(lang lang.Language, short, long string) *Error {
+func (e *Error) SetDetail(lang lang.Language, domain, short, long string) *Error {
 	e.detail[lang] = Detail{
-		Short: short,
-		Long:  long,
+		Domain: domain,
+		Short:  short,
+		Long:   long,
 	}
 
 	return e
 }
 
-// Error returns id of error.
-func (e *Error) Error() string {
+// GetDetail return short and long text detail to existing error and return it.
+func (e *Error) GetDetail(lang lang.Language) (domain, short, long, idAsString string) {
 	if e == nil {
-		return "0"
+		return
 	}
+	var detail = e.detail[lang]
+	return detail.Domain, detail.Short, detail.Long, e.idAsString
+}
+
+// ID return id of error if err exist.
+func (e *Error) ID() uint32 {
+	// if e == nil {
+	// 	return 0
+	// }
+	return e.id
+}
+
+// IDasString return id of error as string if err exist.
+func (e *Error) IDasString() string {
+	// if e == nil {
+	// 	return "0"
+	// }
 	return e.idAsString
 }
 
-// Text return full details of error in text.
-func (e *Error) Text(lang lang.Language) string {
-	if e == nil {
-		return ErrErrorIsEmpty.detail[lang].Long
-	}
-	return fmt.Sprintf("Error Code: %v\n Short detail: %v\n Long detail: %v\n Error Additional information: %v\n", e.id, e.detail[lang].Short, e.detail[lang].Long, e.information)
+// Error return full details of error in text.
+func (e *Error) Error() string {
+	// if e == nil {
+	// 	return ErrErrorIsEmpty.detail[log.Language].Long
+	// }
+	return fmt.Sprintf("Error Code: %v\n Short detail: %v\n Long detail: %v\n Error Additional information: %v\n", e.id, e.detail[log.Language].Short, e.detail[log.Language].Long, e.information)
 }
 
 // AddInformation add to existing error and return it as new error(pointer)!
@@ -117,12 +147,22 @@ func (e *Error) AddInformation(information interface{}) *Error {
 	}
 }
 
+// Equal compare two Error.
+func (e *Error) Equal(err *Error) bool {
+	if e == nil && err == nil {
+		return true
+	}
+	if e != nil && err != nil && e.id == err.id {
+		return true
+	}
+	return false
+}
+
 // IsEqual compare two error.
 func (e *Error) IsEqual(err error) bool {
 	var exErr = err.(*Error)
 	if exErr != nil && e.id == exErr.id {
 		return true
 	}
-
 	return false
 }

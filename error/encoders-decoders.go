@@ -37,7 +37,9 @@ func (e *Error) jsonEncoder() (buf []byte) {
 		for key, value := range e.detail {
 			buf = append(buf, '"')
 			buf = strconv.AppendUint(buf, uint64(key), 10)
-			buf = append(buf, `":{"Short":"`...)
+			buf = append(buf, `":{"Domain":"`...)
+			buf = append(buf, value.Domain...)
+			buf = append(buf, `","Short":"`...)
 			buf = append(buf, value.Short...)
 			buf = append(buf, `","Long":"`...)
 			buf = append(buf, value.Long...)
@@ -46,15 +48,16 @@ func (e *Error) jsonEncoder() (buf []byte) {
 		buf = buf[:len(buf)-1] // Remove trailing comma
 	}
 
-	buf = append(buf, '}')
+	buf = append(buf, "}}"...)
 	return
 }
 
 func (e *Error) jsonLen() (ln int) {
 	ln = 28 // len(`{"ID":0000000000,"Detail":{}`)
 	if e.detail != nil {
-		ln += len(e.detail) * 33 // 33 = 10(len(uint32)) + 23(len('{"Short":"","Long":"",}'))
+		ln += len(e.detail) * 45 // 45 = 10(len(uint32)) + 35(len('{"Domain":"","Short":"","Long":"",}'))
 		for _, value := range e.detail {
+			ln += len(value.Domain)
 			ln += len(value.Short)
 			ln += len(value.Long)
 		}
