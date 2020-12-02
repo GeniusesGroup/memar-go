@@ -10,6 +10,7 @@ import (
 	"reflect"
 	"testing"
 
+	er "../error"
 	jsoniter "github.com/json-iterator/go"
 	jlexer "github.com/mailru/easyjson/jlexer"
 	jwriter "github.com/mailru/easyjson/jwriter"
@@ -17,17 +18,17 @@ import (
 )
 
 /*
-Benchmark1JsonDecode-8       	   22827	     45965 ns/op	    3000 B/op	      21 allocs/op
-Benchmark1LibgoDecode-8      	  210447	      5665 ns/op	    2688 B/op	       1 allocs/op
-Benchmark1EasyDecode-8       	  184730	      6001 ns/op	    2720 B/op	       2 allocs/op
-Benchmark1FFDecode-8         	   87891	     13679 ns/op	    7140 B/op	       8 allocs/op
-Benchmark1JsoniterDecode-8   	   78867	     15014 ns/op	    9154 B/op	       6 allocs/op
+Benchmark1JsonDecode-8       	   27831	     42610 ns/op	    3000 B/op	      21 allocs/op
+Benchmark1LibgoDecode-8      	  212356	      5855 ns/op	    2688 B/op	       1 allocs/op
+Benchmark1EasyDecode-8       	  202129	      6512 ns/op	    2720 B/op	       2 allocs/op
+Benchmark1FFDecode-8         	   85766	     13444 ns/op	    7140 B/op	       8 allocs/op
+Benchmark1JsoniterDecode-8   	   81314	     14790 ns/op	    9154 B/op	       6 allocs/op
 
-Benchmark1JsonEncode-8       	  167131	      7272 ns/op	    4609 B/op	       2 allocs/op
-Benchmark1LibgoEncode-8      	  230906	      5157 ns/op	    3456 B/op	       1 allocs/op
-Benchmark1EasyEncode-8       	  117720	     10600 ns/op	   18112 B/op	      11 allocs/op
-Benchmark1FFEncode-8         	  107139	     11382 ns/op	   10070 B/op	      23 allocs/op
-Benchmark1JsoniterEncode-8   	  163782	      7301 ns/op	    6666 B/op	       3 allocs/op
+Benchmark1JsonEncode-8       	  166728	      7209 ns/op	    4609 B/op	       2 allocs/op
+Benchmark1LibgoEncode-8      	  233790	      5196 ns/op	    3456 B/op	       1 allocs/op
+Benchmark1EasyEncode-8       	  114490	     10507 ns/op	   18112 B/op	      11 allocs/op
+Benchmark1FFEncode-8         	  106212	     11264 ns/op	   10070 B/op	      23 allocs/op
+Benchmark1JsoniterEncode-8   	  166586	      7273 ns/op	    6666 B/op	       3 allocs/op
 
 note1: This benchmark is not apple to apple due to EasyJson&&Libgo encode||decode array as base64 string!
 note2: Libgo decoder performance better by: 8X from standard GO, 0.1X from EasyJson, 2.4X from FFJson and 2.7X from Jsoniter
@@ -242,31 +243,24 @@ func Test1LibgoEncode(t *testing.T) {
 	libgo Encoder and decoder (this package)
 */
 
-func (t *test1) libgoDecoder(buf []byte) (err error) {
+func (t *test1) libgoDecoder(buf []byte) (err *er.Error) {
 	var decoder = DecoderUnsafeMinifed{
 		Buf: buf,
 	}
-	for len(decoder.Buf) > 2 {
-		decoder.Offset(2)       // remove >>	'{"' 	&& 		',"'	due to don't need them
-		switch decoder.Buf[0] { // Just check first letter first!
-		case 'C':
-			decoder.SetFounded()
-			decoder.Offset(12)
-			err = decoder.DecodeArrayAsBase64(t.CaptchaID[:])
-			if err != nil {
-				return
-			}
-		case 'I':
-			decoder.SetFounded()
-			decoder.Offset(8)
-			t.Image, err = decoder.DecodeSliceAsBase64()
-			if err != nil {
-				return
-			}
+	for err == nil {
+		var keyName = decoder.DecodeKey()
+		switch keyName {
+		case "":
+			return
+		case "CaptchaID":
+			err = decoder.DecodeByteArrayAsBase64(t.CaptchaID[:])
+		case "Image":
+			t.Image, err = decoder.DecodeByteSliceAsBase64()
+		default:
+			err = decoder.NotFoundKeyStrict()
 		}
 
-		err = decoder.IterationCheck()
-		if err != nil {
+		if len(decoder.Buf) < 3 {
 			return
 		}
 	}
@@ -289,9 +283,8 @@ func (t *test1) libgoEncoder() []byte {
 }
 
 func (t *test1) jsonLen() (ln int) {
-	ln = 27                                 // len(`{"CaptchaID":"","Image":""}`)
-	ln += base64.StdEncoding.EncodedLen(16) // [16]bye array
-	ln += base64.StdEncoding.EncodedLen(len(t.Image))
+	ln = ((len(t.Image)*8 + 5) / 6)
+	ln += 49
 	return
 }
 

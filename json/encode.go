@@ -41,14 +41,25 @@ func (e *Encoder) EncodeUInt8(ui uint8) {
 	e.Buf = strconv.AppendUint(e.Buf, uint64(ui), 10)
 }
 
-// EncodeInt64 append given int64 number as number string
-func (e *Encoder) EncodeInt64(i int64) {
-	e.Buf = strconv.AppendInt(e.Buf, i, 10)
+// EncodeUInt16 append given uint16 number as number string
+// TODO::: not efficient enough code
+func (e *Encoder) EncodeUInt16(ui uint16) {
+	e.Buf = strconv.AppendUint(e.Buf, uint64(ui), 10)
+}
+
+// EncodeUInt32 append given uint32 number as number string
+func (e *Encoder) EncodeUInt32(ui uint32) {
+	e.Buf = strconv.AppendUint(e.Buf, uint64(ui), 10)
 }
 
 // EncodeUInt64 append given uint64 number as number string
 func (e *Encoder) EncodeUInt64(ui uint64) {
 	e.Buf = strconv.AppendUint(e.Buf, ui, 10)
+}
+
+// EncodeInt64 append given int64 number as number string
+func (e *Encoder) EncodeInt64(i int64) {
+	e.Buf = strconv.AppendInt(e.Buf, i, 10)
 }
 
 // EncodeFloat32 append given float32 number as number string
@@ -119,7 +130,7 @@ func (e *Encoder) EncodeUInt64SliceAsNumber(slice []uint64) {
 	var ln = len(slice)
 	for i := 0; i < ln; i++ {
 		e.Buf = strconv.AppendUint(e.Buf, slice[i], 10)
-		e.Buf = append(e.Buf, ',')
+		e.EncodeByte(',')
 	}
 	e.RemoveTrailingComma()
 }

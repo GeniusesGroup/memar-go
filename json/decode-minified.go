@@ -11,20 +11,20 @@ import (
 	er "../error"
 )
 
-// DecoderUnsafeMinifed store data to decode data by each method!
-type DecoderUnsafeMinifed struct {
+// DecoderMinifed store data to decode data by each method!
+type DecoderMinifed struct {
 	Buf      []byte
 	Token    byte
 	LastItem []byte
 }
 
 // Offset make d.Buf to start of given offset
-func (d *DecoderUnsafeMinifed) Offset(o int) {
+func (d *DecoderMinifed) Offset(o int) {
 	d.Buf = d.Buf[o:]
 }
 
 // FindEndToken find next end json token
-func (d *DecoderUnsafeMinifed) FindEndToken() {
+func (d *DecoderMinifed) FindEndToken() {
 	for i, c := range d.Buf {
 		switch c {
 		case ',':
@@ -47,12 +47,12 @@ func (d *DecoderUnsafeMinifed) FindEndToken() {
 }
 
 // ResetToken set d.Token to nil
-func (d *DecoderUnsafeMinifed) ResetToken() {
+func (d *DecoderMinifed) ResetToken() {
 	d.Token = 0
 }
 
 // CheckToken set d.Token to nil
-func (d *DecoderUnsafeMinifed) CheckToken(t byte) bool {
+func (d *DecoderMinifed) CheckToken(t byte) bool {
 	if d.Token == t {
 		d.ResetToken()
 		return true
@@ -60,8 +60,8 @@ func (d *DecoderUnsafeMinifed) CheckToken(t byte) bool {
 	return false
 }
 
-// DecodeKey return json key. pass d.Buf start from after " and receive from after :
-func (d *DecoderUnsafeMinifed) DecodeKey() string {
+// DecodeKey return json key. pass d.Buf start from after {||, and receive from after :
+func (d *DecoderMinifed) DecodeKey() string {
 	d.Offset(2)
 	var loc = bytes.IndexByte(d.Buf, '"')
 	var slice []byte = d.Buf[:loc]
@@ -70,18 +70,18 @@ func (d *DecoderUnsafeMinifed) DecodeKey() string {
 }
 
 // NotFoundKey call in default switch of each decode iteration
-func (d *DecoderUnsafeMinifed) NotFoundKey() (err *er.Error) {
-	d.FindEndToken() //6104-3375-6641-5343
+func (d *DecoderMinifed) NotFoundKey() (err *er.Error) {
+	d.FindEndToken()
 	return
 }
 
 // NotFoundKeyStrict call in default switch of each decode iteration in strict mode.
-func (d *DecoderUnsafeMinifed) NotFoundKeyStrict() *er.Error {
+func (d *DecoderMinifed) NotFoundKeyStrict() *er.Error {
 	return ErrJSONEncodedIncludeNotDeffiendKey
 }
 
-// DecodeBool convert 64bit integer number string to number. pass d.Buf start from after : and receive from after end of number
-func (d *DecoderUnsafeMinifed) DecodeBool() (b bool, err *er.Error) {
+// DecodeBool convert 64bit integer number string to number. pass d.Buf start from after : and receive from after ,
+func (d *DecoderMinifed) DecodeBool() (b bool, err *er.Error) {
 	if d.Buf[0] == 't' {
 		b = true
 		d.Offset(5) // true,
@@ -92,73 +92,60 @@ func (d *DecoderUnsafeMinifed) DecodeBool() (b bool, err *er.Error) {
 	return
 }
 
-// DecodeUInt8 convert 8bit integer number string to number. pass d.Buf start from number and receive from after end of number
-func (d *DecoderUnsafeMinifed) DecodeUInt8() (ui uint8, err *er.Error) {
+// DecodeUInt8 convert 8bit integer number string to number. pass d.Buf start from number and receive from after ,
+func (d *DecoderMinifed) DecodeUInt8() (ui uint8, err *er.Error) {
 	d.FindEndToken()
 	ui, err = convert.Base10StringToUint8(convert.UnsafeByteSliceToString(d.LastItem))
 	if err != nil {
-		return 0, ErrJSONEncodedIntegerCorrupted
+		return 0, ErrJSONEncodedStringCorrupted
 	}
 	return
 }
 
-// DecodeUInt16 convert 16bit integer number string to number. pass d.Buf start from number and receive from after end of number
-func (d *DecoderUnsafeMinifed) DecodeUInt16() (ui uint16, err *er.Error) {
+// DecodeUInt16 convert 16bit integer number string to number. pass d.Buf start from number and receive from after ,
+func (d *DecoderMinifed) DecodeUInt16() (ui uint16, err *er.Error) {
 	d.FindEndToken()
 	ui, err = convert.Base10StringToUint16(convert.UnsafeByteSliceToString(d.LastItem))
 	if err != nil {
-		return 0, ErrJSONEncodedIntegerCorrupted
+		return 0, ErrJSONEncodedStringCorrupted
 	}
 	return
 }
 
-// DecodeUInt32 convert 32bit integer number string to number. pass d.Buf start from number and receive from after end of number
-func (d *DecoderUnsafeMinifed) DecodeUInt32() (ui uint32, err *er.Error) {
+// DecodeUInt32 convert 32bit integer number string to number. pass d.Buf start from number and receive from after ,
+func (d *DecoderMinifed) DecodeUInt32() (ui uint32, err *er.Error) {
 	d.FindEndToken()
 	ui, err = convert.Base10StringToUint32(convert.UnsafeByteSliceToString(d.LastItem))
 	if err != nil {
-		return 0, ErrJSONEncodedIntegerCorrupted
+		return 0, ErrJSONEncodedStringCorrupted
 	}
 	return
 }
 
-// DecodeUInt64 convert 64bit integer number string to number. pass d.Buf start from number and receive from after end of number
-func (d *DecoderUnsafeMinifed) DecodeUInt64() (ui uint64, err *er.Error) {
+// DecodeUInt64 convert 64bit integer number string to number. pass d.Buf start from number and receive from after ,
+func (d *DecoderMinifed) DecodeUInt64() (ui uint64, err *er.Error) {
 	d.FindEndToken()
 	var goErr error
 	ui, goErr = strconv.ParseUint(convert.UnsafeByteSliceToString(d.LastItem), 10, 64)
 	if goErr != nil {
-		return 0, ErrJSONEncodedIntegerCorrupted
+		return 0, ErrJSONEncodedStringCorrupted
 	}
 	return
 }
 
-// DecodeInt32 convert 32bit number string to number. pass d.Buf start from number and receive from after end of number
-func (d *DecoderUnsafeMinifed) DecodeInt32() (i int32, err *er.Error) {
-	d.FindEndToken()
-	var goErr error
-	var num int64
-	num, goErr = strconv.ParseInt(convert.UnsafeByteSliceToString(d.LastItem), 10, 32)
-	if goErr != nil {
-		return 0, ErrJSONEncodedIntegerCorrupted
-	}
-	i = int32(num)
-	return
-}
-
-// DecodeInt64 convert 64bit number string to number. pass d.Buf start from number and receive from after end of number
-func (d *DecoderUnsafeMinifed) DecodeInt64() (i int64, err *er.Error) {
+// DecodeInt64 convert 64bit number string to number. pass d.Buf start from number and receive from after ,
+func (d *DecoderMinifed) DecodeInt64() (i int64, err *er.Error) {
 	d.FindEndToken()
 	var goErr error
 	i, goErr = strconv.ParseInt(convert.UnsafeByteSliceToString(d.LastItem), 10, 64)
 	if goErr != nil {
-		return 0, ErrJSONEncodedIntegerCorrupted
+		return 0, ErrJSONEncodedStringCorrupted
 	}
 	return
 }
 
-// DecodeFloat64AsNumber convert float64 number string to float64 number. pass d.Buf start from number and receive from after end of number
-func (d *DecoderUnsafeMinifed) DecodeFloat64AsNumber() (f float64, err *er.Error) {
+// DecodeFloat64AsNumber convert float64 number string to float64 number. pass d.Buf start from number and receive from ,
+func (d *DecoderMinifed) DecodeFloat64AsNumber() (f float64, err *er.Error) {
 	d.FindEndToken()
 	var goErr error
 	f, goErr = strconv.ParseFloat(convert.UnsafeByteSliceToString(d.LastItem), 64)
@@ -169,27 +156,25 @@ func (d *DecoderUnsafeMinifed) DecodeFloat64AsNumber() (f float64, err *er.Error
 }
 
 // DecodeString return string. pass d.Buf start from after " and receive from from after "
-func (d *DecoderUnsafeMinifed) DecodeString() (s string, err *er.Error) {
-	d.Offset(1) // due to have " at start
-
-	var loc = bytes.IndexByte(d.Buf, '"')
+func (d *DecoderMinifed) DecodeString() (s string) {
+	var loc int // Coma, Colon, bracket, ... location
+	loc = bytes.IndexByte(d.Buf, '"')
 	if loc < 0 {
-		err = ErrJSONEncodedStringCorrupted
-		return
+		// Reach last item of d.Buf!
+		loc = len(d.Buf) - 1
 	}
 
 	var slice []byte = d.Buf[:loc]
 	d.Offset(loc + 1)
-	s = convert.UnsafeByteSliceToString(slice)
-	return
+	return convert.UnsafeByteSliceToString(slice)
 }
 
 /*
 	Array part
 */
 
-// DecodeByteArrayAsBase64 convert base64 string to [n]byte. pass buf start from " and receive from after "
-func (d *DecoderUnsafeMinifed) DecodeByteArrayAsBase64(array []byte) (err *er.Error) {
+// DecodeByteArrayAsBase64 convert base64 string to [n]byte
+func (d *DecoderMinifed) DecodeByteArrayAsBase64(array []byte) (err *er.Error) {
 	d.Offset(1) // due to have " at start
 
 	var loc = bytes.IndexByte(d.Buf, '"')
@@ -209,7 +194,7 @@ func (d *DecoderUnsafeMinifed) DecodeByteArrayAsBase64(array []byte) (err *er.Er
 }
 
 // DecodeByteArrayAsNumber convert number array to [n]byte
-func (d *DecoderUnsafeMinifed) DecodeByteArrayAsNumber(array []byte) (err *er.Error) {
+func (d *DecoderMinifed) DecodeByteArrayAsNumber(array []byte) (err *er.Error) {
 	var value uint8
 	for i := 0; i < len(array); i++ {
 		d.Offset(1) // due to have [ or ,
@@ -231,10 +216,8 @@ func (d *DecoderUnsafeMinifed) DecodeByteArrayAsNumber(array []byte) (err *er.Er
 	Slice as Number
 */
 
-// DecodeByteSliceAsNumber convert number string slice to []byte. pass buf start from [ and receive from after ]
-func (d *DecoderUnsafeMinifed) DecodeByteSliceAsNumber() (slice []byte, err *er.Error) {
-	d.Offset(1) // due to have [ at start
-
+// DecodeByteSliceAsNumber convert number string slice to []byte. pass buf start from after [ and receive from after ]
+func (d *DecoderMinifed) DecodeByteSliceAsNumber() (slice []byte, err *er.Error) {
 	var num uint8
 	slice = make([]byte, 0, 8) // TODO::: Is cap efficient enough?
 
@@ -250,10 +233,8 @@ func (d *DecoderUnsafeMinifed) DecodeByteSliceAsNumber() (slice []byte, err *er.
 	return
 }
 
-// DecodeUInt16SliceAsNumber convert uint16 number string slice to []byte. pass buf start from [ and receive from after ]
-func (d *DecoderUnsafeMinifed) DecodeUInt16SliceAsNumber() (slice []uint16, err *er.Error) {
-	d.Offset(1) // due to have [ at start
-
+// DecodeUInt16SliceAsNumber convert uint16 number string slice to []byte. pass buf start from after [ and receive from after ]
+func (d *DecoderMinifed) DecodeUInt16SliceAsNumber() (slice []uint16, err *er.Error) {
 	var num uint16
 	slice = make([]uint16, 0, 8) // TODO::: Is cap efficient enough?
 
@@ -269,10 +250,8 @@ func (d *DecoderUnsafeMinifed) DecodeUInt16SliceAsNumber() (slice []uint16, err 
 	return
 }
 
-// DecodeUInt32SliceAsNumber convert uint32 number string slice to []byte. pass buf start from [ and receive from after ]
-func (d *DecoderUnsafeMinifed) DecodeUInt32SliceAsNumber() (slice []uint32, err *er.Error) {
-	d.Offset(1) // due to have [ at start
-
+// DecodeUInt32SliceAsNumber convert uint32 number string slice to []byte. pass buf start from after [ and receive from after ]
+func (d *DecoderMinifed) DecodeUInt32SliceAsNumber() (slice []uint32, err *er.Error) {
 	var num uint32
 	slice = make([]uint32, 0, 8) // TODO::: Is cap efficient enough?
 
@@ -288,10 +267,8 @@ func (d *DecoderUnsafeMinifed) DecodeUInt32SliceAsNumber() (slice []uint32, err 
 	return
 }
 
-// DecodeUInt64SliceAsNumber convert uint64 number string slice to []byte. pass buf start from [ and receive from after ]
-func (d *DecoderUnsafeMinifed) DecodeUInt64SliceAsNumber() (slice []uint64, err *er.Error) {
-	d.Offset(1) // due to have [ at start
-
+// DecodeUInt64SliceAsNumber convert uint64 number string slice to []byte. pass buf start from after [ and receive from after ]
+func (d *DecoderMinifed) DecodeUInt64SliceAsNumber() (slice []uint64, err *er.Error) {
 	var num uint64
 	slice = make([]uint64, 0, 8) // TODO::: Is cap efficient enough?
 
@@ -311,11 +288,10 @@ func (d *DecoderUnsafeMinifed) DecodeUInt64SliceAsNumber() (slice []uint64, err 
 	Slice as Base64
 */
 
-// DecodeByteSliceAsBase64 convert base64 string to []byte. pass buf start from " and receive from after "
-func (d *DecoderUnsafeMinifed) DecodeByteSliceAsBase64() (slice []byte, err *er.Error) {
-	d.Offset(1) // due to have " at start
-
-	var loc = bytes.IndexByte(d.Buf, '"')
+// DecodeByteSliceAsBase64 convert base64 string to []byte
+func (d *DecoderMinifed) DecodeByteSliceAsBase64() (slice []byte, err *er.Error) {
+	var loc int // Coma, Colon, bracket, ... location
+	loc = bytes.IndexByte(d.Buf, '"')
 	slice = make([]byte, base64.RawStdEncoding.DecodedLen(len(d.Buf[:loc])))
 	var n int
 	var goErr error
@@ -330,10 +306,8 @@ func (d *DecoderUnsafeMinifed) DecodeByteSliceAsBase64() (slice []byte, err *er.
 	return
 }
 
-// Decode32ByteArraySliceAsBase64 decode [32]byte base64 string slice. pass buf start from [ and receive from after ]
-func (d *DecoderUnsafeMinifed) Decode32ByteArraySliceAsBase64() (slice [][32]byte, err *er.Error) {
-	d.Offset(1) // due to have [ at start
-
+// Decode32ByteArraySliceAsBase64 decode [32]byte base64 string slice. pass buf start from after [ and receive from after ]
+func (d *DecoderMinifed) Decode32ByteArraySliceAsBase64() (slice [][32]byte, err *er.Error) {
 	const base64Len = 43 // base64.RawStdEncoding.EncodedLen(len(32))	>>	(32*8 + 5) / 6
 	slice = make([][32]byte, 0, 8)
 
