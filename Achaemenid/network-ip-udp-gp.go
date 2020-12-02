@@ -21,13 +21,13 @@ const (
 
 // MakeGPOverUDPNetwork start a UDP listener and response request in given stream handler
 func MakeGPOverUDPNetwork(s *Server) (err error) {
-	s.Networks.GPOverUDP, err = net.ListenUDP("udp", &net.UDPAddr{IP: s.Networks.localIP, Port: gpOverUDPPortNumber})
+	s.Networks.GPOverUDP, err = net.ListenUDP("udp", &net.UDPAddr{IP: s.Networks.localIP[:], Port: gpOverUDPPortNumber})
 	if err != nil {
-		log.Warn("UDP listen on port ", gpOverUDPPortNumber, " failed due to: ", err)
+		log.Warn("UDP - listen on port", gpOverUDPPortNumber, "failed due to:", err)
 		return
 	}
 
-	log.Info("Begin listen UDP to serve GP over IP/UDP on port: ", gpOverUDPPortNumber)
+	log.Info("UDP - Begin listen to serve GP over IP/UDP on port:", gpOverUDPPortNumber)
 
 	go handleGPEncapsulateInUDP(s, s.Networks.GPOverUDP)
 
@@ -57,10 +57,13 @@ func handleGPEncapsulateInUDP(s *Server, udpConn *net.UDPConn) {
 			continue
 		}
 
+		/* Metrics data */
+		conn.BytesReceived += uint64(rwSize)
+
 		rwSize, err = udpConn.WriteToUDP(st.OutcomePayload, udpAddr)
 		if err != nil {
 			if log.DebugMode {
-				log.Debug("TCP - Writing error:", err.Error())
+				log.Debug("UDP - Writing error:", err.Error())
 			}
 			// Just ignore packet and continue
 			continue

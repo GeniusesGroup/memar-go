@@ -6,31 +6,28 @@ type state uint8
 
 // State
 const (
-	// StateUnset indicate state not set yet!
-	StateUnset state = iota
+	StateUnset  state = iota // State not set yet!
+	StateNew                 // means connection not saved yet to storage!
+	StateLoaded              // means connection load from storage
 
-	// StateClosed indicate connection had been closed
-	StateClosed
-	// StateClosing indicate connection plan to close and not accept new stream
-	StateClosing
-	// StateNotResponse indicate peer not response to recently send request!
-	StateNotResponse
-	// StateOpen indicate connection is open and ready to use
-	StateOpen
-	// StateOpening indicate connection plan to open and not ready to accept stream!
-	StateOpening
-	// StateRateLimited indicate connection limited due to higher usage than permitted!
-	StateRateLimited
+	StateOpening // connection||stream plan to open and not ready to accept stream!
+	StateOpen    // connection||stream is open and ready to use
+	StateClosing // connection||stream plan to close and not accept new stream
+	StateClosed  // connection||stream had been closed
+
+	StateNotResponse // peer not response to recently send request!
+	StateRateLimited // connection||stream limited due to higher usage than permitted!
 
 	StateBrokenPacket
 	StateReady
 )
 
-type weight uint8
+// Weight indicate connection and stream weight
+type Weight uint8
 
-// weight
+// Weight
 const (
-	WeightNormal        weight = iota
+	WeightNormal        Weight = iota
 	WeightTimeSensitive        // If true must call related service in each received packet. VoIP, IPTV, Sensors data, ...
 	// 16 queue for priority weight of the connections exist.
 )

@@ -4,6 +4,8 @@ package achaemenid
 
 import (
 	gp "../GP"
+	etime "../earth-time"
+	er "../error"
 )
 
 type gpNetwork struct {
@@ -14,7 +16,7 @@ type gpNetwork struct {
 }
 
 // MakeGPNetwork register app to OS GP router and start handle income GP packets.
-func MakeGPNetwork(s *Server) (err error) {
+func MakeGPNetwork(s *Server) (err *er.Error) {
 	// send PublicKey to router and get GP if user granted. otherwise log error.
 	// n.gp.GPRange = [14]byte{}
 
@@ -33,15 +35,6 @@ func handleGP(s *Server, packet []byte) (conn *Connection, st *Stream) {
 	// But it can panic server due to memory overflow, so decide to check or not!
 	// gp.CheckPacket()
 
-	// Check server supported requested protocol
-	var protocolID uint16 = gp.GetDestinationProtocol(packet)
-	var protocolHandler StreamHandler = s.StreamProtocols.GetProtocolHandler(protocolID)
-	if protocolHandler == nil {
-		// Send response or just ignore packet
-		// TODO::: DDOS!!??
-		return
-	}
-
 	var err error
 	var gpAddr [14]byte = gp.GetSourceAddr(packet)
 	// Find Connection from ConnectionPoolByPeerAdd by requester GP
@@ -55,9 +48,10 @@ func handleGP(s *Server, packet []byte) (conn *Connection, st *Stream) {
 			return
 		}
 		s.Connections.RegisterConnection(conn)
-		conn.PacketPayloadSize = gp.GetPayloadLength(packet) // It's not working due to packet not encrypted yet!
+		// conn.PacketPayloadSize = gp.GetPayloadLength(packet) // It's not working due to packet not encrypted yet!
 	}
 
+	conn.LastUsage = etime.Now()
 	conn.PacketsReceived++
 
 	// Decrypt packet!
@@ -69,16 +63,15 @@ func handleGP(s *Server, packet []byte) (conn *Connection, st *Stream) {
 		return
 	}
 
-	conn.SocietyID = gp.GetSourceSociety(packet)
-	conn.RouterID = gp.GetSourceRouter(packet)
+	/* Metrics data */
 	conn.BytesReceived += uint64(gp.GetPayloadLength(packet))
-	var streamID uint32 = gp.GetStreamID(packet)
 
+	var streamID uint32 = gp.GetStreamID(packet)
 	st = conn.StreamPool.GetStreamByID(streamID)
 	if st == nil {
 		st, err = conn.MakeIncomeStream(streamID)
 		if err != nil {
-			conn.FailedServiceCall++
+			conn.ServiceCallFail()
 			conn.FailedPacketsReceived++
 			// Send response or just ignore stream
 			// TODO::: DDOS!!??
@@ -93,6 +86,13 @@ func handleGP(s *Server, packet []byte) (conn *Connection, st *Stream) {
 
 	// Check TimeSensitive or stream ready to call requested app protocol to process stream.
 	if (st.Weight == WeightTimeSensitive && err != gp.ErrGPPacketArrivedPosterior) || (st.State == StateReady) {
+		// Check server supported requested protocol
+		var protocolHandler StreamHandler = s.StreamProtocols.GetProtocolHandler(st.ProtocolID)
+		if protocolHandler == nil {
+			// Send response or just ignore packet
+			// TODO::: DDOS!!??
+			return
+		}
 		protocolHandler(s, st)
 		conn.StreamPool.CloseStream(st)
 	}
@@ -101,7 +101,7 @@ func handleGP(s *Server, packet []byte) (conn *Connection, st *Stream) {
 }
 
 // AddNewGPPacket add new GP packet payload to the stream!
-func addNewGPPacket(st *Stream, p []byte, packetID uint32) (err error) {
+func addNewGPPacket(st *Stream, p []byte, packetID uint32) (err *er.Error) {
 	// Handle packet received not by order
 	if packetID < st.LastPacketID {
 		st.State = StateBrokenPacket
@@ -133,9 +133,10 @@ func addNewGPPacket(st *Stream, p []byte, packetID uint32) (err error) {
 
 // Just to show transfer data for setStreamSettings()! We never use this type!
 type setStreamSettingsReq struct {
+	ProtocolID  uint16 // protocol ID usage is like TCP||UDP ports that indicate payload protocol.
 	TotalPacket uint32 // Expected packets count that send over this stream!
 	PayloadSize uint64
-	Weight      weight
+	Weight      Weight
 }
 
 // setStreamSettings set stream settings like time sensitive use in VoIP, IPTV, ...

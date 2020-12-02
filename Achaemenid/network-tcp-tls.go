@@ -19,7 +19,7 @@ Please have plan to transform your network to GP protocol!
 func MakeTCPTLSNetwork(s *Server, port uint16) (err error) {
 	// Can't make a network on a port that doesn't has a handler!
 	if s.StreamProtocols.GetProtocolHandler(port) == nil {
-		return ErrAchaemenidProtocolHandler
+		return ErrProtocolHandler
 	}
 
 	var tcp = tcpNetwork{
@@ -27,14 +27,14 @@ func MakeTCPTLSNetwork(s *Server, port uint16) (err error) {
 		port: port,
 	}
 
-	tcp.listener, err = net.ListenTCP("tcp", &net.TCPAddr{IP: s.Networks.localIP, Port: int(port)})
+	tcp.listener, err = net.ListenTCP("tcp", &net.TCPAddr{IP: s.Networks.localIP[:], Port: int(port)})
 	if err != nil {
-		log.Warn("TCP/TLS listen on port ", tcp.listener.Addr(), " failed due to: ", err)
+		log.Warn("TCP/TLS - listen on port ", tcp.listener.Addr(), " failed due to: ", err)
 		return
 	}
 
 	s.Networks.RegisterTCPNetwork(&tcp)
-	log.Info("Begin listen TCP/TLS on ", tcp.listener.Addr())
+	log.Info("TCP/TLS - Begin listen on ", tcp.listener.Addr())
 
 	err = tcp.registerCertificates(s)
 
@@ -42,6 +42,7 @@ func MakeTCPTLSNetwork(s *Server, port uint16) (err error) {
 	var config = new(tls.Config)
 	config.NextProtos = []string{"http/1.1", "sRPC"}
 	config.PreferServerCipherSuites = true
+	// config.InsecureSkipVerify = true
 	config.Certificates = append(config.Certificates, tcp.certificate)
 	tcp.tlsListener = tls.NewListener(tcp.listener, config)
 
@@ -59,13 +60,13 @@ func handleTCPTLSListener(s *Server, tcp *tcpNetwork, ln net.Listener) {
 		tcpConn, err = ln.Accept()
 		if err != nil {
 			if log.DebugMode {
-				log.Debug("TCP/TLS - Accepting new connection occur error:", err)
+				log.Debug("TCP/TLS - Accepting new connection occur error:", tcp.listener.Addr(), err)
 			}
 			continue
 		}
 
 		if log.DebugMode {
-			log.Debug("TCP/TLS - Begin listen on:", tcpConn.RemoteAddr())
+			log.Debug("TCP/TLS - New connection:", tcpConn.RemoteAddr())
 		}
 
 		go handleTCPConn(s, tcp, tcpConn)

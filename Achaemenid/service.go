@@ -9,14 +9,15 @@ import (
 
 // Service store needed data for service
 type Service struct {
-	ID                uint32             // Handy ID or Hash of name!
-	URI               string             // Fill just if any http like type handler needed! Simple URI not variabale included!
-	CRUD              authorization.CRUD // CRUD == Create, Read, Update, Delete
+	ID                uint32 // Handy ID or Hash of name!
+	URI               string // Fill just if any http like type handler needed! Simple URI not variabale included!
 	IssueDate         int64
 	ExpiryDate        int64
 	ExpireInFavorOf   string // Other service name
 	ExpireInFavorOfID uint32 // Other ServiceID! Handy ID or Hash of ExpireInFavorOf!
 	Status            uint8
+
+	Authorization authorization.Service
 
 	Name        map[lang.Language]string
 	Description map[lang.Language]string
@@ -27,11 +28,11 @@ type Service struct {
 	MinExpectedResponseSize uint64 // to improve performance by alloc stream buffer size
 	MaxExpectedResponseSize uint64 // to improve performance by alloc stream buffer size
 
-	SRPCHandler SRPCHandler `json:"-"`
-	HTTPHandler HTTPHandler `json:"-"`
+	SRPCHandler SRPCHandler `json:"-" syllab:"-"`
+	HTTPHandler HTTPHandler `json:"-" syllab:"-"`
 
-	JSON   []byte `json:"-"`
-	Syllab []byte `json:"-"`
+	JSON   []byte `json:"-" syllab:"-"`
+	Syllab []byte `json:"-" syllab:"-"`
 }
 
 // Service Status

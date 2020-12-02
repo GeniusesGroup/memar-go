@@ -3,24 +3,24 @@
 package achaemenid
 
 import (
+	"crypto/sha512"
 	"os"
 	"os/signal"
 	"path/filepath"
 	"runtime/debug"
 	"syscall"
+	"time"
 
+	"../convert"
 	"../log"
 )
-
-func init() {
-	log.Info("-----------------------------Achaemenid Server-----------------------------")
-}
 
 // Server represents needed data to serving some functionality such as networks, ...
 // to both server and client apps!
 type Server struct {
-	State           int    // States locate in const of this file.
-	RepoLocation    string // Just fill in supported OS
+	AppID           [32]byte // Hash of domain act as Application ID too
+	State           int      // States locate in const of this file.
+	RepoLocation    string   // Just fill in supported OS
 	Manifest        Manifest
 	Cryptography    cryptography
 	Networks        networks
@@ -43,13 +43,6 @@ const (
 func (s *Server) Init() {
 	defer s.PanicHandler()
 
-	log.Info("Try to initialize server...")
-	if s == nil {
-		log.Fatal("Try to initialize nil server! Check codes!")
-	}
-	s.State = ServerStateStarting
-	// Get UserGivenPermission from OS
-
 	// Indicate repoLocation
 	// TODO::: change to PersiaOS when it ready!
 	var ex, err = os.Executable()
@@ -57,12 +50,27 @@ func (s *Server) Init() {
 		log.Fatal(err)
 	}
 	s.RepoLocation = filepath.Dir(ex)
+
+	log.Init("Achaemenid", s.RepoLocation, 24*60*60)
+
+	log.Info("-----------------------------Achaemenid Server-----------------------------")
+	log.Info("Try to initialize server...")
+	if s == nil {
+		log.Fatal("Try to initialize nil server! Check codes!")
+	}
+	s.State = ServerStateStarting
+
+	// Get UserGivenPermission from OS
+
+	s.AppID = sha512.Sum512_256(convert.UnsafeStringToByteSlice(s.Manifest.DomainName))
+
 	log.Info("App start in", s.RepoLocation)
 
 	s.Assets.init(s)
 	s.Services.init()
 	s.Connections.init(s)
 	s.Cryptography.init(s)
+
 }
 
 // Start will start the server and block caller until server shutdown.
@@ -100,9 +108,21 @@ func (s *Server) HandleOSSignals(sigChannel chan os.Signal) {
 	case syscall.SIGINT, syscall.SIGQUIT, syscall.SIGTERM, syscall.SIGKILL:
 		log.Info("Caught signal to stop server")
 		if s.State == ServerStateRunning {
+			var timer = time.NewTimer(s.Manifest.TechnicalInfo.ShutdownDelay)
 			s.State = ServerStateStopping
 			log.Info("Waiting for server to finish and release proccess, It will take up to 60 seconds")
-			s.Shutdown()
+			go s.Shutdown()
+
+			select {
+			case <-timer.C:
+				if s.State == ServerStateStopping {
+					log.Info("Server can't finish shutdown and release proccess in", s.Manifest.TechnicalInfo.ShutdownDelay.String())
+				} else {
+					log.Info("Server stopped successfully")
+				}
+			}
+
+			log.SaveToStorage()
 			os.Exit(s.State)
 		}
 	case syscall.Signal(0x17): // syscall.SIGURG:
@@ -118,16 +138,16 @@ func (s *Server) HandleOSSignals(sigChannel chan os.Signal) {
 
 // Shutdown use to graceful stop server!!
 func (s *Server) Shutdown() {
+	s.State = ServerStateStopping
+
 	s.Cryptography.shutdown()
 	s.Networks.shutdown()
 	s.Assets.shutdown()
+	s.Connections.shutdown()
 
 	// Wait to finish above logic, or kill app in --- second!
 	// time.Sleep(10 * time.Second)
 
 	// it must change to ServerStateStop(0) otherwise it means app can't close normally
 	s.State = ServerStateStop
-
-	log.Info("Server stopped")
-	log.SaveToStorage("Achaemenid", s.RepoLocation)
 }

@@ -7,6 +7,8 @@ import (
 	"net"
 	"time"
 
+	etime "../earth-time"
+	er "../error"
 	"../log"
 )
 
@@ -15,6 +17,11 @@ import (
 We just implement and support TCP over IP for transition period and not our goal!
 Please have plan to transform your network to GP protocol!
 */
+
+const (
+	tcpKeepAliveDuration       = 60
+	tcpKeepAliveDurationString = "60"
+)
 
 // tcpNetwork store related data.
 type tcpNetwork struct {
@@ -29,7 +36,7 @@ type tcpNetwork struct {
 func MakeTCPNetwork(s *Server, port uint16) (err error) {
 	// Can't make a network on a port that doesn't has a handler!
 	if s.StreamProtocols.GetProtocolHandler(port) == nil {
-		return ErrAchaemenidProtocolHandler
+		return ErrProtocolHandler
 	}
 
 	var tcp = tcpNetwork{
@@ -37,14 +44,14 @@ func MakeTCPNetwork(s *Server, port uint16) (err error) {
 		port: port,
 	}
 
-	tcp.listener, err = net.ListenTCP("tcp", &net.TCPAddr{IP: s.Networks.localIP, Port: int(port)})
+	tcp.listener, err = net.ListenTCP("tcp", &net.TCPAddr{IP: s.Networks.localIP[:], Port: int(port)})
 	if err != nil {
-		log.Warn("TCP listen on port ", tcp.listener.Addr(), " failed due to: ", err)
+		log.Warn("TCP -  listen on port ", tcp.listener.Addr(), " failed due to: ", err)
 		return
 	}
 
 	s.Networks.RegisterTCPNetwork(&tcp)
-	log.Info("Begin listen TCP on ", tcp.listener.Addr())
+	log.Info("TCP - Begin listen on ", tcp.listener.Addr())
 
 	go handleTCPListener(s, &tcp, tcp.listener)
 
@@ -61,13 +68,13 @@ func handleTCPListener(s *Server, tcp *tcpNetwork, tcpListener *net.TCPListener)
 		tcpConn, err = tcpListener.AcceptTCP()
 		if err != nil {
 			if log.DebugMode {
-				log.Debug("TCP - Accepting new connection occur error:", err)
+				log.Debug("TCP - Accepting new connection occur error:", tcp.listener.Addr(), err)
 			}
 			continue
 		}
 
 		if log.DebugMode {
-			log.Debug("TCP - Begin listen on:", tcpConn.RemoteAddr())
+			log.Debug("TCP - New connection:", tcpConn.RemoteAddr())
 		}
 
 		go handleTCPConn(s, tcp, tcpConn)
@@ -77,15 +84,18 @@ func handleTCPListener(s *Server, tcp *tcpNetwork, tcpListener *net.TCPListener)
 // TODO::: Check some other idea here:
 // https://github.com/xtaci/gaio
 func handleTCPConn(s *Server, tcp *tcpNetwork, tcpConn net.Conn) {
+	// TODO::: improve handle panic and log more data in log.DebugMode
 	defer s.PanicHandler()
+
 	var conn *Connection
 	var rwSize int
-	var err error
+	var goErr error
+	var err *er.Error
 	var st *Stream
 	for {
 		// close the connection by Deadline and keep alive the connection.
 		// set or reset 2 minutes timeout for the connection
-		tcpConn.SetDeadline(time.Now().Add(120 * time.Second))
+		tcpConn.SetDeadline(time.Now().Add(tcpKeepAliveDuration * time.Second))
 		// TODO::: TCP keep-alive function means send packet to peer and keep connection alive until close by some way! Why need this to waste resources!!??
 		// tcpConn.(*net.TCPConn).SetKeepAlive(true)
 
@@ -99,19 +109,21 @@ func handleTCPConn(s *Server, tcp *tcpNetwork, tcpConn net.Conn) {
 		// log.Warn("total size:", buf.Len())
 
 		// Read the incoming connection into the buffer.
-		rwSize, err = tcpConn.Read(buf)
+		rwSize, goErr = tcpConn.Read(buf)
 		// if err == io.EOF || rwSize == 0 {
 		// 	// log.Warn("Closing error reading: ", err)
 		// 	tcpConn.Close()
 		// 	return
 		// } else
-		if err != nil {
-			// Peer already closed the connection, So we close it too!
+		if goErr != nil {
 			if log.DebugMode {
-				log.Debug("TCP - Read error:", err.Error())
+				log.Debug("TCP - Read error:", tcpConn.RemoteAddr(), goErr.Error())
 			}
-			tcpConn.Close()
-			return
+			if !log.DevMode {
+				// Peer already closed the connection, So we close it too!
+				tcpConn.Close()
+				return
+			}
 		}
 
 		if conn == nil {
@@ -123,7 +135,7 @@ func handleTCPConn(s *Server, tcp *tcpNetwork, tcpConn net.Conn) {
 		// Server can't make new stream or connection almost due to not enough resources!
 		if err != nil {
 			if log.DebugMode {
-				log.Debug("TCP - Make new connection error:", err.Error())
+				log.Debug("TCP - Make new Achaemenid stream error:", tcpConn.RemoteAddr(), err.Error())
 			}
 			// TODO::: need to send message??
 			tcpConn.Close()
@@ -134,18 +146,26 @@ func handleTCPConn(s *Server, tcp *tcpNetwork, tcpConn net.Conn) {
 		s.StreamProtocols.GetProtocolHandler(tcp.port)(s, st)
 		// Can't continue listen on a tcp connection that don't have active Achaemenid connection!
 		if st.Connection == nil {
+			if log.DebugMode {
+				log.Debug("TCP - Make new Achaemenid connection error on this conn:", tcpConn.RemoteAddr())
+			}
 			tcpConn.Close()
 			return
 		}
-		// TODO::: is it worth to check conn==nil or just overwrite it in every loop!!??
-		// if conn == nil {
-		conn = st.Connection
-		// }
 
-		rwSize, err = tcpConn.Write(st.OutcomePayload)
-		if err != nil {
+		/* Metrics data */
+		st.Connection.BytesReceived += uint64(rwSize)
+
+		if conn == nil {
+			conn = st.Connection
+			copy(conn.IPAddr[:], tcpConn.RemoteAddr().(*net.TCPAddr).IP)
+			conn.LastUsage = etime.Now()
+		}
+
+		rwSize, goErr = tcpConn.Write(st.OutcomePayload)
+		if goErr != nil {
 			if log.DebugMode {
-				log.Debug("TCP - Writing error:", err.Error())
+				log.Debug("TCP - Writing error:", tcpConn.RemoteAddr(), goErr.Error())
 			}
 			tcpConn.Close()
 			return

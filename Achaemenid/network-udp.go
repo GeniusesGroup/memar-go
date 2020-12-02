@@ -25,7 +25,7 @@ type udpNetwork struct {
 func MakeUDPNetwork(s *Server, port uint16) (err error) {
 	// Can't make a network on a port that doesn't has a handler!
 	if s.StreamProtocols.GetProtocolHandler(port) == nil {
-		return ErrAchaemenidProtocolHandler
+		return ErrProtocolHandler
 	}
 
 	var udp = udpNetwork{
@@ -33,7 +33,7 @@ func MakeUDPNetwork(s *Server, port uint16) (err error) {
 		port: port,
 	}
 
-	udp.conn, err = net.ListenUDP("udp", &net.UDPAddr{IP: s.Networks.localIP, Port: int(port)})
+	udp.conn, err = net.ListenUDP("udp", &net.UDPAddr{IP: s.Networks.localIP[:], Port: int(port)})
 	if err != nil {
 		log.Warn("UDP listen on port ", port, " failed due to: ", err)
 		return
@@ -81,6 +81,9 @@ func handleUDPPacket(s *Server, udp *udpNetwork, packet []byte, udpAddr *net.UDP
 
 	st.IncomePayload = packet
 	s.StreamProtocols.GetProtocolHandler(udp.port)(s, st)
+
+	/* Metrics data */
+	st.Connection.BytesReceived += uint64(len(st.IncomePayload))
 
 	_, err = udp.conn.WriteToUDP(st.OutcomePayload, udpAddr)
 	if err != nil {

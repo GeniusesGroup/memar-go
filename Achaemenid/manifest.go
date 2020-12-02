@@ -5,6 +5,7 @@ package achaemenid
 import (
 	"time"
 
+	etime "../earth-time"
 	lang "../language"
 )
 
@@ -12,8 +13,6 @@ import (
 // All string slice is multi language and in order by ManifestLanguages order
 type Manifest struct {
 	SocietyID  uint32
-	AppID      [16]byte // Application ID
-	DomainID   [16]byte // Usually hash of domain
 	DomainName string
 	Email      string
 	Icon       string
@@ -35,10 +34,10 @@ type TechnicalInfo struct {
 	ShutdownDelay time.Duration // the server will wait for at least this amount of time for active streams to finish!
 
 	// Server Overal rate limit
-	MaxOpenConnection     uint64 // The maximum number of concurrent connections the app may serve.
-	ConnectionIdleTimeout time.Duration
-	MaxStreamHeaderSize   uint64 // For stream protocols with variable header size like HTTP
-	MaxStreamPayloadSize  uint64 // For stream protocols with variable payload size like sRPC, HTTP, ...
+	MaxOpenConnection     uint64         // The maximum number of concurrent connections the app may serve.
+	ConnectionIdleTimeout etime.Duration // In seconds
+	// MaxStreamHeaderSize   uint64 // For stream protocols with variable header size like HTTP
+	// MaxStreamPayloadSize  uint64 // For stream protocols with variable payload size like sRPC, HTTP, ...
 
 	// Guest rete limit - Connection.OwnerType==0
 	GuestMaxConnections            uint64 // 0 means App not accept guest connection.
@@ -73,8 +72,8 @@ type TechnicalInfo struct {
 	Storage  uint64 // Byte, HHD||SSD||... indicate by DataCentersClassForDataStore
 
 	// Distribution
-	DistributeOutOfSociety bool   // Allow to run service-only instance of app out of original society belong to.
-	DataCentersClass       uint8  // 0:FirstClass 256:Low-Quality default:5
-	MaxNodeNumber          uint32 // default:3
-	NodeFailureTimeOut     uint16 // in minute, default:60m, other service only node replace failed node! not use in network failure, it is handy proccess!
+	DistributeOutOfSociety bool          // Allow to run service-only instance of app out of original society belong to.
+	DataCentersClass       uint8         // 0:FirstClass 256:Low-Quality default:5
+	MaxNodeNumber          uint32        // default:3
+	NodeFailureTimeOut     time.Duration // Max suggestion is 6 hour, other service only node replace failed node! not use in network failure, it is handy proccess!
 }

@@ -6,6 +6,7 @@ import (
 	"net"
 
 	gp "../GP"
+	etime "../earth-time"
 	"../log"
 )
 
@@ -21,13 +22,13 @@ const (
 
 // MakeGPOverIPNetwork start a IP packet listener and response request in given stream handler
 func MakeGPOverIPNetwork(s *Server) (err error) {
-	s.Networks.GPOverIP, err = net.ListenIP(gpOverIPProtocolNumber, &net.IPAddr{IP: s.Networks.localIP})
+	s.Networks.GPOverIP, err = net.ListenIP(gpOverIPProtocolNumber, &net.IPAddr{IP: s.Networks.localIP[:]})
 	if err != nil {
-		log.Warn("IP listen on protocol number "+gpOverIPProtocolNumber+" failed due to: ", err)
+		log.Warn("IP - listen on protocol number "+gpOverIPProtocolNumber+" failed due to: ", err)
 		return
 	}
 
-	log.Info("Begin listen IP on protocol number: ", gpOverIPProtocolNumber)
+	log.Info("IP - Begin listen on protocol number: ", gpOverIPProtocolNumber)
 
 	go handleGPEncapsulateInIP(s, s.Networks.GPOverIP)
 
@@ -52,7 +53,11 @@ func handleGPEncapsulateInIP(s *Server, IPConn *net.IPConn) {
 
 		conn, _ = handleGP(s, buf[:rwSize])
 		if conn != nil {
-			conn.IPAddr = *IPAddr
+			copy(conn.IPAddr[:], IPAddr.IP)
+			conn.LastUsage = etime.Now()
 		}
+
+		/* Metrics data */
+		conn.BytesReceived += uint64(rwSize)
 	}
 }

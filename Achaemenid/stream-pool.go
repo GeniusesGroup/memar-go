@@ -2,8 +2,11 @@
 
 package achaemenid
 
+import "sync"
+
 // StreamPool set & get streams in a pool by ID!
 type StreamPool struct {
+	mutex               sync.Mutex         // TODO::: it is not efficient way and need more work
 	p                   map[uint32]*Stream // key is Stream.ID
 	freeIncomeStreamID  uint32
 	freeOutcomeStreamID uint32
@@ -17,7 +20,9 @@ func (sp *StreamPool) Init() {
 
 // RegisterStream save given Stream to pool
 func (sp *StreamPool) RegisterStream(st *Stream) {
+	sp.mutex.Lock()
 	sp.p[st.ID] = st
+	sp.mutex.Unlock()
 }
 
 // GetStreamByID returns Stream from pool if exists by given ID!
@@ -28,5 +33,7 @@ func (sp *StreamPool) GetStreamByID(id uint32) *Stream {
 
 // CloseStream delete given Stream from pool
 func (sp *StreamPool) CloseStream(st *Stream) {
+	sp.mutex.Lock()
 	delete(sp.p, st.ID)
+	sp.mutex.Unlock()
 }
