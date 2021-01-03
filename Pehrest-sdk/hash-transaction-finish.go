@@ -1,37 +1,38 @@
 /* For license and copyright information please see LEGAL file in repository */
 
-package gsdk
+package psdk
 
 import (
 	"../achaemenid"
+	er "../error"
 	"../ganjine"
-	gs "../ganjine-services"
+	"../pehrest"
 )
 
 // HashTransactionFinish approve transaction!
 // Transaction Manager will set record and index! no further action need after this call!
-func HashTransactionFinish(c *ganjine.Cluster, req *gs.HashTransactionFinishReq) (err error) {
-	var node *ganjine.Node = c.GetNodeByRecordID(req.IndexKey)
+func HashTransactionFinish(req *pehrest.HashTransactionFinishReq) (err *er.Error) {
+	var node *ganjine.Node = ganjine.Cluster.GetNodeByRecordID(req.IndexKey)
 	if node == nil {
-		return ganjine.ErrGanjineNoNodeAvailable
+		return ganjine.ErrNoNodeAvailable
 	}
 
 	if node.Node.State == achaemenid.NodeStateLocalNode {
-		return gs.HashTransactionFinish(req)
+		return pehrest.HashTransactionFinish(req)
 	}
 
 	var st *achaemenid.Stream
 	st, err = node.Conn.MakeOutcomeStream(0)
 	if err != nil {
-		return err
+		return
 	}
 
-	st.Service = &gs.HashTransactionFinishService
+	st.Service = &pehrest.HashTransactionFinishService
 	st.OutcomePayload = req.SyllabEncoder()
 
-	err = achaemenid.SrpcOutcomeRequestHandler(c.Server, st)
+	err = achaemenid.SrpcOutcomeRequestHandler( st)
 	if err != nil {
-		return err
+		return
 	}
 	return st.Err
 }

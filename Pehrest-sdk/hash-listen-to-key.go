@@ -1,24 +1,25 @@
 /* For license and copyright information please see LEGAL file in repository */
 
-package gsdk
+package psdk
 
 import (
 	"../achaemenid"
+	er "../error"
 	"../ganjine"
-	gs "../ganjine-services"
+	"../pehrest"
 	"../srpc"
 )
 
-// HashIndexListenToKey get the recordID by index hash when new record set!
+// HashListenToKey get the recordID by index hash when new record set!
 // Must send this request to specific node that handle that range!!
-func HashIndexListenToKey(c *ganjine.Cluster, req *gs.HashIndexListenToKeyReq) (err error) {
-	var node *ganjine.Node = c.GetNodeByRecordID(req.IndexKey)
+func HashListenToKey(req *pehrest.HashListenToKeyReq) (err *er.Error) {
+	var node *ganjine.Node = ganjine.Cluster.GetNodeByRecordID(req.IndexKey)
 	if node == nil {
-		return ganjine.ErrGanjineNoNodeAvailable
+		return ganjine.ErrNoNodeAvailable
 	}
 
 	if node.Node.State == achaemenid.NodeStateLocalNode {
-		// return gs.HashIndexListenToKey(req)
+		// return pehrest.HashListenToKey(req)
 	}
 
 	var st *achaemenid.Stream
@@ -27,17 +28,17 @@ func HashIndexListenToKey(c *ganjine.Cluster, req *gs.HashIndexListenToKeyReq) (
 		return
 	}
 
-	st.Service = &gs.HashIndexListenToKeyService
+	st.Service = &pehrest.HashListenToKeyService
 	st.OutcomePayload = req.SyllabEncoder()
 
-	err = achaemenid.SrpcOutcomeRequestHandler(c.Server, st)
+	err = achaemenid.SrpcOutcomeRequestHandler( st)
 	if err != nil {
 		return
 	}
 
 	// Sender can reuse exiting stream to send new record
 
-	var res = &gs.HashIndexListenToKeyRes{}
+	var res = &pehrest.HashListenToKeyRes{}
 	res.SyllabDecoder(srpc.GetPayload(st.IncomePayload))
 
 	return st.Err

@@ -1,37 +1,38 @@
 /* For license and copyright information please see LEGAL file in repository */
 
-package gsdk
+package psdk
 
 import (
 	"../achaemenid"
+	er "../error"
 	"../ganjine"
-	gs "../ganjine-services"
+	"../pehrest"
 )
 
-// HashIndexDeleteKey use to delete exiting index hash with all related records IDs!
+// HashDeleteKey use to delete exiting index hash with all related records IDs!
 // It wouldn't delete related records! Use DeleteIndexHistory() instead if you want delete all records too!
-func HashIndexDeleteKey(c *ganjine.Cluster, req *gs.HashIndexDeleteKeyReq) (err error) {
-	var node *ganjine.Node = c.GetNodeByRecordID(req.IndexKey)
+func HashDeleteKey(req *pehrest.HashDeleteKeyReq) (err *er.Error) {
+	var node *ganjine.Node = ganjine.Cluster.GetNodeByRecordID(req.IndexKey)
 	if node == nil {
-		return ganjine.ErrGanjineNoNodeAvailable
+		return ganjine.ErrNoNodeAvailable
 	}
 
 	if node.Node.State == achaemenid.NodeStateLocalNode {
-		return gs.HashIndexDeleteKey(req)
+		return pehrest.HashDeleteKey(req)
 	}
 
 	var st *achaemenid.Stream
 	st, err = node.Conn.MakeOutcomeStream(0)
 	if err != nil {
-		return err
+		return
 	}
 
-	st.Service = &gs.HashIndexDeleteKeyService
+	st.Service = &pehrest.HashDeleteKeyService
 	st.OutcomePayload = req.SyllabEncoder()
 
-	err = achaemenid.SrpcOutcomeRequestHandler(c.Server, st)
+	err = achaemenid.SrpcOutcomeRequestHandler(st)
 	if err != nil {
-		return err
+		return
 	}
 
 	return st.Err

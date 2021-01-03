@@ -1,11 +1,12 @@
 /* For license and copyright information please see LEGAL file in repository */
 
-package gs
+package pehrest
 
 import (
 	"../achaemenid"
 	"../authorization"
 	"../convert"
+	er "../error"
 	"../ganjine"
 	lang "../language"
 	"../srpc"
@@ -14,19 +15,23 @@ import (
 
 // HashTransactionGetValuesService store details about HashTransactionGetValues service
 var HashTransactionGetValuesService = achaemenid.Service{
-	ID:                2051910519,
-	CRUD:              authorization.CRUDRead,
+	ID:                2502111331,
 	IssueDate:         1587282740,
 	ExpiryDate:        0,
 	ExpireInFavorOf:   "", // English name of favor service just to show off!
 	ExpireInFavorOfID: 0,
 	Status:            achaemenid.ServiceStatePreAlpha,
 
+	Authorization: authorization.Service{
+		CRUD:     authorization.CRUDRead,
+		UserType: authorization.UserTypeApp,
+	},
+
 	Name: map[lang.Language]string{
-		lang.EnglishLanguage: "HashTransactionGetValues",
+		lang.LanguageEnglish: "Index Hash - Transaction Get Values",
 	},
 	Description: map[lang.Language]string{
-		lang.EnglishLanguage: `Find records by indexes that store before in consistently!
+		lang.LanguageEnglish: `Find records by indexes that store before in consistently!
 It will get index from transaction managers not indexes nodes!`,
 	},
 	TAGS: []string{
@@ -38,9 +43,9 @@ It will get index from transaction managers not indexes nodes!`,
 
 // HashTransactionGetValuesSRPC is sRPC handler of HashTransactionGetValues service.
 func HashTransactionGetValuesSRPC(st *achaemenid.Stream) {
-	if server.Manifest.DomainID != st.Connection.DomainID {
+	if st.Connection.UserID != achaemenid.Server.AppID {
 		// TODO::: Attack??
-		st.Err = ganjine.ErrGanjineNotAuthorizeRequest
+		st.Err = ganjine.ErrNotAuthorizeRequest
 		return
 	}
 
@@ -67,13 +72,17 @@ type HashTransactionGetValuesRes struct {
 }
 
 // HashTransactionGetValues find records by indexes that store before in consistently!
-func HashTransactionGetValues(req *HashTransactionGetValuesReq) (res *HashTransactionGetValuesRes, err error) {
+func HashTransactionGetValues(req *HashTransactionGetValuesReq) (res *HashTransactionGetValuesRes, err *er.Error) {
 	res = &HashTransactionGetValuesRes{
 		// get index from transaction managers not indexes nodes
-		IndexValues: cluster.TransactionManager.GetIndexRecords(req.IndexKey),
+		IndexValues: ganjine.Cluster.TransactionManager.GetIndexRecords(req.IndexKey),
 	}
 	return
 }
+
+/*
+	-- Syllab Encoder & Decoder --
+*/
 
 // SyllabDecoder decode from buf to req
 // Due to this service just use internally, It skip check buf size syllab rule! Panic occur if bad request received!

@@ -1,24 +1,25 @@
 /* For license and copyright information please see LEGAL file in repository */
 
-package gsdk
+package psdk
 
 import (
 	"../achaemenid"
+	er "../error"
 	"../ganjine"
-	gs "../ganjine-services"
+	"../pehrest"
 	"../srpc"
 )
 
 // HashTransactionGetValues find records by indexes that store before in consistently!
 // It will get index from transaction managers not indexes nodes!
-func HashTransactionGetValues(c *ganjine.Cluster, req *gs.HashTransactionGetValuesReq) (res *gs.HashTransactionGetValuesRes, err error) {
-	var node *ganjine.Node = c.GetNodeByRecordID(req.IndexKey)
+func HashTransactionGetValues(req *pehrest.HashTransactionGetValuesReq) (res *pehrest.HashTransactionGetValuesRes, err *er.Error) {
+	var node *ganjine.Node = ganjine.Cluster.GetNodeByRecordID(req.IndexKey)
 	if node == nil {
-		return nil, ganjine.ErrGanjineNoNodeAvailable
+		return nil, ganjine.ErrNoNodeAvailable
 	}
 
 	if node.Node.State == achaemenid.NodeStateLocalNode {
-		return gs.HashTransactionGetValues(req)
+		return pehrest.HashTransactionGetValues(req)
 	}
 
 	var st *achaemenid.Stream
@@ -27,15 +28,15 @@ func HashTransactionGetValues(c *ganjine.Cluster, req *gs.HashTransactionGetValu
 		return nil, err
 	}
 
-	st.Service = &gs.HashTransactionGetValuesService
+	st.Service = &pehrest.HashTransactionGetValuesService
 	st.OutcomePayload = req.SyllabEncoder()
 
-	err = achaemenid.SrpcOutcomeRequestHandler(c.Server, st)
+	err = achaemenid.SrpcOutcomeRequestHandler(st)
 	if err != nil {
 		return nil, err
 	}
 
-	res = &gs.HashTransactionGetValuesRes{}
+	res = &pehrest.HashTransactionGetValuesRes{}
 	res.SyllabDecoder(srpc.GetPayload(st.IncomePayload))
 	return res, st.Err
 }

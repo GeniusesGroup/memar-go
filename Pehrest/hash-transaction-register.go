@@ -1,11 +1,13 @@
 /* For license and copyright information please see LEGAL file in repository */
 
-package gs
+package pehrest
 
 import (
 	"../achaemenid"
 	"../authorization"
+	er "../error"
 	"../ganjine"
+	gs "../ganjine-services"
 	lang "../language"
 	"../srpc"
 	"../syllab"
@@ -13,19 +15,23 @@ import (
 
 // HashTransactionRegisterService store details about HashTransactionRegister service
 var HashTransactionRegisterService = achaemenid.Service{
-	ID:                2613523897,
-	CRUD:              authorization.CRUDCreate,
+	ID:                811144689,
 	IssueDate:         1587282740,
 	ExpiryDate:        0,
 	ExpireInFavorOf:   "", // English name of favor service just to show off!
 	ExpireInFavorOfID: 0,
 	Status:            achaemenid.ServiceStatePreAlpha,
 
+	Authorization: authorization.Service{
+		CRUD:     authorization.CRUDCreate,
+		UserType: authorization.UserTypeApp,
+	},
+
 	Name: map[lang.Language]string{
-		lang.EnglishLanguage: "HashTransactionRegister",
+		lang.LanguageEnglish: "Index Hash - Transaction Register",
 	},
 	Description: map[lang.Language]string{
-		lang.EnglishLanguage: `Register new transaction on queue and get last record when transaction ready for this one!
+		lang.LanguageEnglish: `Register new transaction on queue and get last record when transaction ready for this one!
 Requester must send FinishTransaction() immediately, otherwise Transaction manager will drop this request from queue and chain!
 transaction write can be on secondary indexes not primary indexes, due to primary index must always unique!
 transaction manager on any node in a replication must sync with master replication corresponding node manager!
@@ -39,9 +45,9 @@ Must send this request to specific node that handle that range!!`,
 
 // HashTransactionRegisterSRPC is sRPC handler of HashTransactionRegister service.
 func HashTransactionRegisterSRPC(st *achaemenid.Stream) {
-	if server.Manifest.DomainID != st.Connection.DomainID {
+	if st.Connection.UserID != achaemenid.Server.AppID {
 		// TODO::: Attack??
-		st.Err = ganjine.ErrGanjineNotAuthorizeRequest
+		st.Err = ganjine.ErrNotAuthorizeRequest
 		return
 	}
 
@@ -59,7 +65,7 @@ func HashTransactionRegisterSRPC(st *achaemenid.Stream) {
 
 // HashTransactionRegisterReq is request structure of HashTransactionRegister()
 type HashTransactionRegisterReq struct {
-	Type     requestType
+	Type     gs.RequestType
 	IndexKey [32]byte
 	RecordID [32]byte
 }
@@ -70,28 +76,27 @@ type HashTransactionRegisterRes struct {
 }
 
 // HashTransactionRegister register new transaction on queue and get last record when transaction ready for this one!
-func HashTransactionRegister(req *HashTransactionRegisterReq) (res *HashTransactionRegisterRes, err error) {
+func HashTransactionRegister(req *HashTransactionRegisterReq) (res *HashTransactionRegisterRes, err *er.Error) {
 	res = &HashTransactionRegisterRes{}
 
-	if req.Type == RequestTypeBroadcast {
+	if req.Type == gs.RequestTypeBroadcast {
 		// tell other node that this node handle request and don't send this request to other nodes!
-		req.Type = RequestTypeStandalone
+		req.Type = gs.RequestTypeStandalone
 		var reqEncoded = req.SyllabEncoder()
 
 		// send request to other related nodes
-		var i uint8
-		for i = 1; i < cluster.Manifest.TotalZones; i++ {
+		for i := 1; i < len(ganjine.Cluster.Replications.Zones); i++ {
 			var st *achaemenid.Stream
-			st, err = cluster.Replications.Zones[i].Nodes[cluster.Node.ID].Conn.MakeOutcomeStream(0)
+			st, err = ganjine.Cluster.Replications.Zones[i].Nodes[ganjine.Cluster.Node.ID].Conn.MakeOutcomeStream(0)
 			if err != nil {
 				// TODO::: Can we easily return error if two nodes did their job and not have enough resource to send request to final node??
 				return
 			}
 
-			st.Service = &achaemenid.Service{ID: 2613523897}
+			st.Service = &achaemenid.Service{ID: 811144689}
 			st.OutcomePayload = reqEncoded
 
-			err = achaemenid.SrpcOutcomeRequestHandler(server, st)
+			err = achaemenid.SrpcOutcomeRequestHandler( st)
 			if err != nil {
 				// TODO::: Can we easily return error if two nodes do their job and just one node connection lost??
 				return
@@ -102,19 +107,23 @@ func HashTransactionRegister(req *HashTransactionRegisterReq) (res *HashTransact
 		}
 
 		// Do for i=0 as local node
-		res.Record, err = cluster.TransactionManager.RegisterTransaction(req.IndexKey, req.RecordID)
+		res.Record, err = ganjine.Cluster.TransactionManager.RegisterTransaction(req.IndexKey, req.RecordID)
 	} else {
 		// Don't send last record due to Master node will give it to requester!
-		_, err = cluster.TransactionManager.RegisterTransaction(req.IndexKey, req.RecordID)
+		_, err = ganjine.Cluster.TransactionManager.RegisterTransaction(req.IndexKey, req.RecordID)
 	}
 
 	return
 }
 
+/*
+	-- Syllab Encoder & Decoder --
+*/
+
 // SyllabDecoder decode from buf to req
 // Due to this service just use internally, It skip check buf size syllab rule! Panic occur if bad request received!
 func (req *HashTransactionRegisterReq) SyllabDecoder(buf []byte) {
-	req.Type = requestType(syllab.GetUInt8(buf, 0))
+	req.Type = gs.RequestType(syllab.GetUInt8(buf, 0))
 	copy(req.IndexKey[:], buf[1:])
 	copy(req.RecordID[:], buf[33:])
 	return
