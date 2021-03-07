@@ -16,27 +16,26 @@ Please have plan to transform your network to GP protocol!
 */
 
 // MakeTCPTLSNetwork start a TCP/TLS listener and response request in given stream handler
-func MakeTCPTLSNetwork(s *Server, port uint16) (err error) {
+func MakeTCPTLSNetwork(port uint16) (err error) {
 	// Can't make a network on a port that doesn't has a handler!
-	if s.StreamProtocols.GetProtocolHandler(port) == nil {
+	if Server.StreamProtocols.GetProtocolHandler(port) == nil {
 		return ErrProtocolHandler
 	}
 
 	var tcp = tcpNetwork{
-		s:    s,
 		port: port,
 	}
 
-	tcp.listener, err = net.ListenTCP("tcp", &net.TCPAddr{IP: s.Networks.localIP[:], Port: int(port)})
+	tcp.listener, err = net.ListenTCP("tcp", &net.TCPAddr{IP: Server.Networks.localIP[:], Port: int(port)})
 	if err != nil {
 		log.Warn("TCP/TLS - listen on port ", tcp.listener.Addr(), " failed due to: ", err)
 		return
 	}
 
-	s.Networks.RegisterTCPNetwork(&tcp)
+	Server.Networks.RegisterTCPNetwork(&tcp)
 	log.Info("TCP/TLS - Begin listen on ", tcp.listener.Addr())
 
-	err = tcp.registerCertificates(s)
+	err = tcp.registerCertificates()
 
 	// TODO::: Is it worth it to convert tls package usage and implement tls by this package!!??
 	var config = new(tls.Config)
@@ -46,14 +45,14 @@ func MakeTCPTLSNetwork(s *Server, port uint16) (err error) {
 	config.Certificates = append(config.Certificates, tcp.certificate)
 	tcp.tlsListener = tls.NewListener(tcp.listener, config)
 
-	go handleTCPTLSListener(s, &tcp, tcp.tlsListener)
+	go handleTCPTLSListener(&tcp, tcp.tlsListener)
 
 	return
 }
 
 // handleTCPListener use to handle TCP/TLS networks connections with any application protocol.
-func handleTCPTLSListener(s *Server, tcp *tcpNetwork, ln net.Listener) {
-	defer s.PanicHandler()
+func handleTCPTLSListener(tcp *tcpNetwork, ln net.Listener) {
+	defer Server.PanicHandler()
 	for {
 		var err error
 		var tcpConn net.Conn
@@ -69,14 +68,14 @@ func handleTCPTLSListener(s *Server, tcp *tcpNetwork, ln net.Listener) {
 			log.Debug("TCP/TLS - New connection:", tcpConn.RemoteAddr())
 		}
 
-		go handleTCPConn(s, tcp, tcpConn)
+		go handleTCPConn(tcp, tcpConn)
 	}
 }
 
-func (tcp *tcpNetwork) registerCertificates(s *Server) (err error) {
+func (tcp *tcpNetwork) registerCertificates() (err error) {
 	// Try to load certificate from secret folder
-	var crtFile = s.Assets.Secret.GetFile(s.Manifest.DomainName + "-fullchain.crt")
-	var keyFile = s.Assets.Secret.GetFile(s.Manifest.DomainName + ".key")
+	var crtFile = Server.Assets.Secret.GetFile(Server.Manifest.DomainName + "-fullchain.crt")
+	var keyFile = Server.Assets.Secret.GetFile(Server.Manifest.DomainName + ".key")
 	if crtFile != nil && keyFile != nil {
 		tcp.certificate, err = tls.X509KeyPair(crtFile.Data, keyFile.Data)
 		if err == nil {

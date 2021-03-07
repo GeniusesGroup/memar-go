@@ -4,6 +4,7 @@ package achaemenid
 
 import (
 	"crypto/tls"
+	"io"
 	"net"
 	"time"
 
@@ -19,13 +20,14 @@ Please have plan to transform your network to GP protocol!
 */
 
 const (
-	tcpKeepAliveDuration       = 60
-	tcpKeepAliveDurationString = "60"
+	tcpKeepAliveDuration       = 120
+	tcpKeepAliveDurationString = "120"
+	// TODO::: make decision for 8192 byte below!! 8192 is max Chapar protocol payload size.
+	tcpBufferSize = 8192
 )
 
 // tcpNetwork store related data.
 type tcpNetwork struct {
-	s           *Server
 	port        uint16
 	listener    *net.TCPListener
 	tlsListener net.Listener
@@ -33,34 +35,33 @@ type tcpNetwork struct {
 }
 
 // MakeTCPNetwork start a TCP listener and response request by given stream handler
-func MakeTCPNetwork(s *Server, port uint16) (err error) {
+func MakeTCPNetwork(port uint16) (err error) {
 	// Can't make a network on a port that doesn't has a handler!
-	if s.StreamProtocols.GetProtocolHandler(port) == nil {
+	if Server.StreamProtocols.GetProtocolHandler(port) == nil {
 		return ErrProtocolHandler
 	}
 
 	var tcp = tcpNetwork{
-		s:    s,
 		port: port,
 	}
 
-	tcp.listener, err = net.ListenTCP("tcp", &net.TCPAddr{IP: s.Networks.localIP[:], Port: int(port)})
+	tcp.listener, err = net.ListenTCP("tcp", &net.TCPAddr{IP: Server.Networks.localIP[:], Port: int(port)})
 	if err != nil {
 		log.Warn("TCP -  listen on port ", tcp.listener.Addr(), " failed due to: ", err)
 		return
 	}
 
-	s.Networks.RegisterTCPNetwork(&tcp)
+	Server.Networks.RegisterTCPNetwork(&tcp)
 	log.Info("TCP - Begin listen on ", tcp.listener.Addr())
 
-	go handleTCPListener(s, &tcp, tcp.listener)
+	go handleTCPListener(&tcp, tcp.listener)
 
 	return
 }
 
 // handleTCPListener use to handle TCP networks connections with any application protocol.
-func handleTCPListener(s *Server, tcp *tcpNetwork, tcpListener *net.TCPListener) {
-	defer s.PanicHandler()
+func handleTCPListener(tcp *tcpNetwork, tcpListener *net.TCPListener) {
+	defer Server.PanicHandler()
 	// TODO::: defer a function to remake tcp listener
 	for {
 		var err error
@@ -77,15 +78,15 @@ func handleTCPListener(s *Server, tcp *tcpNetwork, tcpListener *net.TCPListener)
 			log.Debug("TCP - New connection:", tcpConn.RemoteAddr())
 		}
 
-		go handleTCPConn(s, tcp, tcpConn)
+		go handleTCPConn(tcp, tcpConn)
 	}
 }
 
 // TODO::: Check some other idea here:
 // https://github.com/xtaci/gaio
-func handleTCPConn(s *Server, tcp *tcpNetwork, tcpConn net.Conn) {
+func handleTCPConn(tcp *tcpNetwork, tcpConn net.Conn) {
 	// TODO::: improve handle panic and log more data in log.DebugMode
-	defer s.PanicHandler()
+	defer Server.PanicHandler()
 
 	var conn *Connection
 	var rwSize int
@@ -100,30 +101,23 @@ func handleTCPConn(s *Server, tcp *tcpNetwork, tcpConn net.Conn) {
 		// tcpConn.(*net.TCPConn).SetKeepAlive(true)
 
 		// Make a buffer to hold incoming data.
-		// TODO::: make decision for 8192 byte below!! 8192 is max Chapar protocol payload size.
-		var buf = make([]byte, 4096)
-
-		// TODO::: check below performance!
-		// var buf bytes.Buffer
-		// io.Copy(&buf, conn)
-		// log.Warn("total size:", buf.Len())
-
+		var buf = make([]byte, tcpBufferSize)
 		// Read the incoming connection into the buffer.
 		rwSize, goErr = tcpConn.Read(buf)
-		// if err == io.EOF || rwSize == 0 {
-		// 	// log.Warn("Closing error reading: ", err)
-		// 	tcpConn.Close()
-		// 	return
-		// } else
-		if goErr != nil {
+		if goErr == io.EOF || rwSize == 0 {
+			if log.DebugMode {
+				log.Debug("TCP - Closed by peer:", goErr.Error())
+			}
+			// Peer already closed the connection, So we close it too!
+			tcpConn.Close()
+			return
+		} else if goErr != nil {
 			if log.DebugMode {
 				log.Debug("TCP - Read error:", tcpConn.RemoteAddr(), goErr.Error())
 			}
-			if !log.DevMode {
-				// Peer already closed the connection, So we close it too!
-				tcpConn.Close()
-				return
-			}
+			// Peer already closed the connection, So we close it too!
+			tcpConn.Close()
+			return
 		}
 
 		if conn == nil {
@@ -142,8 +136,9 @@ func handleTCPConn(s *Server, tcp *tcpNetwork, tcpConn net.Conn) {
 			return
 		}
 
+		st.tcpConn = tcpConn // TODO::: due to some TCP restrection, some client send body seprately after send header, so need pass tcpConn to HTTP layer!
 		st.IncomePayload = buf[:rwSize]
-		s.StreamProtocols.GetProtocolHandler(tcp.port)(s, st)
+		Server.StreamProtocols.GetProtocolHandler(tcp.port)(st)
 		// Can't continue listen on a tcp connection that don't have active Achaemenid connection!
 		if st.Connection == nil {
 			if log.DebugMode {
@@ -169,6 +164,9 @@ func handleTCPConn(s *Server, tcp *tcpNetwork, tcpConn net.Conn) {
 			}
 			tcpConn.Close()
 			return
+		}
+		if rwSize != len(st.OutcomePayload) {
+			// TODO:::
 		}
 	}
 }

@@ -11,13 +11,35 @@ import (
 	"syscall"
 	"time"
 
+	as "../assets"
 	"../convert"
 	"../log"
 )
 
-// Server represents needed data to serving some functionality such as networks, ...
+// Server is the base object that use by other part of app and platforms!
+var Server serverStructure
+
+// Init method use to auto initialize server object with default data.
+func init() {
+	// Indicate repoLocation
+	// TODO::: change to PersiaOS when it ready!
+	var ex, err = os.Executable()
+	if err != nil {
+		log.Fatal(err)
+	}
+	Server.RepoLocation = filepath.Dir(ex)
+
+	Server.Services.init()
+
+	// Server.Assets.GUI = as.NewFolder("gui")
+	Server.Assets.Objects = as.NewFolder("objects")
+	Server.Assets.Secret = as.NewFolder("secret")
+	Server.Assets.Secret.ReadRepositoryFromFileSystem(Server.RepoLocation+"/secret", true)
+}
+
+// serverStructure represents needed data to serving some functionality such as networks, ...
 // to both server and client apps!
-type Server struct {
+type serverStructure struct {
 	AppID           [32]byte // Hash of domain act as Application ID too
 	State           int      // States locate in const of this file.
 	RepoLocation    string   // Just fill in supported OS
@@ -39,43 +61,37 @@ const (
 	ServerStateStarting // plan to start
 )
 
-// Init method use to initialize server object with default data.
-func (s *Server) Init() {
+// Init method use to initialize server object with default data in second phase.
+func (s *serverStructure) Init() {
 	defer s.PanicHandler()
 
-	// Indicate repoLocation
-	// TODO::: change to PersiaOS when it ready!
-	var ex, err = os.Executable()
-	if err != nil {
-		log.Fatal(err)
-	}
-	s.RepoLocation = filepath.Dir(ex)
-
-	log.Init("Achaemenid", s.RepoLocation, 24*60*60)
+	log.Init("Achaemenid", Server.RepoLocation, 24*60*60)
 
 	log.Info("-----------------------------Achaemenid Server-----------------------------")
-	log.Info("Try to initialize server...")
-	if s == nil {
-		log.Fatal("Try to initialize nil server! Check codes!")
-	}
+	log.Info("Try to initialize Achaemenid Server...")
+
+	Server.State = ServerStateStarting
+
+	// Get UserGivenPermission from OS
+
+	log.Info("App start in", Server.RepoLocation)
+
+	s.Manifest.init()
+
 	s.State = ServerStateStarting
 
 	// Get UserGivenPermission from OS
 
 	s.AppID = sha512.Sum512_256(convert.UnsafeStringToByteSlice(s.Manifest.DomainName))
 
-	log.Info("App start in", s.RepoLocation)
-
-	s.Assets.init(s)
-	s.Services.init()
-	s.Connections.init(s)
-	s.Cryptography.init(s)
-
+	Server.Assets.LoadFromStorage()
+	Server.Connections.init()
+	s.Cryptography.init()
 }
 
 // Start will start the server and block caller until server shutdown.
-func (s *Server) Start() {
-	log.Info("Try to start server...")
+func (s *serverStructure) Start() {
+	log.Info("Try to start achaemenid.Server...")
 
 	s.State = ServerStateRunning
 
@@ -92,7 +108,7 @@ func (s *Server) Start() {
 
 // PanicHandler recover from panics if exist to prevent server stop.
 // Call it by defer in any goroutine due to >> https://github.com/golang/go/issues/20161
-func (s *Server) PanicHandler() {
+func (s *serverStructure) PanicHandler() {
 	var r = recover()
 	if r != nil {
 		log.Warn("Panic Exception: ", r)
@@ -102,7 +118,7 @@ func (s *Server) PanicHandler() {
 
 // HandleOSSignals use to handle OS signals! Caller will block until we get an OS signal
 // https://en.wikipedia.org/wiki/Signal_(IPC)
-func (s *Server) HandleOSSignals(sigChannel chan os.Signal) {
+func (s *serverStructure) HandleOSSignals(sigChannel chan os.Signal) {
 	var sig = <-sigChannel
 	switch sig {
 	case syscall.SIGINT, syscall.SIGQUIT, syscall.SIGTERM, syscall.SIGKILL:
@@ -137,7 +153,7 @@ func (s *Server) HandleOSSignals(sigChannel chan os.Signal) {
 }
 
 // Shutdown use to graceful stop server!!
-func (s *Server) Shutdown() {
+func (s *serverStructure) Shutdown() {
 	s.State = ServerStateStopping
 
 	s.Cryptography.shutdown()
