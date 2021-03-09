@@ -39,7 +39,7 @@ func (tlsConn *tlsConn) stablish() (err error) {
 		// solve domain to IP and try again
 		tlsConn.conn, err = tls.Dial("tcp", domainPort, &tlsConf)
 		if err != nil {
-			return err
+			return
 		}
 	}
 
