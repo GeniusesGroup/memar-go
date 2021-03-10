@@ -3,6 +3,7 @@
 package sep
 
 import (
+	"../../achaemenid"
 	etime "../../earth-time"
 	er "../../error"
 	"../../http"
@@ -41,41 +42,38 @@ func (idn *idn) idnGetToken(req *idnGetTokenReq) (err *er.Error) {
 	httpReq.SetContentLength()
 	httpReq.Header.Set(http.HeaderKeyServer, http.DefaultServer)
 
-	var serverReq []byte = httpReq.Marshal()
-	var serverRes []byte
-	serverRes, err = idn.sendHTTPRequest(serverReq)
+	var httpRes *http.Response
+	httpRes, err = idn.doHTTP(httpReq)
 	if err != nil {
-		return
-	}
-
-	if log.DevMode {
-		log.Debug("sep.ir - Send msg to idn.seppay.ir::\n", string(serverReq))
-		log.Debug("sep.ir - Received msg from idn.seppay.ir::\n", string(serverRes))
-	}
-
-	var httpRes = http.MakeNewResponse()
-	err = httpRes.UnMarshal(serverRes)
-	if err != nil {
+		if err.Equal(achaemenid.ErrReceiveResponse) {
+			// TODO::: check order
+		}
 		return
 	}
 
 	switch httpRes.StatusCode {
 	case http.StatusBadRequestCode:
-		return ErrBadRequest
+		return achaemenid.ErrBadRequest
 	case http.StatusUnauthorizedCode:
 		log.Warn("Authorization failed with sep services! Double check account username & password")
 	case http.StatusInternalServerErrorCode:
-		return ErrInternalError
+		return achaemenid.ErrInternalError
 	}
 
-	var res = idnGetTokenRes{}
-	err = res.jsonDecoder(httpRes.Body)
-	if err != nil {
-		return ErrBadResponse
+	switch httpRes.Header.GetContentType().SubType {
+	case http.ContentTypeMimeSubTypeHTML:
+		err = ErrPOSAuthenticationError
+		return
+	case http.ContentTypeMimeSubTypeJSON:
+		var res = idnGetTokenRes{}
+		err = res.jsonDecoder(httpRes.Body)
+		if err != nil {
+			return achaemenid.ErrBadResponse
+		}
+		idn.AccessToken = res.AccessToken
+		idn.ExpiresIn = etime.Now().AddDuration(etime.Duration(res.ExpiresIn))
+		idn.TokenType = res.TokenType
 	}
-	idn.AccessToken = res.AccessToken
-	idn.ExpiresIn = etime.Now().AddDuration(etime.Duration(res.ExpiresIn))
-	idn.TokenType = res.TokenType
 	return
 }
 
@@ -97,37 +95,25 @@ func (res *idnGetTokenRes) jsonDecoder(buf []byte) (err *er.Error) {
 	var decoder = json.Decoder{
 		Buf: buf,
 	}
-	var keyName string
-	for len(decoder.Buf) > 2 {
-		keyName = decoder.DecodeKey()
+	for err == nil {
+		var keyName = decoder.DecodeKey()
 		switch keyName {
 		case "":
 			return
 		case "access_token":
 			res.AccessToken, err = decoder.DecodeString()
-			if err != nil {
-				return
-			}
 		case "token_type":
 			res.TokenType, err = decoder.DecodeString()
-			if err != nil {
-				return
-			}
 		case "expires_in":
 			res.ExpiresIn, err = decoder.DecodeInt64()
-			if err != nil {
-				return
-			}
 		case "refresh_token":
 			res.RefreshToken, err = decoder.DecodeString()
-			if err != nil {
-				return
-			}
 		default:
 			err = decoder.NotFoundKey()
-			if err != nil {
-				return
-			}
+		}
+
+		if len(decoder.Buf) < 3 {
+			return
 		}
 	}
 	return

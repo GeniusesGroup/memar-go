@@ -3,8 +3,11 @@
 package sep
 
 import (
+	"../../achaemenid"
 	er "../../error"
+	"../../http"
 	"../../json"
+	"../../log"
 )
 
 const (
@@ -40,8 +43,6 @@ func (pos *POS) Init(jsonSettings []byte) (err *er.Error) {
 		return ErrBadPOSSettings
 	}
 
-	err = pos.IDN.getAccessToken(pos.Username, pos.Password)
-
 	// TODO::: Make GP connection to sep.ir, when sep.ir impelement GP!!
 	return
 }
@@ -53,36 +54,61 @@ func (pos *POS) jsonDecoder(buf []byte) (err *er.Error) {
 }
 
 func (pos *POS) checkTerminalID(TerminalID string) (err *er.Error) {
-	active := pos.TerminalIDs[TerminalID]
+	var active = pos.TerminalIDs[TerminalID]
 	if !active {
 		return ErrBadTerminalID
 	}
 	return
 }
 
-func (pos *POS) sendHTTPRequest(req []byte) (res []byte, err *er.Error) {
+func (pos *POS) doHTTP(httpReq *http.Request) (httpRes *http.Response, err *er.Error) {
 	var goErr error
 	var tlsConn *tlsConn
 	tlsConn, goErr = getTLSConn()
-	if goErr != nil {
-		return nil, ErrNoConnection
+	if goErr != nil || tlsConn == nil {
+		return nil, achaemenid.ErrNoConnection
 	}
 
+	var req []byte = httpReq.Marshal()
 	_, goErr = tlsConn.conn.Write(req)
 	if goErr != nil {
-		return nil, ErrInternalError
+		return nil, achaemenid.ErrSendRequest
 	}
 
-	res = make([]byte, 4096)
+	var res = make([]byte, 2048)
 	var readSize int
 	readSize, goErr = tlsConn.conn.Read(res)
 	if err != nil {
-		return nil, ErrInternalError
+		return nil, achaemenid.ErrReceiveResponse
+	}
+
+	httpRes = http.MakeNewResponse()
+	err = httpRes.UnMarshal(res)
+	if err != nil {
+		return
+	}
+
+	var contentLength = httpRes.Header.GetContentLength()
+	// TODO::: check content length not
+	if contentLength > 0 && len(httpRes.Body) == 0 {
+		httpRes.Body = make([]byte, contentLength)
+		readSize, goErr = tlsConn.conn.Read(httpRes.Body)
+		if goErr != nil {
+			return
+		}
+		if readSize != int(contentLength) {
+			// err =
+			// return
+		}
 	}
 
 	tlsConn.free()
 
-	return res[:readSize], nil
+	if log.DeepDebugMode {
+		log.DeepDebug("sep.ir - Send msg to:::", httpReq.URI.Raw, httpReq.Header, string(httpReq.Body))
+		log.DeepDebug("sep.ir - Received msg from:::", httpRes.ReasonPhrase, httpRes.Header, string(httpRes.Body))
+	}
+	return
 }
 
 func (pos *POS) sendSRPCRequest(req []byte) (res []byte, err *er.Error) {

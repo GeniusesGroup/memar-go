@@ -3,6 +3,7 @@
 package sep
 
 import (
+	"../../achaemenid"
 	er "../../error"
 	"../../http"
 	"../../json"
@@ -100,42 +101,45 @@ func (pos *POS) POSSendOrder(req *POSSendOrderReq) (res *POSSendOrderRes, err *e
 	httpReq.SetContentLength()
 	httpReq.Header.Set(http.HeaderKeyServer, http.DefaultServer)
 
-	var serverReq []byte = httpReq.Marshal()
-	var serverRes []byte
-	serverRes, err = pos.sendHTTPRequest(serverReq)
+	var httpRes *http.Response
+	httpRes, err = pos.doHTTP(httpReq)
 	if err != nil {
-		return
-	}
-
-	if log.DevMode {
-		log.Debug("sep.ir - Send msg to /v1/PcPosTransaction/StartPayment ::\n", string(serverReq))
-		log.Debug("sep.ir - Received msg from /v1/PcPosTransaction/StartPayment::\n", string(serverRes))
-	}
-
-	var httpRes = http.MakeNewResponse()
-	err = httpRes.UnMarshal(serverRes)
-	if err != nil {
+		if err.Equal(achaemenid.ErrReceiveResponse) {
+			// TODO::: check order
+		}
 		return
 	}
 
 	switch httpRes.StatusCode {
+	case http.StatusOKCode:
+		// TODO::: anything???
 	case http.StatusBadRequestCode:
-		err = ErrBadRequest
+		err = achaemenid.ErrBadRequest
 		return
 	case http.StatusUnauthorizedCode:
 		log.Warn("Authorization failed with sep services! Double check account username & password")
 	case http.StatusInternalServerErrorCode:
-		err = ErrInternalError
+		err = achaemenid.ErrInternalError
 		return
 	}
 
-	res = &POSSendOrderRes{}
-	err = res.jsonDecoder(httpRes.Body)
-	if err != nil {
-		err = ErrBadResponse
+	switch httpRes.Header.GetContentType().SubType {
+	case http.ContentTypeMimeSubTypeHTML:
+		err = ErrPOSInternalError
 		return
+	case http.ContentTypeMimeSubTypeJSON:
+		res = &POSSendOrderRes{}
+		err = res.jsonDecoder(httpRes.Body)
+		if err != nil {
+			err = achaemenid.ErrBadResponse
+			return
+		}
+		if !res.IsSuccess && res.ErrorCode == 0 {
+			err = ErrPOSInternalError
+			return
+		}
+		err = getErrorByResCode(res.ErrorCode)
 	}
-	err = getErrorByResCode(res.ErrorCode)
 	return
 }
 
@@ -228,130 +232,64 @@ func (res *POSSendOrderRes) jsonDecoder(buf []byte) (err *er.Error) {
 	var decoder = json.DecoderUnsafe{
 		Buf: buf,
 	}
-	var keyName string
-	for len(decoder.Buf) > 2 {
-		keyName = decoder.DecodeKey()
+	for err == nil {
+		var keyName = decoder.DecodeKey()
 		switch keyName {
 		case "":
 			return
 		case "IsSuccess":
 			res.IsSuccess, err = decoder.DecodeBool()
-			if err != nil {
-				return
-			}
 		case "ErrorCode":
 			res.ErrorCode, err = decoder.DecodeInt64()
-			if err != nil {
-				return
-			}
 		case "ErrorDescription":
 			res.ErrorDescription, err = decoder.DecodeString()
-			if err != nil {
-				return
-			}
 
 		case "Data":
 			continue
 		case "Identifier":
 			res.Identifier, err = decoder.DecodeString()
-			if err != nil {
-				return
-			}
 		case "TerminalID":
 			res.TerminalID, err = decoder.DecodeString()
-			if err != nil {
-				return
-			}
 		case "TransactionType":
 			res.TransactionType, err = decoder.DecodeString()
-			if err != nil {
-				return
-			}
 		case "AccountType":
 			res.AccountType, err = decoder.DecodeString()
-			if err != nil {
-				return
-			}
 		case "CreateOn":
 			res.CreateOn, err = decoder.DecodeString()
-			if err != nil {
-				return
-			}
 		case "CreateBy":
 			res.CreateBy, err = decoder.DecodeString()
-			if err != nil {
-				return
-			}
 		case "ResponseCode":
 			res.ResponseCode, err = decoder.DecodeString()
-			if err != nil {
-				return
-			}
 		case "ResponseDescription":
 			res.ResponseDescription, err = decoder.DecodeString()
-			if err != nil {
-				return
-			}
 		case "TraceNumber":
 			res.TraceNumber, err = decoder.DecodeString()
-			if err != nil {
-				return
-			}
 		case "ResNum":
 			res.ResNum, err = decoder.DecodeString()
-			if err != nil {
-				return
-			}
 		case "RRN":
 			res.RRN, err = decoder.DecodeString()
-			if err != nil {
-				return
-			}
 		case "State":
 			res.State, err = decoder.DecodeInt64()
-			if err != nil {
-				return
-			}
 		case "StateDescription":
 			res.StateDescription, err = decoder.DecodeString()
-			if err != nil {
-				return
-			}
 		case "Amount":
 			res.Amount, err = decoder.DecodeString()
-			if err != nil {
-				return
-			}
 		case "AffectiveAmount":
 			res.AffectiveAmount, err = decoder.DecodeString()
-			if err != nil {
-				return
-			}
 		case "PosAppVersion":
 			res.PosAppVersion, err = decoder.DecodeString()
-			if err != nil {
-				return
-			}
 		case "PosProtocolVersion":
 			res.PosProtocolVersion, err = decoder.DecodeString()
-			if err != nil {
-				return
-			}
 		case "CardHashNumber":
 			res.CardHashNumber, err = decoder.DecodeString()
-			if err != nil {
-				return
-			}
 		case "CardMaskNumber":
 			res.CardMaskNumber, err = decoder.DecodeString()
-			if err != nil {
-				return
-			}
 		default:
 			err = decoder.NotFoundKey()
-			if err != nil {
-				return
-			}
+		}
+
+		if len(decoder.Buf) < 3 {
+			return
 		}
 	}
 	return

@@ -10,7 +10,7 @@ import (
 
 const (
 	maxOpenConnection = 100
-	tlsConnTimeOut    = 60 * etime.Second
+	tlsConnTimeOut    = 120 * etime.Second
 )
 
 var tlsConns = [maxOpenConnection]tlsConn{}
@@ -42,7 +42,7 @@ func getTLSConn() (tlsConn *tlsConn, err error) {
 		if tlsConns[i].expireIn.Pass(timeNow) {
 			err = tlsConns[i].stablish()
 			if err != nil {
-				continue
+				return
 			}
 		}
 		tlsConns[i].expireIn = timeNow.AddDuration(tlsConnTimeOut)
