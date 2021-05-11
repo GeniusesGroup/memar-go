@@ -2,9 +2,21 @@
 
 package srpc
 
-import "errors"
+import (
+	er "../error"
+	lang "../language"
+)
 
-// Declare Errors Details
+const errorEnglishDomain = "sRPC"
+const errorPersianDomain = "sRPC"
+
+// Errors
 var (
-	ErrSRPCPacketTooShort = errors.New("Received sRPC Packet size is smaller than expected and can't use")
+	ErrPacketTooShort = er.New("urn:giti:srpc.libgo:error:packet-too-short").
+				SetDetail(lang.LanguageEnglish, errorEnglishDomain, "Packet Too Short", "Received sRPC Packet size is smaller than expected and can't use").
+				Save()
+
+	ErrServiceNotFound = er.New("urn:giti:srpc.libgo:error:service-not-found").
+				SetDetail(lang.LanguageEnglish, errorEnglishDomain, "Service Not Found", "Requested service by given ID not found in this server").
+				Save()
 )
