@@ -11,13 +11,13 @@ const errorPersianDomain = "خطا"
 
 // package errors
 var (
-	ErrErrorNotFound = New().SetDetail(lang.EnglishLanguage, errorEnglishDomain, "Not Found",
-		"Given ErrorID not exist or not registered yet to show more detail to you!").
-		SetDetail(lang.PersianLanguage, errorPersianDomain, "یافت نشد",
-			"خطایی با کد خطای داده شده یافت نشد یا هنوز ثبت نشده است که اطلاعات آن به شما داده شود").Save()
+	ErrNotFound = New("urn:giti:error.libgo:error:not-found").
+			SetDetail(lang.LanguageEnglish, errorEnglishDomain, "Not Found", "An error occurred but it is not registered yet to show more detail to you!").
+			SetDetail(lang.LanguagePersian, errorPersianDomain, "یافت نشد", "خطایی رخ داده است ولی جزییات آن خطا برای نمایش به شما ثبت نشده است").
+			Save()
 
-	ErrErrorIsEmpty = New().SetDetail(lang.EnglishLanguage, errorEnglishDomain, "Is Empty",
-		"Given Error is not exist").
-		SetDetail(lang.PersianLanguage, errorPersianDomain, "وجود ندارد",
-			"خطایی با آدرس حافظه داده شده یافت نشد").Save()
+	ErrIsEmpty = New("urn:giti:error.libgo:error:is-empty").
+			SetDetail(lang.LanguageEnglish, errorEnglishDomain, "Is Empty", "Given Error is not exist").
+			SetDetail(lang.LanguagePersian, errorPersianDomain, "وجود ندارد", "خطایی با آدرس حافظه داده شده یافت نشد").
+			Save()
 )
