@@ -3,6 +3,7 @@
 package http
 
 import (
+	"io"
 	"strconv"
 	"strings"
 
@@ -27,7 +28,7 @@ func MakeNewResponse() *Response {
 	return &r
 }
 
-// Marshal enecodes r *Response data and append to given httpPacket
+// Marshal enecodes whole r *Response data and return httpPacket!
 func (r *Response) Marshal() (httpPacket []byte) {
 	httpPacket = make([]byte, 0, r.Len())
 
@@ -37,8 +38,10 @@ func (r *Response) Marshal() (httpPacket []byte) {
 	httpPacket = append(httpPacket, SP)
 	httpPacket = append(httpPacket, r.ReasonPhrase...)
 	httpPacket = append(httpPacket, CRLF...)
+
 	httpPacket = r.Header.Marshal(httpPacket)
 	httpPacket = append(httpPacket, CRLF...)
+
 	httpPacket = append(httpPacket, r.Body...)
 	return
 }
@@ -87,6 +90,29 @@ func (r *Response) UnMarshal(httpPacket []byte) (err *er.Error) {
 	return
 }
 
+// MarshalWithoutBody enecodes r *Response data and return httpPacket without body part!
+func (r *Response) MarshalWithoutBody() (httpPacket []byte) {
+	httpPacket = make([]byte, 0, r.LenWithoutBody())
+
+	httpPacket = append(httpPacket, r.Version...)
+	httpPacket = append(httpPacket, SP)
+	httpPacket = append(httpPacket, r.StatusCode...)
+	httpPacket = append(httpPacket, SP)
+	httpPacket = append(httpPacket, r.ReasonPhrase...)
+	httpPacket = append(httpPacket, CRLF...)
+
+	httpPacket = r.Header.Marshal(httpPacket)
+	httpPacket = append(httpPacket, CRLF...)
+	return
+}
+
+// Write enecodes r *Response data and write it to given io.Writer!
+func (r *Response) Write(w io.Writer) {
+	var resMarshaled = r.MarshalWithoutBody()
+	w.Write(resMarshaled)
+	w.Write(r.Body)
+}
+
 // GetStatusCode get status code as uit16
 func (r *Response) GetStatusCode() (code uint16, err *er.Error) {
 	// TODO::: don't use strconv for such simple task
@@ -113,13 +139,19 @@ func (r *Response) SetContentLength() {
 	r.Header.Set(HeaderKeyContentLength, strconv.FormatUint(uint64(len(r.Body)), 10))
 }
 
-// Len return length of response
-func (r *Response) Len() (ln int) {
+// LenWithoutBody return length of response without body length!
+func (r *Response) LenWithoutBody() (ln int) {
+	ln = 6 // 6=1+1+2+2=len(SP)+len(SP)+len(CRLF)+len(CRLF)
 	ln += len(r.Version)
 	ln += len(r.StatusCode)
 	ln += len(r.ReasonPhrase)
 	ln += r.Header.Len()
-	ln += 6 // 6=1+1+2+2=len(SP)+len(SP)+len(CRLF)+len(CRLF)
+	return
+}
+
+// Len return length of response
+func (r *Response) Len() (ln int) {
+	ln = r.LenWithoutBody()
 	ln += len(r.Body)
 	return
 }

@@ -3,7 +3,8 @@
 package http
 
 import (
-	"strconv"
+	"io"
+	"net"
 	"strings"
 
 	"../convert"
@@ -27,16 +28,14 @@ func MakeNewRequest() *Request {
 	return &r
 }
 
-// Marshal enecodes r *Request data and append to given httpPacket
+// Marshal enecodes whole r *Request data and return httpPacket!
 func (r *Request) Marshal() (httpPacket []byte) {
 	httpPacket = make([]byte, 0, r.Len())
 
 	httpPacket = append(httpPacket, r.Method...)
 	httpPacket = append(httpPacket, SP)
-
 	httpPacket = r.URI.Marshal(httpPacket)
 	httpPacket = append(httpPacket, SP)
-
 	httpPacket = append(httpPacket, r.Version...)
 	httpPacket = append(httpPacket, CRLF...)
 
@@ -87,6 +86,29 @@ func (r *Request) UnMarshal(httpPacket []byte) (err *er.Error) {
 	return
 }
 
+// MarshalWithoutBody enecodes r *Request data and return httpPacket without body part!
+func (r *Request) MarshalWithoutBody() (httpPacket []byte) {
+	httpPacket = make([]byte, 0, r.LenWithoutBody())
+
+	httpPacket = append(httpPacket, r.Method...)
+	httpPacket = append(httpPacket, SP)
+	httpPacket = r.URI.Marshal(httpPacket)
+	httpPacket = append(httpPacket, SP)
+	httpPacket = append(httpPacket, r.Version...)
+	httpPacket = append(httpPacket, CRLF...)
+
+	httpPacket = r.Header.Marshal(httpPacket)
+	httpPacket = append(httpPacket, CRLF...)
+	return
+}
+
+// Write enecodes r *Request data and write it to given io.Writer!
+func (r *Request) Write(w io.Writer) {
+	var reqMarshaled = r.MarshalWithoutBody()
+	w.Write(reqMarshaled)
+	w.Write(r.Body)
+}
+
 // GetHost returns host of request by RFC 7230, section 5.3 rules: Must treat
 //		GET / HTTP/1.1
 //		Host: www.sabz.city
@@ -101,19 +123,39 @@ func (r *Request) GetHost() (host string) {
 	return r.URI.Authority
 }
 
-// SetContentLength set body length to header.
-func (r *Request) SetContentLength() {
-	r.Header.Set(HeaderKeyContentLength, strconv.FormatUint(uint64(len(r.Body)), 10))
-}
-
-// Len return length of request
-func (r *Request) Len() (ln int) {
+// LenWithoutBody return length of request without body length
+func (r *Request) LenWithoutBody() (ln int) {
+	ln = 6 // 6=1+1+2+2=len(SP)+len(SP)+len(CRLF)+len(CRLF)
 	ln += len(r.Method)
 	ln += r.URI.Len()
 	ln += len(r.Version)
 	ln += r.Header.Len()
-	ln += 6 // 6=1+1+2+2=len(SP)+len(SP)+len(CRLF)+len(CRLF)
-	ln += len(r.Body)
+	return
+}
 
+// Len return length of request
+func (r *Request) Len() (ln int) {
+	ln = r.LenWithoutBody()
+	ln += len(r.Body)
+	return
+}
+
+// ReadBodyFromNetConn read body by Content-Length of request from given net.Conn
+// we need this method on request that headers and body send in two seprate part on net.Conn!
+func (r *Request) ReadBodyFromNetConn(tcpConn net.Conn) (contentLength uint64, goErr error) {
+	contentLength = r.Header.GetContentLength()
+	// TODO::: is below logic check include all situations??
+	if contentLength > 0 && len(r.Body) == 0 {
+		r.Body = make([]byte, contentLength)
+		var readSize int
+		readSize, goErr = tcpConn.Read(r.Body)
+		if goErr != nil {
+			return
+		}
+		if readSize != int(contentLength) {
+			// err =
+			return
+		}
+	}
 	return
 }
