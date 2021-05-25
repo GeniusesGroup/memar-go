@@ -40,7 +40,7 @@ func (e *errors) AddError(err *Error) {
 
 func (e *errors) updateJsSDK(err *Error) {
 	for lang, detail := range err.detail {
-		e.jsSDK[lang] = append(e.jsSDK[lang], "GitiError.New(\""+err.idAsString+"\",\""+err.urn+"\",\""+detail.Domain+"\",\""+detail.Short+"\",\""+detail.Long+"\")\n"...)
+		e.jsSDK[lang] = append(e.jsSDK[lang], "GitiError.New(\""+err.idAsString+"\",\""+err.urn+"\").SetDetail(\""+detail.Domain+"\",\""+detail.Short+"\",\""+detail.Long+"\",\""+detail.UserAction+"\",\""+detail.DevAction+"\")\n"...)
 	}
 }
 

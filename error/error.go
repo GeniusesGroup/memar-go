@@ -13,22 +13,25 @@ import (
 
 // Error is a extended implementation of error.
 // Never change urn due to it adds unnecessary complicated troubleshooting errors on SDK!
+// Read more : https://github.com/SabzCity/RFCs/blob/master/Giti-Error.md
 type Error struct {
 	urn         string // "urn:giti:{{domain-name}}:error:{{error-name}}"
 	id          uint64
 	idAsString  string
 	detail      map[lang.Language]Detail
 	Chain       *Error
-	information interface{}
+	Information interface{}
 	JSON        []byte
 	Syllab      []byte
 }
 
 // Detail store detail about an error
 type Detail struct {
-	Domain string
-	Short  string
-	Long   string
+	Domain     string // Locale domain name that error belongs to it!
+	Short      string // Locale general short error detail
+	Long       string // Locale general long error detail
+	UserAction string // Locale user action that user do when face this error
+	DevAction  string // Locale technical advice for developers
 }
 
 // New returns a new error!
@@ -69,12 +72,14 @@ func (e *Error) Save() *Error {
 	return e
 }
 
-// SetDetail add short and long text detail to existing error and return it.
-func (e *Error) SetDetail(lang lang.Language, domain, short, long string) *Error {
+// SetDetail add error text details to existing error and return it.
+func (e *Error) SetDetail(lang lang.Language, domain, short, long, userAction, devAction string) *Error {
 	e.detail[lang] = Detail{
-		Domain: domain,
-		Short:  short,
-		Long:   long,
+		Domain:     domain,
+		Short:      short,
+		Long:       long,
+		UserAction: userAction,
+		DevAction:  devAction,
 	}
 
 	return e
@@ -113,14 +118,14 @@ func (e *Error) Error() string {
 	if e == nil {
 		return ""
 	}
-	return fmt.Sprintf("Error Code: %v\n Short detail: %v\n Long detail: %v\n Error Additional information: %v\n", e.id, e.detail[log.Language].Short, e.detail[log.Language].Long, e.information)
+	return fmt.Sprintf("Error Code: %v\n Short detail: %v\n Long detail: %v\n Error Additional information: %v\n", e.id, e.detail[log.Language].Short, e.detail[log.Language].Long, e.Information)
 }
 
 // AddInformation add to existing error and return it as new error(pointer) with chain errors!
 func (e *Error) AddInformation(information interface{}) *Error {
 	return &Error{
 		Chain:       e,
-		information: information,
+		Information: information,
 	}
 }
 
