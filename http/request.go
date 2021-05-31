@@ -4,7 +4,6 @@ package http
 
 import (
 	"io"
-	"net"
 	"strings"
 
 	"../convert"
@@ -102,11 +101,55 @@ func (r *Request) MarshalWithoutBody() (httpPacket []byte) {
 	return
 }
 
-// Write enecodes r *Request data and write it to given io.Writer!
-func (r *Request) Write(w io.Writer) {
+// ReadFrom decodes r *Request data by read from given io.Reader!
+// Declare to respect io.ReaderFrom interface!
+func (r *Request) ReadFrom(reader io.Reader) (n int64, goErr error) {
+	// Make a buffer to hold incoming data.
+	var buf = make([]byte, MaxHTTPHeaderSize)
+	var readLength, bodyReadLength int
+
+	// Read the incoming connection into the buffer.
+	readLength, goErr = reader.Read(buf)
+	if goErr != nil || readLength == 0 {
+		return
+	}
+
+	buf = buf[:readLength]
+	goErr = r.UnMarshal(buf)
+	if goErr != nil {
+		return int64(readLength), goErr
+	}
+
+	var contentLength = r.Header.GetContentLength()
+	// TODO::: is below logic check include all situations??
+	if contentLength > 0 && len(r.Body) == 0 {
+		r.Body = make([]byte, contentLength)
+		bodyReadLength, goErr = reader.Read(r.Body)
+		if goErr != nil {
+			return int64(readLength + bodyReadLength), goErr
+		}
+		if bodyReadLength != int(contentLength) {
+			// goErr =
+			return int64(readLength + bodyReadLength), goErr
+		}
+	}
+
+	return int64(readLength + bodyReadLength), goErr
+}
+
+// WriteTo enecodes r *Request data and write it to given io.Writer!
+// Declare to respect io.WriterTo interface!
+func (r *Request) WriteTo(w io.Writer) (totalWrite int64, err error) {
 	var reqMarshaled = r.MarshalWithoutBody()
-	w.Write(reqMarshaled)
-	w.Write(r.Body)
+	var headerWriteLength, bodyWrittenLength int
+
+	headerWriteLength, err = w.Write(reqMarshaled)
+	if err == nil {
+		bodyWrittenLength, err = w.Write(r.Body)
+	}
+
+	totalWrite = int64(headerWriteLength + bodyWrittenLength)
+	return
 }
 
 // GetHost returns host of request by RFC 7230, section 5.3 rules: Must treat
@@ -137,25 +180,5 @@ func (r *Request) LenWithoutBody() (ln int) {
 func (r *Request) Len() (ln int) {
 	ln = r.LenWithoutBody()
 	ln += len(r.Body)
-	return
-}
-
-// ReadBodyFromNetConn read body by Content-Length of request from given net.Conn
-// we need this method on request that headers and body send in two seprate part on net.Conn!
-func (r *Request) ReadBodyFromNetConn(tcpConn net.Conn) (contentLength uint64, goErr error) {
-	contentLength = r.Header.GetContentLength()
-	// TODO::: is below logic check include all situations??
-	if contentLength > 0 && len(r.Body) == 0 {
-		r.Body = make([]byte, contentLength)
-		var readSize int
-		readSize, goErr = tcpConn.Read(r.Body)
-		if goErr != nil {
-			return
-		}
-		if readSize != int(contentLength) {
-			// err =
-			return
-		}
-	}
 	return
 }

@@ -106,11 +106,55 @@ func (r *Response) MarshalWithoutBody() (httpPacket []byte) {
 	return
 }
 
-// Write enecodes r *Response data and write it to given io.Writer!
-func (r *Response) Write(w io.Writer) {
+// ReadFrom decodes r *Response data by read from given io.Reader!
+// Declare to respect io.ReaderFrom interface!
+func (r *Response) ReadFrom(reader io.Reader) (n int64, goErr error) {
+	// Make a buffer to hold incoming data.
+	var buf = make([]byte, MaxHTTPHeaderSize)
+	var readLength, bodyReadLength int
+
+	// Read the incoming connection into the buffer.
+	readLength, goErr = reader.Read(buf)
+	if goErr != nil || readLength == 0 {
+		return
+	}
+
+	buf = buf[:readLength]
+	goErr = r.UnMarshal(buf)
+	if goErr != nil {
+		return int64(readLength), goErr
+	}
+
+	var contentLength = r.Header.GetContentLength()
+	// TODO::: is below logic check include all situations??
+	if contentLength > 0 && len(r.Body) == 0 {
+		r.Body = make([]byte, contentLength)
+		bodyReadLength, goErr = reader.Read(r.Body)
+		if goErr != nil {
+			return int64(readLength + bodyReadLength), goErr
+		}
+		if bodyReadLength != int(contentLength) {
+			// goErr =
+			return int64(readLength + bodyReadLength), goErr
+		}
+	}
+
+	return int64(readLength + bodyReadLength), goErr
+}
+
+// WriteTo enecodes r *Response data and write it to given io.Writer!
+// Declare to respect io.WriterTo interface!
+func (r *Response) WriteTo(w io.Writer) (totalWrite int64, err error) {
 	var resMarshaled = r.MarshalWithoutBody()
-	w.Write(resMarshaled)
-	w.Write(r.Body)
+	var headerWriteLength, bodyWrittenLength int
+
+	headerWriteLength, err = w.Write(resMarshaled)
+	if err == nil {
+		bodyWrittenLength, err = w.Write(r.Body)
+	}
+
+	totalWrite = int64(headerWriteLength + bodyWrittenLength)
+	return
 }
 
 // GetStatusCode get status code as uit16
