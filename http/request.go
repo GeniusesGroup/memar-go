@@ -106,18 +106,19 @@ func (r *Request) MarshalWithoutBody() (httpPacket []byte) {
 func (r *Request) ReadFrom(reader io.Reader) (n int64, goErr error) {
 	// Make a buffer to hold incoming data.
 	var buf = make([]byte, MaxHTTPHeaderSize)
-	var readLength, bodyReadLength int
+	var headerReadLength, bodyReadLength int
+	var err *er.Error
 
 	// Read the incoming connection into the buffer.
-	readLength, goErr = reader.Read(buf)
-	if goErr != nil || readLength == 0 {
+	headerReadLength, goErr = reader.Read(buf)
+	if goErr != nil || headerReadLength == 0 {
 		return
 	}
 
-	buf = buf[:readLength]
-	goErr = r.UnMarshal(buf)
-	if goErr != nil {
-		return int64(readLength), goErr
+	buf = buf[:headerReadLength]
+	err = r.UnMarshal(buf)
+	if err != nil {
+		return int64(headerReadLength), err
 	}
 
 	var contentLength = r.Header.GetContentLength()
@@ -125,16 +126,12 @@ func (r *Request) ReadFrom(reader io.Reader) (n int64, goErr error) {
 	if contentLength > 0 && len(r.Body) == 0 {
 		r.Body = make([]byte, contentLength)
 		bodyReadLength, goErr = reader.Read(r.Body)
-		if goErr != nil {
-			return int64(readLength + bodyReadLength), goErr
-		}
 		if bodyReadLength != int(contentLength) {
 			// goErr =
-			return int64(readLength + bodyReadLength), goErr
 		}
 	}
 
-	return int64(readLength + bodyReadLength), goErr
+	return int64(headerReadLength + bodyReadLength), goErr
 }
 
 // WriteTo enecodes r *Request data and write it to given io.Writer!
