@@ -15,3 +15,8 @@ type frameStructure struct {
  // ...              byte
 	Payload          []byte
 }
+
+type chapar struct {
+	Header  []byte // Up to 258 Byte length!
+	Payload []byte // Up to 7934 Byte length!
+}

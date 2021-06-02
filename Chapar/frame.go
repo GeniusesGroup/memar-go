@@ -2,37 +2,34 @@
 
 package chapar
 
-import "errors"
-
-/*
--------------------------------NOTICE:-------------------------------
-This protocol usually implement in hardware level not software!
-We just want to show simpilicity of protocol and its functions here!
-*/
+import (
+	er "../error"
+	"../giti"
+)
 
 const (
 	// MinFrameLen is minimum Chapar frame length
-	// 4 Byte Chapar header + 4 Byte min payload
-	MinFrameLen = 7 // Due to len & index mismatch, so exactly MinFrameLen = 8
+	// 4 Byte Chapar header + 8 Byte min payload
+	MinFrameLen = 12
 	// MaxFrameLen is maximum Chapar frame length
-	MaxFrameLen = 8191 // Due to len & index mismatch, so exactly MinFrameLen = 8192
-)
+	MaxFrameLen = 8192
 
-// Declare Errors Details
-var (
-	ErrIllegalFrameSize = errors.New("Chapar frame is too short(<8) or too long(>8192) than standard")
+	FixedHeaderLength byte = 3 // without path part
+	MaxHopCount       byte = 255
 )
 
 // MakeNewFrame makes new unicast||broadcast frame!
-func MakeNewFrame(nexHeaderID byte, path []byte, payload []byte) (frame []byte) {
-	var pathLen = len(path)
+func MakeNewFrame(nexHeaderID giti.LinkHeaderID, path []byte, payload []byte) (frame []byte) {
+	var pathLen byte = byte(len(path))
 	if pathLen == 0 {
-		pathLen = 255 // broadcast frame
+		pathLen = MaxHopCount // broadcast frame
 	}
-	var payloadLoc = 3 + pathLen
-	frame = make([]byte, payloadLoc+len(payload))
-	SetHopCount(frame, byte(pathLen))
-	SetNextHeader(frame, nexHeaderID)
+	var payloadLoc int = int(FixedHeaderLength + pathLen)
+	var frameLength int = payloadLoc + len(payload)
+	frame = make([]byte, frameLength)
+
+	SetHopCount(frame, pathLen)
+	SetNextHeader(frame, byte(nexHeaderID))
 	// Set path for unicast. it will not copy if path is 0 for broadcast frame as we want!
 	SetPath(frame, path)
 	// copy payload to frame
@@ -42,10 +39,10 @@ func MakeNewFrame(nexHeaderID byte, path []byte, payload []byte) (frame []byte) 
 
 // CheckFrame checks frame for any bad situation!
 // Always check frame before use any other frame methods otherwise panic may occur!
-func CheckFrame(frame []byte) (err error) {
+func CheckFrame(frame []byte) (err *er.Error) {
 	var len = len(frame)
 	if len < MinFrameLen || len > MaxFrameLen {
-		return ErrIllegalFrameSize
+		return ErrIllegalFrameLength
 	}
 	return
 }
@@ -65,7 +62,7 @@ func IncrementNextHop(frame []byte, receivedPortNumber byte) {
 // GetHopCount returns the number of intermediate network devices indicate in frame.
 func GetHopCount(frame []byte) byte {
 	if frame[1] == 0 {
-		return 255 // broadcast frame
+		return MaxHopCount // broadcast frame
 	}
 	return frame[1]
 }
@@ -87,30 +84,30 @@ func GetNextHeader(frame []byte) byte {
 }
 
 // SetNextHeader sets next header id in the frame.
-func SetNextHeader(frame []byte, nextHeaderID byte) {
-	frame[2] = nextHeaderID
+func SetNextHeader(frame []byte, linkHeaderID byte) {
+	frame[2] = linkHeaderID
 }
 
 // GetPortNum returns port number of given hop number.
 // First hopNum is hopNum==1 not hopNum==0. Don't read hopNum==0 due to it is use for broadcast frame.
 func GetPortNum(frame []byte, hopNum byte) byte {
-	return frame[3+hopNum]
+	return frame[FixedHeaderLength+hopNum]
 }
 
 // SetPortNum set given port number in given hop number!
 // First hopNum is hopNum==1 not hopNum==0. Don't set hopNum==0 due to it is use for broadcast frame.
 func SetPortNum(frame []byte, hopNum byte, portNum byte) {
-	frame[3+hopNum] = portNum
+	frame[FixedHeaderLength+hopNum] = portNum
 }
 
 // GetPath gets frame path in all hops.
 func GetPath(frame []byte) []byte {
-	return frame[3 : 3+GetHopCount(frame)]
+	return frame[FixedHeaderLength : FixedHeaderLength+GetHopCount(frame)]
 }
 
 // SetPath sets given path in given the frame.
 func SetPath(frame []byte, path []byte) {
-	copy(frame[3:], path[:])
+	copy(frame[FixedHeaderLength:], path[:])
 }
 
 // GetReversePath gets frame path in all hops just in reverse.
@@ -134,5 +131,5 @@ func ReversePath(path []byte) (ReversePath []byte) {
 
 // GetPayload returns payload.
 func GetPayload(frame []byte) []byte {
-	return frame[GetHopCount(frame)+3:]
+	return frame[GetHopCount(frame)+FixedHeaderLength:]
 }
