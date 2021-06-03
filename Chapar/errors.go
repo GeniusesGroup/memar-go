@@ -38,4 +38,22 @@ var (
 			"فریم چاپار قابلیت مسیریابی ندارد و دلیل هم درخواست به مسیری که وجود ندارد می باشد",
 			"",
 			"").Save()
+
+	ErrPathAlreadyUse = er.New("urn:giti:chapar.giti:error:path-already-use").SetDetail(lang.LanguageEnglish, errorEnglishDomain, "Path Already Use",
+		"Path already use as main chapar connection path",
+		"",
+		"").
+		SetDetail(lang.LanguagePersian, errorPersianDomain, "مسیر در حال استفاده می باشد",
+			"مسیری که برای مسیر اصلی ارتباط انتخاب شده است با مسیر فعلی یکسان می باشد",
+			"",
+			"").Save()
+
+	ErrPathAlreadyExist = er.New("urn:giti:chapar.giti:error:path-already-exist").SetDetail(lang.LanguageEnglish, errorEnglishDomain, "Path Already Exist",
+		"Path already exist in chapar connection alternative paths",
+		"",
+		"").
+		SetDetail(lang.LanguagePersian, errorPersianDomain, "مسیر موجود می باشد",
+			"مسیری که برای اضافه کردن به مسیرهای جایگزین به ارتباط انتخاب شده است قبلا اضافه شده است",
+			"",
+			"").Save()
 )

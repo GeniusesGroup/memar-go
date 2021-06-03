@@ -34,11 +34,11 @@ func (c *Connections) Init() {
 
 // NewConnection ...
 // TODO::: get ThingID from peer or func args??
-func (c *Connections) NewConnection(port giti.LinkPort, path []byte) (conn giti.LinkConnection) {
+func (c *Connections) NewConnection(port giti.LinkPort, frame []byte) (conn giti.LinkConnection) {
 	conn = &Connection{
 		port: port,
 	}
-	conn.setPath(path)
+	conn.ReadFrom(frame)
 
 	c.RegisterConnection(conn)
 	return
@@ -71,7 +71,7 @@ func (c *Connections) GetConnectionsByThingID(thingID [32]byte) (conn giti.LinkC
 // RegisterConnection register new connection in the connection pool!!
 func (c *Connections) RegisterConnection(conn giti.LinkConnection) {
 	c.mutex.Lock()
-	c.poolByPath[string(conn.Path)] = conn
+	c.poolByPath[conn.Path.GetAsString()] = conn
 	c.poolByThingID[conn.ThingID] = conn
 	c.mutex.Unlock()
 }

@@ -3,6 +3,8 @@
 package chapar
 
 import (
+	"bytes"
+
 	etime "../earth-time"
 	er "../error"
 	"../ganjine"
@@ -47,12 +49,12 @@ type Connection struct {
 	weight     giti.ConnectionWeight
 	port       giti.LinkPort `syllab:"-"`
 	mtu        int
-	pathToPeer []byte // Chapar switch spec
+	pathToPeer Path
 
 	/* Peer data */
-	pathFromPeer    []byte // Chapar switch spec
-	alternativePath [][]byte
-	thingID         [32]byte
+	pathFromPeer     Path // Chapar switch spec
+	alternativePaths []Path
+	thingID          [32]byte
 
 	/* Metrics data */
 	lastUsage                  etime.Time // Last use of this connection
@@ -65,23 +67,43 @@ type Connection struct {
 	notRequestedFramesReceived uint64     // Counts not requested frames received for firewalling server from some attack types!
 }
 
-// setPath set Path, ReversePath and set MTU by calculate!
-func (c *Connection) setPath(pathFromPeer []byte) {
-	var pathLen = len(pathFromPeer)
-	c.pathFromPeer = make([]byte, pathLen)
-	// Copy path due to sure GC can free frame the path get from!
-	copy(c.pathFromPeer, pathFromPeer)
-	c.pathToPeer = ReversePath(pathFromPeer)
-	c.mtu = MaxFrameLen - (int(FixedHeaderLength) + pathLen)
+// ReadFrom set Path, ReversePath and set MTU by calculate it!
+func (c *Connection) ReadFrom(frame []byte) {
+	var pathFromPeer Path
+	pathFromPeer.ReadFrom(frame)
+	c.setPath(pathFromPeer)
+
+	// TODO::: Get ThingID from peer??
 }
 
-// RegisterNewPathForConnection register new connection path and save it in the connection pool!!
-func (c *Connections) setAlternativePath(alternativePath []byte) {
-	var alternativePathLen = len(alternativePath)
-	path = make([]byte, alternativePathLen)
-	// Copy alternativePath due to sure GC can free frame that alternativePath get from it!
-	copy(path, alternativePath)
-	c.AlternativePath = append(c.AlternativePath, path)
+// setPath set Path, ReversePath and set MTU by calculate it!
+func (c *Connection) setPath(pathFromPeer Path) {
+	c.pathFromPeer = pathFromPeer
+	c.pathToPeer = pathFromPeer.GetReverse()
+	c.mtu = MaxFrameLen - int(FixedHeaderLength+pathFromPeer.LenAsByte())
+}
+
+// setAlternativePath register connection new path in the connection alternativePaths!
+func (c *Connection) setAlternativePath(alternativePath Path) (err *er.Error) {
+	for path := range c.alternativePaths {
+		if bytes.Equal(path, alternativePath) {
+			err = ErrPathAlreadyExist
+			return
+		}
+	}
+	c.alternativePaths = append(c.alternativePaths, alternativePath)
+	return
+}
+
+// ChangePath change the main connection path!
+func (c *Connection) ChangePath(pathFromPeer Path) (err *er.Error) {
+	if bytes.Equal(c.pathFromPeer, pathFromPeer) {
+		err = ErrPathAlreadyUse
+		return
+	}
+	c.setAlternativePath(c.pathFromPeer)
+	c.setPath(pathFromPeer)
+	return
 }
 
 // MTU return max payload size that this connection can carry on active path!
@@ -98,7 +120,7 @@ func (c *Connection) Send(nexHeaderID giti.LinkHeaderID, payload giti.WriterTo) 
 
 	// TODO::: need to check path exist here to use c.AlternativePath?
 
-	var pathLen byte = byte(len(c.pathToPeer))
+	var pathLen byte = c.pathToPeer.LenAsByte()
 	if pathLen == 0 {
 		pathLen = MaxHopCount // broadcast frame
 	}
@@ -108,7 +130,7 @@ func (c *Connection) Send(nexHeaderID giti.LinkHeaderID, payload giti.WriterTo) 
 
 	SetHopCount(frame, pathLen)
 	SetNextHeader(frame, byte(nexHeaderID))
-	SetPath(frame, c.pathToPeer)
+	c.pathToPeer.WriteTo(frame)
 	err = payload.WriteTo(frame[payloadLoc:])
 
 	// send frame by connection port!

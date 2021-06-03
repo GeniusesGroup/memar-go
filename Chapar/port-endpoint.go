@@ -56,8 +56,8 @@ func (pe *PortEndPoint) Receive(frame []byte) {
 
 	var conn = pe.mux.GetConnectionByPath(path)
 	if conn == nil {
-		conn = pe.mux.NewConnection(pe.physicalConnection, path)
-	} else if !bytes.Equal(conn.path, path) {
+		conn = pe.mux.NewConnection(pe.physicalConnection, frame)
+	} else if !bytes.Equal(conn.pathFromPeer.Get(), path) {
 		// TODO:::
 	}
 
