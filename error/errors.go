@@ -3,29 +3,50 @@
 package error
 
 import (
-	lang "../language"
+	"../giti"
+	"../log"
 )
 
-const errorEnglishDomain = "Error"
-const errorPersianDomain = "خطا"
+type errors struct {
+	poolByID map[uint64]*Error
+	jsSDK    map[giti.LanguageID][]byte
+}
 
-// package errors
-var (
-	ErrNotFound = New("urn:giti:error.giti.org:error:not-found").SetDetail(lang.LanguageEnglish, errorEnglishDomain, "Not Found",
-		"An error occurred but it is not registered yet to show more detail to you!",
-		"Sorry it's us not your fault! Contact administrator of platform!",
-		"Find error by its URN and save it for further use by any UserInterfaces").
-		SetDetail(lang.LanguagePersian, errorPersianDomain, "یافت نشد",
-			"خطایی رخ داده است ولی جزییات آن خطا برای نمایش به شما ثبت نشده است",
-			"اشکال بوجود آماده بدلیل نقض عملیات توسعه ما می باشد. خواهشمندیم با پشتیبانی پلتفرم برای رفع این مشکل در تماس باشید",
-			"خطای رخ داده شده را با استفاده از URN آن پیدا کرده و با استفاده از متد ذخیره آن را برای هر نوع استفاده رابط کاربری آماده کنید").Save()
+// GetErrorByID returns desire error if exist or nil!
+func (e *errors) GetErrorByID(id uint64) (err giti.Error) {
+	var ok bool
+	err, ok = e.poolByID[id]
+	if !ok {
+		err = ErrNotFound
+	}
+	return
+}
 
-	ErrIsEmpty = New("urn:giti:error.giti.org:error:is-empty").SetDetail(lang.LanguageEnglish, errorEnglishDomain, "Is Empty",
-		"Given Error is not exist",
-		"Sorry it's us not your fault! Contact administrator of platform!",
-		"Trace error by enable panic recovery to find nil error detection problem").
-		SetDetail(lang.LanguagePersian, errorPersianDomain, "وجود ندارد",
-			"خطایی با آدرس حافظه داده شده یافت نشد",
-			"اشکال بوجود آماده بدلیل نقض عملیات توسعه ما می باشد. خواهشمندیم با پشتیبانی پلتفرم برای رفع این مشکل در تماس باشید",
-			"ارور بوجود آمده را با استفاده از فعال سازی قابلیت کامپایلر زبان برنامه نویسی خود، منشا خطا ناموجود را پیدا کنید").Save()
-)
+func (e *errors) addError(err *Error) {
+	var exitingError = e.poolByID[err.id]
+	if exitingError != nil {
+		log.Warn("Duplicate Error id exist, Check it now!!!!!!!!!!!!!!!!!")
+		log.Warn("Exiting error >> ", exitingError.URN(), " New error >> ", *err)
+		return
+	}
+
+	e.poolByID[err.id] = err
+	e.updateJsSDK(err)
+}
+
+func (e *errors) updateJsSDK(err *Error) {
+	for lang, detail := range err.detail {
+		e.jsSDK[lang] = append(e.jsSDK[lang], "GitiError.New(\""+err.idAsString+"\",\""+err.urn+"\").SetDetail(\""+detail.domain+"\",\""+detail.short+"\",\""+detail.long+"\",\""+detail.userAction+"\",\""+detail.devAction+"\")\n"...)
+	}
+}
+
+// it can return nil slice if not call updateJsSDK before call this method!
+func (e *errors) GetErrorsInJsFormat(lang giti.LanguageID) []byte {
+	return e.jsSDK[lang]
+}
+
+// Errors store
+var Errors = errors{
+	poolByID: make(map[uint64]*Error, 512),
+	jsSDK:    map[giti.LanguageID][]byte{},
+}

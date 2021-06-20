@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"strconv"
 
-	lang "../language"
+	"../giti"
 	"../log"
 )
 
@@ -18,70 +18,47 @@ type Error struct {
 	urn         string // "urn:giti:{{domain-name}}:error:{{error-name}}"
 	id          uint64
 	idAsString  string
-	detail      map[lang.Language]Detail
+	detail      map[giti.LanguageID]Detail
 	Chain       *Error
 	Information interface{}
 	JSON        []byte
 	Syllab      []byte
 }
 
-// Detail store detail about an error
-type Detail struct {
-	Domain     string // Locale domain name that error belongs to it!
-	Short      string // Locale general short error detail
-	Long       string // Locale general long error detail
-	UserAction string // Locale user action that user do when face this error
-	DevAction  string // Locale technical advice for developers
-}
-
 // New returns a new error!
 func New(urn string) *Error {
 	var err = Error{
 		urn:    urn,
-		detail: make(map[lang.Language]Detail),
+		detail: make(map[giti.LanguageID]Detail),
 	}
 	return &err
 }
 
-// GetCode return id of error if err id exist.
-func GetCode(err error) uint64 {
-	if err == nil {
-		return 0
+// SetDetail add error text details to existing error and return it.
+func (e *Error) SetDetail(lang giti.LanguageID, domain, short, long, userAction, devAction string) *Error {
+	e.detail[lang] = Detail{
+		domain:     domain,
+		short:      short,
+		long:       long,
+		userAction: userAction,
+		devAction:  devAction,
 	}
-	var exErr *Error
-	exErr = err.(*Error)
-	if exErr != nil {
-		return exErr.id
-	}
-	// if error not nil but not Error, pass biggest number!
-	return 18446744073709551615
+
+	return e
 }
 
 // Save finalize needed logic on given error and save to Errors global variable.
-func (e *Error) Save() *Error {
+func (e *Error) Save() giti.Error {
 	if e.urn == "" {
 		log.Fatal("Error must have URN to save it in platform errors pools! >> ", *e)
 	}
 
 	e.IDCalculator()
 
-	e.Syllab = e.syllabEncoder()
+	e.Syllab = e.ToSyllab()
 	e.JSON = e.jsonEncoder()
 
-	Errors.AddError(e)
-	return e
-}
-
-// SetDetail add error text details to existing error and return it.
-func (e *Error) SetDetail(lang lang.Language, domain, short, long, userAction, devAction string) *Error {
-	e.detail[lang] = Detail{
-		Domain:     domain,
-		Short:      short,
-		Long:       long,
-		UserAction: userAction,
-		DevAction:  devAction,
-	}
-
+	Errors.addError(e)
 	return e
 }
 
@@ -90,11 +67,10 @@ func (e *Error) IDCalculator() {
 	var hash = sha512.Sum512([]byte(e.urn))
 	e.id = uint64(hash[0]) | uint64(hash[1])<<8 | uint64(hash[2])<<16 | uint64(hash[3])<<24 | uint64(hash[4])<<32 | uint64(hash[5])<<40 | uint64(hash[6])<<48 | uint64(hash[7])<<56
 	e.idAsString = strconv.FormatUint(e.id, 10)
-	return
 }
 
 // Detail return detail of the error in desire language!
-func (e *Error) Detail(lang lang.Language) Detail {
+func (e *Error) Detail(lang giti.LanguageID) giti.ErrorDetail {
 	return e.detail[lang]
 }
 
@@ -118,7 +94,7 @@ func (e *Error) Error() string {
 	if e == nil {
 		return ""
 	}
-	return fmt.Sprintf("Error Code: %v\n Short detail: %v\n Long detail: %v\n Error Additional information: %v\n", e.id, e.detail[log.Language].Short, e.detail[log.Language].Long, e.Information)
+	return fmt.Sprintf("Error Code: %v\n Short detail: %v\n Long detail: %v\n Error Additional information: %v\n", e.id, e.detail[log.Language].short, e.detail[log.Language].long, e.Information)
 }
 
 // AddInformation add to existing error and return it as new error(pointer) with chain errors!
@@ -130,11 +106,11 @@ func (e *Error) AddInformation(information interface{}) *Error {
 }
 
 // Equal compare two Error.
-func (e *Error) Equal(err *Error) bool {
+func (e *Error) Equal(err giti.Error) bool {
 	if e == nil && err == nil {
 		return true
 	}
-	if e != nil && err != nil && e.id == err.id {
+	if e != nil && err != nil && e.id == err.ID() {
 		return true
 	}
 	return false
@@ -147,4 +123,17 @@ func (e *Error) IsEqual(err error) bool {
 		return true
 	}
 	return false
+}
+
+// GetCode return id of error if err id exist.
+func GetCode(err error) uint64 {
+	if err == nil {
+		return 0
+	}
+	var exErr *Error = err.(*Error)
+	if exErr != nil {
+		return exErr.id
+	}
+	// if error not nil but not Error, pass biggest number!
+	return 18446744073709551615
 }
