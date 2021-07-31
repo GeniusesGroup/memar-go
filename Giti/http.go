@@ -10,6 +10,9 @@ type HTTPRequest interface {
 	SetVersion(version string)
 
 	Header() HTTPHeader
+	Body() HTTPBody
+
+	// Helpers methods
 
 	// GetHost returns host of request by RFC 7230, section 5.3 rules: Must treat
 	//		GET / HTTP/1.1
@@ -20,13 +23,7 @@ type HTTPRequest interface {
 	// the same. In the second case, any Host line is ignored.
 	GetHost() (host string)
 
-	Body() []byte
-	BodyCodec() Codec
-	SetBodyCodec(codec Codec)
-
 	Codec
-	Marshal() (httpPacket []byte)
-	UnMarshal(httpPacket []byte) (err Error)
 }
 
 type HTTPResponse interface {
@@ -37,26 +34,9 @@ type HTTPResponse interface {
 	SetStatus(statusCode, reasonPhrase string)
 
 	Header() HTTPHeader
-
-	Body() []byte
-	BodyCodec() Codec
-	SetBodyCodec(codec Codec)
+	Body() HTTPBody
 
 	Codec
-	Marshal() (httpPacket []byte)
-	UnMarshal(httpPacket []byte) (err Error)
-}
-
-type HTTPHeader interface {
-	Get(key string) (value string)
-	Gets(key string) (values []string)
-	Add(key, value string)
-	Adds(key string, values []string)
-	Set(key string, value string)
-	Sets(key string, values []string)
-	Del(key string)
-
-	GetContentLength() (ln uint64)
 }
 
 type HTTPURI interface {
@@ -67,4 +47,20 @@ type HTTPURI interface {
 	Query() string
 	Fragment() string
 	Set(scheme, authority, path, query string)
+}
+
+type HTTPHeader interface {
+	Get(key string) (value string)
+	Gets(key string) (values []string)
+	Add(key, value string)
+	Adds(key string, values []string)
+	Set(key string, value string)
+	Sets(key string, values []string)
+	Del(key string)
+}
+
+type HTTPBody interface {
+	Raw() []byte // only for read from peer!
+	BodyCodec() Codec
+	SetBodyCodec(codec Codec)
 }

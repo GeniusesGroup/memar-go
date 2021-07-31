@@ -2,7 +2,7 @@
 
 package giti
 
-// Stream is the interface that must implement by any struct to be Stream!
+// Stream is the interface that must implement by any struct to be a stream!
 type Stream interface {
 	ID() uint32
 
@@ -19,8 +19,7 @@ type Stream interface {
 	SetError(err Error) // Just once
 
 	IncomeData() Buffer
+	SetIncomeData(buf Buffer)
 	OutcomeData() Buffer
-
-	Send() (err Error)
-	SendAsync() (err Error)
+	SetOutcomeData(buf Buffer)
 }

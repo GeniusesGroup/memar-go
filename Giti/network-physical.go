@@ -8,8 +8,13 @@ Physical - (OSI Layer 1: Physical)
 **********************************************************************************
 */
 
-// PhysicalConnection or Hardware2HardwareConnection
-type PhysicalConnection interface {
+// NetworkPhysicalConnection or Hardware2HardwareConnection
+type NetworkPhysicalConnection interface {
+	RegisterLinkMultiplexer(linkMux NetworkLinkMultiplexer)
+	UnRegisterLinkMultiplexer(linkMux NetworkLinkMultiplexer)
+
 	Send(frame []byte) (err Error)
-	// SendAsync(frame []byte) (err Error)
+	SendAsync(frame []byte) (err Error)
+
+	Shutdown()
 }
