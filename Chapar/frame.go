@@ -14,17 +14,19 @@ const (
 	// MaxFrameLen is maximum Chapar frame length
 	MaxFrameLen = 8192
 
-	FixedHeaderLength byte = 3 // without path part
-	MaxHopCount       byte = 255
+	fixedHeaderLength byte = 3 // without path part
+	maxHopCount       byte = 255
+	broadcastHopCount byte = 0
+	maxBroadcastPayloadLen = MaxFrameLen - (fixedHeaderLength + maxHopCount)
 )
 
 // MakeNewFrame makes new unicast||broadcast frame!
-func MakeNewFrame(nexHeaderID giti.LinkHeaderID, path []byte, payload []byte) (frame []byte) {
+func MakeNewFrame(nexHeaderID giti.NetworkLinkNextHeaderID, path []byte, payload []byte) (frame []byte) {
 	var pathLen byte = byte(len(path))
 	if pathLen == 0 {
-		pathLen = MaxHopCount // broadcast frame
+		pathLen = maxHopCount // broadcast frame
 	}
-	var payloadLoc int = int(FixedHeaderLength + pathLen)
+	var payloadLoc int = int(fixedHeaderLength + pathLen)
 	var frameLength int = payloadLoc + len(payload)
 	frame = make([]byte, frameLength)
 
@@ -39,10 +41,13 @@ func MakeNewFrame(nexHeaderID giti.LinkHeaderID, path []byte, payload []byte) (f
 
 // CheckFrame checks frame for any bad situation!
 // Always check frame before use any other frame methods otherwise panic may occur!
-func CheckFrame(frame []byte) (err *er.Error) {
+func CheckFrame(frame []byte) (err giti.Error) {
 	var len = len(frame)
-	if len < MinFrameLen || len > MaxFrameLen {
-		return ErrIllegalFrameLength
+	if len < MinFrameLen {
+		return ErrShortFrameLength
+	}
+	if len > MaxFrameLen {
+		return ErrLongFrameLength
 	}
 	return
 }
@@ -61,8 +66,8 @@ func IncrementNextHop(frame []byte, receivedPortNumber byte) {
 
 // GetHopCount returns the number of intermediate network devices indicate in frame.
 func GetHopCount(frame []byte) byte {
-	if frame[1] == 0 {
-		return MaxHopCount // broadcast frame
+	if IsBroadcastFrame(frame) {
+		return maxHopCount
 	}
 	return frame[1]
 }
@@ -73,9 +78,9 @@ func SetHopCount(frame []byte, hopCount byte) {
 }
 
 // IsBroadcastFrame checks frame is broadcast frame or not!
+// spec: https://github.com/SabzCity/RFCs/blob/master/Chapar.md#frame-types
 func IsBroadcastFrame(frame []byte) bool {
-	// spec: https://github.com/SabzCity/RFCs/blob/master/Chapar.md#frame-types
-	return frame[1] == 0x00
+	return frame[1] == broadcastHopCount
 }
 
 // GetNextHeader returns next header ID of the frame.
@@ -91,23 +96,23 @@ func SetNextHeader(frame []byte, linkHeaderID byte) {
 // GetPortNum returns port number of given hop number.
 // First hopNum is hopNum==1 not hopNum==0. Don't read hopNum==0 due to it is use for broadcast frame.
 func GetPortNum(frame []byte, hopNum byte) byte {
-	return frame[FixedHeaderLength+hopNum]
+	return frame[fixedHeaderLength+hopNum]
 }
 
 // SetPortNum set given port number in given hop number!
 // First hopNum is hopNum==1 not hopNum==0. Don't set hopNum==0 due to it is use for broadcast frame.
 func SetPortNum(frame []byte, hopNum byte, portNum byte) {
-	frame[FixedHeaderLength+hopNum] = portNum
+	frame[fixedHeaderLength+hopNum] = portNum
 }
 
 // GetPath gets frame path in all hops.
 func GetPath(frame []byte) []byte {
-	return frame[FixedHeaderLength : FixedHeaderLength+GetHopCount(frame)]
+	return frame[fixedHeaderLength : fixedHeaderLength+GetHopCount(frame)]
 }
 
 // SetPath sets given path in given the frame.
 func SetPath(frame []byte, path []byte) {
-	copy(frame[FixedHeaderLength:], path[:])
+	copy(frame[fixedHeaderLength:], path[:])
 }
 
 // GetReversePath gets frame path in all hops just in reverse.
@@ -131,5 +136,5 @@ func ReversePath(path []byte) (ReversePath []byte) {
 
 // GetPayload returns payload.
 func GetPayload(frame []byte) []byte {
-	return frame[GetHopCount(frame)+FixedHeaderLength:]
+	return frame[fixedHeaderLength+GetHopCount(frame):]
 }

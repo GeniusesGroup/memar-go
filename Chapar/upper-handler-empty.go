@@ -13,4 +13,9 @@ type UpperHandlerNonExist struct {
 func (h *UpperHandlerNonExist) HeaderID() (id byte) { return h.headerID }
 
 // Receive get packet to route it to its path!
-func (h *UpperHandlerNonExist) Receive(conn giti.LinkConnection, packet []byte) {}
+func (h *UpperHandlerNonExist) Receive(conn giti.NetworkLinkConnection, packet []byte) {}
+
+func (h *UpperHandlerNonExist) RegisterAppMultiplexer(appMux NetworkTransportAppMultiplexer) {}
+func (h *UpperHandlerNonExist) UnRegisterAppMultiplexer(appMux NetworkTransportAppMultiplexer) {}
+
+func (h *UpperHandlerNonExist) Shutdown() {}

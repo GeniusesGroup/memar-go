@@ -2,10 +2,23 @@
 
 package chapar
 
+import "../giti"
+
 // Path indicate Chapar switch route plan!
 type Path struct {
 	path [MaxHopCount]byte
 	len  byte
+}
+
+// Init sets path from the given frame
+func (p *Path) Init(frame []byte)  {
+	if len(frame) == 0 {
+		p.len = MaxHopCount // broadcast frame
+	} else {
+		var hopCount = GetHopCount(frame)
+		copy(p.path[:], frame[FixedHeaderLength:FixedHeaderLength+hopCount])
+		p.len = hopCount
+	}
 }
 
 func (p *Path) Set(path []byte) {
@@ -18,26 +31,12 @@ func (p *Path) Get() []byte {
 }
 
 func (p *Path) GetAsString() string {
+	// TODO::: ??
 	return string(p.path[:p.len])
-}
-
-func (p *Path) Len() int {
-	return int(p.len)
 }
 
 func (p *Path) LenAsByte() byte {
 	return p.len
-}
-
-// ReadFrom sets path from the given frame
-func (p *Path) ReadFrom(frame []byte) {
-	copy(p.path[:], frame[FixedHeaderLength:FixedHeaderLength+GetHopCount(frame)])
-	p.len = GetHopCount(frame)
-}
-
-// WriteTo sets the path in given the frame.
-func (p *Path) WriteTo(frame []byte) {
-	copy(frame[FixedHeaderLength:], p.path[:])
 }
 
 // GetReverse return path in all hops just in reverse.
@@ -47,4 +46,32 @@ func (p *Path) GetReverse() (reverse Path) {
 		len:  p.len,
 	}
 	return
+}
+
+/*
+********** giti.Codec interface **********
+ */
+
+func (p *Path) Len() int {
+	return int(p.len)
+}
+
+// UnMarshal sets path from the given path
+func (p *Path) UnMarshal(path []byte) (err giti.Error) {
+	if len(path) == 0 {
+		p.len = MaxHopCount // broadcast frame
+	} else {
+		copy(p.path[:], path)
+		p.len = byte(len(path))
+	}
+}
+
+// Marshal return the path in the given frame.
+func (p *Path) Marshal() (path []byte) {
+	return p.path[:p.len]
+}
+
+// MarshalTo sets the path in the given frame.
+func (p *Path) MarshalTo(frame []byte) {
+	copy(frame[FixedHeaderLength:], p.path[:p.len])
 }

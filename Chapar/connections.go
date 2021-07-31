@@ -10,42 +10,49 @@ import (
 	"../log"
 )
 
-// Connections store pools of connection to retrieve in many ways!
+// connections store pools of connection to retrieve in many ways!
 // TODO::: add analytic methods
-type Connections struct {
+type connections struct {
 	mutex           sync.Mutex
-	poolByPath      map[string]giti.LinkConnection // It is optimize to convert byte slice to string as key in map: https://github.com/golang/go/commit/f5f5a8b6209f84961687d993b93ea0d397f5d5bf
-	poolByThingID   map[[32]byte]giti.LinkConnection
-	poolByBlackList map[[32]byte]giti.LinkConnection
+	poolByPath      map[string]giti.NetworkLinkConnection // It is optimize to convert byte slice to string as key in map: https://github.com/golang/go/commit/f5f5a8b6209f84961687d993b93ea0d397f5d5bf
+	poolByThingID   map[[32]byte]giti.NetworkLinkConnection
+	poolByBlackList map[[32]byte]giti.NetworkLinkConnection
 }
 
-// Init initialize it!
-func (c *Connections) Init() {
+func (c *connections) init() {
 	if c.poolByPath == nil {
-		c.poolByPath = make(map[string]giti.LinkConnection, 16384)
+		c.poolByPath = make(map[string]giti.NetworkLinkConnection, 16384)
 	}
 	if c.poolByThingID == nil {
-		c.poolByThingID = make(map[[32]byte]giti.LinkConnection, 16384)
+		c.poolByThingID = make(map[[32]byte]giti.NetworkLinkConnection, 16384)
 	}
 	if c.poolByBlackList == nil {
-		c.poolByBlackList = make(map[[32]byte]giti.LinkConnection)
+		c.poolByBlackList = make(map[[32]byte]giti.NetworkLinkConnection)
 	}
 }
 
-// NewConnection ...
-// TODO::: get ThingID from peer or func args??
-func (c *Connections) NewConnection(port giti.LinkPort, frame []byte) (conn giti.LinkConnection) {
+func (c *connections) newConnection(port *portEndPoint, frame []byte) (conn giti.NetworkLinkConnection) {
 	conn = &Connection{
 		port: port,
 	}
-	conn.ReadFrom(frame)
+	conn.init(frame)
 
-	c.RegisterConnection(conn)
+	// TODO::: get ThingID from peer or func args??
+
+	c.registerConnection(conn)
 	return
 }
 
-// GetConnectionByPath get a connection by its path from Connections pool!!
-func (c *Connections) GetConnectionByPath(path []byte) (conn giti.LinkConnection, err *er.Error) {
+func (c *connections) establishConnectionByPath(path []byte) (conn *Connection, err giti.Error) {
+	return
+}
+
+func (c *connections) establishConnectionByThingID(thingID [32]byte) (conn *Connection, err giti.Error) {
+	return
+}
+
+// GetConnectionByPath get a connection by its path from connections pool!!
+func (c *connections) getConnectionByPath(path []byte) (conn giti.NetworkLinkConnection, err giti.Error) {
 	conn = c.poolByPath[string(path)]
 	if conn == nil {
 		conn = &Connection{
@@ -56,8 +63,7 @@ func (c *Connections) GetConnectionByPath(path []byte) (conn giti.LinkConnection
 	return
 }
 
-// GetConnectionsByThingID get the Connections by peer thingID from Connections pool!!
-func (c *Connections) GetConnectionsByThingID(thingID [32]byte) (conn giti.LinkConnection, err *er.Error) {
+func (c *connections) getConnectionsByThingID(thingID [32]byte) (conn giti.NetworkLinkConnection, err giti.Error) {
 	conn = c.poolByThingID[thingID]
 	if conn == nil {
 		conn = &Connection{
@@ -68,16 +74,14 @@ func (c *Connections) GetConnectionsByThingID(thingID [32]byte) (conn giti.LinkC
 	return
 }
 
-// RegisterConnection register new connection in the connection pool!!
-func (c *Connections) RegisterConnection(conn giti.LinkConnection) {
+func (c *connections) registerConnection(conn giti.NetworkLinkConnection) {
 	c.mutex.Lock()
 	c.poolByPath[conn.Path.GetAsString()] = conn
 	c.poolByThingID[conn.ThingID] = conn
 	c.mutex.Unlock()
 }
 
-// RegisterNewPathForConnection register new alternative path for connection and save it in the connection pool!!
-func (c *Connections) RegisterNewPathForConnection(conn giti.LinkConnection, alternativePath []byte) {
+func (c *connections) registerNewPathForConnection(conn giti.NetworkLinkConnection, alternativePath []byte) {
 	conn.setAlternativePath(alternativePath)
 
 	c.mutex.Lock()
@@ -85,8 +89,7 @@ func (c *Connections) RegisterNewPathForConnection(conn giti.LinkConnection, alt
 	c.mutex.Unlock()
 }
 
-// CloseConnection un-register exiting connection in the connection pool!!
-func (c *Connections) CloseConnection(conn giti.LinkConnection) {
+func (c *connections) closeConnection(conn giti.NetworkLinkConnection) {
 	c.mutex.Lock()
 	// TODO::: Is it worth to don't delete connection just reset it and send it to pool of unused connection due to GC!
 	delete(c.poolByPath, conn.Path)
@@ -98,7 +101,7 @@ func (c *Connections) CloseConnection(conn giti.LinkConnection) {
 }
 
 // Shutdown ready the connection pools to shutdown!!
-func (c *Connections) Shutdown() {
+func (c *connections) shutdown() {
 	log.Info("Chapar - ShutDown - Connections saving proccess begin...")
 	log.Info("Chapar - ShutDown - Number of active connections:", len(c.poolByThingID))
 	for _, conn := range c.poolByThingID {

@@ -6,10 +6,9 @@ import (
 	"bytes"
 
 	etime "../earth-time"
-	er "../error"
 	"../ganjine"
 	"../giti"
-	lang "../language"
+	"../object"
 )
 
 const (
@@ -26,8 +25,8 @@ var chaparConnectionStructure = ganjine.DataStructure{
 	Status:             ganjine.DataStructureStatePreAlpha,
 	Structure:          Connection{},
 
-	Detail: map[lang.Language]ganjine.DataStructureDetail{
-		lang.LanguageEnglish: {
+	Detail: map[giti.LanguageID]ganjine.DataStructureDetail{
+		giti.LanguageEnglish: {
 			Name:        "Chapar Connection",
 			Description: ``,
 			TAGS:        []string{},
@@ -37,17 +36,12 @@ var chaparConnectionStructure = ganjine.DataStructure{
 
 // Connection ---Read locale description in chaparConnectionStructure---
 type Connection struct {
-	/* Common header data */
-	recordID          [32]byte
-	recordStructureID uint64
-	recordSize        uint64
-	writeTime         etime.Time
-	ownerAppID        [32]byte
+	object.MetaData
 
 	/* Connection data */
 	state      giti.ConnectionState
 	weight     giti.ConnectionWeight
-	port       giti.LinkPort `syllab:"-"`
+	port       *portEndPoint `syllab:"-"`
 	mtu        int
 	pathToPeer Path
 
@@ -67,43 +61,13 @@ type Connection struct {
 	notRequestedFramesReceived uint64     // Counts not requested frames received for firewalling server from some attack types!
 }
 
-// ReadFrom set Path, ReversePath and set MTU by calculate it!
-func (c *Connection) ReadFrom(frame []byte) {
+// init set Path, ReversePath and set MTU by calculate it!
+func (c *Connection) init(frame []byte) (err giti.Error) {
 	var pathFromPeer Path
-	pathFromPeer.ReadFrom(frame)
+	pathFromPeer.CopyFrom(frame)
 	c.setPath(pathFromPeer)
 
 	// TODO::: Get ThingID from peer??
-}
-
-// setPath set Path, ReversePath and set MTU by calculate it!
-func (c *Connection) setPath(pathFromPeer Path) {
-	c.pathFromPeer = pathFromPeer
-	c.pathToPeer = pathFromPeer.GetReverse()
-	c.mtu = MaxFrameLen - int(FixedHeaderLength+pathFromPeer.LenAsByte())
-}
-
-// setAlternativePath register connection new path in the connection alternativePaths!
-func (c *Connection) setAlternativePath(alternativePath Path) (err *er.Error) {
-	for path := range c.alternativePaths {
-		if bytes.Equal(path, alternativePath) {
-			err = ErrPathAlreadyExist
-			return
-		}
-	}
-	c.alternativePaths = append(c.alternativePaths, alternativePath)
-	return
-}
-
-// ChangePath change the main connection path!
-func (c *Connection) ChangePath(pathFromPeer Path) (err *er.Error) {
-	if bytes.Equal(c.pathFromPeer, pathFromPeer) {
-		err = ErrPathAlreadyUse
-		return
-	}
-	c.setAlternativePath(c.pathFromPeer)
-	c.setPath(pathFromPeer)
-	return
 }
 
 // MTU return max payload size that this connection can carry on active path!
@@ -112,26 +76,12 @@ func (c *Connection) MTU() int {
 }
 
 // Send use for
-func (c *Connection) Send(nexHeaderID giti.LinkHeaderID, payload giti.WriterTo) (err *er.Error) {
+func (c *Connection) Send(nexHeaderID giti.NetworkLinkNextHeaderID, payload giti.Codec) (err giti.Error) {
 	var payloadLen int = payload.Len()
-	if payloadLen > c.mtu {
-		return ErrMTU
-	}
 
 	// TODO::: need to check path exist here to use c.AlternativePath?
 
-	var pathLen byte = c.pathToPeer.LenAsByte()
-	if pathLen == 0 {
-		pathLen = MaxHopCount // broadcast frame
-	}
-	var payloadLoc int = 3 + int(pathLen)
-	var frameLength int = payloadLoc + payloadLen
-	var frame = make([]byte, frameLength)
-
-	SetHopCount(frame, pathLen)
-	SetNextHeader(frame, byte(nexHeaderID))
-	c.pathToPeer.WriteTo(frame)
-	err = payload.WriteTo(frame[payloadLoc:])
+	frame = c.newFrame(nexHeaderID, payload, payloadLen)
 
 	// send frame by connection port!
 	err = c.port.Send(frame)
@@ -144,9 +94,78 @@ func (c *Connection) Send(nexHeaderID giti.LinkHeaderID, payload giti.WriterTo) 
 		c.bytesSent += uint64(payloadLen)
 		c.framesSent++
 	}
-
 	return
 }
+
+// SendAsync use to send the frame async!
+func (c *Connection) SendAsync(nexHeaderID giti.NetworkLinkNextHeaderID, payload giti.Codec) (err giti.Error) {
+	var payloadLen int = payload.Len()
+
+	// TODO::: need to check path exist here to use c.AlternativePath?
+
+	frame = c.newFrame(nexHeaderID, payload, payloadLen)
+
+	// send frame by connection port!
+	err = c.port.SendAsync(frame)
+
+	// Add metrics data
+	c.lastUsage = etime.Now()
+	c.bytesSent += uint64(payloadLen)
+	c.framesSent++
+	return
+}
+
+// newFrame makes new unicast||broadcast frame!
+func  (c *Connection) newFrame(nexHeaderID giti.NetworkLinkNextHeaderID, payload giti.Codec, payloadLen int) (frame []byte) {
+	if payloadLen > c.mtu {
+		return ErrMTU
+	}
+
+	var pathLen byte = c.pathToPeer.LenAsByte()
+	var payloadLoc int = 3 + int(pathLen)
+	var frameLength int = payloadLoc + payloadLen
+	frame = make([]byte, frameLength)
+
+	SetHopCount(frame, pathLen)
+	SetNextHeader(frame, byte(nexHeaderID))
+	c.pathToPeer.MarshalTo(frame)
+	payload.MarshalTo(frame[payloadLoc:])
+	return
+}
+
+// setPath set Path, ReversePath and set MTU by calculate it!
+func (c *Connection) setPath(pathFromPeer Path) {
+	c.pathFromPeer = pathFromPeer
+	c.pathToPeer = pathFromPeer.GetReverse()
+	c.mtu = MaxFrameLen - int(FixedHeaderLength+pathFromPeer.LenAsByte())
+}
+
+// setAlternativePath register connection new path in the connection alternativePaths!
+func (c *Connection) setAlternativePath(alternativePath Path) (err giti.Error) {
+	for path := range c.alternativePaths {
+		if bytes.Equal(path, alternativePath) {
+			err = ErrPathAlreadyExist
+			return
+		}
+	}
+	c.alternativePaths = append(c.alternativePaths, alternativePath)
+	return
+}
+
+// ChangePath change the main connection path!
+func (c *Connection) changePath(pathFromPeer Path) (err giti.Error) {
+	if bytes.Equal(c.pathFromPeer, pathFromPeer) {
+		err = ErrPathAlreadyUse
+		return
+	}
+	c.setAlternativePath(c.pathFromPeer)
+	c.setPath(pathFromPeer)
+	return
+}
+
+/*
+********** giti.Ganjine interface **********
+ */
 
 func (c *Connection) saveConn() {
 	// save to PersiaOS storage in caller domain scope!
@@ -154,15 +173,15 @@ func (c *Connection) saveConn() {
 }
 
 /*
-	-- Get Last Methods --
+-- Get Last Methods --
 */
 
 // GetLastByPath return last connection by given c.Path from storage if exist
-func (c *Connection) GetLastByPath() (err *er.Error) {
+func (c *Connection) GetLastByPath() (err giti.Error) {
 	return
 }
 
 // GetLastByThingID return last connection by given c.ThingID from storage if exist
-func (c *Connection) GetLastByThingID() (err *er.Error) {
+func (c *Connection) GetLastByThingID() (err giti.Error) {
 	return
 }
