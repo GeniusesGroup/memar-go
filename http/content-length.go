@@ -13,5 +13,10 @@ func (h *header) GetContentLength() (l uint64) {
 
 // SetContentLength set body length to header.
 func (r *Request) SetContentLength() {
-	r.Header.Set(HeaderKeyContentLength, strconv.FormatUint(uint64(len(r.Body)), 10))
+	r.header.Set(HeaderKeyContentLength, strconv.FormatUint(uint64(r.body.Len()), 10))
+}
+
+// SetContentLength set body length to header.
+func (r *Response) SetContentLength() {
+	r.header.Set(HeaderKeyContentLength, strconv.FormatUint(uint64(r.body.Len()), 10))
 }

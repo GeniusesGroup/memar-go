@@ -16,7 +16,8 @@ import (
 type URI struct {
 	raw       string
 	scheme    string // = ALPHA *( ALPHA / DIGIT / "+" / "-" / "." )
-	authority string // = [ userinfo "@" ] host [ ":" port ]
+	authority string // host [ ":" port ]
+	host      string // host without port if any exist in authority
 	path      string //
 	query     string // encoded query values, without '?'
 	fragment  string // fragment for references, without '#'
@@ -25,12 +26,32 @@ type URI struct {
 func (u *URI) Raw() string       { return u.raw }
 func (u *URI) Scheme() string    { return u.scheme }
 func (u *URI) Authority() string { return u.authority }
+func (u *URI) Host() string      { return u.host }
 func (u *URI) Path() string      { return u.path }
 func (u *URI) Query() string     { return u.query }
 func (u *URI) Fragment() string  { return u.fragment }
 func (u *URI) Set(scheme, authority, path, query string) {
 	u.scheme, u.authority, u.path, u.query = scheme, authority, path, query
 }
+
+// checkHost check host of request by RFC 7230, section 5.3 rules: Must treat
+//		GET / HTTP/1.1
+//		Host: www.sabz.city
+// and
+//		GET https://www.sabz.city/ HTTP/1.1
+//		Host: apis.sabz.city
+// the same. In the second case, any Host line is ignored.
+func (u *URI) checkHost(h *header) {
+	if u.authority == "" {
+		u.host = h.Get(HeaderKeyHost)
+	}
+	// TODO::: decode host (remove port if exist) from authority
+	u.host = u.authority
+}
+
+/*
+********** giti.Codec interface **********
+ */
 
 func (u *URI) Decode(buf giti.Buffer) (err giti.Error) {
 	// TODO:::

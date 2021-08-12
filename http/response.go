@@ -7,7 +7,6 @@ import (
 	"strconv"
 	"strings"
 
-	"../buffer"
 	"../convert"
 	er "../error"
 	"../giti"
@@ -21,9 +20,7 @@ type Response struct {
 	reasonPhrase string
 
 	header header
-
-	body      []byte     // only for read from peer!
-	bodyCodec giti.Codec // only for send to peer!
+	body
 }
 
 // NewResponse make new response with some default data and return it!
@@ -34,14 +31,11 @@ func NewResponse() *Response {
 }
 
 func (r *Response) Version() string               { return r.version }
-func (r *Response) SetVersion(version string)     { r.version = version }
 func (r *Response) StatusCode() string            { return r.statusCode }
 func (r *Response) ReasonPhrase() string          { return r.reasonPhrase }
+func (r *Response) SetVersion(version string)     { r.version = version }
 func (r *Response) SetStatus(code, phrase string) { r.statusCode = code; r.reasonPhrase = phrase }
 func (r *Response) Header() giti.HTTPHeader       { return &r.header }
-func (r *Response) Body() []byte                  { return r.body }
-func (r *Response) BodyCodec() giti.Codec         { return r.bodyCodec }
-func (r *Response) SetBodyCodec(codec giti.Codec) { r.bodyCodec = codec }
 
 // GetStatusCode get status code as uit16
 func (r *Response) GetStatusCode() (code uint16, err giti.Error) {
@@ -66,6 +60,10 @@ func (r *Response) SetError(err giti.Error) {
 	r.header.Set(HeaderKeyErrorID, err.IDasString())
 }
 
+/*
+********** giti.Codec interface **********
+ */
+
 func (r *Response) Decode(buf giti.Buffer) (err giti.Error) {
 	var httpPacket = buf.GetUnread()
 	err = r.UnMarshal(httpPacket)
@@ -85,13 +83,18 @@ func (r *Response) Encode(buf giti.Buffer) {
 	r.header.Encode(buf)
 	buf.WriteString(CRLF)
 
-	r.bodyCodec.Encode(buf)
+	r.body.Encode(buf)
 }
 
 // Marshal enecodes whole r *Response data and return httpPacket!
 func (r *Response) Marshal() (httpPacket []byte) {
 	httpPacket = make([]byte, 0, r.Len())
+	httpPacket = r.MarshalTo(httpPacket)
+	return
+}
 
+// MarshalTo enecodes whole r *Response data to given httpPacket and return it by new len!
+func (r *Response) MarshalTo(httpPacket []byte) []byte {
 	httpPacket = append(httpPacket, r.version...)
 	httpPacket = append(httpPacket, SP)
 	httpPacket = append(httpPacket, r.statusCode...)
@@ -99,12 +102,11 @@ func (r *Response) Marshal() (httpPacket []byte) {
 	httpPacket = append(httpPacket, r.reasonPhrase...)
 	httpPacket = append(httpPacket, CRLF...)
 
-	httpPacket = r.header.Marshal(httpPacket)
+	httpPacket = r.header.MarshalTo(httpPacket)
 	httpPacket = append(httpPacket, CRLF...)
 
-	var buf = buffer.New(httpPacket)
-	r.bodyCodec.Encode(buf)
-	return
+	httpPacket = r.body.MarshalTo(httpPacket)
+	return httpPacket
 }
 
 // UnMarshal parses and decodes data of given httpPacket to r *Response.
@@ -147,7 +149,7 @@ func (r *Response) UnMarshal(httpPacket []byte) (err giti.Error) {
 	// So it can be occur panic if very simple request end without any CRLF
 	index += 2 // +2 due to have "\r\n" after header end
 
-	r.body = httpPacket[index:]
+	r.body.checkEncodingAndSetBody(httpPacket[index:], &r.header)
 	return
 }
 
@@ -162,7 +164,7 @@ func (r *Response) MarshalWithoutBody() (httpPacket []byte) {
 	httpPacket = append(httpPacket, r.reasonPhrase...)
 	httpPacket = append(httpPacket, CRLF...)
 
-	httpPacket = r.header.Marshal(httpPacket)
+	httpPacket = r.header.MarshalTo(httpPacket)
 	httpPacket = append(httpPacket, CRLF...)
 	return
 }
@@ -189,12 +191,13 @@ func (r *Response) ReadFrom(reader io.Reader) (n int64, goErr error) {
 
 	var contentLength = r.header.GetContentLength()
 	// TODO::: is below logic check include all situations??
-	if contentLength > 0 && len(r.body) == 0 {
-		r.body = make([]byte, contentLength)
-		bodyReadLength, goErr = reader.Read(r.body)
+	if contentLength > 0 && r.body.Len() == 0 {
+		var bodyRaw = make([]byte, contentLength)
+		bodyReadLength, goErr = reader.Read(bodyRaw)
 		if bodyReadLength != int(contentLength) {
 			// goErr =
 		}
+		r.body.checkEncodingAndSetBody(bodyRaw, &r.header)
 	}
 
 	return int64(headerReadLength + bodyReadLength), goErr
@@ -204,14 +207,14 @@ func (r *Response) ReadFrom(reader io.Reader) (n int64, goErr error) {
 // Declare to respect io.WriterTo interface!
 func (r *Response) WriteTo(w io.Writer) (totalWrite int64, err error) {
 	var resMarshaled = r.MarshalWithoutBody()
-	var headerWriteLength, bodyWrittenLength int
+	var headerWriteLength int
 
 	headerWriteLength, err = w.Write(resMarshaled)
 	if err == nil {
-		bodyWrittenLength, err = w.Write(r.body)
+		totalWrite, err = r.body.WriteTo(w)
 	}
 
-	totalWrite = int64(headerWriteLength + bodyWrittenLength)
+	totalWrite += int64(headerWriteLength)
 	return
 }
 
@@ -228,9 +231,8 @@ func (r *Response) LenWithoutBody() (ln int) {
 // Len return length of response
 func (r *Response) Len() (ln int) {
 	ln = r.LenWithoutBody()
-	ln += len(r.body)
-	if r.bodyCodec != nil {
-		ln += r.bodyCodec.Len()
+	if r.body.Codec != nil {
+		ln += r.body.Len()
 	}
 	return
 }

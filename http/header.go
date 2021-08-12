@@ -3,14 +3,20 @@
 package http
 
 import (
-	"net/textproto"
 	"strings"
+
+	"../giti"
 )
 
 // header is represent HTTP header structure!
 type header struct {
 	headers    map[string][]string
 	valuesPool []string
+}
+
+func (h *header) init() {
+	h.headers = make(map[string][]string, 16)
+	h.valuesPool = make([]string, 16)
 }
 
 // Get returns the first value associated with the given key.
@@ -38,15 +44,7 @@ func (h *header) Add(key, value string) {
 	var values []string
 	values = h.headers[key]
 	if values == nil {
-		if len(h.valuesPool) == 0 {
-			h.valuesPool = make([]string, 16)
-		}
-		// More than likely this will be a single-element key. Most headers aren't multi-valued.
-		// Set the capacity on valuesPool[0] to 1, so any future append won't extend the slice into the other strings.
-		values = h.valuesPool[:1:1]
-		h.valuesPool = h.valuesPool[1:]
-		values[0] = value
-		h.headers[key] = values
+		h.Set(key, value)
 	} else {
 		h.headers[key] = append(values, value)
 	}
@@ -170,8 +168,28 @@ func (h *header) Exclude(exclude map[string]bool) {
 	}
 }
 
-// Marshal enecodes (h *header) data to given httpPacket.
-func (h *header) Marshal(httpPacket []byte) []byte {
+/*
+********** giti.Codec interface **********
+ */
+
+func (h *header) Decode(buf giti.Buffer) (err giti.Error) {
+	// TODO:::
+	return
+}
+
+func (h *header) Encode(buf giti.Buffer) {
+	buf.Set(h.MarshalTo(buf.Get()))
+}
+
+// Marshal enecodes whole h *header data and return httpHeader!
+func (h *header) Marshal() (httpHeader []byte) {
+	httpHeader = make([]byte, 0, h.Len())
+	httpHeader = h.MarshalTo(httpHeader)
+	return
+}
+
+// MarshalTo enecodes (h *header) data to given httpPacket.
+func (h *header) MarshalTo(httpPacket []byte) []byte {
 	// TODO::: some header key must not inline by coma like set-cookie, ...
 	for key, values := range h.headers {
 		if key == HeaderKeySetCookie {
@@ -241,14 +259,3 @@ func (h *header) Len() (ln int) {
 	}
 	return
 }
-
-func (h *header) init() {
-	h.headers = make(map[string][]string, 16)
-	h.valuesPool = make([]string, 16)
-}
-
-// CanonicalHeaderKey returns the canonical format of the header key s.
-// The canonicalization converts the first letter and any letter following a hyphen to upper case;
-// the rest are converted to lowercase. For example, the canonical key for "accept-encoding" is "Accept-Encoding".
-// If s contains a space or invalid header field bytes, it is returned without modifications.
-func CanonicalHeaderKey(s string) string { return textproto.CanonicalMIMEHeaderKey(s) }

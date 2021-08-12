@@ -6,7 +6,6 @@ import (
 	"io"
 	"strings"
 
-	"../buffer"
 	"../convert"
 	"../giti"
 )
@@ -19,9 +18,7 @@ type Request struct {
 	version string
 
 	header header
-
-	body      []byte     // only for read from peer!
-	bodyCodec giti.Codec // only for send to peer!
+	body
 }
 
 // NewRequest make new request with some default data
@@ -31,29 +28,16 @@ func NewRequest() *Request {
 	return &r
 }
 
-func (r *Request) Method() string                { return r.method }
-func (r *Request) SetMethod(method string)       { r.method = method }
-func (r *Request) URI() giti.HTTPURI             { return &r.uri }
-func (r *Request) Version() string               { return r.version }
-func (r *Request) SetVersion(version string)     { r.version = version }
-func (r *Request) Header() giti.HTTPHeader       { return &r.header }
-func (r *Request) Body() []byte                  { return r.body }
-func (r *Request) BodyCodec() giti.Codec         { return r.bodyCodec }
-func (r *Request) SetBodyCodec(codec giti.Codec) { r.bodyCodec = codec }
+func (r *Request) Method() string            { return r.method }
+func (r *Request) URI() giti.HTTPURI         { return &r.uri }
+func (r *Request) Version() string           { return r.version }
+func (r *Request) SetMethod(method string)   { r.method = method }
+func (r *Request) SetVersion(version string) { r.version = version }
+func (r *Request) Header() giti.HTTPHeader   { return &r.header }
 
-// GetHost returns host of request by RFC 7230, section 5.3 rules: Must treat
-//		GET / HTTP/1.1
-//		Host: www.sabz.city
-// and
-//		GET https://www.sabz.city/ HTTP/1.1
-//		Host: apis.sabz.city
-// the same. In the second case, any Host line is ignored.
-func (r *Request) GetHost() (host string) {
-	if r.uri.authority == "" {
-		return r.header.Get(HeaderKeyHost)
-	}
-	return r.uri.authority
-}
+/*
+********** giti.Codec interface **********
+ */
 
 func (r *Request) Decode(buf giti.Buffer) (err giti.Error) {
 	var httpPacket = buf.GetUnread()
@@ -74,13 +58,18 @@ func (r *Request) Encode(buf giti.Buffer) {
 	r.header.Encode(buf)
 	buf.WriteString(CRLF)
 
-	r.bodyCodec.Encode(buf)
+	r.body.Encode(buf)
 }
 
 // Marshal enecodes whole r *Request data and return httpPacket!
 func (r *Request) Marshal() (httpPacket []byte) {
 	httpPacket = make([]byte, 0, r.Len())
+	httpPacket = r.MarshalTo(httpPacket)
+	return
+}
 
+// MarshalTo enecodes whole r *Request data to given httpPacket and return it with new len!
+func (r *Request) MarshalTo(httpPacket []byte) []byte {
 	httpPacket = append(httpPacket, r.method...)
 	httpPacket = append(httpPacket, SP)
 	httpPacket = r.uri.Marshal(httpPacket)
@@ -88,12 +77,11 @@ func (r *Request) Marshal() (httpPacket []byte) {
 	httpPacket = append(httpPacket, r.version...)
 	httpPacket = append(httpPacket, CRLF...)
 
-	httpPacket = r.header.Marshal(httpPacket)
+	httpPacket = r.header.MarshalTo(httpPacket)
 	httpPacket = append(httpPacket, CRLF...)
 
-	var buf = buffer.New(httpPacket)
-	r.bodyCodec.Encode(buf)
-	return
+	httpPacket = r.body.MarshalTo(httpPacket)
+	return httpPacket
 }
 
 // UnMarshal parses and decodes data of given httpPacket to r *Request.
@@ -128,11 +116,13 @@ func (r *Request) UnMarshal(httpPacket []byte) (err giti.Error) {
 
 	index += r.header.UnMarshal(s)
 
+	r.uri.checkHost(&r.header)
+
 	// By https://tools.ietf.org/html/rfc2616#section-4 very simple http packet must end with CRLF even packet without header or body!
 	// So it can be occur panic if very simple request end without any CRLF
 	index += 2 // +2 due to have "\r\n" after header end
 
-	r.body = httpPacket[index:]
+	r.body.checkEncodingAndSetBody(httpPacket[index:], &r.header)
 	return
 }
 
@@ -147,7 +137,7 @@ func (r *Request) MarshalWithoutBody() (httpPacket []byte) {
 	httpPacket = append(httpPacket, r.version...)
 	httpPacket = append(httpPacket, CRLF...)
 
-	httpPacket = r.header.Marshal(httpPacket)
+	httpPacket = r.header.MarshalTo(httpPacket)
 	httpPacket = append(httpPacket, CRLF...)
 	return
 }
@@ -174,12 +164,13 @@ func (r *Request) ReadFrom(reader io.Reader) (n int64, goErr error) {
 
 	var contentLength = r.header.GetContentLength()
 	// TODO::: is below logic check include all situations??
-	if contentLength > 0 && len(r.body) == 0 {
-		r.body = make([]byte, contentLength)
-		bodyReadLength, goErr = reader.Read(r.body)
+	if contentLength > 0 && r.body.Len() == 0 {
+		var bodyRaw = make([]byte, contentLength)
+		bodyReadLength, goErr = reader.Read(bodyRaw)
 		if bodyReadLength != int(contentLength) {
 			// goErr =
 		}
+		r.body.checkEncodingAndSetBody(bodyRaw, &r.header)
 	}
 
 	return int64(headerReadLength + bodyReadLength), goErr
@@ -190,14 +181,13 @@ func (r *Request) ReadFrom(reader io.Reader) (n int64, goErr error) {
 func (r *Request) WriteTo(w io.Writer) (totalWrite int64, err error) {
 	var reqMarshaled = r.MarshalWithoutBody()
 	var headerWriteLength int
-	var bodyWrittenLength int64
 
 	headerWriteLength, err = w.Write(reqMarshaled)
 	if err == nil {
-		bodyWrittenLength, err = r.bodyCodec.WriteTo(w)
+		totalWrite, err = r.body.WriteTo(w)
 	}
 
-	totalWrite = int64(headerWriteLength) + bodyWrittenLength
+	totalWrite += int64(headerWriteLength)
 	return
 }
 
@@ -214,9 +204,8 @@ func (r *Request) LenWithoutBody() (ln int) {
 // Len return length of request
 func (r *Request) Len() (ln int) {
 	ln = r.LenWithoutBody()
-	ln += len(r.body)
-	if r.bodyCodec != nil {
-		ln += r.bodyCodec.Len()
+	if r.body.Codec != nil {
+		ln += r.body.Len()
 	}
 	return
 }
