@@ -2,53 +2,54 @@
 
 package giti
 
+// HTTPHandler is any object to be HTTP service handler.
+type HTTPHandler interface {
+	ServeHTTP(stream Stream, httpReq HTTPRequest, httpRes HTTPResponse) (err Error)
+}
+
+// HTTP Request Semantic
 type HTTPRequest interface {
+	// "message start-line" in HTTP/1.x or "pseudo-header fields" in HTTP/2.x||HTTP/3.x
 	Method() string
-	SetMethod(method string)
 	URI() HTTPURI
 	Version() string
+	SetMethod(method string)
 	SetVersion(version string)
 
 	Header() HTTPHeader
-	Body() HTTPBody
-
-	// Helpers methods
-
-	// GetHost returns host of request by RFC 7230, section 5.3 rules: Must treat
-	//		GET / HTTP/1.1
-	//		Host: www.sabz.city
-	// and
-	//		GET https://www.sabz.city/ HTTP/1.1
-	//		Host: apis.sabz.city
-	// the same. In the second case, any Host line is ignored.
-	GetHost() (host string)
+	HTTPBody
 
 	Codec
 }
 
+// HTTP Response Semantic
 type HTTPResponse interface {
+	// "message start-line" in HTTP/1.x or "pseudo-header fields" in HTTP/2.x||HTTP/3.x
 	Version() string
-	SetVersion(version string)
 	StatusCode() string
 	ReasonPhrase() string
+	SetVersion(version string)
 	SetStatus(statusCode, reasonPhrase string)
 
 	Header() HTTPHeader
-	Body() HTTPBody
+	HTTPBody
 
 	Codec
 }
 
+// HTTP URI Semantic
 type HTTPURI interface {
 	Raw() string
 	Scheme() string
 	Authority() string
+	Host() string
 	Path() string
 	Query() string
 	Fragment() string
 	Set(scheme, authority, path, query string)
 }
 
+// HTTP Header Semantic
 type HTTPHeader interface {
 	Get(key string) (value string)
 	Gets(key string) (values []string)
@@ -59,8 +60,8 @@ type HTTPHeader interface {
 	Del(key string)
 }
 
+// HTTP Body Semantic
 type HTTPBody interface {
-	Raw() []byte // only for read from peer!
-	BodyCodec() Codec
-	SetBodyCodec(codec Codec)
+	Body() Codec
+	SetBody(codec Codec)
 }
