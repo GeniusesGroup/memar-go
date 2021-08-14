@@ -1,6 +1,6 @@
 /* For license and copyright information please see LEGAL file in repository */
 
-package assets
+package file
 
 import (
 	"sort"
@@ -13,6 +13,7 @@ type Folder struct {
 	FSPath       string     // Folder location in FileSystems
 	Event        chan uint8 // use in dev phase to update Folder if any change occur!!
 	State        uint8
+	Dep          *Folder
 	Files        map[string]*File   // Name
 	Dependencies map[string]*Folder // Name
 }
@@ -77,7 +78,7 @@ func (f *Folder) SetFile(file *File) {
 }
 
 // SetFiles use to set files to given asset!
-func (f *Folder) SetFiles(files []*File) {
+func (f *Folder) SetFiles(files ...*File) {
 	for _, file := range files {
 		f.Files[file.FullName] = file
 	}
@@ -93,6 +94,7 @@ func (f *Folder) MinifyCompressSet(file *File, compressType string) {
 // MinifyCompressSets minify & compress files and set them to given asset. Mostly to serve file by servers.
 func (f *Folder) MinifyCompressSets(files []*File, compressType string) {
 	for _, file := range files {
+		file.Minify()
 		file.Compress(compressType)
 		f.Files[file.FullName] = file
 	}

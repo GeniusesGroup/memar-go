@@ -1,14 +1,17 @@
 /* For license and copyright information please see LEGAL file in repository */
 
-package assets
+package file
 
 import (
 	"bytes"
 	"compress/gzip"
 	"hash/crc32"
+	"mime"
+	"os"
 	"regexp"
 	"strconv"
 
+	"../giti"
 	"../log"
 
 	"github.com/tdewolff/minify"
@@ -22,11 +25,12 @@ import (
 
 // File store some data about a file!
 type File struct {
+	file         *os.File
+	Dep          *Folder
 	FullName     string
 	Name         string
 	Extension    string
 	MimeType     string
-	Dep          *Folder
 	State        uint8
 	Data         []byte
 	CompressData []byte
@@ -38,6 +42,18 @@ const (
 	StateUnChanged uint8 = iota
 	StateChanged
 )
+
+// Rename rename file name and full name
+func (f *File) Rename(newName string) {
+	f.Name = newName
+	f.FullName = f.Name + "." + f.Extension
+}
+
+// CheckAndFix ...
+func (f *File) CheckAndFix() {
+	f.MimeType = mime.TypeByExtension("." + f.Extension)
+	f.FullName = f.Name + "." + f.Extension
+}
 
 // var md5Hasher = md5.New()
 
@@ -79,6 +95,7 @@ func (f *File) DeepCopy() *File {
 		MimeType:  f.MimeType,
 		Dep:       f.Dep,
 		State:     f.State,
+		Data:      make([]byte, len(f.Data)),
 	}
 	copy(file.Data, f.Data)
 	return &file
@@ -105,8 +122,8 @@ func (f *File) Minify() {
 	}
 	var err error
 	f.Data, err = m.Bytes(f.MimeType, f.Data)
-	if err != nil {
-		log.Warn("Minify", f.FullName, "occur this error:", err)
+	if err != nil && giti.AppDebugMode {
+		log.Warn("Minify -", f.FullName, "occur this error:", err)
 	}
 }
 
