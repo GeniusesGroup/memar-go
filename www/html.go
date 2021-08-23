@@ -6,59 +6,70 @@ import (
 	"bytes"
 	"strconv"
 
-	"../assets"
+	"../file"
+	"../giti"
 	"../json"
 	"../log"
 )
 
 // mixHTMLToJS add given HTML file to specific part of JS file.
-func mixHTMLToJS(jsFile, htmlFile *assets.File) {
+func mixHTMLToJS(jsFile, htmlFile *file.File) (mixFile *file.File) {
 	htmlFile.Minify()
+	mixFile = jsFile.Copy()
+	var jsData = jsFile.Data()
+	var htmlData = htmlFile.Data()
 
-	var loc = bytes.Index(jsFile.Data, []byte("HTML: ("))
+	var loc = bytes.Index(jsData, []byte("HTML: ("))
 	if loc < 0 {
-		loc = bytes.Index(jsFile.Data, []byte("HTML = ("))
+		loc = bytes.Index(jsData, []byte("HTML = ("))
 		if loc < 0 {
 			log.Warn(htmlFile.FullName, "html file can't add to", jsFile.FullName, "file due to bad JS.")
 			return
 		}
 	}
 
-	var graveAccentIndex int
-	graveAccentIndex = bytes.IndexByte(jsFile.Data[loc:], '`')
+	var graveAccentIndex int = bytes.IndexByte(jsData[loc:], '`')
+	graveAccentIndex += loc + 1
 
-	var jsFileData = make([]byte, 0, len(jsFile.Data)+len(htmlFile.Data))
-	jsFileData = append(jsFileData, jsFile.Data[:loc+graveAccentIndex+1]...)
-	jsFileData = append(jsFileData, htmlFile.Data...)
-	jsFileData = append(jsFileData, jsFile.Data[loc+graveAccentIndex+1:]...)
-	jsFile.Data = jsFileData
+	var mixFileData = make([]byte, 0, len(jsData)+len(htmlData))
+	mixFileData = append(mixFileData, jsData[:graveAccentIndex]...)
+	mixFileData = append(mixFileData, htmlData...)
+	mixFileData = append(mixFileData, jsData[graveAccentIndex:]...)
+
+	mixFile.SetData(mixFileData)
+	return
 }
 
 // mixHTMLTemplateToJS add given HTML template file to specific part of JS file.
-func mixHTMLTemplateToJS(jsFile, htmlFile *assets.File, tempName string) {
+func mixHTMLTemplateToJS(jsFile, htmlFile *file.File, tempName string) (mixFile *file.File) {
 	htmlFile.Minify()
+	mixFile = jsFile.Copy()
+	var jsData = jsFile.Data()
+	var htmlData = htmlFile.Data()
 
-	var loc = bytes.Index(jsFile.Data, []byte(tempName+`": (`))
+	var loc = bytes.Index(jsData, []byte(tempName+`": (`))
 	if loc < 0 {
 		log.Warn(htmlFile.FullName, "html template file can't add to", jsFile.FullName, "file due to bad JS template.")
 		return
 	}
 
-	var graveAccentIndex int
-	graveAccentIndex = bytes.IndexByte(jsFile.Data[loc:], '`')
+	var graveAccentIndex int = bytes.IndexByte(jsData[loc:], '`')
+	graveAccentIndex += loc + 1
 
-	var jsFileData = make([]byte, 0, len(jsFile.Data)+len(htmlFile.Data))
-	jsFileData = append(jsFileData, jsFile.Data[:loc+graveAccentIndex+1]...)
-	jsFileData = append(jsFileData, htmlFile.Data...)
-	jsFileData = append(jsFileData, jsFile.Data[loc+graveAccentIndex+1:]...)
-	jsFile.Data = jsFileData
+	var mixFileData = make([]byte, 0, len(jsData)+len(htmlData))
+	mixFileData = append(mixFileData, jsData[:graveAccentIndex]...)
+	mixFileData = append(mixFileData, htmlData...)
+	mixFileData = append(mixFileData, jsData[graveAccentIndex:]...)
+
+	mixFile.SetData(mixFileData)
+	return
 }
 
 // localizeHTMLFile make and returns number of localize file by number of language indicate in JSON localize text
-func localizeHTMLFile(htmlFile *assets.File, lj localize) (files map[string]*assets.File) {
+func localizeHTMLFile(htmlFile *file.File, lj localize) (files map[string]*file.File) {
 	htmlFile.Minify()
 
-	files = make(map[string]*assets.File, len(lj))
+	files = make(map[string]*file.File, len(lj))
 	if len(lj) == 0 {
 		files[""] = htmlFile
 	} else {
@@ -69,11 +80,10 @@ func localizeHTMLFile(htmlFile *assets.File, lj localize) (files map[string]*ass
 	return
 }
 
-func replaceLocalizeTextInHTML(html *assets.File, text []string, lang string) (newFile *assets.File) {
-	newFile = html.Copy()
-	newFile.Data = nil
-
-	var htmlData = html.Data
+func replaceLocalizeTextInHTML(html *file.File, text []string, lang string) (mixFile *file.File) {
+	mixFile = html.Copy()
+	var htmlData = html.Data()
+	var mixFileData = make([]byte, 0, len(htmlData))
 
 	var replacerIndex int
 	var bracketIndex int
@@ -82,10 +92,11 @@ func replaceLocalizeTextInHTML(html *assets.File, text []string, lang string) (n
 	for {
 		replacerIndex = bytes.Index(htmlData, []byte("${LocaleText["))
 		if replacerIndex < 0 {
-			newFile.Data = append(newFile.Data, htmlData...)
+			mixFileData = append(mixFileData, htmlData...)
+			mixFile.SetData(mixFileData)
 			return
 		}
-		newFile.Data = append(newFile.Data, htmlData[:replacerIndex]...)
+		mixFileData = append(mixFileData, htmlData[:replacerIndex]...)
 		htmlData = htmlData[replacerIndex:]
 
 		bracketIndex = bytes.IndexByte(htmlData, ']')
@@ -93,7 +104,7 @@ func replaceLocalizeTextInHTML(html *assets.File, text []string, lang string) (n
 		if err != nil {
 			log.Warn("Index numbers in", html.FullName, "is not valid, double check your file for bad structures")
 		} else {
-			newFile.Data = append(newFile.Data, text[textIndex]...)
+			mixFileData = append(mixFileData, text[textIndex]...)
 		}
 
 		htmlData = htmlData[bracketIndex+2:]
@@ -102,7 +113,7 @@ func replaceLocalizeTextInHTML(html *assets.File, text []string, lang string) (n
 
 type localize map[string][]string
 
-func (lj *localize) jsonDecoder(data []byte) (err error) {
+func (lj *localize) jsonDecoder(data []byte) (err giti.Error) {
 	// TODO::: convert to generated code
 	err = json.UnMarshal(data, lj)
 	return

@@ -7,51 +7,73 @@ import (
 	"strings"
 	"text/template"
 
-	"../assets"
 	"../convert"
 	er "../error"
+	"../file"
+	"../giti"
+	language "../language"
 	"../log"
 )
 
 type combine struct {
-	repo         *assets.Folder
-	repoGUI      *assets.Folder
-	repoPages    *assets.Folder
-	repoWidgets  *assets.Folder
-	repoLandings *assets.Folder
+	repo         *file.Folder
+	repoGUI      *file.Folder
+	repoDL       *file.Folder
+	repoPages    *file.Folder
+	repoWidgets  *file.Folder
+	repoLandings *file.Folder
 
-	inlined    map[string]*assets.File // map key is file FullName
-	initsFiles map[string]*assets.File
+	inlined map[string]*file.File // map key is file FullName
 
-	mainHTML   *assets.File
-	mainJS     *assets.File
-	initsJS    []*assets.File
-	landings   []*assets.File
-	otherFiles []*assets.File
+	swFiles         map[string]*file.File            // map key is language in iso format e.g. "en", "fa", ...
+	mainHTMLFiles   map[string]*file.File            // map key is language in iso format e.g. "en", "fa", ...
+	mainJSFiles     map[string]*file.File            // map key is language in iso format e.g. "en", "fa", ...
+	landingsFiles   map[string]map[string]*file.File // first map key is file name, second map key is language in iso format e.g. "en", "fa",
+	designLanguages []*file.File
+	otherFiles      []*file.File
 }
 
-func (c *combine) init(repo *assets.Folder) {
-	c.inlined = make(map[string]*assets.File)
+func (c *combine) init(repo *file.Folder) {
+	c.inlined = make(map[string]*file.File)
 
 	c.repo = repo
 	c.repoGUI = repo.GetDependency("gui")
+	c.repoDL = c.repoGUI.GetDependency("design-languages")
 	c.repoPages = c.repoGUI.GetDependency("pages")
 	c.repoWidgets = c.repoGUI.GetDependency("widgets")
 	c.repoLandings = c.repoGUI.GetDependency("landings")
+
+	c.landingsFiles = make(map[string]map[string]*file.File)
+
+	c.readyLandingsFiles()
+	c.readyAppJSFiles()
+	c.readyMainHTMLFile()
+	c.readySWFile()
+	c.readyDesignLanguagesFiles()
 }
 
 func (c *combine) readyAppJSFiles() {
 	var mainJSFile = c.repoGUI.GetFile("main.js")
-	c.mainJS = mainJSFile.Copy()
-	c.mainJS.Data = nil
+	if mainJSFile == nil {
+		log.Warn("WWW - no main.js file exist to ready UI apps to serve!")
+		return
+	}
+
+	var lj = make(localize, 8)
+	var jsonFile *file.File = c.repoGUI.GetFile("main.json")
+	if jsonFile == nil {
+		log.Warn("WWW - Can't find json localize file for /main.js")
+		return
+	}
+	lj.jsonDecoder(jsonFile.Data())
 
 	var mainJSCreator = JS{
-		imports: make([]*assets.File, 0, 100),
+		imports: make([]*file.File, 1, 100),
 		inlined: c.inlined,
 	}
-	mainJSCreator.imports = append(mainJSCreator.imports, mainJSFile)
+	mainJSCreator.imports[0] = mainJSFile
 	_ = mainJSCreator.extractJSImportsRecursively(mainJSFile)
-	if log.DevMode {
+	if giti.AppDevMode {
 		var name strings.Builder
 		for _, imp := range mainJSCreator.imports {
 			name.WriteString(imp.FullName)
@@ -60,75 +82,24 @@ func (c *combine) readyAppJSFiles() {
 		log.Warn("WWW - main.js imports recursively:", name.String())
 	}
 
-	var lj = make(localize, 8)
-	var jsonFile *assets.File = c.repoGUI.GetFile("init.json")
-	if jsonFile == nil {
-		log.Warn("WWW - Can't find json localize file for /init.js")
-		return
-	}
-	lj.jsonDecoder(jsonFile.Data)
-
-	var initRepoFile = c.repoGUI.GetFile("init.js")
-	var initJSCreator = JS{
-		imports: make([]*assets.File, 0, 100),
-		inlined: c.inlined,
-	}
-	initJSCreator.imports = append(initJSCreator.imports, initRepoFile)
-	_ = initJSCreator.extractJSImportsRecursively(initRepoFile)
-	if log.DevMode {
-		var name strings.Builder
-		for _, imp := range initJSCreator.imports {
-			name.WriteString(imp.FullName)
-			name.WriteByte(',')
-		}
-		log.Warn("WWW - init.js imports recursively:", name.String())
-	}
-	c.initsFiles = localizeJSFile(initRepoFile, lj)
-	for _, initFile := range c.initsFiles {
-		initFile.Data = nil
+	c.mainJSFiles = localizeJSFile(mainJSFile, lj)
+	for _, mainFile := range c.mainJSFiles {
+		mainFile.SetData(nil)
 	}
 
 	for i := len(mainJSCreator.imports) - 1; i >= 0; i-- {
-		if c.isInlined(mainJSCreator.imports[i].FullName) {
-			continue
-		}
-		if c.isLocalize(mainJSCreator.imports[i]) {
-			c.addLocalized(mainJSCreator.imports[i])
-			continue
-		}
-		c.inlined[mainJSCreator.imports[i].FullName] = mainJSCreator.imports[i]
-		var files = localeAndMixJSFile(mainJSCreator.imports[i])
-		c.mainJS.Data = append(c.mainJS.Data, files[""].Data...)
+		c.addLocalized(mainJSCreator.imports[i])
 	}
 
-	for i := len(initJSCreator.imports) - 1; i >= 0; i-- {
-		c.addLocalized(initJSCreator.imports[i])
-	}
-
-	for _, err := range er.ERRPoolSlice {
-		var domain, short, long, idAsString string
-		for lang, initFile := range c.initsFiles {
-			if lang == "en" {
-				domain, short, long, idAsString = err.GetDetail(0)
-			} else {
-				domain, short, long, idAsString = err.GetDetail(1)
-			}
-			if short == "" {
-				domain, short, long, idAsString = err.GetDetail(0)
-			}
-			var textOfError = "errors.New(" + idAsString + ",\"" + domain + "\",\"" + short + "\",\"" + long + "\")\n"
-			initFile.Data = append(initFile.Data, textOfError...)
-		}
-	}
-
-	var hashedName = "init-" + c.initsFiles["en"].GetHashOfData() + "-"
-	for lang, initFile := range c.initsFiles {
-		initFile.Rename(hashedName + lang)
-		c.initsJS = append(c.initsJS, initFile)
+	// Add platfrom errors!
+	for lang, mainFile := range c.mainJSFiles {
+		mainFile.AppendData(er.Errors.GetErrorsInJsFormat(language.GetLanguageByISO(lang)))
+		mainFile.Rename(mainFile.Name + "-" + lang)
+		mainFile.AddHashToName()
 	}
 }
 
-func (c *combine) addLocalized(file *assets.File) {
+func (c *combine) addLocalized(file *file.File) {
 	if c.isInlined(file.FullName) {
 		return
 	}
@@ -140,19 +111,15 @@ func (c *combine) addLocalized(file *assets.File) {
 	}
 
 	var files = localeAndMixJSFile(file)
-	if len(files) < 2 {
-		c.mainJS.Data = append(c.mainJS.Data, files[""].Data...)
-	} else {
-		for lang, initFile := range c.initsFiles {
-			var localeFile = files[lang]
-			if localeFile == nil {
-				if log.DevMode {
-					log.Warn("WWW - ", file.FullName, "don't have locale files in '", lang, "' language that init.js support this language. Use pure file in combine proccess.")
-				}
-				localeFile = files[""]
+	for lang, mainFile := range c.mainJSFiles {
+		var localeFile = files[lang]
+		if localeFile == nil {
+			if giti.AppDevMode {
+				log.Warn("WWW - ", file.FullName, "don't have locale files in '", lang, "' language that main.js support this language. WWW Use pure file in combine proccess.")
 			}
-			initFile.Data = append(initFile.Data, localeFile.Data...)
+			localeFile = files[""]
 		}
+		mainFile.AppendData(localeFile.Data())
 	}
 }
 
@@ -161,80 +128,108 @@ func (c *combine) isInlined(fullName string) (ok bool) {
 	return
 }
 
-func (c *combine) isLocalize(file *assets.File) (ok bool) {
-	var jsonFile *assets.File = file.Dep.GetFile(file.Name + ".json")
-	if jsonFile != nil {
-		return true
+// readyDesignLanguagesFiles read needed files from given repo folder and do some logic and return files.
+func (c *combine) readyDesignLanguagesFiles() {
+	for _, folder := range c.repoDL.Folders {
+		var combinedFile = file.File{
+			Name:      "design-language--" + folder.Name,
+			Extension: "css",
+		}
+		combinedFile.CheckAndFix()
+		var fullName = combinedFile.FullName
+		var combinedFileData []byte
+		for _, file := range folder.Files {
+			if file.Extension == "css" {
+				combinedFileData = append(combinedFileData, file.Data()...)
+			}
+		}
+		combinedFile.SetData(combinedFileData)
+		combinedFile.AddHashToName()
+		c.designLanguages = append(c.designLanguages, &combinedFile)
+
+		for _, mainFile := range c.mainJSFiles {
+			mainFile.ReplaceAll(convert.UnsafeStringToByteSlice(fullName), convert.UnsafeStringToByteSlice(combinedFile.FullName))
+		}
 	}
-	return
+	for _, file := range c.repoDL.Files {
+		if file.Extension == "css" {
+			var fullName = file.FullName
+			file.AddHashToName()
+			c.designLanguages = append(c.designLanguages, file)
+			for _, mainFile := range c.mainJSFiles {
+				mainFile.ReplaceAll(convert.UnsafeStringToByteSlice(fullName), convert.UnsafeStringToByteSlice(file.FullName))
+			}
+		}
+	}
 }
 
 // readyLandingsFiles read needed files from given repo folder and do some logic and return files.
 func (c *combine) readyLandingsFiles() {
-	var landing *assets.File
+	// TODO::: Need to change landings file name to hash of data??
+	var landing *file.File
 	for _, landing = range c.repoLandings.GetFiles() {
 		switch landing.Extension {
 		case "html":
-			var jsonFile *assets.File = c.repoLandings.GetFile(landing.Name + ".json")
+			var jsonFile *file.File = c.repoLandings.GetFile(landing.Name + ".json")
 			if jsonFile == nil {
-				if log.DevMode {
+				if giti.AppDevMode {
 					log.Warn("WWW - Can't find json localize file for ", landing.FullName)
 				}
 				continue
 			}
 
 			var lj = make(localize, 8)
-			lj.jsonDecoder(jsonFile.Data)
+			lj.jsonDecoder(jsonFile.Data())
 
-			var mixed = mixCSSToHTML(landing, c.repoLandings.GetFile(landing.Name+".css"))
-
-			for lang, f := range localizeHTMLFile(mixed, lj) {
-				f.Rename(f.Name + "-" + lang)
-				c.landings = append(c.landings, f)
-			}
+			var mixedHTMLFile = mixCSSToHTML(landing, c.repoLandings.GetFile(landing.Name+".css"))
+			c.landingsFiles[mixedHTMLFile.Name] = localizeHTMLFile(mixedHTMLFile, lj)
 		}
 	}
 }
 
 // readyMainHTMLFile read needed files from given repo folder and do some logic to make main.html.
-func (c *combine) readyMainHTMLFile(mainJSName string) {
-	var splash *assets.File
-	for _, lan := range c.landings {
-		if lan.Name == "splash-en" {
-			splash = lan
-		}
-	}
-	if splash == nil {
-		log.Warn("WWW - no english splash screen exist to make main.html file")
+func (c *combine) readyMainHTMLFile() {
+	var splashFiles = c.landingsFiles["splash"]
+	if splashFiles == nil {
+		log.Warn("WWW - no splash screen exist to make main.html files")
 		return
 	}
 
-	var tempName = struct {
-		MainJSName string
-		Splash     string
-	}{
-		MainJSName: mainJSName,
-		Splash:     convert.UnsafeByteSliceToString(splash.Data),
-	}
+	for lang, splashFile := range splashFiles {
+		var mainJSFile = c.mainJSFiles[lang]
+		if mainJSFile == nil {
+			log.Warn("WWW - no main js in " + lang + " language exist to make main.html file")
+			continue
+		}
 
-	var err error
-	var sf = new(bytes.Buffer)
-	err = mainHTMLFile.Execute(sf, tempName)
-	if err != nil {
-		log.Warn(err)
-	}
+		var tempName = struct {
+			MainJSName string
+			Splash     string
+		}{
+			MainJSName: mainJSFile.Name,
+			Splash:     convert.UnsafeByteSliceToString(splashFile.Data()),
+		}
 
-	c.mainHTML = &assets.File{
-		FullName:  "main.html",
-		Name:      "main",
-		Extension: "html",
-		MimeType:  "text/html",
-		Data:      sf.Bytes(),
+		var err error
+		var sf = new(bytes.Buffer)
+		err = mainHTMLFileTemplate.Execute(sf, tempName)
+		if err != nil {
+			log.Warn(err)
+			continue
+		}
+
+		var mainHTMLFile = &file.File{
+			Name:      "main+" + lang,
+			Extension: "html",
+		}
+		mainHTMLFile.CheckAndFix()
+		mainHTMLFile.SetData(sf.Bytes())
+		mainHTMLFile.AddHashToName()
+		c.mainHTMLFiles[lang] = mainHTMLFile
 	}
-	c.mainHTML.AddHashToName()
 }
 
-var mainHTMLFile = template.Must(template.New("mainHTML").Parse(`
+var mainHTMLFileTemplate = template.Must(template.New("mainHTML").Parse(`
 <!-- For license and copyright information please see LEGAL file in repository -->
 <!DOCTYPE html>
 <html vocab="http://schema.org/" prefix="">
@@ -251,3 +246,20 @@ var mainHTMLFile = template.Must(template.New("mainHTML").Parse(`
 
 </html>
 `))
+
+// readySWFile read needed files from given repo folder and do some logic to make main.html.
+func (c *combine) readySWFile() {
+	// set /os/sw.js
+	var swFile = c.repoGUI.GetDependency("libjs").GetDependency("os").GetFile("sw.js")
+	if swFile == nil {
+		log.Warn("WWW - no Service-Worker(sw.js) exist to make locales sw-{{lang}}.js files")
+		return
+	}
+
+	for lang, mainHTMLFile := range c.mainHTMLFiles {
+		var localeSWFile = swFile.DeepCopy()
+		localeSWFile.Rename(localeSWFile.Name + "-" + lang)
+		localeSWFile.ReplaceAll([]byte("main.html"), []byte(mainHTMLFile.FullName))
+		c.swFiles[lang] = localeSWFile
+	}
+}
