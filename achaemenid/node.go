@@ -4,12 +4,11 @@ package achaemenid
 
 // Node store details about a node that part of the platfrom.
 type Node struct {
-	InstanceID      [16]byte
+	InstanceID      [32]byte
 	ID              uint64
-	dataCenterID    [16]byte
+	dataCenterID    [32]byte
 	storageCapacity uint64 // In bytes, Max 16EB(Exabyte) that more enough for one node capacity. 0 means service only node.
 	Conn            *Connection
-	server          *Server
 	State           nodeState
 }
 
@@ -28,7 +27,7 @@ const (
 
 // NodeDetails ...
 type NodeDetails struct {
-	ID     uint64
-	GPAddr [16]byte
-	IPAddr []byte
+	ID uint64
+	// GPAddr gp.Addr
+	// IPAddr ip.Addr
 }

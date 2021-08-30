@@ -12,33 +12,32 @@ import (
 )
 
 type nodes struct {
-	server       *Server
 	LocalNode    *Node
 	Nodes        []Node // sort in nodeID
 	nodesDetails []NodeDetails
 }
 
 // Init use to get other node data and make connection to each of them
-func (n *nodes) Init(s *Server) (err error) {
-	n.server = s
+func (n *nodes) Init() (err protocol.Error) {
+	var goErr error
+
 	var localNode = Node{
-		InstanceID: uuid.NewV4(),
-		server:     s,
+		InstanceID: uuid.Random32Byte(),
 		State:      NodeStateLocalNode,
 	}
 
-	if log.DevMode {
+	if protocol.AppDevMode {
 		n.LocalNode = &localNode
 		n.Nodes = append(n.Nodes, localNode)
 	} else {
 		// TODO::: change to Giti network when it is ready to serve lookup domain to GP address.
 		var ipsAddr []net.IPAddr
-		ipsAddr, err = net.DefaultResolver.LookupIPAddr(context.Background(), n.server.Manifest.DomainName)
-		if err != nil {
+		ipsAddr, goErr = net.DefaultResolver.LookupIPAddr(context.Background(), Server.Manifest.DomainName)
+		if goErr != nil {
 			// TODO::: block and try agin for 3 times??
 		}
 
-		if log.DebugMode {
+		if protocol.AppDebugMode {
 			log.Debug("Achaemenid - Available nodes addr:", ipsAddr)
 		}
 
@@ -48,12 +47,14 @@ func (n *nodes) Init(s *Server) (err error) {
 			n.LocalNode = &n.Nodes[0]
 		} else {
 			var conn *Connection
-			conn, err = n.server.Connections.MakeNewIPConnection(ipsAddr[0])
+			var ipAddr [16]byte
+			copy(ipAddr[:], ipsAddr[0].IP)
+			conn, err = Server.Connections.MakeNewIPConnection(ipAddr)
 			if err != nil {
 				// TODO::: why fresh starting app can't make new connection???
 			}
 			var res *getServerNodeDetailsRes
-			res, err = getServerNodeDetails(n.server, conn)
+			res, err = getServerNodeDetails(conn)
 			if err != nil {
 				// TODO::: try other node to get platform nodes??
 			}
@@ -68,8 +69,8 @@ func (n *nodes) Init(s *Server) (err error) {
 				n.nodesDetails[i].GPAddr = res.nodes[i].GPAddr
 				n.nodesDetails[i].IPAddr = res.nodes[i].IPAddr
 
-				if !bytes.Equal(res.nodes[i].IPAddr, n.server.Networks.localIP) {
-					n.Nodes[i].Conn, err = n.server.Connections.MakeNewIPConnection(net.IPAddr{IP: res.nodes[i].IPAddr})
+				if !bytes.Equal(res.nodes[i].IPAddr[:], Server.Networks.localIP[:]) {
+					n.Nodes[i].Conn, err = Server.Connections.MakeNewIPConnection(res.nodes[i].IPAddr)
 				}
 			}
 		}
@@ -88,7 +89,7 @@ type getServerNodeDetailsRes struct {
 	nodes []NodeDetails
 }
 
-func getServerNodeDetails(s *Server, conn *Connection) (res *getServerNodeDetailsRes, err error) {
+func getServerNodeDetails(conn *Connection) (res *getServerNodeDetailsRes, err protocol.Error) {
 	// Make new request-response streams
 	var st *Stream
 	st, err = conn.MakeOutcomeStream(0)
@@ -99,16 +100,16 @@ func getServerNodeDetails(s *Server, conn *Connection) (res *getServerNodeDetail
 	// Set GetServerNodes ServiceID
 	st.Service = &Service{ID: 639492616}
 
-	err = SrpcOutcomeRequestHandler(s, st)
+	err = SrpcOutcomeRequestHandler(st)
 	if err != nil {
 		return
 	}
 
-	err = res.syllabDecoder(st.OutcomePayload)
+	err = res.FromSyllab(st.OutcomePayload)
 	return
 }
 
-func (res *getServerNodeDetailsRes) syllabDecoder(buf []byte) error {
+func (res *getServerNodeDetailsRes) FromSyllab(buf []byte) protocol.Error {
 	// TODO:::
 	return nil
 }

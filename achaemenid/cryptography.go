@@ -14,7 +14,7 @@ type cryptography struct {
 }
 
 // init make and register cryptography data for given server
-func (c *cryptography) init(s *Server) {
+func (c *cryptography) init() {
 	// make public & private key for desire node e.g. node12.sabz.city and store them
 	c.publicKey = [32]byte{}
 	c.privateKey = [32]byte{}

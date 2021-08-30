@@ -3,29 +3,42 @@
 package achaemenid
 
 import (
+	"crypto/sha512"
 	"time"
 
 	etime "../earth-time"
-	lang "../language"
+	"../protocol"
 )
 
 // Manifest store server manifest data
 // All string slice is multi language and in order by ManifestLanguages order
 type Manifest struct {
-	SocietyID  uint32
-	DomainName string
-	Email      string
-	Icon       string
-
-	Organization   map[lang.Language]string
-	Name           map[lang.Language]string
-	Description    map[lang.Language]string
-	TermsOfService map[lang.Language]string
-	Licence        map[lang.Language]string
-	TAGS           []string // Use to categorized apps e.g. Music, GPS, ...
+	Society     string
+	SocietyUUID [32]byte
+	SocietyID   protocol.SocietyID
+	DomainName  string
+	AppID       [32]byte // Hash of domain act as Application ID too
+	Email       string
+	Icon        string
+	AppDeatil   map[protocol.LanguageID]AppDetail
 
 	RequestedPermission []uint32 // ServiceIDs from PersiaOS services e.g. InternetInBackground, Notification, ...
 	TechnicalInfo       TechnicalInfo
+	NetworkInfo         NetworkInfo
+	DeployInfo          DeployInfo
+}
+
+func (ma *Manifest) init() {
+	ma.AppID = sha512.Sum512_256(convert.UnsafeStringToByteSlice(ma.DomainName))
+}
+
+type AppDetail struct {
+	Organization   string
+	Name           string
+	Description    string
+	TermsOfService string
+	Licence        string
+	TAGS           []string // Use to categorized apps e.g. Music, GPS, ...
 }
 
 // TechnicalInfo store some technical information but may different from really server condition!
@@ -33,7 +46,18 @@ type TechnicalInfo struct {
 	// Shutdown settings
 	ShutdownDelay time.Duration // the server will wait for at least this amount of time for active streams to finish!
 
-	// Server Overal rate limit
+	// Minimum hardware specification for each instance of application.
+	CPUCores uint8  // Number
+	CPUSpeed uint64 // Hz
+	RAM      uint64 // Byte
+	GPU      uint64 // Hz
+	Network  uint64 // Byte per second
+	Storage  uint64 // Byte, HHD||SSD||... indicate by DataCentersClassForDataStore
+}
+
+// NetworkInfo store some network information.
+type NetworkInfo struct {
+	// Application Overal rate limit
 	MaxOpenConnection     uint64         // The maximum number of concurrent connections the app may serve.
 	ConnectionIdleTimeout etime.Duration // In seconds
 	// MaxStreamHeaderSize   uint64 // For stream protocols with variable header size like HTTP
@@ -62,15 +86,10 @@ type TechnicalInfo struct {
 	RegisteredMaxPacketsReceiveDaily    uint64
 
 	// If you want to know Connection.OwnerType>1 rate limit strategy, You must read server codes!!
+}
 
-	// Minimum hardware specification for each instance of application.
-	CPUCores uint8  // Number
-	CPUSpeed uint64 // Hz
-	RAM      uint64 // Byte
-	GPU      uint64 // Hz
-	Network  uint64 // Byte per second
-	Storage  uint64 // Byte, HHD||SSD||... indicate by DataCentersClassForDataStore
-
+// DeployInfo store some application deployment information.
+type DeployInfo struct {
 	// Distribution
 	DistributeOutOfSociety bool          // Allow to run service-only instance of app out of original society belong to.
 	DataCentersClass       uint8         // 0:FirstClass 256:Low-Quality default:5
