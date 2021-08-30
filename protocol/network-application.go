@@ -1,6 +1,6 @@
 /* For license and copyright information please see LEGAL file in repository */
 
-package giti
+package protocol
 
 import "net"
 
@@ -25,18 +25,14 @@ const (
 
 // NetworkApplicationMultiplexer
 type NetworkApplicationMultiplexer interface {
-	GetNetworkApplicationHandler(protocolID uint16) NetworkApplicationHandler
-	SetNetworkApplicationHandler(protocolID uint16, nah NetworkApplicationHandler)
-	DeleteNetworkApplicationHandler(protocolID uint16)
+	GetNetworkApplicationHandler(protocolID NetworkApplicationProtocolID) NetworkApplicationHandler
+	SetNetworkApplicationHandler(protocolID NetworkApplicationProtocolID, nah NetworkApplicationHandler)
+	DeleteNetworkApplicationHandler(protocolID NetworkApplicationProtocolID)
 }
 
 // NetworkApplicationHandler
 type NetworkApplicationHandler interface {
 	HandleIncomeRequest(stream Stream)
 	HandleIncomeResponse(stream Stream)
-}
-
-// ApplicationHandler
-type NetworkApplicationOldHandler interface {
-	HandleStreamConnection(tcpConn net.Conn)
+	HandleStreamConnection(stream Stream, conn net.Conn)
 }

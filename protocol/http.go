@@ -1,6 +1,6 @@
 /* For license and copyright information please see LEGAL file in repository */
 
-package giti
+package protocol
 
 // HTTPHandler is any object to be HTTP service handler.
 type HTTPHandler interface {
@@ -39,8 +39,9 @@ type HTTPResponse interface {
 
 // HTTP URI Semantic
 type HTTPURI interface {
-	Raw() string
-	Scheme() string
+	URI
+	// URI() string    // always return full http URI
+	// Scheme() string // always return "http" or "https"
 	Authority() string
 	Host() string
 	Path() string

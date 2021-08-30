@@ -1,6 +1,13 @@
 /* For license and copyright information please see LEGAL file in repository */
 
-package giti
+package protocol
+
+const (
+	SyllabDomain = "syllab.giti"
+
+	SyllabServiceCompleteGoSyllabMethods = "urn:giti:syllab.giti:service:complete-go-syllab-methods"
+	SyllabServiceGenerateGoSyllabMethods = "urn:giti:syllab.giti:service:generate-go-syllab-methods"
+)
 
 // Syllab is the interface that must implement by any struct to be a Syllab object tranmitable over networks!
 // Standards in https://github.com/SabzCity/RFCs/blob/master/Syllab.md

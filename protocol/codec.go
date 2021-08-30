@@ -1,16 +1,19 @@
 /* For license and copyright information please see LEGAL file in repository */
 
-package giti
+package protocol
 
 import "io"
 
 // Codec wraps some other interfaces!
 // Differencess:
-// - Marshal() don't think about any other parts and serialize data in a byte slice
-// - MarshalTo() care about the fact that serialized data must wrap with other data and serialize data in the given byte slice!
-// - Encode() like MarshalTo() but encode to a buf not a byte slice by Buffer interface methods! buf can be a temp or final write location!
-// - WriteTo() is OS changed data location so it will care about how to write data to respect performance! Usually by make temp fixed size buffer like bufio package!
+// - Marshal() don't think about any other parts and make a byte slice and serialize data to it.
+// - MarshalTo() care about the fact that serialized data must wrap with other data and serialize data in the given byte slice.
+// - Encode() like MarshalTo() but encode to a buf not a byte slice by Buffer interface methods! buf can be a temp or final write location.
+// - WriteTo() is OS changed data location so it will care about how to write data to respect performance. Usually by make temp fixed size buffer like bufio package.
 type Codec interface {
+	MediaType() string // http://www.iana.org/assignments/media-types/media-types.xhtml
+	CompressType() string
+
 	Decoder
 	Encoder
 
@@ -19,6 +22,8 @@ type Codec interface {
 
 	io.WriterTo
 	io.ReaderFrom
+	// io.ReaderAt
+	// io.WriteAt
 }
 
 // Decoder is the interface that wraps the Decode method.
@@ -52,5 +57,10 @@ type UnMarshaler interface {
 type Marshaler interface {
 	Marshal() (data []byte)
 	MarshalTo(data []byte) []byte
+	Len() (ln int)
+}
+
+type SerializeLen interface {
+	ComputeLen() (ln int)
 	Len() (ln int)
 }

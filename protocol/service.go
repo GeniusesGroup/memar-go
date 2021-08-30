@@ -1,32 +1,42 @@
 /* For license and copyright information please see LEGAL file in repository */
 
-package giti
+package protocol
+
+// Services is the interface that must implement by any Application!
+type Services interface {
+	RegisterService(s Service)
+	DeleteService(s Service)
+	GetServiceByID(urnID uint64) Service
+	GetServiceByURN(urn string) Service
+	GetServiceByURI(uri string) Service
+}
 
 // Service is the interface that must implement by any struct to be a service!
 // Set fields methods in this type must accept just once to prevent any mistake by change after set first!
 type Service interface {
-	URN() string
-	ID() uint32
-	Domain() string
+	URN() GitiURN
 	URI() string
 
 	Status() ServiceStatus
 	SetStatus(status ServiceStatus) // Just once
 
-	// SRPCSyllabHandler method is sRPC handler of the service with Syllab codec data in the stream payload.
-	SRPCSyllabHandler(st Stream) (err Error)
-	// HTTPHandler method is HTP handler of the service.
-	HTTPHandler(st Stream, httpReq HTTPRequest, httpRes HTTPResponse) (err Error)
-	// CLIHandler method is the command-line interface (CLI) handler of the service
-	CLIHandler() (err Error)
-
-	// Handler method is main handler of the service but must implement as pure function outside service scope.
+	SRPCHandler
+	HTTPHandler
+	CLIHandler
+	// Handler method is main handler of the service but we suggest to implement it as pure private(package scope) function outside service scope.
 	// handler(Stream, ServiceRequest) (ServiceResponse, Error)
 
 	ServiceRequest() ServiceRequest
 	ServiceResponse() ServiceResponse
 
 	JSON
+}
+
+// ServiceDetail return locale detail about the service!
+type ServiceDetail interface {
+	Name()        string
+	Description() string
+	TAGS()        []string
 }
 
 // ServiceRequest is the interface that must implement by any struct to be a service request!

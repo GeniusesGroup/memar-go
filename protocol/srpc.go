@@ -1,6 +1,6 @@
 /* For license and copyright information please see LEGAL file in repository */
 
-package giti
+package protocol
 
 // SRPCHandler is any object to be sRPC service handler.
 type SRPCHandler interface {

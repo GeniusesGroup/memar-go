@@ -1,6 +1,13 @@
 /* For license and copyright information please see LEGAL file in repository */
 
-package giti
+package protocol
+
+const (
+	JSONDomain = "json.org"
+
+	JSONServiceCompleteGoJSONMethods = "urn:giti:json.org:service:complete-go-json-methods"
+	JSONServiceGenerateGoJSONMethods = "urn:giti:json.org:service:generate-go-json-methods"
+)
 
 // JSON is the interface that must implement by any struct to be a JSON object!
 // Standards by https://www.json.org/json-en.html

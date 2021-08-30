@@ -1,22 +1,29 @@
 /* For license and copyright information please see LEGAL file in repository */
 
-package giti
+package protocol
 
+// Errors is the interface that must implement by any Application!
+type Errors interface {
+	SaveError(err Error)
+	GetErrorByID(id uint64) (err Error)
+	GetErrorByURN(urn string) (err Error)
+}
+
+// New() function in any package must call Application.SaveError() to save the error in application
+// The goals is to retrieve an error by ID or URN.
 type Error interface {
-	URN() string
-	ID() uint64
+	URN() GitiURN
 	IDasString() string
+	Details() []ErrorDetail
 	Detail(LanguageID) ErrorDetail
 	Equal(Error) bool
-
-	// Save finalize needed logic on the error and save to a Errors global variable pools to retrieve an error by ID or URN.
-	Save() Error
 
 	// Add below method is not force by this interface but you must impelement it to respect golang error interface as inner syntax!!
 	Error() string
 }
 
 type ErrorDetail interface {
+	Language() LanguageID
 	// Domain return locale domain name that error belongs to it!
 	Domain() string
 	// Short return locale general short error detail

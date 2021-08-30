@@ -1,6 +1,6 @@
 /* For license and copyright information please see LEGAL file in repository */
 
-package giti
+package protocol
 
 // SocietyID indicate society ID with some usefull methods
 type SocietyID uint32
