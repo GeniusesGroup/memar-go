@@ -3,10 +3,13 @@
 package srpc
 
 import (
-	"../giti"
+	"bytes"
+	"io"
+
+	"../protocol"
 )
 
-// Request is represent request protocol structure!
+// Request represent request protocol structure!
 // Read more about this protocol : https://github.com/SabzCity/RFCs/blob/master/sRPC.md
 // type Request struct {
 // 	  ServiceID uint64
@@ -15,18 +18,17 @@ import (
 // Due to improve performance we use simple byte slice against above structure!
 type Request []byte
 
-// MakeNewRequest make new request!
-func MakeNewRequest(serviceID uint64, payloadLength int) (req Request) {
+// NewRequest make and return the new request!
+func NewRequest(payloadLength uint64) (req Request) {
 	req = make([]byte, MinLength+payloadLength)
-	req.SetServiceID(serviceID)
 	return
 }
 
 // Check check packet for any bad situation!
 // Always check packet before use any other packet methods otherwise panic occur!
 // Anyway expectedMinLen can't be under MinLength!
-func (r Request) Check(expectedMinLen int) giti.Error {
-	if len(r) < expectedMinLen {
+func (r Request) Check(expectedMinLen uint64) protocol.Error {
+	if uint64(len(r)) < expectedMinLen {
 		return ErrPacketTooShort
 	}
 	return nil
@@ -52,6 +54,56 @@ func (r Request) SetServiceID(id uint64) {
 // Payload return payload of the request
 func (r Request) Payload() []byte {
 	return r[MinLength:]
+}
+
+/*
+********** protocol.Codec interface **********
+ */
+
+func (r Request) MediaType() string    { return "application/srpc" }
+func (r Request) CompressType() string { return "" }
+
+func (r Request) Decode(buf protocol.Buffer) (err protocol.Error) {
+	// TODO:::
+	// use simple binding as Request(buf.Get())
+	return
+}
+
+// Encode write compressed data to given buf.
+func (r Request) Encode(buf protocol.Buffer) {
+	buf.Set(r)
+}
+
+// Marshal ...
+func (r Request) Marshal() (data []byte) {
+	return r
+}
+
+// Marshal ...
+func (r Request) MarshalTo(data []byte) []byte {
+	data = append(data, r...)
+	return data
+}
+
+// UnMarshal ...
+func (r Request) UnMarshal(data []byte) (err protocol.Error) {
+	return
+}
+
+// ReadFrom decodes r Raw data by read from given io.Reader!
+func (r Request) ReadFrom(reader io.Reader) (n int64, err error) {
+	var buf bytes.Buffer
+	n, err = io.Copy(&buf, reader)
+	r = buf.Bytes()
+	return
+}
+
+// WriteTo enecodes r Raw data and write it to given io.Writer!
+func (r Request) WriteTo(w io.Writer) (totalWrite int64, err error) {
+	var writeLen int
+	writeLen, err = w.Write(r)
+	totalWrite = int64(writeLen)
+	return
 }
 
 // Len return the len of the request
