@@ -8,47 +8,47 @@ import (
 	"strings"
 
 	"../file"
-	"../giti"
 	"../log"
+	"../protocol"
 )
 
 // JS store data for its method
 type JS struct {
-	imports []*file.File
-	inlined map[string]*file.File
+	imports []protocol.File
+	inlined map[string]protocol.File
 }
 
-func (js *JS) checkInlined(srcJS *file.File) (inlined bool) {
-	_, inlined = js.inlined[srcJS.FullName]
+func (js *JS) checkInlined(srcJS protocol.File) (inlined bool) {
+	_, inlined = js.inlined[srcJS.MetaData().URI().Path()]
 	return
 }
 
 // AddJSToJS use to add a JS file to other!
-func (js *JS) addJSToJS(srcJS, desJS *file.File) {
+func (js *JS) addJSToJS(srcJS, desJS protocol.File) {
 	if js.checkInlined(srcJS) {
 		return
 	}
-	js.inlined[srcJS.FullName] = srcJS
-	desJS.AppendData(srcJS.Data())
+	js.inlined[srcJS.MetaData().URI().Path()] = srcJS
+	desJS.Data().Append(srcJS.Data().Marshal())
 }
 
 // AddJSToJSRecursively use to add JSS and all import to JS file!
-func (js *JS) addJSToJSRecursively(srcJS, desJS *file.File) {
+func (js *JS) addJSToJSRecursively(srcJS, desJS protocol.File) {
 	if js.checkInlined(srcJS) {
 		return
 	}
 	// Tell other this file will add to desJS later!
-	js.inlined[srcJS.FullName] = srcJS
+	js.inlined[srcJS.MetaData().URI().Path()] = srcJS
 
-	var imports = make([]*file.File, 0, 16)
+	var imports = make([]protocol.File, 0, 16)
 	_ = js.extractJSImports(srcJS)
 	for _, imp := range imports {
 		js.addJSToJSRecursively(imp, desJS)
 	}
-	desJS.AppendData(srcJS.Data())
+	desJS.Data().Append(srcJS.Data().Marshal())
 }
 
-func (js *JS) extractJSImportsRecursively(jsFile *file.File) (err giti.Error) {
+func (js *JS) extractJSImportsRecursively(jsFile protocol.File) (err protocol.Error) {
 	var lastImportIndex = len(js.imports)
 	_ = js.extractJSImports(jsFile)
 	for _, imp := range js.imports[lastImportIndex:] {
@@ -57,101 +57,76 @@ func (js *JS) extractJSImportsRecursively(jsFile *file.File) (err giti.Error) {
 	return
 }
 
-func (js *JS) extractJSImports(jsFile *file.File) (err giti.Error) {
-	var jsData = jsFile.Data()
+func (js *JS) extractJSImports(jsFile protocol.File) (err protocol.Error) {
+	var jsData = jsFile.Data().Marshal()
 	var importKeywordIndex, st, en int
-	var loc, fileName string
-	var locPart []string
-	var imDep *file.Folder
-	var imFile *file.File
 	for {
 		importKeywordIndex = bytes.Index(jsData, []byte("import "))
 		if importKeywordIndex == -1 {
 			break
 		}
+
+		// TODO::: check and don't parse dynamically import
+
 		// Find start and end of import file location!
 		st = importKeywordIndex + bytes.IndexByte(jsData[importKeywordIndex:], '\'') + 1
 		en = st + bytes.IndexByte(jsData[st:], '\'')
-		loc = string(jsData[st:en])
-
-		locPart = strings.Split(loc, "/")
-		if len(locPart) < 2 {
-			// don't parse dynamically import in files
-			break
-		} else {
-			imDep = jsFile.Folder
-			for i := 0; i < len(locPart)-1; i++ { // -1 due have file name at end of locPart
-				switch locPart[i] {
-				case ".":
-					// noting to do!
-				case "..":
-					imDep = imDep.Folder
-				default:
-					imDep = imDep.GetDependencyRecursively(locPart[i])
-					if imDep == nil {
-						// err =
-						return
-					}
-				}
-			}
-		}
-
-		fileName = locPart[len(locPart)-1]
-		imFile = imDep.GetFile(fileName)
-		if imFile == nil {
-			if giti.AppDevMode {
-				log.Warn("WWW - ", fileName, "indicate as import in", jsFile.FullName, "can't find in repo")
+		var importPath = string(jsData[st:en])
+		var importFile = file.FindByRelativeFrom(jsFile, importPath)
+		if importFile == nil {
+			if protocol.AppDevMode {
+				log.Warn("WWW - '", importPath, "' indicate as import in", jsFile.MetaData().URI().Name(), "not found")
 			}
 			// err =
-			return
+		} else {
+			js.imports = append(js.imports, importFile)
 		}
-		js.imports = append(js.imports, imFile)
 
 		copy(jsData[importKeywordIndex-1:], jsData[en+1:])
 		jsData = jsData[:len(jsData)-(en-importKeywordIndex)-2]
 	}
-	jsFile.SetData(jsData)
+	jsFile.Data().UnMarshal(jsData)
 	return
 }
 
-func localeAndMixJSFile(jsFile *file.File) (files map[string]*file.File) {
-	var cssFile = jsFile.Folder.GetFile(jsFile.Name + ".css")
-	if giti.AppDevMode && cssFile == nil {
-		log.Warn("WWW - ", jsFile.FullName, "Can't find CSS style file, Mix CSS to JS file skipped")
-	}
-	if cssFile != nil {
-		jsFile = mixCSSToJS(jsFile, cssFile)
-	}
+func localeAndMixJSFile(jsFile protocol.File) (mixedData map[string][]byte) {
+	var js = jsFile.Data().Marshal()
+	var jsFileNameWithoutExtension = jsFile.MetaData().URI().NameWithoutExtension()
 
 	var lj = make(localize, 8)
-	var jsonFile *file.File = jsFile.Folder.GetFile(jsFile.Name + ".json")
-	if giti.AppDevMode && jsonFile == nil {
-		log.Warn("WWW - ", jsFile.FullName, "Can't find JSON localize file, Localization skipped")
-	}
-	if jsonFile != nil {
-		lj.jsonDecoder(jsonFile.Data())
+	var jsonFile, _ = jsFile.ParentDirectory().File(jsFileNameWithoutExtension + ".json")
+	if protocol.AppDevMode && jsonFile == nil {
+		log.Warn("WWW - ", jsFile.MetaData().URI().Name(), "Can't find JSON localize file, Localization skipped")
+		return
 	}
 
-	files = localizeJSFile(jsFile, lj)
+	var cssFile, _ = jsFile.ParentDirectory().File(jsFileNameWithoutExtension + ".css")
+	if protocol.AppDevMode && cssFile == nil {
+		log.Warn("WWW - ", jsFile.MetaData().URI().Name(), "Can't find CSS style file, Mix CSS to JS file skipped")
+	}
+	if cssFile != nil {
+		js, _ = mixCSSToJS(js, cssFile.Data().Marshal())
+	}
 
-	var htmlFile = jsFile.Folder.GetFile(jsFile.Name + ".html")
-	if giti.AppDevMode && htmlFile == nil {
-		log.Warn("WWW - ", jsFile.FullName, "Can't find HTML style file, Mix HTML to JS file skipped")
+	lj.jsonDecoder(jsonFile.Data().Marshal())
+	mixedData, _ = localizeJSFile(js, lj)
+
+	var htmlFile, _ = jsFile.ParentDirectory().File(jsFileNameWithoutExtension + ".html")
+	if protocol.AppDevMode && htmlFile == nil {
+		log.Warn("WWW - ", jsFile.MetaData().URI().Name(), "Can't find HTML style file, Mix HTML to JS file skipped")
 	}
 	if htmlFile != nil {
-		var htmlFiles = localizeHTMLFile(htmlFile, lj)
-		for lang, f := range htmlFiles {
-			mixHTMLToJS(files[lang], f)
+		var htmlMixedData, _ = localizeHTMLFile(htmlFile.Data().Marshal(), lj)
+		for lang, html := range htmlMixedData {
+			mixHTMLToJS(mixedData[lang], html)
 		}
 	}
 
-	for _, f := range jsFile.Folder.FindFiles(jsFile.Name + "-template-") {
-		var namesPart = strings.Split(f.Name, "-template-")
-		if namesPart[0] == jsFile.Name {
-			var htmlFiles = localizeHTMLFile(f, lj)
-			for lang, f := range htmlFiles {
-				mixHTMLTemplateToJS(files[lang], f, namesPart[1])
-			}
+	for _, f := range jsFile.ParentDirectory().FindFiles(jsFileNameWithoutExtension+"-template-", 0) {
+		var namesPart = strings.Split(f.MetaData().URI().Name(), "-template-")
+		var htmlMixedData, _ = localizeHTMLFile(f.Data().Marshal(), lj)
+		for lang, f := range htmlMixedData {
+			mixHTMLTemplateToJS(mixedData[lang], f, namesPart[1])
 		}
 	}
 
@@ -159,45 +134,36 @@ func localeAndMixJSFile(jsFile *file.File) (files map[string]*file.File) {
 }
 
 // localizeJSFile make and returns number of localize file by number of language indicate in JSON localize text
-func localizeJSFile(fi *file.File, lj localize) (files map[string]*file.File) {
-	files = make(map[string]*file.File, len(lj))
-	if len(lj) == 0 {
-		files[""] = fi
-	} else {
-		for lang, text := range lj {
-			files[lang] = replaceLocalizeTextInJS(fi, text, lang)
-		}
+func localizeJSFile(js []byte, lj localize) (mixedData map[string][]byte, err protocol.Error) {
+	mixedData = make(map[string][]byte, len(lj))
+	for lang, text := range lj {
+		mixedData[lang], _ = replaceLocalizeTextInJS(js, text)
 	}
 	return
 }
 
-func replaceLocalizeTextInJS(js *file.File, text []string, lang string) (newFile *file.File) {
-	newFile = js.Copy()
-	var jsData = js.Data()
-	var newFileData = make([]byte, 0, len(jsData))
+func replaceLocalizeTextInJS(js []byte, text []string) (mixData []byte, err protocol.Error) {
+	mixData = make([]byte, 0, len(js))
 
 	var replacerIndex int
 	var bracketIndex int
-	var textIndex uint64
-	var err error
 	for {
-		replacerIndex = bytes.Index(jsData, []byte("LocaleText["))
+		replacerIndex = bytes.Index(js, []byte("LocaleText["))
 		if replacerIndex < 0 {
-			newFileData = append(newFileData, jsData...)
-			newFile.SetData(newFileData)
+			mixData = append(mixData, js...)
 			return
 		}
-		newFileData = append(newFileData, jsData[:replacerIndex]...)
-		jsData = jsData[replacerIndex:]
+		mixData = append(mixData, js[:replacerIndex]...)
+		js = js[replacerIndex:]
 
-		bracketIndex = bytes.IndexByte(jsData, ']')
-		textIndex, err = strconv.ParseUint(string(jsData[11:bracketIndex]), 10, 8)
+		bracketIndex = bytes.IndexByte(js, ']')
+		var textIndex, err = strconv.ParseUint(string(js[11:bracketIndex]), 10, 8)
 		if err != nil {
-			log.Warn("WWW - ", js.FullName, "Index numbers is not valid, double check your file for bad structures")
+			// err = "Index numbers in desire file is not valid, double check your file for bad structures"
 		} else {
-			newFileData = append(newFileData, text[textIndex]...)
+			mixData = append(mixData, text[textIndex]...)
 		}
 
-		jsData = jsData[bracketIndex+1:]
+		js = js[bracketIndex+1:]
 	}
 }

@@ -5,44 +5,34 @@ package www
 import (
 	"bytes"
 
-	"../file"
+	"../minify"
+	"../protocol"
 )
 
 // mixCSSToHTML add given CSS file to end of HTML file and returns new html file.
-func mixCSSToHTML(htmlFile, cssFile *file.File) (mixFile *file.File) {
-	cssFile.Minify()
-	mixFile = htmlFile.Copy()
-	var htmlData = htmlFile.Data()
-	var cssData = cssFile.Data()
-
-	var mixFileData = make([]byte, len(htmlData), len(htmlData)+len(cssData)+len("<style></style>"))
-	copy(mixFileData, htmlData)
-	mixFileData = append(mixFileData, "<style>"...)
-	mixFileData = append(mixFileData, cssData...)
-	mixFileData = append(mixFileData, "</style>"...)
-
-	mixFile.SetData(mixFileData)
+func mixCSSToHTML(html, css []byte) (mixedData []byte) {
+	mixedData = make([]byte, len(html), len(html)+len(css)+len("\n<style></style>"))
+	copy(mixedData, html)
+	mixedData = append(mixedData, "\n<style>"...)
+	mixedData = append(mixedData, css...)
+	mixedData = append(mixedData, "</style>"...)
 	return
 }
 
 // mixCSSToJS add given CSS file to specific part of JS file and returns new js file.
-func mixCSSToJS(jsFile, cssFile *file.File) (mixFile *file.File) {
-	cssFile.Minify()
-	mixFile = jsFile.Copy()
-	var jsData = jsFile.Data()
-	var cssData = cssFile.Data()
-	var mixFileData []byte
-
-	var funcLoc = bytes.Index(jsData, []byte("CSS: '"))
-	// mixFileData = make([]byte, 0, len(jsData)+len(minifiedCSS))
-	if funcLoc < 0 {
-		var minifiedCSS = append([]byte(`CSS = '`), cssData...)
-		mixFileData = bytes.Replace(jsData, []byte(`CSS = '`), minifiedCSS, 1)
-	} else {
-		var minifiedCSS = append([]byte(`CSS: '`), cssData...)
-		mixFileData = bytes.Replace(jsData, []byte(`CSS: '`), minifiedCSS, 1)
+func mixCSSToJS(js, css []byte) (mixedData []byte, err protocol.Error) {
+	css, err = minify.CSS.MinifyBytes(css)
+	if err != nil {
+		return
 	}
 
-	mixFile.SetData(mixFileData)
+	var funcLoc = bytes.Index(js, []byte("CSS: '"))
+	if funcLoc < 0 {
+		var minifiedCSS = append([]byte(`CSS = '`), css...)
+		mixedData = bytes.Replace(js, []byte(`CSS = '`), minifiedCSS, 1)
+	} else {
+		var minifiedCSS = append([]byte(`CSS: '`), css...)
+		mixedData = bytes.Replace(js, []byte(`CSS: '`), minifiedCSS, 1)
+	}
 	return
 }
