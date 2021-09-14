@@ -4,12 +4,13 @@ package protocol
 
 // Errors is the interface that must implement by any Application!
 type Errors interface {
-	SaveError(err Error)
+	RegisterError(err Error)
 	GetErrorByID(id uint64) (err Error)
 	GetErrorByURN(urn string) (err Error)
+	ErrorsSDK(humanLanguage LanguageID, machineLanguage MediaType) (sdk []byte, err Error)
 }
 
-// New() function in any package must call Application.SaveError() to save the error in application
+// New() function in any package must call Application.RegisterError() to save the error in application
 // The goals is to retrieve an error by ID or URN.
 type Error interface {
 	URN() GitiURN

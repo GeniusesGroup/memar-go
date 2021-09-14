@@ -4,31 +4,28 @@ package error
 
 import (
 	"strconv"
+
+	"../protocol"
 )
 
-// SyllabDecoder decode syllab to given Error
-func (e *Error) SyllabDecoder(buf []byte) {
+// FromSyllab decode syllab to given Error
+func (e *Error) FromSyllab(buf []byte) {
 
 }
 
-func (e *Error) syllabEncoder() (buf []byte) {
+func (e *Error) ToSyllab() (buf []byte) {
 	buf = make([]byte, 8)
-
-	buf[4] = byte(e.id)
-	buf[5] = byte(e.id >> 8)
-	buf[6] = byte(e.id >> 16)
-	buf[7] = byte(e.id >> 24)
 
 	return
 }
 
 // JSONDecoder decode json to given Error
-func (e *Error) JSONDecoder(buf []byte) {
+func (e *Error) FromJSON(buf protocol.Buffer) {
 
 }
 
-func (e *Error) jsonEncoder() (buf []byte) {
-	buf = make([]byte, 0, e.jsonLen())
+func (e *Error) ToJSON() (buf []byte) {
+	buf = make([]byte, 0, e.LenAsJSON())
 
 	buf = append(buf, `{"ID":`...)
 	buf = append(buf, e.idAsString...)
@@ -39,15 +36,15 @@ func (e *Error) jsonEncoder() (buf []byte) {
 			buf = append(buf, '"')
 			buf = strconv.AppendUint(buf, uint64(key), 10)
 			buf = append(buf, `":{"Domain":"`...)
-			buf = append(buf, value.Domain...)
+			buf = append(buf, value.domain...)
 			buf = append(buf, `","Short":"`...)
-			buf = append(buf, value.Short...)
+			buf = append(buf, value.short...)
 			buf = append(buf, `","Long":"`...)
-			buf = append(buf, value.Long...)
+			buf = append(buf, value.long...)
 			buf = append(buf, `","UserAction":"`...)
-			buf = append(buf, value.UserAction...)
+			buf = append(buf, value.userAction...)
 			buf = append(buf, `","DevAction":"`...)
-			buf = append(buf, value.DevAction...)
+			buf = append(buf, value.devAction...)
 			buf = append(buf, `"},`...)
 		}
 		buf = buf[:len(buf)-1] // Remove trailing comma
@@ -57,16 +54,16 @@ func (e *Error) jsonEncoder() (buf []byte) {
 	return
 }
 
-func (e *Error) jsonLen() (ln int) {
+func (e *Error) LenAsJSON() (ln int) {
 	ln = 38 // len(`{"ID":18446744073709551615,"Detail":{}`)
 	if len(e.detail) != 0 {
 		ln += len(e.detail) * 76 // 76 = 10(len(uint32)) + 66(len('{"Domain":"","Short":"","Long":"","UserAction":"","DevAction":"",}'))
 		for _, value := range e.detail {
-			ln += len(value.Domain)
-			ln += len(value.Short)
-			ln += len(value.Long)
-			ln += len(value.UserAction)
-			ln += len(value.DevAction)
+			ln += len(value.domain)
+			ln += len(value.short)
+			ln += len(value.long)
+			ln += len(value.userAction)
+			ln += len(value.devAction)
 		}
 	}
 	return ln

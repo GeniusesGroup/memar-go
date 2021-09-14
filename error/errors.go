@@ -3,17 +3,47 @@
 package error
 
 import (
-	"../giti"
 	"../log"
+	"../protocol"
 )
 
-type errors struct {
-	poolByID map[uint64]*Error
-	jsSDK    map[giti.LanguageID][]byte
+// Errors store
+type Errors struct {
+	poolByID  map[uint64]protocol.Error
+	poolByURN map[string]protocol.Error
+	jsSDK     map[protocol.LanguageID][]byte
 }
 
-// GetErrorByID returns desire error if exist or nil!
-func (e *errors) GetErrorByID(id uint64) (err giti.Error) {
+func (e *Errors) Init() {
+	e.poolByID = make(map[uint64]protocol.Error, 512)
+	e.poolByURN = make(map[string]protocol.Error, 512)
+	e.jsSDK = map[protocol.LanguageID][]byte{}
+}
+
+func (e *Errors) RegisterError(err protocol.Error) {
+	var errID = err.URN().ID()
+	var exitingError = e.poolByID[errID]
+	if exitingError != nil {
+		log.Warn("Duplicate Error id exist, Check it now for bad urn set or collision occurred!")
+		log.Warn("Exiting error >> ", exitingError.URN(), " New error >> ", err.URN())
+		return
+	}
+
+	e.poolByID[errID] = err
+	e.poolByURN[err.URN().URI()] = err
+	e.updateJsSDK(err)
+}
+
+func (e *Errors) UnRegisterError(err protocol.Error) {
+	delete(e.poolByID, err.URN().ID())
+	delete(e.poolByURN, err.URN().URI())
+}
+
+// GetErrorByID returns desire error if exist or ErrNotFound!
+func (e *Errors) GetErrorByID(id uint64) (err protocol.Error) {
+	if id == 0 {
+		return
+	}
 	var ok bool
 	err, ok = e.poolByID[id]
 	if !ok {
@@ -22,31 +52,31 @@ func (e *errors) GetErrorByID(id uint64) (err giti.Error) {
 	return
 }
 
-func (e *errors) addError(err *Error) {
-	var exitingError = e.poolByID[err.id]
-	if exitingError != nil {
-		log.Warn("Duplicate Error id exist, Check it now!!!!!!!!!!!!!!!!!")
-		log.Warn("Exiting error >> ", exitingError.URN(), " New error >> ", *err)
-		return
+// GetErrorByID returns desire error if exist or ErrNotFound!
+func (e *Errors) GetErrorByURN(urn string) (err protocol.Error) {
+	var ok bool
+	err, ok = e.poolByURN[urn]
+	if !ok {
+		err = ErrNotFound
 	}
-
-	e.poolByID[err.id] = err
-	e.updateJsSDK(err)
+	return
 }
 
-func (e *errors) updateJsSDK(err *Error) {
-	for lang, detail := range err.detail {
-		e.jsSDK[lang] = append(e.jsSDK[lang], "GitiError.New(\""+err.idAsString+"\",\""+err.urn+"\").SetDetail(\""+detail.domain+"\",\""+detail.short+"\",\""+detail.long+"\",\""+detail.userAction+"\",\""+detail.devAction+"\")\n"...)
+func (e *Errors) updateJsSDK(err protocol.Error) {
+	for _, detail := range err.Details() {
+		var lang = detail.Language()
+		e.jsSDK[lang] = append(e.jsSDK[lang], "GitiError.New(\""+err.IDasString()+"\",\""+err.URN().URI()+"\").SetDetail(\""+detail.Domain()+"\",\""+detail.Short()+"\",\""+detail.Long()+"\",\""+detail.UserAction()+"\",\""+detail.DevAction()+"\")\n"...)
 	}
 }
 
-// it can return nil slice if not call updateJsSDK before call this method!
-func (e *errors) GetErrorsInJsFormat(lang giti.LanguageID) []byte {
-	return e.jsSDK[lang]
-}
-
-// Errors store
-var Errors = errors{
-	poolByID: make(map[uint64]*Error, 512),
-	jsSDK:    map[giti.LanguageID][]byte{},
+// ErrorsSDK can return nil slice if request not supported!
+func (e *Errors) ErrorsSDK(humanLanguage protocol.LanguageID, machineLanguage protocol.MediaType) (sdk []byte, err protocol.Error) {
+	switch machineLanguage.Extension() {
+	case "js":
+		sdk = e.jsSDK[humanLanguage]
+	}
+	if sdk == nil {
+		err = ErrSDKNotFound
+	}
+	return
 }

@@ -3,22 +3,22 @@
 package error
 
 import (
-	"crypto/sha512"
 	"fmt"
 	"strconv"
 
-	"../giti"
 	"../log"
+	"../protocol"
+	"../urn"
 )
 
 // Error is a extended implementation of error.
 // Never change urn due to it adds unnecessary complicated troubleshooting errors on SDK!
 // Read more : https://github.com/SabzCity/RFCs/blob/master/Giti-Error.md
 type Error struct {
-	urn         string // "urn:giti:{{domain-name}}:error:{{error-name}}"
-	id          uint64
+	urn         urn.Giti
 	idAsString  string
-	detail      map[giti.LanguageID]Detail
+	detail      map[protocol.LanguageID]*Detail
+	details     []protocol.ErrorDetail
 	Chain       *Error
 	Information interface{}
 	JSON        []byte
@@ -26,75 +26,58 @@ type Error struct {
 }
 
 // New returns a new error!
+// "urn:giti:{{domain-name}}:error:{{error-name}}"
 func New(urn string) *Error {
-	var err = Error{
-		urn:    urn,
-		detail: make(map[giti.LanguageID]Detail),
+	if urn == "" {
+		log.Fatal("Error must have URN to save it in platform errors pools!")
 	}
+
+	var err = Error{
+		detail: make(map[protocol.LanguageID]*Detail),
+	}
+	err.urn.Init(urn)
+	err.idAsString = strconv.FormatUint(err.urn.ID(), 10)
 	return &err
 }
 
 // SetDetail add error text details to existing error and return it.
-func (e *Error) SetDetail(lang giti.LanguageID, domain, short, long, userAction, devAction string) *Error {
-	e.detail[lang] = Detail{
+func (e *Error) SetDetail(lang protocol.LanguageID, domain, short, long, userAction, devAction string) *Error {
+	var errDetail = Detail{
+		languageID: lang,
 		domain:     domain,
 		short:      short,
 		long:       long,
 		userAction: userAction,
 		devAction:  devAction,
 	}
-
+	e.detail[lang] = &errDetail
+	e.details = append(e.details, &errDetail)
 	return e
 }
 
-// Save finalize needed logic on given error and save to Errors global variable.
-func (e *Error) Save() giti.Error {
-	if e.urn == "" {
-		log.Fatal("Error must have URN to save it in platform errors pools! >> ", *e)
-	}
-
-	e.IDCalculator()
-
+// Save finalize needed logic on given error and register in the application
+func (e *Error) Save() *Error {
 	e.Syllab = e.ToSyllab()
-	e.JSON = e.jsonEncoder()
+	e.JSON = e.ToJSON()
 
-	Errors.addError(e)
+	// Force to check by runtime check, due to testing package not let us by any const!
+	if protocol.App != nil {
+		protocol.App.RegisterError(e)
+	}
 	return e
 }
 
-// IDCalculator set error ID by error urn
-func (e *Error) IDCalculator() {
-	var hash = sha512.Sum512([]byte(e.urn))
-	e.id = uint64(hash[0]) | uint64(hash[1])<<8 | uint64(hash[2])<<16 | uint64(hash[3])<<24 | uint64(hash[4])<<32 | uint64(hash[5])<<40 | uint64(hash[6])<<48 | uint64(hash[7])<<56
-	e.idAsString = strconv.FormatUint(e.id, 10)
-}
-
-// Detail return detail of the error in desire language!
-func (e *Error) Detail(lang giti.LanguageID) giti.ErrorDetail {
-	return e.detail[lang]
-}
-
-// URN return URN of error.
-func (e *Error) URN() string {
-	return e.urn
-}
-
-// ID return id of error.
-func (e *Error) ID() uint64 {
-	return e.id
-}
-
-// IDasString return id of error as string.
-func (e *Error) IDasString() string {
-	return e.idAsString
-}
+func (e *Error) URN() protocol.GitiURN                                { return &e.urn }
+func (e *Error) IDasString() string                                   { return e.idAsString }
+func (e *Error) Details() []protocol.ErrorDetail                      { return e.details }
+func (e *Error) Detail(lang protocol.LanguageID) protocol.ErrorDetail { return e.detail[lang] }
 
 // Error return full details of error in text.
 func (e *Error) Error() string {
 	if e == nil {
 		return ""
 	}
-	return fmt.Sprintf("Error Code: %v\n Short detail: %v\n Long detail: %v\n Error Additional information: %v\n", e.id, e.detail[log.Language].short, e.detail[log.Language].long, e.Information)
+	return fmt.Sprintf("Error Code: %v\n Short detail: %v\n Long detail: %v\n Error Additional information: %v\n", e.urn.ID(), e.detail[protocol.AppLanguage].short, e.detail[protocol.AppLanguage].long, e.Information)
 }
 
 // AddInformation add to existing error and return it as new error(pointer) with chain errors!
@@ -106,11 +89,11 @@ func (e *Error) AddInformation(information interface{}) *Error {
 }
 
 // Equal compare two Error.
-func (e *Error) Equal(err giti.Error) bool {
+func (e *Error) Equal(err protocol.Error) bool {
 	if e == nil && err == nil {
 		return true
 	}
-	if e != nil && err != nil && e.id == err.ID() {
+	if e != nil && err != nil && e.urn.ID() == err.URN().ID() {
 		return true
 	}
 	return false
@@ -119,7 +102,7 @@ func (e *Error) Equal(err giti.Error) bool {
 // IsEqual compare two error.
 func (e *Error) IsEqual(err error) bool {
 	var exErr = err.(*Error)
-	if exErr != nil && e.id == exErr.id {
+	if exErr != nil && e.urn.ID() == exErr.urn.ID() {
 		return true
 	}
 	return false
@@ -132,7 +115,7 @@ func GetCode(err error) uint64 {
 	}
 	var exErr *Error = err.(*Error)
 	if exErr != nil {
-		return exErr.id
+		return exErr.urn.ID()
 	}
 	// if error not nil but not Error, pass biggest number!
 	return 18446744073709551615
