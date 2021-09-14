@@ -5,7 +5,7 @@ package protocol
 // Services is the interface that must implement by any Application!
 type Services interface {
 	RegisterService(s Service)
-	DeleteService(s Service)
+	UnRegisterService(s Service)
 	GetServiceByID(urnID uint64) Service
 	GetServiceByURN(urn string) Service
 	GetServiceByURI(uri string) Service
@@ -14,36 +14,32 @@ type Services interface {
 // Service is the interface that must implement by any struct to be a service!
 // Set fields methods in this type must accept just once to prevent any mistake by change after set first!
 type Service interface {
+	Detail(lang LanguageID) ServiceDetail
 	URN() GitiURN
 	URI() string
-
 	Status() ServiceStatus
-	SetStatus(status ServiceStatus) // Just once
+	IssueDate() Time
+	ExpiryDate() Time
+
+	// Service Authorization
+	CRUDType() CRUD
+	UserType() UserType
 
 	SRPCHandler
 	HTTPHandler
 	CLIHandler
-	// Handler method is main handler of the service but we suggest to implement it as pure private(package scope) function outside service scope.
-	// handler(Stream, ServiceRequest) (ServiceResponse, Error)
-
-	ServiceRequest() ServiceRequest
-	ServiceResponse() ServiceResponse
+	// Service method is the handler of the service but we suggest to implement it as pure private(package scope) function outside service scope.
+	// Service(Stream, interface{}) (interface{}, Error)
 
 	JSON
 }
 
 // ServiceDetail return locale detail about the service!
 type ServiceDetail interface {
-	Name()        string
+	Name() string
 	Description() string
-	TAGS()        []string
+	TAGS() []string
 }
-
-// ServiceRequest is the interface that must implement by any struct to be a service request!
-type ServiceRequest interface{}
-
-// ServiceResponse is the interface that must implement by any struct to be a service request!
-type ServiceResponse interface{}
 
 type ServiceStatus uint8
 
