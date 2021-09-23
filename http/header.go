@@ -3,9 +3,10 @@
 package http
 
 import (
+	"io"
 	"strings"
 
-	"../giti"
+	"../protocol"
 )
 
 // header is represent HTTP header structure!
@@ -97,11 +98,11 @@ func (h *header) GetCookies() (cookies []Cookie) {
 	for {
 		index = strings.IndexByte(cookie, ';')
 		if index == -1 {
-			c.UnMarshal(cookie)
+			c.Unmarshal(cookie)
 			cookies = append(cookies, c)
 			return
 		}
-		c.UnMarshal(cookie[:index])
+		c.Unmarshal(cookie[:index])
 		cookies = append(cookies, c)
 
 		cookie = cookie[index+2:]
@@ -137,7 +138,7 @@ func (h *header) GetSetCookies() (setCookies []SetCookie) {
 	}
 	setCookies = make([]SetCookie, setCookieCount)
 	for i := 0; i < setCookieCount; i++ {
-		setCookies[i].UnMarshal(scs[i])
+		setCookies[i].Unmarshal(scs[i])
 	}
 	return
 }
@@ -169,16 +170,18 @@ func (h *header) Exclude(exclude map[string]bool) {
 }
 
 /*
-********** giti.Codec interface **********
+********** protocol.Codec interface **********
  */
 
-func (h *header) Decode(buf giti.Buffer) (err giti.Error) {
+func (h *header) Decode(reader io.Reader) (err protocol.Error) {
 	// TODO:::
 	return
 }
 
-func (h *header) Encode(buf giti.Buffer) {
-	buf.Set(h.MarshalTo(buf.Get()))
+func (h *header) Encode(writer io.Writer) (err error) {
+	var encodedHeader = h.Marshal()
+	_, err = writer.Write(encodedHeader)
+	return
 }
 
 // Marshal enecodes whole h *header data and return httpHeader!
@@ -213,10 +216,10 @@ func (h *header) MarshalTo(httpPacket []byte) []byte {
 	return httpPacket
 }
 
-// UnMarshal parses and decodes data of given httpPacket(without first line) to (h *header).
+// Unmarshal parses and decodes data of given httpPacket(without first line) to (h *header).
 // This method not respect to some RFCs like field-name in RFC7230, ... due to be more liberal in what it accept!
 // In some bad packet may occur panic, handle panic by recover otherwise app will crash and exit!
-func (h *header) UnMarshal(s string) (headerEnd int) {
+func (h *header) Unmarshal(s string) (headerEnd int) {
 	var colonIndex, newLine int
 	var key, value string
 	for {

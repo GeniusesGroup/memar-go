@@ -8,8 +8,7 @@ import (
 	"strings"
 
 	"../convert"
-	er "../error"
-	"../giti"
+	"../protocol"
 )
 
 // Response is represent response protocol structure!
@@ -35,10 +34,10 @@ func (r *Response) StatusCode() string            { return r.statusCode }
 func (r *Response) ReasonPhrase() string          { return r.reasonPhrase }
 func (r *Response) SetVersion(version string)     { r.version = version }
 func (r *Response) SetStatus(code, phrase string) { r.statusCode = code; r.reasonPhrase = phrase }
-func (r *Response) Header() giti.HTTPHeader       { return &r.header }
+func (r *Response) Header() protocol.HTTPHeader   { return &r.header }
 
 // GetStatusCode get status code as uit16
-func (r *Response) GetStatusCode() (code uint16, err giti.Error) {
+func (r *Response) GetStatusCode() (code uint16, err protocol.Error) {
 	// TODO::: don't use strconv for such simple task
 	var c, goErr = strconv.ParseUint(r.statusCode, 10, 16)
 	if goErr != nil {
@@ -48,42 +47,63 @@ func (r *Response) GetStatusCode() (code uint16, err giti.Error) {
 }
 
 // GetError return realted er.Error in header of the Response
-func (r *Response) GetError() (err giti.Error) {
+func (r *Response) GetError() (err protocol.Error) {
 	var errIDString = r.header.Get(HeaderKeyErrorID)
 	var errID, _ = strconv.ParseUint(errIDString, 10, 64)
-	err = er.Errors.GetErrorByID(errID)
+	err = protocol.App.GetErrorByID(errID)
 	return
 }
 
 // SetError set given er.Error to header of the response
-func (r *Response) SetError(err giti.Error) {
+func (r *Response) SetError(err protocol.Error) {
 	r.header.Set(HeaderKeyErrorID, err.IDasString())
 }
 
 /*
-********** giti.Codec interface **********
+********** protocol.Codec interface **********
  */
 
-func (r *Response) Decode(buf giti.Buffer) (err giti.Error) {
-	var httpPacket = buf.GetUnread()
-	err = r.UnMarshal(httpPacket)
+// https://www.iana.org/assignments/media-types/application/http
+func (r *Response) MediaType() string    { return "application/http" }
+func (r *Response) CompressType() string { return "" }
+
+func (r *Response) Decode(reader io.Reader) (err protocol.Error) {
+	// Make a buffer to hold incoming data.
+	var buf = make([]byte, MaxHTTPHeaderSize)
+	var headerReadLength, bodyReadLength int
+	var goErr error
+
+	// Read the incoming connection into the buffer.
+	headerReadLength, goErr = reader.Read(buf)
+	if goErr != nil || headerReadLength == 0 {
+		// err =
+		return
+	}
+
+	buf = buf[:headerReadLength]
+	err = r.Unmarshal(buf)
+	if err != nil {
+		return
+	}
+
+	var contentLength = r.header.GetContentLength()
+	// TODO::: is below logic check include all situations??
+	if contentLength > 0 && r.body.Len() == 0 {
+		var bodyRaw = make([]byte, contentLength)
+		bodyReadLength, goErr = reader.Read(bodyRaw)
+		if bodyReadLength != int(contentLength) {
+			// err =
+		}
+		r.body.setIncomeBody(bodyRaw, &r.header)
+	}
 	return
 }
 
 // Encode write response to given buf.
 // Pass buf with enough cap. Make buf by r.Len() or grow it by buf.Grow(r.Len())
-func (r *Response) Encode(buf giti.Buffer) {
-	buf.WriteString(r.version)
-	buf.WriteByte(SP)
-	buf.WriteString(r.statusCode)
-	buf.WriteByte(SP)
-	buf.WriteString(r.reasonPhrase)
-	buf.WriteString(CRLF)
-
-	r.header.Encode(buf)
-	buf.WriteString(CRLF)
-
-	r.body.Encode(buf)
+func (r *Response) Encode(writer io.Writer) (err error) {
+	_, err = r.WriteTo(writer)
+	return
 }
 
 // Marshal enecodes whole r *Response data and return httpPacket!
@@ -109,9 +129,9 @@ func (r *Response) MarshalTo(httpPacket []byte) []byte {
 	return httpPacket
 }
 
-// UnMarshal parses and decodes data of given httpPacket to r *Response.
+// Unmarshal parses and decodes data of given httpPacket to r *Response.
 // In some bad packet may occur panic, handle panic by recover otherwise app will crash and exit!
-func (r *Response) UnMarshal(httpPacket []byte) (err giti.Error) {
+func (r *Response) Unmarshal(httpPacket []byte) (err protocol.Error) {
 	// By use unsafe pointer here all strings assign in Response will just point to httpPacket slice
 	// and no need to alloc lot of new memory locations and copy response line and headers keys & values!
 	var s = convert.UnsafeByteSliceToString(httpPacket)
@@ -143,13 +163,13 @@ func (r *Response) UnMarshal(httpPacket []byte) (err giti.Error) {
 	// vs have 4 Int for each index
 	index = len(r.version) + len(r.statusCode) + len(r.reasonPhrase) + 4
 
-	index += r.header.UnMarshal(s)
+	index += r.header.Unmarshal(s)
 
 	// By https://tools.ietf.org/html/rfc2616#section-4 very simple http packet must end with CRLF even packet without header or body!
 	// So it can be occur panic if very simple request end without any CRLF
 	index += 2 // +2 due to have "\r\n" after header end
 
-	r.body.checkEncodingAndSetBody(httpPacket[index:], &r.header)
+	r.body.setIncomeBody(httpPacket[index:], &r.header)
 	return
 }
 
@@ -169,55 +189,6 @@ func (r *Response) MarshalWithoutBody() (httpPacket []byte) {
 	return
 }
 
-// ReadFrom decodes r *Response data by read from given io.Reader!
-// Declare to respect io.ReaderFrom interface!
-func (r *Response) ReadFrom(reader io.Reader) (n int64, goErr error) {
-	// Make a buffer to hold incoming data.
-	var buf = make([]byte, MaxHTTPHeaderSize)
-	var headerReadLength, bodyReadLength int
-	var err giti.Error
-
-	// Read the incoming connection into the buffer.
-	headerReadLength, goErr = reader.Read(buf)
-	if goErr != nil || headerReadLength == 0 {
-		return
-	}
-
-	buf = buf[:headerReadLength]
-	err = r.UnMarshal(buf)
-	if err != nil {
-		return int64(headerReadLength), err
-	}
-
-	var contentLength = r.header.GetContentLength()
-	// TODO::: is below logic check include all situations??
-	if contentLength > 0 && r.body.Len() == 0 {
-		var bodyRaw = make([]byte, contentLength)
-		bodyReadLength, goErr = reader.Read(bodyRaw)
-		if bodyReadLength != int(contentLength) {
-			// goErr =
-		}
-		r.body.checkEncodingAndSetBody(bodyRaw, &r.header)
-	}
-
-	return int64(headerReadLength + bodyReadLength), goErr
-}
-
-// WriteTo enecodes r *Response data and write it to given io.Writer!
-// Declare to respect io.WriterTo interface!
-func (r *Response) WriteTo(w io.Writer) (totalWrite int64, err error) {
-	var resMarshaled = r.MarshalWithoutBody()
-	var headerWriteLength int
-
-	headerWriteLength, err = w.Write(resMarshaled)
-	if err == nil {
-		totalWrite, err = r.body.WriteTo(w)
-	}
-
-	totalWrite += int64(headerWriteLength)
-	return
-}
-
 // LenWithoutBody return length of response without body length!
 func (r *Response) LenWithoutBody() (ln int) {
 	ln = 6 // 6==1+1+2+2==len(SP)+len(SP)+len(CRLF)+len(CRLF)
@@ -234,5 +205,58 @@ func (r *Response) Len() (ln int) {
 	if r.body.Codec != nil {
 		ln += r.body.Len()
 	}
+	return
+}
+
+/*
+********** io package interfaces **********
+ */
+
+// ReadFrom decodes r *Response data by read from given io.Reader!
+// Declare to respect io.ReaderFrom interface!
+func (r *Response) ReadFrom(reader io.Reader) (n int64, goErr error) {
+	// Make a buffer to hold incoming data.
+	var buf = make([]byte, MaxHTTPHeaderSize)
+	var headerReadLength, bodyReadLength int
+	var err protocol.Error
+
+	// Read the incoming connection into the buffer.
+	headerReadLength, goErr = reader.Read(buf)
+	if goErr != nil || headerReadLength == 0 {
+		return
+	}
+
+	buf = buf[:headerReadLength]
+	err = r.Unmarshal(buf)
+	if err != nil {
+		return int64(headerReadLength), err
+	}
+
+	var contentLength = r.header.GetContentLength()
+	// TODO::: is below logic check include all situations??
+	if contentLength > 0 && r.body.Len() == 0 {
+		var bodyRaw = make([]byte, contentLength)
+		bodyReadLength, goErr = reader.Read(bodyRaw)
+		if bodyReadLength != int(contentLength) {
+			// goErr =
+		}
+		r.body.setIncomeBody(bodyRaw, &r.header)
+	}
+
+	return int64(headerReadLength + bodyReadLength), goErr
+}
+
+// WriteTo enecodes r *Response data and write it to given io.Writer!
+// Declare to respect io.WriterTo interface!
+func (r *Response) WriteTo(w io.Writer) (totalWrite int64, err error) {
+	var resMarshaled = r.MarshalWithoutBody()
+	var headerWriteLength int
+
+	headerWriteLength, err = w.Write(resMarshaled)
+	if err == nil {
+		err = r.body.Encode(w)
+	}
+
+	totalWrite = int64(r.body.Len() + headerWriteLength)
 	return
 }

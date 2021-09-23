@@ -4,31 +4,22 @@ package http
 
 import (
 	"../codec"
-	"../giti"
+	"../protocol"
 )
 
 // Request is represent HTTP body!
 // https://datatracker.ietf.org/doc/html/rfc2616#section-4.3
 type body struct {
-	giti.Codec
+	protocol.Codec
 }
 
-func (b body) Body() giti.Codec         { return b.Codec }
-func (b body) SetBody(codec giti.Codec) { b.Codec = codec }
-
-func (b body) checkEncodingAndSetBody(rawBody []byte, h *header) {
-	// TODO::: first check body encoding!
-
-	var rawBodyCodec = codec.Raw(rawBody)
-	b.Codec = &rawBodyCodec
-}
+func (b body) Body() protocol.Codec         { return b.Codec }
+func (b body) SetBody(codec protocol.Codec) { b.Codec = codec }
 
 // https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Encoding
-func (b body) setBodyByEncoding(rawBody []byte, h *header) {
-	// httpRes.header.Set(HeaderKeyContentEncoding, "gzip")
-	// var b bytes.Buffer
-	// var gz = gzip.NewWriter(&b)
-	// gz.Write(httpRes.Body)
-	// gz.Close()
-	// httpRes.Body = b.Bytes()
+func (b body) setIncomeBody(rawBody []byte, h *header) {
+	// var bodyContentEncodingName = h.Get(HeaderKeyContentEncoding)
+	// TODO:::
+	var rawBodyCodec = codec.Raw(rawBody)
+	b.Codec = &rawBodyCodec
 }

@@ -3,11 +3,10 @@
 package http
 
 import (
-	"reflect"
 	"testing"
 )
 
-type URITest struct {
+type uriTest struct {
 	name       string
 	raw        string
 	encoded    string
@@ -16,18 +15,18 @@ type URITest struct {
 	wantURIEnd int
 }
 
-var urlTests = []URITest{
+var uriTests = []uriTest{
 	{
 		name:    "asterisk-form",
 		raw:     "* ",
 		encoded: "*",
 		uri: URI{
-			Raw:       "*",
-			Scheme:    "",
-			Authority: "",
-			Path:      "*",
-			Query:     "",
-			Fragment:  "",
+			uri:       "*",
+			scheme:    "",
+			authority: "",
+			path:      "",
+			query:     "",
+			fragment:  "",
 		},
 		wantURIEnd: 1,
 	}, {
@@ -35,12 +34,12 @@ var urlTests = []URITest{
 		raw:     "/apis?2586547852#api ",
 		encoded: "/apis?2586547852",
 		uri: URI{
-			Raw:       "/apis?2586547852#api",
-			Scheme:    "",
-			Authority: "",
-			Path:      "/apis",
-			Query:     "2586547852",
-			Fragment:  "api",
+			uri:       "/apis?2586547852#api",
+			scheme:    "",
+			authority: "",
+			path:      "/apis",
+			query:     "2586547852",
+			fragment:  "api",
 		},
 		wantURIEnd: 20,
 	}, {
@@ -48,12 +47,12 @@ var urlTests = []URITest{
 		raw:     "/action/do/show/411?2586547852#Test ",
 		encoded: "/action/do/show/411?2586547852",
 		uri: URI{
-			Raw:       "/action/do/show/411?2586547852#Test",
-			Scheme:    "",
-			Authority: "",
-			Path:      "/action/do/show/411",
-			Query:     "2586547852",
-			Fragment:  "Test",
+			uri:       "/action/do/show/411?2586547852#Test",
+			scheme:    "",
+			authority: "",
+			path:      "/action/do/show/411",
+			query:     "2586547852",
+			fragment:  "Test",
 		},
 		wantURIEnd: 35,
 	}, {
@@ -61,12 +60,12 @@ var urlTests = []URITest{
 		raw:     "https://tools.ietf.org/html/rfc2616#section-3.2 ",
 		encoded: "https://tools.ietf.org/html/rfc2616",
 		uri: URI{
-			Raw:       "https://tools.ietf.org/html/rfc2616#section-3.2",
-			Scheme:    "https",
-			Authority: "tools.ietf.org",
-			Path:      "/html/rfc2616",
-			Query:     "",
-			Fragment:  "section-3.2",
+			uri:       "https://tools.ietf.org/html/rfc2616#section-3.2",
+			scheme:    "https",
+			authority: "tools.ietf.org",
+			path:      "/html/rfc2616",
+			query:     "",
+			fragment:  "section-3.2",
 		},
 		wantURIEnd: 47,
 	}, {
@@ -74,12 +73,12 @@ var urlTests = []URITest{
 		raw:     "http://www.sabz.city/#file%20one%26two ",
 		encoded: "http://www.sabz.city/",
 		uri: URI{
-			Raw:       "http://www.sabz.city/#file%20one%26two",
-			Scheme:    "http",
-			Authority: "www.sabz.city",
-			Path:      "/",
-			Query:     "",
-			Fragment:  "file%20one%26two",
+			uri:       "http://www.sabz.city/#file%20one%26two",
+			scheme:    "http",
+			authority: "www.sabz.city",
+			path:      "/",
+			query:     "",
+			fragment:  "file%20one%26two",
 		},
 		wantURIEnd: 38,
 	}, {
@@ -87,12 +86,12 @@ var urlTests = []URITest{
 		raw:     "https://www.sabz.city/pub/WWW/TheProject.html ",
 		encoded: "https://www.sabz.city/pub/WWW/TheProject.html",
 		uri: URI{
-			Raw:       "https://www.sabz.city/pub/WWW/TheProject.html",
-			Scheme:    "https",
-			Authority: "www.sabz.city",
-			Path:      "/pub/WWW/TheProject.html",
-			Query:     "",
-			Fragment:  "",
+			uri:       "https://www.sabz.city/pub/WWW/TheProject.html",
+			scheme:    "https",
+			authority: "www.sabz.city",
+			path:      "/pub/WWW/TheProject.html",
+			query:     "",
+			fragment:  "",
 		},
 		wantURIEnd: 45,
 	}, {
@@ -100,12 +99,12 @@ var urlTests = []URITest{
 		raw:     "www.sabz.city/apis?2586547852#api ",
 		encoded: "www.sabz.city/apis?2586547852",
 		uri: URI{
-			Raw:       "www.sabz.city/apis?2586547852#api",
-			Scheme:    "",
-			Authority: "www.sabz.city",
-			Path:      "/apis",
-			Query:     "2586547852",
-			Fragment:  "api",
+			uri:       "www.sabz.city/apis?2586547852#api",
+			scheme:    "",
+			authority: "www.sabz.city",
+			path:      "/apis",
+			query:     "2586547852",
+			fragment:  "api",
 		},
 		wantURIEnd: 33,
 	}, {
@@ -113,12 +112,12 @@ var urlTests = []URITest{
 		raw:     "ftp://webmaster@www.sabz.city/ ",
 		encoded: "ftp://webmaster@www.sabz.city/",
 		uri: URI{
-			Raw:       "ftp://webmaster@www.sabz.city/",
-			Scheme:    "ftp",
-			Authority: "webmaster@www.sabz.city",
-			Path:      "/",
-			Query:     "",
-			Fragment:  "",
+			uri:       "ftp://webmaster@www.sabz.city/",
+			scheme:    "ftp",
+			authority: "webmaster@www.sabz.city",
+			path:      "/",
+			query:     "",
+			fragment:  "",
 		},
 		wantURIEnd: 30,
 	}, {
@@ -126,38 +125,39 @@ var urlTests = []URITest{
 		raw:     "http://www.sabz.city/? ",
 		encoded: "http://www.sabz.city/",
 		uri: URI{
-			Raw:       "http://www.sabz.city/?",
-			Scheme:    "http",
-			Authority: "www.sabz.city",
-			Path:      "/",
-			Query:     "",
-			Fragment:  "",
+			uri:       "http://www.sabz.city/?",
+			scheme:    "http",
+			authority: "www.sabz.city",
+			path:      "/",
+			query:     "",
+			fragment:  "",
 		},
 		wantURIEnd: 22,
 	},
 }
 
-func TestURI_UnMarshal(t *testing.T) {
-	for _, tt := range urlTests {
+func TestURI_Unmarshal(t *testing.T) {
+	for _, tt := range uriTests {
 		t.Run(tt.name, func(t *testing.T) {
-			var gotURIEnd = tt.out.UnMarshal(tt.raw)
+			var gotURIEnd = tt.out.Unmarshal(tt.raw)
 			if gotURIEnd != tt.wantURIEnd {
-				t.Errorf("URI.UnMarshal() = %v, want %v", gotURIEnd, tt.wantURIEnd)
+				t.Errorf("URI.Unmarshal() = %v, want %v", gotURIEnd, tt.wantURIEnd)
 			}
-			if !reflect.DeepEqual(tt.out, tt.uri) {
-				t.Errorf("URI.UnMarshal(%q):\n\tgot  %v\n\twant %v\n", tt.raw, tt.out, tt.uri)
+			if tt.out.scheme != tt.uri.scheme || tt.out.authority != tt.uri.authority || tt.out.path != tt.uri.path || tt.out.query != tt.uri.query || tt.out.fragment != tt.uri.fragment {
+				t.Errorf("URI.Unmarshal(%q):\n\tgot  %v\n\twant %v\n", tt.uri, tt.out, tt.uri)
 			}
 		})
 	}
 }
 
 func TestURI_Marshal(t *testing.T) {
-	for _, tt := range urlTests {
-		t.Run(tt.name, func(t *testing.T) {
-			var httpPacket []byte
-			httpPacket = tt.uri.Marshal(httpPacket)
-			if tt.encoded != string(httpPacket) {
-				t.Errorf("URI.UnMarshal():\n\tgot  %v\n\twant %v\n", string(httpPacket), tt.encoded)
+	for i := 1; i < len(uriTests); i++ { // start from 1 due to asterisk-form is not general form that we can use Set() method
+		var uriTest = uriTests[i]
+		uriTest.uri.Set(uriTest.uri.scheme, uriTest.uri.authority, uriTest.uri.path, uriTest.uri.query)
+		t.Run(uriTest.name, func(t *testing.T) {
+			var httpPacket = uriTest.uri.Marshal()
+			if uriTest.encoded != string(httpPacket) {
+				t.Errorf("URI.Unmarshal():\n\tgot  %v\n\twant %v\n", string(httpPacket), uriTest.encoded)
 			}
 		})
 	}

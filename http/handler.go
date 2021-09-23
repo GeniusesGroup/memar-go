@@ -3,11 +3,9 @@
 package http
 
 import (
-	"strings"
-
 	"../convert"
-	"../giti"
 	"../log"
+	"../protocol"
 	"../www"
 )
 
@@ -15,40 +13,38 @@ import (
 // Send beauty HTML response in http error situation like 500, 404, ...
 
 type Handler struct {
-	Application giti.Application
-	WWW         www.Asset
+	WWW www.Assets
 }
 
 // HandleIncomeRequest handle incoming HTTP request streams!
 // It can use for architectures like restful, ...
-// Protocol Standard - http2 : https://httpwg.org/specs/rfc7540.html
-func (handler *Handler) HandleIncomeRequest(stream giti.Stream) {
-	var err giti.Error
-	var connection = stream.Connection()
+// Protocol Standard - HTTP/1 : https://en.wikipedia.org/wiki/Hypertext_Transfer_Protocol
+// Protocol Standard - HTTP/2 : https://httpwg.org/specs/rfc7540.html
+// Protocol Standard - HTTP/3 : https://quicwg.org/base-drafts/draft-ietf-quic-http.html
+func (handler *Handler) HandleIncomeRequest(stream protocol.Stream) (err protocol.Error) {
 	var httpReq = NewRequest()
 	var httpRes = NewResponse()
 
-	err = httpReq.UnMarshal(stream.IncomeData().Marshal())
+	err = httpReq.Unmarshal(stream.IncomeData().Marshal())
 	if err != nil {
-		connection.ServiceCallFail()
 		httpRes.SetStatus(StatusBadRequestCode, StatusBadRequestPhrase)
-		httpRes.SetError(err)
 		handler.HandleOutcomeResponse(stream, httpReq, httpRes)
 		return
 	}
 	err = handler.ServeHTTP(stream, httpReq, httpRes)
+	return
 }
 
 // HandleIncomeRequest handle incoming HTTP request streams!
 // It can use for architectures like restful, ...
 // Protocol Standard - http2 : https://httpwg.org/specs/rfc7540.html
-func (handler *Handler) ServeHTTP(stream giti.Stream, httpReq *Request, httpRes *Response) (err giti.Error) {
-	if !giti.AppDevMode && handler.HostCheck(stream, httpReq, httpRes) {
+func (handler *Handler) ServeHTTP(stream protocol.Stream, httpReq *Request, httpRes *Response) (err protocol.Error) {
+	if !protocol.AppDevMode && handler.HostCheck(stream, httpReq, httpRes) {
 		return
 	}
 
 	var connection = stream.Connection()
-	var service giti.Service
+	var service protocol.Service
 
 	// Find related services
 	if httpReq.uri.path == "/apis" {
@@ -62,37 +58,29 @@ func (handler *Handler) ServeHTTP(stream giti.Stream, httpReq *Request, httpRes 
 		var serviceID uint64
 		serviceID, err = convert.Base10StringToUint64(httpReq.uri.query)
 		if err == nil {
-			service = handler.Application.GetServiceByID(serviceID)
+			service = protocol.App.GetServiceByID(serviceID)
 		}
 		// Add some header for /apis like not index by SE(google, ...), ...
 		httpRes.header.Set("X-Robots-Tag", "noindex")
 		// httpRes.header.Set(HeaderKeyCacheControl, "no-store")
 	} else {
+		var uriPath = httpReq.uri.path
 		// Route by URL
-		service = handler.Application.GetServiceByURI(httpReq.uri.path)
+		service = protocol.App.GetServiceByURI(uriPath)
 
 		// Route by WWW assets
 		if service == nil {
-			var path = strings.Split(httpReq.uri.path, "/")
-			var lastPath = path[len(path)-1]
-
-			var file = handler.WWW.Folder.GetFile(lastPath)
-			if file == nil && strings.IndexByte(lastPath, '.') == -1 {
+			var reqFile, _ = handler.WWW.GUI.FileByPath(uriPath)
+			if reqFile == nil {
 				// TODO::: SSR to serve-to-robots
-				file = handler.WWW.Main
-			}
 
-			if file == nil {
-				connection.ServiceCallFail()
-				httpRes.SetStatus(StatusNotFoundCode, StatusNotFoundPhrase)
-			} else {
-				connection.ServiceCalled()
-				httpRes.SetStatus(StatusOKCode, StatusOKPhrase)
-				httpRes.header.Set(HeaderKeyContentType, file.MimeType)
-				httpRes.header.Set(HeaderKeyCacheControl, "max-age=31536000, immutable")
-				httpRes.header.Set(HeaderKeyContentEncoding, file.CompressType)
-				httpRes.Body = file.CompressData
+				const supportedLang = "en" // TODO::: get from header
+				reqFile, _ = handler.WWW.MainHTML.File(supportedLang)
 			}
+			connection.ServiceCalled()
+			httpRes.SetStatus(StatusOKCode, StatusOKPhrase)
+			httpRes.header.Set(HeaderKeyCacheControl, "max-age=31536000, immutable")
+			httpRes.SetBody(reqFile.Data())
 
 			handler.HandleOutcomeResponse(stream, httpReq, httpRes)
 			return
@@ -103,80 +91,51 @@ func (handler *Handler) ServeHTTP(stream giti.Stream, httpReq *Request, httpRes 
 	if service == nil {
 		connection.ServiceCallFail()
 		httpRes.SetStatus(StatusNotFoundCode, StatusNotFoundPhrase)
-		httpRes.SetError(ErrNotFound)
+		err = ErrNotFound
 	} else {
 		stream.SetService(service)
 		err = service.ServeHTTP(stream, httpReq, httpRes)
 		if err != nil {
 			connection.ServiceCallFail()
-			stream.SetError(err)
-			httpRes.SetError(err)
+		} else {
+			connection.ServiceCalled()
 		}
-
-		connection.ServiceCalled()
 	}
 
 	handler.HandleOutcomeResponse(stream, httpReq, httpRes)
 	return
 }
 
-// HandleIncomeResponse use to handle incoming HTTP response streams!
-func (handler *Handler) HandleIncomeResponse(stream giti.Stream) {
-	stream.SetState(giti.ConnectionStateReady)
-}
-
-// HandleOutcomeRequest use to handle outcoming HTTP request stream!
-// given stream can't be nil, otherwise panic will occur!
-// It block caller until get response or error!!
-func (handler *Handler) HandleOutcomeRequest(stream giti.Stream) (err giti.Error) {
-	// err = stream.Send()
-	return
-}
-
 // HandleOutcomeResponse use to handle outcoming HTTP response stream!
-func (handler *Handler) HandleOutcomeResponse(stream giti.Stream, httpReq *Request, httpRes *Response) {
-	stream.Connection().CloseStream(stream)
+func (handler *Handler) HandleOutcomeResponse(stream protocol.Stream, httpReq *Request, httpRes *Response) {
+	stream.Close()
 
 	// Do some global assignment to response
 	httpRes.version = httpReq.version
+	if httpRes.Body() != nil {
+		httpRes.header.Set(HeaderKeyContentType, httpRes.body.MediaType())
+		var compressType = httpRes.body.CompressType()
+		if compressType != "" {
+			httpRes.header.Set(HeaderKeyContentEncoding, compressType)
+		}
+	}
 	// httpRes.header.Set(HeaderKeyAccessControlAllowOrigin, "*")
 	httpRes.SetContentLength()
-	// Add Server Header to response : "Achaemenid"
-	httpRes.header.Set(HeaderKeyServer, DefaultServer)
+
+	// TODO::: Have default error pages and can get customizes!
+	// Send beauty HTML response in http error situation like 500, 404, ...
 
 	stream.SetOutcomeData(httpRes)
 
-	if giti.AppDeepDebugMode {
+	if protocol.AppDeepDebugMode {
 		// TODO::: body not serialized yet to log it!! any idea to have better performance below??
-		log.DeepDebug("HTTP - Request:::", httpReq.uri.raw, httpReq.header, string(httpReq.body.Marshal()))
+		log.DeepDebug("HTTP - Request:::", httpReq.uri.uri, httpReq.header, string(httpReq.body.Marshal()))
 		log.DeepDebug("HTTP - Response:::", httpRes.ReasonPhrase, httpRes.header, string(httpRes.body.Marshal()))
 	}
 }
 
-// HTTPtoHTTPS handle incoming HTTP request to redirect to HTTPS!
-func (handler *Handler) HTTPtoHTTPS(stream giti.Stream, httpReq *Request, httpRes *Response) {
-	// redirect http to https
-	// remove/add not default ports from httpReq.Host
-	var target = "https://" + httpReq.URI().Host() + httpReq.URI().Path()
-	var targetQuery = httpReq.URI().Query()
-	if len(targetQuery) > 0 {
-		target += "?" + targetQuery // + "&rd=tls" // TODO::: add rd query for analysis purpose??
-	}
-	httpRes.SetStatus(StatusMovedPermanentlyCode, StatusMovedPermanentlyPhrase)
-	httpRes.Header().Set(HeaderKeyLocation, target)
-	httpRes.Header().Set(HeaderKeyConnection, HeaderValueClose)
-	// Add cache to decrease server load
-	httpRes.Header().Set(HeaderKeyCacheControl, "public, max-age=2592000")
-
-	// Do some global assignment to response
-	httpRes.version = httpReq.version
-	httpRes.Header().Set(HeaderKeyContentLength, "0")
-	// Add Server Header to response : "Achaemenid"
-	httpRes.Header().Set(HeaderKeyServer, DefaultServer)
-}
-
-func (handler *Handler) HostCheck(stream giti.Stream, httpReq *Request, httpRes *Response) (redirect bool) {
-	var domainName = handler.Application.Manifest().DomainName()
+func (handler *Handler) HostCheck(stream protocol.Stream, httpReq *Request, httpRes *Response) (redirect bool) {
+	var domainName = protocol.App.Manifest().DomainName()
 	var host = httpReq.uri.host
 	var path = httpReq.uri.path
 	var query = httpReq.uri.query
@@ -185,7 +144,7 @@ func (handler *Handler) HostCheck(stream giti.Stream, httpReq *Request, httpRes 
 		// TODO::: noting to do or reject request??
 	} else if '0' <= host[0] && host[0] <= '9' {
 		// check of request send over IP
-		if giti.AppDeepDebugMode {
+		if protocol.AppDeepDebugMode {
 			log.Debug("HTTP - Host Check - IP host:", host)
 		}
 
@@ -200,14 +159,14 @@ func (handler *Handler) HostCheck(stream giti.Stream, httpReq *Request, httpRes 
 		return true
 	} else if len(host) > 4 && host[:4] == "www." {
 		if host[4:] != domainName {
-			if giti.AppDeepDebugMode {
+			if protocol.AppDeepDebugMode {
 				log.Debug("HTTP - Host Check - Unknown WWW host:", host)
 			}
 			// TODO::: Silently ignoring a request might not be a good idea and perhaps breaks the RFC's for HTTP.
 			return true
 		}
 
-		if giti.AppDeepDebugMode {
+		if protocol.AppDeepDebugMode {
 			log.Debug("HTTP - Host Check - WWW host:", host)
 		}
 
@@ -222,11 +181,33 @@ func (handler *Handler) HostCheck(stream giti.Stream, httpReq *Request, httpRes 
 		handler.HandleOutcomeResponse(stream, httpReq, httpRes)
 		return true
 	} else if host != domainName {
-		if giti.AppDeepDebugMode {
+		if protocol.AppDeepDebugMode {
 			log.Debug("HTTP - Host Check - Unknown host:", host)
 		}
 		// TODO::: Silently ignoring a request might not be a good idea and perhaps breaks the RFC's for HTTP.
 		return true
 	}
+	return
+}
+
+// HandleOutcomeRequest use to handle outcoming HTTP request stream!
+// given stream can't be nil, otherwise panic will occur!
+// It block caller until get response or error!!
+func HandleOutcomeRequest(conn protocol.NetworkTransportConnection, service protocol.Service, httpReq *Request) (httpRes *Response, err protocol.Error) {
+	var stream protocol.Stream
+	stream, err = conn.OutcomeStream(service)
+	if err != nil {
+		return
+	}
+
+	stream.SetOutcomeData(httpReq)
+
+	err = conn.Send(stream)
+	if err != nil {
+		return
+	}
+
+	httpRes = NewResponse()
+	err = httpRes.Unmarshal(stream.IncomeData().Marshal())
 	return
 }

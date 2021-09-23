@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"../convert"
-	er "../error"
+	"../protocol"
 )
 
 /*
@@ -36,7 +36,7 @@ type SetCookie struct {
 }
 
 // CheckAndSanitize use to check if the set-cookie is in standard by related RFCs.
-func (sc *SetCookie) CheckAndSanitize() (err *er.Error) {
+func (sc *SetCookie) CheckAndSanitize() (err protocol.Error) {
 	sc.Name, err = sanitizeCookieName(sc.Name)
 	sc.Value, err = sanitizeCookieValue(sc.Value)
 	sc.Path, err = sanitizeCookiePath(sc.Path)
@@ -170,10 +170,10 @@ func (sc *SetCookie) Marshal() string {
 	return b.String()
 }
 
-// UnMarshal parse given set-cookie value to sc and return.
-// set-cookie value must be in standard or use CheckAndSanitize() if you desire after UnMarshaling!
+// Unmarshal parse given set-cookie value to sc and return.
+// set-cookie value must be in standard or use CheckAndSanitize() if you desire after Unmarshaling!
 // In some bad packet may occur panic, handle panic by recover otherwise app will crash and exit!
-func (sc *SetCookie) UnMarshal(setCookie string) {
+func (sc *SetCookie) Unmarshal(setCookie string) {
 	var index = strings.IndexByte(setCookie, '=')
 	// First check no equal(=) sign or empty name or value
 	if index < 1 {
@@ -239,8 +239,8 @@ func (sc *SetCookie) UnMarshal(setCookie string) {
 
 // path-av           = "Path=" path-value
 // path-value        = <any CHAR except CTLs or ";">
-// Don't check for ; due to UnMarshal will panic for bad cookie!!
-func sanitizeCookiePath(v string) (path string, err *er.Error) {
+// Don't check for ; due to Unmarshal will panic for bad cookie!!
+func sanitizeCookiePath(v string) (path string, err protocol.Error) {
 	var ln = len(v)
 	var buf = make([]byte, 0, ln)
 	var b byte
@@ -258,7 +258,7 @@ func sanitizeCookiePath(v string) (path string, err *er.Error) {
 
 // A sc.Domain containing illegal characters is not sanitized but simply dropped which turns the cookie
 // into a host-only cookie. A leading dot is okay but won't be sent.
-func sanitizeCookieDomain(d string) (domain string, err *er.Error) {
+func sanitizeCookieDomain(d string) (domain string, err protocol.Error) {
 	var ln = len(d)
 	if ln == 0 || ln > 255 {
 		return domain, ErrCookieBadDomain

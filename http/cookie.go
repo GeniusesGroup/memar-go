@@ -6,7 +6,7 @@ import (
 	"strings"
 
 	"../convert"
-	er "../error"
+	"../protocol"
 )
 
 // Cookie represents an HTTP cookie as sent in the Cookie header of an HTTP request.
@@ -17,7 +17,7 @@ type Cookie struct {
 }
 
 // CheckAndSanitize check if the cookie is in standard by RFC and try to fix them. It returns last error!
-func (c *Cookie) CheckAndSanitize() (err *er.Error) {
+func (c *Cookie) CheckAndSanitize() (err protocol.Error) {
 	c.Name, err = sanitizeCookieName(c.Name)
 	c.Value, err = sanitizeCookieValue(c.Value)
 	return
@@ -28,8 +28,8 @@ func (c *Cookie) Marshal() string {
 	return c.Name + "=" + c.Value
 }
 
-// UnMarshal parse given cookie value to c and return!
-func (c *Cookie) UnMarshal(cookie string) {
+// Unmarshal parse given cookie value to c and return!
+func (c *Cookie) Unmarshal(cookie string) {
 	var equalIndex = strings.IndexByte(cookie, '=')
 	// First check no equal(=) sign or empty name or value
 	if equalIndex < 1 || equalIndex == len(cookie)-1 {
@@ -39,7 +39,7 @@ func (c *Cookie) UnMarshal(cookie string) {
 	c.Value = cookie[equalIndex+1:]
 }
 
-func sanitizeCookieName(n string) (name string, err *er.Error) {
+func sanitizeCookieName(n string) (name string, err protocol.Error) {
 	var ln = len(n)
 	var buf = make([]byte, 0, ln)
 	var b byte
@@ -62,8 +62,8 @@ func sanitizeCookieName(n string) (name string, err *er.Error) {
 //           ; US-ASCII characters excluding CTLs,
 //           ; whitespace, DQUOTE, comma, semicolon,
 //           ; and backslash
-// Don't check for ; due to UnMarshal will panic for bad cookie!!
-func sanitizeCookieValue(v string) (value string, err *er.Error) {
+// Don't check for ; due to Unmarshal will panic for bad cookie!!
+func sanitizeCookieValue(v string) (value string, err protocol.Error) {
 	var ln = len(v)
 	var buf = make([]byte, 0, ln)
 	var b byte
