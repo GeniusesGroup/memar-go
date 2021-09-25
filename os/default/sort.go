@@ -1,14 +1,14 @@
 /* For license and copyright information please see LEGAL file in repository */
 
-package file
+package dos
 
 import (
-	"os"
+	goos "os"
 	"sort"
 )
 
 // ByModTime use to
-type ByModTime []os.FileInfo
+type ByModTime []goos.FileInfo
 
 func (fis ByModTime) Len() int {
 	return len(fis)
@@ -23,6 +23,6 @@ func (fis ByModTime) Less(i, j int) bool {
 }
 
 // SortFilesDec sort given slice in dec
-func SortFilesDec(repoFiles []os.FileInfo) {
+func SortFilesDec(repoFiles []goos.FileInfo) {
 	sort.Sort(ByModTime(repoFiles))
 }
