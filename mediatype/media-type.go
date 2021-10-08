@@ -5,41 +5,85 @@ package mediatype
 import (
 	"strings"
 
+	etime "../earth-time"
 	"../protocol"
 	"../urn"
 )
 
 // MediaType implement protocol.MediaType interface
-type mediaType struct {
-	urn            urn.Giti // Use ID instead of other data to improve efficiency
-	mediaType      string
-	mainType       string
-	subType        string
-	extension      string // Use as file extension usually in windows os
-	description    string
-	reference      string
-	registeredDate int64
-	approvedDate   int64
+type MediaType struct {
+	urn          urn.Giti // Use ID instead of other data to improve efficiency. "urn:giti:{{domain-name}}:data-structure:{{data-structure-name}}"
+	mediaType    string
+	mainType     string
+	subType      string
+	extension    string // Use as file extension usually in windows os
+	referenceURI string
+
+	status          protocol.MediaTypeStatus
+	issueDate       etime.Time
+	expiryDate      etime.Time
+	expireInFavorOf protocol.MediaType // Other MediaType
+	structure       interface{}
+
+	detail map[protocol.LanguageID]*MediaTypeDetail
 }
 
-func (mt *mediaType) URN() protocol.GitiURN { return &mt.urn }
-func (mt *mediaType) MediaType() string     { return mt.mediaType }
-func (mt *mediaType) MainType() string      { return mt.mainType }
-func (mt *mediaType) SubType() string       { return mt.subType }
-func (mt *mediaType) FileExtension() string { return mt.extension }
+// MediaTypeDetail store detail about an MediaType
+type MediaTypeDetail struct {
+	name        string
+	description string
+	tags        []string
+}
 
-func newMediaType(urn, media, fileExtension, description string) (mt *mediaType) {
-	mt = &mediaType{
-		mediaType:   media,
-		extension:   fileExtension,
+func (mt *MediaType) URN() protocol.GitiURN               { return &mt.urn }
+func (mt *MediaType) MediaType() string                   { return mt.mediaType }
+func (mt *MediaType) MainType() string                    { return mt.mainType }
+func (mt *MediaType) SubType() string                     { return mt.subType }
+func (mt *MediaType) FileExtension() string               { return mt.extension }
+func (mt *MediaType) Status() protocol.MediaTypeStatus    { return mt.status }
+func (mt *MediaType) IssueDate() protocol.Time            { return mt.issueDate }
+func (mt *MediaType) ExpiryDate() protocol.Time           { return mt.expiryDate }
+func (mt *MediaType) ExpireInFavorOf() protocol.MediaType { return mt.expireInFavorOf }
+
+func (mt *MediaType) SetInfo(status protocol.MediaTypeStatus, issueDate int64, structure interface{}) *MediaType {
+	mt.status = status
+	mt.issueDate = etime.Time(issueDate)
+	mt.structure = structure
+	return mt
+}
+
+func (mt *MediaType) SetDetail(lang protocol.LanguageID, name, description string, tags []string) *MediaType {
+	var ok bool
+	_, ok = mt.detail[lang]
+	if ok {
+		// Can't change service detail after first set! Ask service holder to change details!!
+		return mt
+	}
+	mt.detail[lang] = &MediaTypeDetail{
+		name:        name,
 		description: description,
+		tags:        tags,
+	}
+	return mt
+}
+
+func (mt *MediaType) Expired(expiryDate int64, inFavorOf protocol.MediaType) MediaType {
+	mt.expiryDate = etime.Time(expiryDate)
+	mt.expireInFavorOf = inFavorOf
+	return *mt
+}
+
+func New(urn, media, fileExtension, referenceURI string) (mt *MediaType) {
+	mt = &MediaType{
+		mediaType:    media,
+		extension:    fileExtension,
+		referenceURI: referenceURI,
+		detail:       map[protocol.LanguageID]*MediaTypeDetail{},
 	}
 	mt.mainType, mt.subType = splitMediaType(media)
 	mt.urn.Init(urn)
 
-	mediaTypeByID[mt.urn.ID()] = mt
-	mediaTypeByType[mt.mediaType] = mt
-	mediaTypeByFileExtension[mt.extension] = mt
+	protocol.OS.RegisterMediaType(mt)
 	return
 }
 
