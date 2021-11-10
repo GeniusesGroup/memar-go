@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"../convert"
+	"../mediatype"
 	"../protocol"
 )
 
@@ -39,9 +40,15 @@ func (r *Request) Header() protocol.HTTPHeader { return &r.header }
 ********** protocol.Codec interface **********
  */
 
-// https://www.iana.org/assignments/media-types/application/http
-func (r *Request) MediaType() string    { return "application/http" }
-func (r *Request) CompressType() string { return "" }
+func (r *Request) MediaType() protocol.MediaType       { return mediatype.HTTPRequest }
+func (r *Request) CompressType() protocol.CompressType { return nil }
+func (r *Request) Len() (ln int) {
+	ln = r.LenWithoutBody()
+	if r.body.Codec != nil {
+		ln += r.body.Len()
+	}
+	return
+}
 
 func (r *Request) Decode(reader io.Reader) (err protocol.Error) {
 	// Make a buffer to hold incoming data.
@@ -169,15 +176,6 @@ func (r *Request) LenWithoutBody() (ln int) {
 	ln += r.uri.Len()
 	ln += len(r.version)
 	ln += r.header.Len()
-	return
-}
-
-// Len return length of request
-func (r *Request) Len() (ln int) {
-	ln = r.LenWithoutBody()
-	if r.body.Codec != nil {
-		ln += r.body.Len()
-	}
 	return
 }
 

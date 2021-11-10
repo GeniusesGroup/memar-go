@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"../convert"
+	"../mediatype"
 	"../protocol"
 )
 
@@ -56,16 +57,22 @@ func (r *Response) GetError() (err protocol.Error) {
 
 // SetError set given er.Error to header of the response
 func (r *Response) SetError(err protocol.Error) {
-	r.header.Set(HeaderKeyErrorID, err.IDasString())
+	r.header.Set(HeaderKeyErrorID, err.URN().IDasString())
 }
 
 /*
 ********** protocol.Codec interface **********
  */
 
-// https://www.iana.org/assignments/media-types/application/http
-func (r *Response) MediaType() string    { return "application/http" }
-func (r *Response) CompressType() string { return "" }
+func (r *Response) MediaType() protocol.MediaType       { return mediatype.HTTPResponse }
+func (r *Response) CompressType() protocol.CompressType { return nil }
+func (r *Response) Len() (ln int) {
+	ln = r.LenWithoutBody()
+	if r.body.Codec != nil {
+		ln += r.body.Len()
+	}
+	return
+}
 
 func (r *Response) Decode(reader io.Reader) (err protocol.Error) {
 	// Make a buffer to hold incoming data.
@@ -76,7 +83,7 @@ func (r *Response) Decode(reader io.Reader) (err protocol.Error) {
 	// Read the incoming connection into the buffer.
 	headerReadLength, goErr = reader.Read(buf)
 	if goErr != nil || headerReadLength == 0 {
-		// err =
+		// err = connection.ErrNoConnection
 		return
 	}
 
@@ -196,15 +203,6 @@ func (r *Response) LenWithoutBody() (ln int) {
 	ln += len(r.statusCode)
 	ln += len(r.reasonPhrase)
 	ln += r.header.Len()
-	return
-}
-
-// Len return length of response
-func (r *Response) Len() (ln int) {
-	ln = r.LenWithoutBody()
-	if r.body.Codec != nil {
-		ln += r.body.Len()
-	}
 	return
 }
 

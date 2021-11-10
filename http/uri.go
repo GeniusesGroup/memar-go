@@ -6,6 +6,7 @@ import (
 	"io"
 
 	"../convert"
+	"../mediatype"
 	"../protocol"
 )
 
@@ -34,24 +35,6 @@ func (u *URI) Init(uri string) {
 
 func (u *URI) Set(scheme, authority, path, query string) {
 	u.scheme, u.authority, u.path, u.query = scheme, authority, path, query
-
-	u.uriAsByte = make([]byte, 0, u.len())
-	if u.scheme != "" {
-		u.uriAsByte = append(u.uriAsByte, u.scheme...)
-		u.uriAsByte = append(u.uriAsByte, "://"...)
-	}
-	u.uriAsByte = append(u.uriAsByte, u.authority...)
-	if u.path == "" {
-		u.uriAsByte = append(u.uriAsByte, Slash)
-	} else {
-		u.uriAsByte = append(u.uriAsByte, u.path...)
-	}
-	if u.query != "" {
-		u.uriAsByte = append(u.uriAsByte, Question)
-		u.uriAsByte = append(u.uriAsByte, u.query...)
-	}
-
-	u.uri = convert.UnsafeByteSliceToString(u.uriAsByte)
 }
 
 func (u *URI) URI() string       { return u.uri }
@@ -81,8 +64,14 @@ func (u *URI) checkHost(h *header) {
 ********** protocol.Codec interface **********
  */
 
-func (u *URI) MediaType() string    { return "application/uri" } // application/x-www-form-urlencoded
-func (u *URI) CompressType() string { return "" }
+func (u *URI) MediaType() protocol.MediaType       { return mediatype.URI } // application/x-www-form-urlencoded
+func (u *URI) CompressType() protocol.CompressType { return nil }
+func (u *URI) Len() (ln int) {
+	ln = len(u.uriAsByte)
+	if ln == 0 {
+		return u.len()
+	}
+}
 
 func (u *URI) Decode(reader io.Reader) (err protocol.Error) {
 	// TODO:::
@@ -97,13 +86,19 @@ func (u *URI) Encode(writer io.Writer) (err error) {
 
 // Marshal encode URI data and return it.
 func (u *URI) Marshal() (encodedURI []byte) {
+	if u.uriAsByte == nil {
+		u.uriAsByte = make([]byte, 0, u.len())
+		u.marshalTo(u.uriAsByte)
+	}
 	return u.uriAsByte
 }
 
 // MarshalTo encode URI data to given httpPacket and update u.uri and return httpPacket with new len.
 func (u *URI) MarshalTo(httpPacket []byte) []byte {
-	httpPacket = append(httpPacket, u.uriAsByte...)
-	return httpPacket
+	if u.uriAsByte == nil {
+		return u.marshalTo(httpPacket)
+	}
+	return append(httpPacket, u.uriAsByte...)
 }
 
 // Unmarshal use to parse and decode given URI to u
@@ -172,15 +167,6 @@ func (u *URI) Unmarshal(s string) (uriEnd int) {
 	return
 }
 
-// Len return length of Marshal()
-func (u *URI) Len() (ln int) { return len(u.uriAsByte) }
-
-func (u *URI) len() (ln int) {
-	ln = 4 // 4 == len("://")+len("?")
-	ln += len(u.scheme) + len(u.authority) + len(u.path) + len(u.query)
-	return
-}
-
 /*
 ********** io package interfaces **********
  */
@@ -190,5 +176,33 @@ func (u *URI) WriteTo(writer io.Writer) (n int64, err error) {
 	var writeLength int
 	writeLength, err = writer.Write(encodedURI)
 	n = int64(writeLength)
+	return
+}
+
+func (u *URI) marshalTo(httpPacket []byte) []byte {
+	var uriStart = len(httpPacket)
+	if u.scheme != "" {
+		httpPacket = append(httpPacket, u.scheme...)
+		httpPacket = append(httpPacket, "://"...)
+	}
+	httpPacket = append(httpPacket, u.authority...)
+	if u.path == "" {
+		httpPacket = append(httpPacket, Slash)
+	} else {
+		httpPacket = append(httpPacket, u.path...)
+	}
+	if u.query != "" {
+		httpPacket = append(httpPacket, Question)
+		httpPacket = append(httpPacket, u.query...)
+	}
+
+	// TODO::: below code cause memory leak if dev use u.uriAsByte||u.uri in other places due to GC can't free whole http packet
+	u.uriAsByte = httpPacket[uriStart:]
+	u.uri = convert.UnsafeByteSliceToString(u.uriAsByte)
+}
+
+func (u *URI) len() (ln int) {
+	ln = 4 // 4 == len("://")+len("?")
+	ln += len(u.scheme) + len(u.authority) + len(u.path) + len(u.query)
 	return
 }
