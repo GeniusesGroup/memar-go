@@ -23,12 +23,15 @@ func (srpc *SRPCHandler) HandleIncomeRequest(stream protocol.Stream) (err protoc
 	if err != nil {
 		stream.SetError(err)
 	}
+
+	stream.SendResponse()
+	stream.Close()
 	return
 }
 
 // HandleOutcomeRequest use to handle outcoming sRPC request.
 // It block caller until get response or error.
-func HandleOutcomeRequest(conn protocol.NetworkTransportConnection, service protocol.Service, payload protocol.Codec) (stream protocol.Stream, err protocol.Error) {
+func HandleOutcomeRequest(conn protocol.Connection, service protocol.Service, payload protocol.Codec) (stream protocol.Stream, err protocol.Error) {
 	stream, err = conn.OutcomeStream(service)
 	if err != nil {
 		return
@@ -37,7 +40,7 @@ func HandleOutcomeRequest(conn protocol.NetworkTransportConnection, service prot
 	// stream.SetOutcomeData(syllab.NewCodec(payload))
 	stream.SetOutcomeData(payload)
 
-	err = conn.Send(stream)
+	err = stream.SendRequest()
 	if err != nil {
 		return
 	}
