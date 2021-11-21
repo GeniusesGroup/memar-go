@@ -3,8 +3,7 @@
 package chapar
 
 import (
-	er "../error"
-	"../giti"
+	"../protocol"
 )
 
 const (
@@ -14,14 +13,14 @@ const (
 	// MaxFrameLen is maximum Chapar frame length
 	MaxFrameLen = 8192
 
-	fixedHeaderLength byte = 3 // without path part
-	maxHopCount       byte = 255
-	broadcastHopCount byte = 0
-	maxBroadcastPayloadLen = MaxFrameLen - (fixedHeaderLength + maxHopCount)
+	fixedHeaderLength      byte = 3 // without path part
+	maxHopCount            byte = 255
+	broadcastHopCount      byte = 0
+	maxBroadcastPayloadLen      = MaxFrameLen - (fixedHeaderLength + maxHopCount)
 )
 
 // MakeNewFrame makes new unicast||broadcast frame!
-func MakeNewFrame(nexHeaderID giti.NetworkLinkNextHeaderID, path []byte, payload []byte) (frame []byte) {
+func MakeNewFrame(nexHeaderID protocol.NetworkLinkNextHeaderID, path []byte, payload []byte) (frame []byte) {
 	var pathLen byte = byte(len(path))
 	if pathLen == 0 {
 		pathLen = maxHopCount // broadcast frame
@@ -41,7 +40,7 @@ func MakeNewFrame(nexHeaderID giti.NetworkLinkNextHeaderID, path []byte, payload
 
 // CheckFrame checks frame for any bad situation!
 // Always check frame before use any other frame methods otherwise panic may occur!
-func CheckFrame(frame []byte) (err giti.Error) {
+func CheckFrame(frame []byte) (err protocol.Error) {
 	var len = len(frame)
 	if len < MinFrameLen {
 		return ErrShortFrameLength
@@ -59,7 +58,7 @@ func GetNextHop(frame []byte) byte {
 
 // IncrementNextHop sets received port number and increment NextHop number in frame!
 func IncrementNextHop(frame []byte, receivedPortNumber byte) {
-	// spec: https://github.com/SabzCity/RFCs/blob/master/Chapar.md#rules
+	// spec: https://github.com/GeniusesGroup/RFCs/blob/master/Chapar.md#rules
 	SetPortNum(frame, frame[0], receivedPortNumber)
 	frame[0]++
 }
@@ -78,7 +77,7 @@ func SetHopCount(frame []byte, hopCount byte) {
 }
 
 // IsBroadcastFrame checks frame is broadcast frame or not!
-// spec: https://github.com/SabzCity/RFCs/blob/master/Chapar.md#frame-types
+// spec: https://github.com/GeniusesGroup/RFCs/blob/master/Chapar.md#frame-types
 func IsBroadcastFrame(frame []byte) bool {
 	return frame[1] == broadcastHopCount
 }
@@ -91,6 +90,11 @@ func GetNextHeader(frame []byte) byte {
 // SetNextHeader sets next header id in the frame.
 func SetNextHeader(frame []byte, linkHeaderID byte) {
 	frame[2] = linkHeaderID
+}
+
+// GetNextPortNum returns next port number set in the frame.
+func GetNextPortNum(frame []byte) byte {
+	return frame[fixedHeaderLength+GetNextHop(frame)]
 }
 
 // GetPortNum returns port number of given hop number.

@@ -2,7 +2,11 @@
 
 package chapar
 
-import "../giti"
+import (
+	"io"
+
+	"../protocol"
+)
 
 // Path indicate Chapar switch route plan!
 type Path struct {
@@ -11,7 +15,7 @@ type Path struct {
 }
 
 // Init sets path from the given frame
-func (p *Path) Init(frame []byte)  {
+func (p *Path) Init(frame []byte) {
 	if len(frame) == 0 {
 		p.len = MaxHopCount // broadcast frame
 	} else {
@@ -49,15 +53,25 @@ func (p *Path) GetReverse() (reverse Path) {
 }
 
 /*
-********** giti.Codec interface **********
+********** protocol.Codec interface **********
  */
 
-func (p *Path) Len() int {
-	return int(p.len)
+func (p *Path) MediaType() protocol.MediaType       { return nil }
+func (p *Path) CompressType() protocol.CompressType { return nil }
+func (p *Path) Len() int                            { return int(p.len) }
+
+// Marshal return the path in the given frame.
+func (p *Path) Decode(reader io.Reader) (err protocol.Error) {
+	return
 }
 
-// UnMarshal sets path from the given path
-func (p *Path) UnMarshal(path []byte) (err giti.Error) {
+// Marshal return the path in the given frame.
+func (p *Path) Encode(writer io.Writer) (err error) {
+	return
+}
+
+// Unmarshal sets path from the given path
+func (p *Path) Unmarshal(path []byte) (err protocol.Error) {
 	if len(path) == 0 {
 		p.len = MaxHopCount // broadcast frame
 	} else {

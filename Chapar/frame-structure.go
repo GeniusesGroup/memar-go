@@ -4,7 +4,7 @@ package chapar
 
 // chapar represents Chapar frame structure!
 // It is just to show protocol in better way, we never use this type!
-// Read more about this protocol : https://github.com/SabzCity/RFCs/blob/master/Chapar.md
+// Read more about this protocol : https://github.com/GeniusesGroup/RFCs/blob/master/Chapar.md
 type chapar struct {
 	Header  header // Up to 258 Byte length!
 	Payload []byte // Up to 7934 Byte length!

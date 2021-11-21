@@ -2,7 +2,7 @@
 
 package chapar
 
-import "../giti"
+import "../protocol"
 
 // UpperHandlerNonExist use for default and empty switch port due to non of ports can be nil!
 type UpperHandlerNonExist struct {
@@ -13,7 +13,7 @@ type UpperHandlerNonExist struct {
 func (h *UpperHandlerNonExist) HeaderID() (id byte) { return h.headerID }
 
 // Receive get packet to route it to its path!
-func (h *UpperHandlerNonExist) Receive(conn giti.NetworkLinkConnection, packet []byte) {}
+func (h *UpperHandlerNonExist) Receive(conn protocol.NetworkLinkConnection, packet []byte) {}
 
 func (h *UpperHandlerNonExist) RegisterAppMultiplexer(appMux NetworkTransportAppMultiplexer) {}
 func (h *UpperHandlerNonExist) UnRegisterAppMultiplexer(appMux NetworkTransportAppMultiplexer) {}
