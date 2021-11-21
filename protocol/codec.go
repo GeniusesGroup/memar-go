@@ -9,28 +9,24 @@ import "io"
 // - Marshal() don't think about any other parts and make a byte slice and serialize data to it.
 // - MarshalTo() care about the fact that serialized data must wrap with other data and serialize data in the given byte slice.
 // - Encode() like MarshalTo() but encode to a buf not a byte slice by Buffer interface methods! buf can be a temp or final write location.
-// - WriteTo() is OS changed data location so it will care about how to write data to respect performance. Usually by make temp fixed size buffer like bufio package.
+// Almost always Encode() use in old OS fashion, it will care about how to write data to respect performance. Usually by make temp fixed size buffer like bufio package.
 type Codec interface {
-	MediaType() string // http://www.iana.org/assignments/media-types/media-types.xhtml
-	CompressType() string
+	MediaType() MediaType
+	CompressType() CompressType
+	Len() (ln int)
 
 	Decoder
 	Encoder
 
-	UnMarshaler
+	Unmarshaler
 	Marshaler
-
-	io.WriterTo
-	io.ReaderFrom
-	// io.ReaderAt
-	// io.WriteAt
 }
 
 // Decoder is the interface that wraps the Decode method.
 //
 // Decode read and decode data from buffer until end of data or occur error.
 type Decoder interface {
-	Decode(buf Buffer) (err Error)
+	Decode(reader io.Reader) (err Error)
 }
 
 // Encoder is the interface that wraps the Encode & Len methods.
@@ -38,15 +34,15 @@ type Decoder interface {
 // Encode writes serialized(encoded) data to buf until there's no more data to write!
 // Len return value n is the number of bytes that will written as encode data.
 type Encoder interface {
-	Encode(buf Buffer)
+	Encode(writer io.Writer) (err error)
 	Len() (ln int)
 }
 
-// UnMarshaler is the interface that wraps the UnMarshal method.
+// Unmarshaler is the interface that wraps the Unmarshal method.
 //
-// UnMarshal reads and decode data from given slice until end of data or occur error
-type UnMarshaler interface {
-	UnMarshal(data []byte) (err Error)
+// Unmarshal reads and decode data from given slice until end of data or occur error
+type Unmarshaler interface {
+	Unmarshal(data []byte) (err Error)
 }
 
 // Marshaler is the interface that wraps the Marshal method.

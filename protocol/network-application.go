@@ -2,8 +2,6 @@
 
 package protocol
 
-import "net"
-
 /*
 **********************************************************************************
 Application (OSI Layer 7: Application)
@@ -18,9 +16,9 @@ type NetworkApplicationProtocolID uint16
 // https://en.wikipedia.org/wiki/List_of_TCP_and_UDP_port_numbers
 // https://www.iana.org/assignments/service-names-port-numbers/service-names-port-numbers.xhtml
 const (
-	NetworkApplicationSRPCSyllab NetworkApplicationProtocolID = 4
-	NetworkApplicationDNS        NetworkApplicationProtocolID = 50
-	NetworkApplicationHTTP       NetworkApplicationProtocolID = 80
+	NetworkApplicationSRPC NetworkApplicationProtocolID = 4
+	NetworkApplicationDNS  NetworkApplicationProtocolID = 50
+	NetworkApplicationHTTP NetworkApplicationProtocolID = 80
 )
 
 // NetworkApplicationMultiplexer
@@ -32,7 +30,11 @@ type NetworkApplicationMultiplexer interface {
 
 // NetworkApplicationHandler
 type NetworkApplicationHandler interface {
-	HandleIncomeRequest(stream Stream)
-	HandleIncomeResponse(stream Stream)
-	HandleStreamConnection(stream Stream, conn net.Conn)
+	ProtocolID() NetworkApplicationProtocolID
+	HandleIncomeRequest(stream Stream) (err Error)
+
+	// HandleOutcomeRequest()
+	// Due to each application handler wants its signature, implement it as a pure function inside each package.
+	// srpc.HandleOutcomeRequest(conn Connection, service Service, payload Codec) (stream Stream, err Error)
+	// http.HandleOutcomeRequest(conn Connection, service Service, httpReq *Request) (httpRes *Response, err Error) {
 }

@@ -5,10 +5,9 @@ package protocol
 // Services is the interface that must implement by any Application!
 type Services interface {
 	RegisterService(s Service)
-	UnRegisterService(s Service)
-	GetServiceByID(urnID uint64) Service
-	GetServiceByURN(urn string) Service
-	GetServiceByURI(uri string) Service
+	GetServiceByID(urnID uint64) (ser Service, err Error)
+	GetServiceByURN(urn string) (ser Service, err Error)
+	GetServiceByURI(domain, uri string) (ser Service, err Error) // register in URN.Domain group, due to multi domain servises need to register
 }
 
 // Service is the interface that must implement by any struct to be a service!
@@ -17,21 +16,26 @@ type Service interface {
 	Detail(lang LanguageID) ServiceDetail
 	URN() GitiURN
 	URI() string
-	Status() ServiceStatus
+	Status() SoftwareStatus
 	IssueDate() Time
 	ExpiryDate() Time
+	ExpireInFavorOf() GitiURN
 
 	// Service Authorization
 	CRUDType() CRUD
 	UserType() UserType
 
+	// DirectHandler use to call a service without need to open any stream.
+	// It can also use when service request data is smaller than network MTU.
+	// Or use for time sensitive data like audio and video that streams shape in app layer
+	DirectHandler(conn Connection, request []byte) (response []byte, err Error)
 	SRPCHandler
 	HTTPHandler
 	CLIHandler
-	// Service method is the handler of the service but we suggest to implement it as pure private(package scope) function outside service scope.
-	// Service(Stream, interface{}) (interface{}, Error)
+	// Can't standardize here, must implement as pure private(package scope) function outside service scope.
+	// Handler(Stream, interface{}) (interface{}, Error)
 
-	JSON
+	// JSON
 }
 
 // ServiceDetail return locale detail about the service!
@@ -40,31 +44,3 @@ type ServiceDetail interface {
 	Description() string
 	TAGS() []string
 }
-
-type ServiceStatus uint8
-
-// Service Status
-// https://en.wikipedia.org/wiki/Software_release_life_cycle
-const (
-	// ServiceStatePreAlpha refers to all activities performed during the software project before formal testing.
-	ServiceStatePreAlpha ServiceStatus = iota
-	// ServiceStateAlpha is the first phase to begin software testing
-	ServiceStateAlpha
-	// ServiceStateBeta generally begins when the software is feature complete but likely to contain a number of known or unknown bugs.
-	ServiceStateBeta
-	// ServiceStatePerpetualBeta where new features are continually added to the software without establishing a final "stable" release.
-	// This technique may allow a developer to delay offering full support and responsibility for remaining issues.
-	ServiceStatePerpetualBeta
-	// ServiceStateOpenBeta is for a larger group, or anyone interested.
-	ServiceStateOpenBeta
-	// ServiceStateClosedBeta is released to a restricted group of individuals for a user test by invitation.
-	ServiceStateClosedBeta
-	// ServiceStateReleaseCandidate also known as "going silver", is a beta version with potential to be a stable product,
-	// which is ready to release unless significant bugs emerge
-	ServiceStateReleaseCandidate
-	// ServiceStateStableRelease Also called production release,
-	// the stable release is the last release candidate (RC) which has passed all verifications / tests.
-	ServiceStateStableRelease
-	// ServiceStateEndOfLife indicate no longer supported and continue its existence until to ExpiryDate!
-	ServiceStateEndOfLife
-)

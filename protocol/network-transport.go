@@ -23,29 +23,5 @@ type NetworkTransportOSMultiplexer interface {
 type NetworkTransportAppMultiplexer interface {
 	HeaderID() (id NetworkLinkNextHeaderID)
 	Receive(conn NetworkLinkConnection, packet []byte)
-
-	// shutdown the listener when the application closes or force to closes by not recovered panic!
-	// first closing open listener for income packet and refuse all new packet,
-	// then closing all idle connections,
-	// and then waiting indefinitely for connections to return to idle
-	// and then shut down
-	Shutdown()
-}
-
-// NetworkTransportConnection or App2AppConnection
-type NetworkTransportConnection interface {
-	/* Connection data */
-	MTU() int
-
-	/* Peer data */
-	ThingID() [32]byte
-	UserID() [32]byte
-	DomainName() string
-
-	Send(st Stream) (err Error)
-	SendAsync(st Stream) (err Error)
-
-	Streams
-
-	ConnectionMetrics
+	// Send method exist in stream of each connection
 }

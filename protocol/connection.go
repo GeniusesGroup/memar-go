@@ -3,26 +3,57 @@
 package protocol
 
 type Connections interface {
-	GetConnectionByID(connID [32]byte) (conn NetworkTransportConnection)
-	GetConnectionByUserIDThingID(userID, thingID [32]byte) (conn NetworkTransportConnection)
-	SaveConnection(conn NetworkTransportConnection)
+	GuestConnectionCount() uint64
+
+	GetConnectionByID(connID [32]byte) (conn Connection)
+	GetConnectionByPeerAddr(addr [16]byte) (conn Connection)
+	// A connection can use just by single app node, so user can't use same connection to connect other node before close connection on usage node.
+	GetConnectionByUserIDThingID(userID, thingID [32]byte) (conn Connection)
+	GetConnectionsByUserID(userID [32]byte) (conns []Connection)
+	GetConnectionByDomain(domain string) (conn Connection)
+	RegisterConnection(conn Connection)
+}
+
+// Connection or App2AppConnection
+type Connection interface {
+	/* Connection data */
+	ID() [32]byte
+	MTU() int
+
+	/* Peer data */
+	Addr() [16]byte
+	AddrType() NetworkLinkNextHeaderID
+	ThingID() [32]byte
+	DomainName() string // if exist
+	UserID() [32]byte
+	UserType() UserType
+	DelegateUserID() [32]byte
+	DelegateUserType() UserType
+
+	/* Security data */
+	Cipher() Cipher
+
+	Streams
+	ConnectionMetrics
 }
 
 // ConnectionMetrics
 type ConnectionMetrics interface {
-	ServiceCalled()
-	ServiceCallFail()
-
 	LastUsage() Time                     // Last use of the connection
-	MaxBandwidth() uint64                // Peer must respect this, otherwise connection will terminate and GP go to black list!
+	MaxBandwidth() uint64                // Byte/Second and Connection can limit to a fixed number
 	BytesSent() uint64                   // Counts the bytes of packets sent.
 	PacketsSent() uint64                 // Counts sent packets.
 	BytesReceived() uint64               // Counts the bytes of packets receive.
 	PacketsReceived() uint64             // Counts received packets.
 	FailedPacketsReceived() uint64       // Counts failed packets receive for firewalling server from some attack types!
 	NotRequestedPacketsReceived() uint64 // Counts not requested packets received for firewalling server from some attack types!
-	ServiceCallCount() uint64            // Count successful request.
-	FailedServiceCallCount() uint64      // Count failed services call e.g. data validation failed, ...
+	SucceedStreamCount() uint64          // Count successful request.
+	FailedStreamCount() uint64           // Count failed services call e.g. data validation failed, ...
+
+	StreamSucceed()
+	StreamFailed()
+	PacketReceived(packetLength uint64)
+	PacketSent(packetLength uint64)
 }
 
 // ConnectionWeight indicate connection and stream state
@@ -43,6 +74,8 @@ const (
 	ConnectionStateRateLimited // connection||stream limited due to higher usage than permitted!
 
 	ConnectionStateBrokenPacket
+	ConnectionStateSending
+	ConnectionStateReceiving
 	ConnectionStateReceivedCompletely
 	ConnectionStateSentCompletely
 	ConnectionStateEncrypted
