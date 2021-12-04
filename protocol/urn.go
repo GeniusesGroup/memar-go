@@ -7,11 +7,11 @@ type URN interface {
 	URI
 	// URI() string // e.g. "urn:isbn:0451450523"
 	// Scheme() string // always return "urn"
-	NID() string    // NID is the namespace identifier
-	NSS() string    // NSS is the namespace-specific
+	NID() string // NID is the namespace identifier
+	NSS() string // NSS is the namespace-specific
 }
 
-// URN is the giti standard urn : https://github.com/SabzCity/RFCs/blob/master/Giti.md#URN
+// URN is the giti standard urn : https://github.com/GeniusesGroup/RFCs/blob/master/Giti.md#URN
 // URN() example: urn:giti:{{domain-name}}:page:{{page-name}}
 // NID() always return "giti"
 // Other standards:
@@ -21,7 +21,8 @@ type GitiURN interface {
 	// NID() string // always return "giti"
 	UUID() [32]byte
 	ID() uint64
+	IDasString() string // return base64 of ID.
 	Domain() string
-	Scope() string // service, page, data-structure, data, ...
+	Scope() string // service, page, data-structure, data, app-node, ...
 	Name() string  // It must be unique in the domain scope e.g. "product" in "page" scope of the "domain"
 }
