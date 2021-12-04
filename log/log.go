@@ -5,112 +5,57 @@ package log
 import (
 	"fmt"
 	"os"
-	"path"
-	"strconv"
+	"runtime/debug"
 	"time"
 
-	etime "../earth-time"
-	lang "../language"
+	"../protocol"
 )
 
-const (
-	// ScreenMode use to show the logs on screen when enabled!
-	ScreenMode = false
-	// DevMode use to show more log when enabled and disabled||enabled some rules!
-	DevMode = false
-	// DebugMode use to show more log when enabled!
-	DebugMode = false
-	// DeepDebugMode use to show most details log when enabled like RAW req&&res in any protocol like HTTP, sRPC, ...!
-	DeepDebugMode = false
-	// Language indicate which language use to print error logs!
-	Language = lang.LanguageEnglish
-)
+type Logger struct{}
 
-const (
-	timeFormat = "2006-01-02 15:04:05"
-)
+// PanicHandler recover from panics if exist to prevent app stop.
+// Call it by defer in any goroutine due to >> https://github.com/golang/go/issues/20161
+func (l *Logger) PanicHandler() {
+	var r = recover()
+	if r != nil {
+		l.LogF(protocol.LogType_Panic, "Panic Exception: %s\nDebug Stack: %s", r, debug.Stack())
+	}
+}
 
-// TODO::: fix problem with multi CPU core parallelism (data race condition)
-
-// hold logs until app running.
-var logFile *os.File
-
-// Init will initialize log to do some interval saving
-func Init(name, repoLocation string, interval etime.Duration) (err error) {
-	var logFolder = path.Join(repoLocation, "log")
-	os.Mkdir(logFolder, 0700)
-	logFile, err = os.OpenFile(path.Join(logFolder, name+strconv.FormatInt(etime.Now().RoundTo(interval), 10)+".log"), os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0700)
-	if err != nil {
+func (l *Logger) Log(logType protocol.LogType, usefulData ...interface{}) {
+	if (!protocol.AppDevMode && logType == protocol.LogType_Unset) ||
+		(!protocol.AppDebugMode && logType == protocol.LogType_DeepDebug) ||
+		(!protocol.AppDeepDebugMode && logType == protocol.LogType_DeepDebug) {
 		return
 	}
-	go intervalSaving(name, logFolder, interval)
-	return
-}
 
-// Debug show log in standard console if requested by ScreenMode const & append log to buffer to save them later.
-func Debug(a ...interface{}) {
-	var log = fmt.Sprintln("[Debug]", time.Now().Format(timeFormat), a)
-	if ScreenMode {
+	// TODO::: save log to storage with this ID: sha3.256(LogMediatypeID, NodeID, LogType, TimeRoundToDay)
+
+	if protocol.AppScreenMode {
+		var log = fmt.Sprintln("[logType]", time.Now().Format(timeFormat), usefulData)
 		os.Stderr.WriteString(log)
 	}
-	logFile.WriteString(log)
 }
 
-// DeepDebug show deep debug log in standard console if requested by ScreenMode const & append log to buffer to save them later.
-func DeepDebug(a ...interface{}) {
-	var log = fmt.Sprintln("[Deep]", time.Now().Format(timeFormat), a)
-	if ScreenMode {
+func (l *Logger) LogF(logType protocol.LogType, format string, v ...interface{}) {
+	if (!protocol.AppDevMode && logType == protocol.LogType_Unset) ||
+		(!protocol.AppDebugMode && logType == protocol.LogType_DeepDebug) ||
+		(!protocol.AppDeepDebugMode && logType == protocol.LogType_DeepDebug) {
+		return
+	}
+
+	// TODO::: save log to storage
+
+	if protocol.AppScreenMode {
+		// fmt.Sprintf(format, v...)
+		var log = fmt.Sprintf("[logType] %s %s\n", time.Now().Format(timeFormat), v)
 		os.Stderr.WriteString(log)
 	}
-	logFile.WriteString(log)
 }
 
-// Info show log in standard console if requested by ScreenMode const & append log to buffer to save them later.
-func Info(a ...interface{}) {
-	var log = fmt.Sprintln("[Info]", time.Now().Format(timeFormat), a)
-	if ScreenMode {
-		os.Stderr.WriteString(log)
-	}
-	logFile.WriteString(log)
-}
+func (l *Logger) LogFatal(any ...interface{}) {}
 
-// Warn show log in standard console if requested by ScreenMode const & append log to buffer to save them later.
-func Warn(a ...interface{}) {
-	var log = fmt.Sprintln("[Warn]", time.Now().Format(timeFormat), a)
-	if ScreenMode {
-		os.Stderr.WriteString(log)
-	}
-	logFile.WriteString(log)
-}
-
-// Fatal show log in standard console if requested by ScreenMode const & append log to buffer to save them later and exit app.
-func Fatal(a ...interface{}) {
-	var log = fmt.Sprintln("[Fatal]", time.Now().Format(timeFormat), a)
-	if ScreenMode {
-		os.Stderr.WriteString(log)
-	}
-	logFile.WriteString(log)
-	panic("Due to important log, panic situation occur")
-}
-
-// SaveToStorage use to make||flush file!
-func SaveToStorage() {
-	logFile.Close()
-}
-
-func intervalSaving(name, location string, interval etime.Duration) {
-	var timer = time.NewTimer(time.Duration(etime.Now().UntilRoundTo(interval)) * time.Second)
-	for {
-		select {
-		// case shutdownFeedback := <-pcs.shutdownSignal:
-		// 	timer.Stop()
-		// 	shutdownFeedback <- struct{}{}
-		// 	return
-		case <-timer.C:
-			logFile.Close()
-
-			logFile, _ = os.OpenFile(path.Join(location, name+strconv.FormatInt(etime.Now().RoundTo(interval), 10)+".log"), os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0700)
-			timer.Reset(time.Duration(interval) * time.Second)
-		}
-	}
-}
+// type logHeader struct {
+// 	logType protocol.LogType
+// 	time    int64
+// }
