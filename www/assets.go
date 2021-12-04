@@ -5,7 +5,6 @@ package www
 import (
 	"fmt"
 
-	"../log"
 	"../protocol"
 )
 
@@ -15,17 +14,18 @@ const (
 )
 
 type Assets struct {
-	GUI      protocol.FileDirectory
-	MainHTML protocol.FileDirectory // files name is just language in iso format e.g. "en", "fa",
+	GUI         protocol.FileDirectory
+	MainHTMLDir protocol.FileDirectory // files name is just language in iso format e.g. "en", "fa",
 	// OldBrowsers protocol.FileDirectory // files name is just language in iso format e.g. "en", "fa",
+	ContentEncodings []string
 }
 
 func (a *Assets) Init() {
 	var err protocol.Error
-	a.GUI, err = protocol.App.FileDirectory().Directory(guiDirectoryName)
-	log.Fatal(err)
-	a.MainHTML, err = a.GUI.Directory(mainHTMLDirectoryName)
-	log.Fatal(err)
+	a.GUI, err = protocol.App.Files().Directory(guiDirectoryName)
+	protocol.App.LogFatal(err)
+	a.MainHTMLDir, err = a.GUI.Directory(mainHTMLDirectoryName)
+	protocol.App.LogFatal(err)
 	a.update()
 }
 
@@ -33,20 +33,22 @@ func (a *Assets) Init() {
 func (a *Assets) ReloadByCLI() {
 	// defer Server.PanicHandler()
 reload:
-	log.Info("Write '''R''' & press '''Enter''' key to reload GUI changes")
+	protocol.App.Log(protocol.LogType_Information, "Write '''R''' & press '''Enter''' key to reload GUI changes")
 	var non string
 	fmt.Scanln(&non)
 	if non == "R" || non == "r" {
 		a.update()
 	} else {
-		log.Warn("Requested command not found")
+		protocol.App.Log(protocol.LogType_Warning, "Requested command not found")
 	}
 	goto reload
 }
 
 // Update use to add needed repo files that get from disk or network to the assets!!
 func (a *Assets) update() {
-	var c combine
+	var c = combine{
+		contentEncodings: a.ContentEncodings,
+	}
 	c.update()
-	log.Info("WWW - GUI assets successfully updated and ready to serve")
+	protocol.App.Log(protocol.LogType_Information, "WWW - GUI assets successfully updated and ready to serve")
 }

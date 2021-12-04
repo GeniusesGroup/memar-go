@@ -1,48 +1,36 @@
 /* For license and copyright information please see LEGAL file in repository */
 
-package wg
+package www
 
 import (
 	"bytes"
 	"text/template"
 
-	"../assets"
+	"../protocol"
 )
 
 // MakeSplashFiles make splash screen that use as landing page or first screen user see when open GUI app.
-func MakeSplashFiles(html, css, json *assets.File) (err error) {
-	html.FullName = "splash.html"
-	html.Name = "splash"
-	html.Extension = "html"
-	html.State = assets.StateChanged
-
+func MakeSplashFiles(html, css, json protocol.File) (err error) {
+	html.Rename("splash.html")
 	var htmlBuf = new(bytes.Buffer)
 	if err = splashHTMLFileTemplate.Execute(htmlBuf, ""); err != nil {
 		return
 	}
-	html.Data = htmlBuf.Bytes()
+	html.Data().Unmarshal(htmlBuf.Bytes())
 
-	css.FullName = "splash.css"
-	css.Name = "splash"
-	css.Extension = "css"
-	css.State = assets.StateChanged
-
+	css.Rename("splash.css")
 	var cssBuf = new(bytes.Buffer)
-	if err = splashHTMLFileTemplate.Execute(cssBuf, ""); err != nil {
+	if err = splashCSSFileTemplate.Execute(cssBuf, ""); err != nil {
 		return
 	}
-	css.Data = cssBuf.Bytes()
+	css.Data().Unmarshal(cssBuf.Bytes())
 
-	json.FullName = "splash.json"
-	json.Name = "splash"
-	json.Extension = "json"
-	json.State = assets.StateChanged
-
+	json.Rename("splash.json")
 	var jsonBuf = new(bytes.Buffer)
-	if err = splashHTMLFileTemplate.Execute(jsonBuf, ""); err != nil {
+	if err = splashJSONFileTemplate.Execute(jsonBuf, ""); err != nil {
 		return
 	}
-	json.Data = jsonBuf.Bytes()
+	json.Data().Unmarshal(jsonBuf.Bytes())
 	return
 }
 
@@ -51,7 +39,7 @@ var splashHTMLFileTemplate = template.Must(template.New("splashHTMLFile").Parse(
 
 <main>
     <div>
-        <img src="/app-icon-128x128.png" alt="Platform logo" />
+        <img src="/images/app-icon-128x128.png" alt="Platform logo" />
         <p>
             POWERED BY <br />
             <a href="/cloud">SABZCITY PLATFORM</a>

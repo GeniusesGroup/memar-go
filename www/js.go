@@ -8,7 +8,6 @@ import (
 	"strings"
 
 	"../file"
-	"../log"
 	"../protocol"
 )
 
@@ -19,7 +18,7 @@ type JS struct {
 }
 
 func (js *JS) checkInlined(srcJS protocol.File) (inlined bool) {
-	_, inlined = js.inlined[srcJS.MetaData().URI().Path()]
+	_, inlined = js.inlined[srcJS.Metadata().URI().Path()]
 	return
 }
 
@@ -28,7 +27,7 @@ func (js *JS) addJSToJS(srcJS, desJS protocol.File) {
 	if js.checkInlined(srcJS) {
 		return
 	}
-	js.inlined[srcJS.MetaData().URI().Path()] = srcJS
+	js.inlined[srcJS.Metadata().URI().Path()] = srcJS
 	desJS.Data().Append(srcJS.Data().Marshal())
 }
 
@@ -38,7 +37,7 @@ func (js *JS) addJSToJSRecursively(srcJS, desJS protocol.File) {
 		return
 	}
 	// Tell other this file will add to desJS later!
-	js.inlined[srcJS.MetaData().URI().Path()] = srcJS
+	js.inlined[srcJS.Metadata().URI().Path()] = srcJS
 
 	var imports = make([]protocol.File, 0, 16)
 	_ = js.extractJSImports(srcJS)
@@ -75,7 +74,7 @@ func (js *JS) extractJSImports(jsFile protocol.File) (err protocol.Error) {
 		var importFile = file.FindByRelativeFrom(jsFile, importPath)
 		if importFile == nil {
 			if protocol.AppDevMode {
-				log.Warn("WWW - '", importPath, "' indicate as import in", jsFile.MetaData().URI().Name(), "not found")
+				protocol.App.Log(protocol.LogType_Warning, "WWW - '", importPath, "' indicate as import in", jsFile.Metadata().URI().Name(), "not found")
 			}
 			// err =
 		} else {
@@ -85,24 +84,24 @@ func (js *JS) extractJSImports(jsFile protocol.File) (err protocol.Error) {
 		copy(jsData[importKeywordIndex-1:], jsData[en+1:])
 		jsData = jsData[:len(jsData)-(en-importKeywordIndex)-2]
 	}
-	jsFile.Data().UnMarshal(jsData)
+	jsFile.Data().Unmarshal(jsData)
 	return
 }
 
 func localeAndMixJSFile(jsFile protocol.File) (mixedData map[string][]byte) {
 	var js = jsFile.Data().Marshal()
-	var jsFileNameWithoutExtension = jsFile.MetaData().URI().NameWithoutExtension()
+	var jsFileNameWithoutExtension = jsFile.Metadata().URI().NameWithoutExtension()
 
 	var lj = make(localize, 8)
 	var jsonFile, _ = jsFile.ParentDirectory().File(jsFileNameWithoutExtension + ".json")
 	if protocol.AppDevMode && jsonFile == nil {
-		log.Warn("WWW - ", jsFile.MetaData().URI().Name(), "Can't find JSON localize file, Localization skipped")
+		protocol.App.Log(protocol.LogType_Warning, "WWW - ", jsFile.Metadata().URI().Name(), "Can't find JSON localize file, Localization skipped")
 		return
 	}
 
 	var cssFile, _ = jsFile.ParentDirectory().File(jsFileNameWithoutExtension + ".css")
 	if protocol.AppDevMode && cssFile == nil {
-		log.Warn("WWW - ", jsFile.MetaData().URI().Name(), "Can't find CSS style file, Mix CSS to JS file skipped")
+		protocol.App.Log(protocol.LogType_Warning, "WWW - ", jsFile.Metadata().URI().Name(), "Can't find CSS style file, Mix CSS to JS file skipped")
 	}
 	if cssFile != nil {
 		js, _ = mixCSSToJS(js, cssFile.Data().Marshal())
@@ -113,7 +112,7 @@ func localeAndMixJSFile(jsFile protocol.File) (mixedData map[string][]byte) {
 
 	var htmlFile, _ = jsFile.ParentDirectory().File(jsFileNameWithoutExtension + ".html")
 	if protocol.AppDevMode && htmlFile == nil {
-		log.Warn("WWW - ", jsFile.MetaData().URI().Name(), "Can't find HTML style file, Mix HTML to JS file skipped")
+		protocol.App.Log(protocol.LogType_Warning, "WWW - ", jsFile.Metadata().URI().Name(), "Can't find HTML style file, Mix HTML to JS file skipped")
 	}
 	if htmlFile != nil {
 		var htmlMixedData, _ = localizeHTMLFile(htmlFile.Data().Marshal(), lj)
@@ -123,7 +122,7 @@ func localeAndMixJSFile(jsFile protocol.File) (mixedData map[string][]byte) {
 	}
 
 	for _, f := range jsFile.ParentDirectory().FindFiles(jsFileNameWithoutExtension+"-template-", 0) {
-		var namesPart = strings.Split(f.MetaData().URI().Name(), "-template-")
+		var namesPart = strings.Split(f.Metadata().URI().Name(), "-template-")
 		var htmlMixedData, _ = localizeHTMLFile(f.Data().Marshal(), lj)
 		for lang, f := range htmlMixedData {
 			mixHTMLTemplateToJS(mixedData[lang], f, namesPart[1])

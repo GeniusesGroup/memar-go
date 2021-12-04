@@ -100,6 +100,6 @@ type localize map[string][]string
 
 func (lj *localize) jsonDecoder(data []byte) (err protocol.Error) {
 	// TODO::: convert to generated code
-	err = json.UnMarshal(data, lj)
+	err = json.Unmarshal(data, lj)
 	return
 }
