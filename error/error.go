@@ -4,49 +4,61 @@ package error
 
 import (
 	"fmt"
-	"strconv"
 
-	"../log"
 	"../protocol"
 	"../urn"
 )
 
-// Error is a extended implementation of error.
-// Never change urn due to it adds unnecessary complicated troubleshooting errors on SDK!
-// Read more : https://github.com/SabzCity/RFCs/blob/master/Giti-Error.md
-type Error struct {
-	urn         urn.Giti
-	idAsString  string
-	detail      map[protocol.LanguageID]*Detail
-	details     []protocol.ErrorDetail
-	Chain       *Error
-	Information interface{}
-	JSON        []byte
-	Syllab      []byte
-}
-
-// New returns a new error!
+// New returns a new error
 // "urn:giti:{{domain-name}}:error:{{error-name}}"
 func New(urn string) *Error {
 	if urn == "" {
-		log.Fatal("Error must have URN to save it in platform errors pools!")
+		protocol.App.LogFatal("Error must have URN to save it in platform errors pools!")
 	}
 
 	var err = Error{
 		detail: make(map[protocol.LanguageID]*Detail),
 	}
 	err.urn.Init(urn)
-	err.idAsString = strconv.FormatUint(err.urn.ID(), 10)
+	err.updateStrings()
 	return &err
 }
 
+// GetID return id of error if err id exist.
+func GetID(err error) uint64 {
+	if err == nil {
+		return 0
+	}
+	var exErr *Error = err.(*Error)
+	if exErr != nil {
+		return exErr.urn.ID()
+	}
+	// if error not nil but not Error, pass biggest number!
+	return 18446744073709551615
+}
+
+// Error is a extended implementation of error.
+// Never change urn due to it adds unnecessary complicated troubleshooting errors on SDK!
+// Read more : https://github.com/GeniusesGroup/RFCs/blob/master/Error.md
+type Error struct {
+	urn     urn.Giti
+	detail  map[protocol.LanguageID]*Detail
+	details []protocol.ErrorDetail
+
+	stringMethod string
+	errorMethod  string
+
+	JSON   []byte
+	Syllab []byte
+}
+
 // SetDetail add error text details to existing error and return it.
-func (e *Error) SetDetail(lang protocol.LanguageID, domain, short, long, userAction, devAction string) *Error {
+func (e *Error) SetDetail(lang protocol.LanguageID, domain, summary, overview, userAction, devAction string) *Error {
 	var errDetail = Detail{
 		languageID: lang,
 		domain:     domain,
-		short:      short,
-		long:       long,
+		summary:    summary,
+		overview:   overview,
 		userAction: userAction,
 		devAction:  devAction,
 	}
@@ -57,7 +69,8 @@ func (e *Error) SetDetail(lang protocol.LanguageID, domain, short, long, userAct
 
 // Save finalize needed logic on given error and register in the application
 func (e *Error) Save() *Error {
-	e.Syllab = e.ToSyllab()
+	e.Syllab = make([]byte, 8)
+	e.ToSyllab(e.Syllab, 0, 0)
 	e.JSON = e.ToJSON()
 
 	// Force to check by runtime check, due to testing package not let us by any const!
@@ -68,25 +81,9 @@ func (e *Error) Save() *Error {
 }
 
 func (e *Error) URN() protocol.GitiURN                                { return &e.urn }
-func (e *Error) IDasString() string                                   { return e.idAsString }
 func (e *Error) Details() []protocol.ErrorDetail                      { return e.details }
 func (e *Error) Detail(lang protocol.LanguageID) protocol.ErrorDetail { return e.detail[lang] }
-
-// Error return full details of error in text.
-func (e *Error) Error() string {
-	if e == nil {
-		return ""
-	}
-	return fmt.Sprintf("Error Code: %v\n Short detail: %v\n Long detail: %v\n Error Additional information: %v\n", e.urn.ID(), e.detail[protocol.AppLanguage].short, e.detail[protocol.AppLanguage].long, e.Information)
-}
-
-// AddInformation add to existing error and return it as new error(pointer) with chain errors!
-func (e *Error) AddInformation(information interface{}) *Error {
-	return &Error{
-		Chain:       e,
-		Information: information,
-	}
-}
+func (e *Error) String() string                                       { return e.stringMethod }
 
 // Equal compare two Error.
 func (e *Error) Equal(err protocol.Error) bool {
@@ -100,7 +97,7 @@ func (e *Error) Equal(err protocol.Error) bool {
 }
 
 // IsEqual compare two error.
-func (e *Error) IsEqual(err error) bool {
+func (e *Error) IsEqual(err protocol.Error) bool {
 	var exErr = err.(*Error)
 	if exErr != nil && e.urn.ID() == exErr.urn.ID() {
 		return true
@@ -108,15 +105,12 @@ func (e *Error) IsEqual(err error) bool {
 	return false
 }
 
-// GetCode return id of error if err id exist.
-func GetCode(err error) uint64 {
-	if err == nil {
-		return 0
-	}
-	var exErr *Error = err.(*Error)
-	if exErr != nil {
-		return exErr.urn.ID()
-	}
-	// if error not nil but not Error, pass biggest number!
-	return 18446744073709551615
+// Unwrap provides compatibility for Go 1.13 error chains.
+func (e *Error) Error() string { return e.errorMethod }
+func (e *Error) Cause() error  { return e }
+func (e *Error) Unwrap() error { return e }
+
+func (e *Error) updateStrings() {
+	e.stringMethod = "Error ID: " + e.urn.IDasString()
+	e.errorMethod = fmt.Sprintf("Error ID: %s\n	Summary: %s\n	Overview: %s\n", e.urn.IDasString(), e.detail[protocol.AppLanguage].summary, e.detail[protocol.AppLanguage].overview)
 }

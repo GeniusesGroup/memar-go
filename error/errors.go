@@ -3,7 +3,6 @@
 package error
 
 import (
-	"../log"
 	"../protocol"
 )
 
@@ -24,8 +23,8 @@ func (e *Errors) RegisterError(err protocol.Error) {
 	var errID = err.URN().ID()
 	var exitingError = e.poolByID[errID]
 	if exitingError != nil {
-		log.Warn("Duplicate Error id exist, Check it now for bad urn set or collision occurred!")
-		log.Warn("Exiting error >> ", exitingError.URN(), " New error >> ", err.URN())
+		protocol.App.Log(protocol.LogType_Warning, "Duplicate Error id exist, Check it now for bad urn set or collision occurred!")
+		protocol.App.Log(protocol.LogType_Warning, "Exiting error >> ", exitingError.URN(), " New error >> ", err.URN())
 		return
 	}
 
@@ -65,13 +64,13 @@ func (e *Errors) GetErrorByURN(urn string) (err protocol.Error) {
 func (e *Errors) updateJsSDK(err protocol.Error) {
 	for _, detail := range err.Details() {
 		var lang = detail.Language()
-		e.jsSDK[lang] = append(e.jsSDK[lang], "GitiError.New(\""+err.IDasString()+"\",\""+err.URN().URI()+"\").SetDetail(\""+detail.Domain()+"\",\""+detail.Short()+"\",\""+detail.Long()+"\",\""+detail.UserAction()+"\",\""+detail.DevAction()+"\")\n"...)
+		e.jsSDK[lang] = append(e.jsSDK[lang], "GitiError.New(\""+err.URN().IDasString()+"\",\""+err.URN().URI()+"\").SetDetail(\""+detail.Domain()+"\",\""+detail.Summary()+"\",\""+detail.Overview()+"\",\""+detail.UserAction()+"\",\""+detail.DevAction()+"\")\n"...)
 	}
 }
 
 // ErrorsSDK can return nil slice if request not supported!
 func (e *Errors) ErrorsSDK(humanLanguage protocol.LanguageID, machineLanguage protocol.MediaType) (sdk []byte, err protocol.Error) {
-	switch machineLanguage.Extension() {
+	switch machineLanguage.FileExtension() {
 	case "js":
 		sdk = e.jsSDK[humanLanguage]
 	}
