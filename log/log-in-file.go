@@ -10,11 +10,12 @@ import (
 	"time"
 
 	etime "../earth-time"
-	"../protocol"
 )
 
 const (
 	timeFormat = "2006-01-02 15:04:05"
+
+	ConsoleMode = false
 )
 
 // hold logs until app running.
@@ -33,60 +34,60 @@ func Init(name, repoLocation string, interval etime.Duration) (err error) {
 	return
 }
 
-// Debug show log in standard console if requested by protocol.AppScreenMode const & append log to buffer to save them later.
+// Debug show log in standard console if requested by ConsoleMode const & append log to buffer to save them later.
 func Debug(a ...interface{}) {
 	var log = fmt.Sprintln("[Debug]", time.Now().Format(timeFormat), a)
-	if protocol.AppScreenMode {
+	if ConsoleMode {
 		os.Stderr.WriteString(log)
 	}
 	logFile.WriteString(log)
 }
 
-// DeepDebug show deep debug log in standard console if requested by protocol.AppScreenMode const & append log to buffer to save them later.
+// DeepDebug show deep debug log in standard console if requested by ConsoleMode const & append log to buffer to save them later.
 func DeepDebug(a ...interface{}) {
 	var log = fmt.Sprintln("[Deep]", time.Now().Format(timeFormat), a)
-	if protocol.AppScreenMode {
+	if ConsoleMode {
 		os.Stderr.WriteString(log)
 	}
 	logFile.WriteString(log)
 }
 
-// Info show log in standard console if requested by protocol.AppScreenMode const & append log to buffer to save them later.
+// Info show log in standard console if requested by ConsoleMode const & append log to buffer to save them later.
 func Info(a ...interface{}) {
 	var log = fmt.Sprintln("[Info]", time.Now().Format(timeFormat), a)
-	if protocol.AppScreenMode {
+	if ConsoleMode {
 		os.Stderr.WriteString(log)
 	}
 	logFile.WriteString(log)
 }
 
-// Warn show log in standard console if requested by protocol.AppScreenMode const & append log to buffer to save them later.
+// Warn show log in standard console if requested by ConsoleMode const & append log to buffer to save them later.
 func Warn(a ...interface{}) {
 	var log = fmt.Sprintln("[Warn]", time.Now().Format(timeFormat), a)
-	if protocol.AppScreenMode {
+	if ConsoleMode {
 		os.Stderr.WriteString(log)
 	}
 	logFile.WriteString(log)
 }
 
-// Panic show log in standard console if requested by protocol.AppScreenMode const & append log to buffer to save them later and throw panic message.
+// Panic show log in standard console if requested by ConsoleMode const & append log to buffer to save them later and throw panic message.
 func Panic(a ...interface{}) {
 	var log = fmt.Sprintln("[Panic]", time.Now().Format(timeFormat), a)
-	if protocol.AppScreenMode {
+	if ConsoleMode {
 		os.Stderr.WriteString(log)
 	}
 	logFile.WriteString(log)
 	panic("Due to important log, panic situation occur")
 }
 
-// Fatal show log in standard console if requested by protocol.AppScreenMode const & append log to buffer to save them later and exit app.
+// Fatal show log in standard console if requested by ConsoleMode const & append log to buffer to save them later and exit app.
 // Simple use as protocol.App.LogFatal(function()) and not check return error from function
 func Fatal(a ...interface{}) {
 	if a == nil {
 		return
 	}
 	var log = fmt.Sprintln("[Fatal]", time.Now().Format(timeFormat), a)
-	if protocol.AppScreenMode {
+	if ConsoleMode {
 		os.Stderr.WriteString(log)
 	}
 	logFile.WriteString(log)
