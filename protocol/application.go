@@ -2,19 +2,35 @@
 
 package protocol
 
+// Application immutable runtime settings
+const (
+	// AppLanguage store global language to use by any locale text selector.
+	AppLanguage = LanguageEnglish
+
+	// AppDevMode use to save more log when enabled and disabled||enabled some rules.
+	AppDevMode = true
+	// AppDebugMode use to save more log when enabled.
+	AppDebugMode = true
+	// AppDeepDebugMode use to save most details log when enabled like RAW req&&res in any protocol like HTTP, sRPC, ...
+	AppDeepDebugMode = true
+)
+
 // App is default global protocol.Application
 // You must assign to it by any object implement protocol.Application on your main.go file
 // Suggestion: protocol.App = &achaemenid.App
 var App Application
 
-// Application is the interface that must implement by any Application!
+// Application is the interface that must implement by any Application.
 type Application interface {
 	SoftwareStatus() SoftwareStatus
 	Status() ApplicationState
-	ObjectDirectory() ObjectDirectory // Distributed object storage
-	FileDirectory() FileDirectory     // Distributed file storage
+	// Listen to the app state changes. Can return the channel instead of get as arg, but a channel listener can lost very fast app state changing.
+	// This is because when the first goroutine blocks the channel all other goroutines must wait in line. When the channel is unblocked,
+	// the state has already been received and removed from the channel so the next goroutine in line gets the next state value.
+	NotifyState(notifyBy chan ApplicationState)
 	Shutdown()
 
+	ApplicationStorage
 	Logger
 	ApplicationNodes
 	Services
@@ -23,7 +39,20 @@ type Application interface {
 	NetworkApplicationMultiplexer
 }
 
-// ApplicationManifest is the interface that must implement by any Application!
+// ApplicationStorage is the interface that must implement by any Application to provide storage mechanism.
+type ApplicationStorage interface {
+	LocalObjects() StorageObjects      // Local object storage
+	LocalObjectsCache() StorageObjects // Local object storage. 
+	LocalFiles() FileDirectory         // Local file storage
+	LocalRecords() StorageRecords      // Local records storage
+	LocalRecordsCache() StorageRecords // Local cached records storage. Keep them on volatile memories and just save very common on non-volatile storages.
+
+	Objects() StorageObjects // Distributed objects storage
+	Files() FileDirectory    // Distributed files storage
+	Records() StorageRecords // Distributed records storage
+}
+
+// ApplicationManifest is the interface that must implement by any Application.
 type ApplicationManifest interface {
 	DomainName() string
 	Email() string
