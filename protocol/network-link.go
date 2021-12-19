@@ -22,6 +22,8 @@ const (
 /*
 **********************************************************************************
 Link - (OSI Layer 2: Data Link)
+
+It can use to network hardware devices in a computers or connect two or more computers.
 **********************************************************************************
 */
 
@@ -31,8 +33,8 @@ type NetworkLinkMultiplexer interface {
 	Send(frame []byte) (err Error)
 	Receive(frame []byte)
 
-	RegisterTransportHandler(osMux NetworkTransportOSMultiplexer)
-	UnRegisterTransportHandler(osMux NetworkTransportOSMultiplexer)
+	RegisterTransportHandler(transMux NetworkTransportMultiplexer)
+	UnRegisterTransportHandler(transMux NetworkTransportMultiplexer)
 
 	Shutdown()
 }

@@ -3,9 +3,9 @@
 package protocol
 
 type GUIHistory interface {
-	ActiveState() GUIPageState
-	PreviousState() GUIPageState
-	FollowingState() GUIPageState
+	ActivePageState() GUIPageState
+	PreviousPageState() GUIPageState
+	FollowingPageState() GUIPageState
 
 	// Find states by PageID, Title, ...
 }

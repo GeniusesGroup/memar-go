@@ -14,12 +14,14 @@ type Index struct {
 type IndexType uint8
 
 const (
-	IndexTypeList IndexType = iota
-	IndexTypeHash
-	IndexTypeUniqueHash
-	IndexTypeBTree
-	IndexTypeUniqueBTree
-	IndexTypeText
-	IndexTypeSpatial
+	IndexType_Unset IndexType = iota
+	IndexType_List
+	IndexType_Hash_OneToOne   // unique key to unique value
+	IndexType_Hash_OneToMany  // unique key to multi value
+	IndexType_BTree_OneToOne  // unique key to unique value
+	IndexType_BTree_OneToMany // unique key to multi value
+	IndexType_Text
+	IndexType_Spatial // maps, ...
+	IndexType_Vector  // N-dimensional space use in facial recognition (min euclidean-distance),	https://en.wikipedia.org/wiki/Locality-sensitive_hashing
 	// ...
 )

@@ -5,30 +5,26 @@ package protocol
 type Connections interface {
 	GuestConnectionCount() uint64
 
-	GetConnectionByID(connID [32]byte) (conn Connection)
 	GetConnectionByPeerAddr(addr [16]byte) (conn Connection)
 	// A connection can use just by single app node, so user can't use same connection to connect other node before close connection on usage node.
-	GetConnectionByUserIDThingID(userID, thingID [32]byte) (conn Connection)
-	GetConnectionsByUserID(userID [32]byte) (conns []Connection)
+	GetConnectionByUserIDDelegateUserID(userID, delegateUserID [16]byte) (conn Connection)
+	GetConnectionsByUserID(userID [16]byte) (conns []Connection)
 	GetConnectionByDomain(domain string) (conn Connection)
 	RegisterConnection(conn Connection)
 }
 
-// Connection or App2AppConnection
+// Connection or App2AppConnection indicate how connection create and save in time series data.
+// Each user pair with delegate-user has a chain that primary key is UserID+DelegateUserID
 type Connection interface {
 	/* Connection data */
-	ID() [32]byte
 	MTU() int
 
 	/* Peer data */
 	Addr() [16]byte
 	AddrType() NetworkLinkNextHeaderID
-	ThingID() [32]byte
 	DomainName() string // if exist
-	UserID() [32]byte
-	UserType() UserType
-	DelegateUserID() [32]byte
-	DelegateUserType() UserType
+	UserID() UserID
+	DelegateUserID() UserID // Persons can delegate to things(as a user type) in old devices that need to use protocols like HTTP, ...
 
 	/* Security data */
 	Cipher() Cipher

@@ -11,11 +11,9 @@ var OS OperatingSystem
 type OperatingSystem interface {
 	AppManifest() ApplicationManifest
 
-	RegisterNetworkTransportMultiplexer(tMux NetworkTransportAppMultiplexer)
+	RegisterNetworkTransportMultiplexer(tMux NetworkTransportMultiplexer)
 
-	ObjectDirectory() ObjectDirectory      // Local object storage
-	CacheObjectDirectory() ObjectDirectory // Local object storage
-	FileDirectory() FileDirectory          // Local file storage
+	Storage() StorageBlock
 
 	MediaTypes
 	CompressTypes

@@ -8,20 +8,12 @@ Transport (OSI Layer 3-6: Network to Presentation)
 **********************************************************************************
 */
 
-// NetworkTransportOSMultiplexer indicate a transport packet multiplexer methods must implemented by any transport connection in OS layer!
-type NetworkTransportOSMultiplexer interface {
+// NetworkTransportMultiplexer indicate a transport packet multiplexer.
+// OS and APP part must impelement in dedicate structures.
+type NetworkTransportMultiplexer interface {
 	HeaderID() (headerID NetworkLinkNextHeaderID)
 	Receive(conn NetworkLinkConnection, packet []byte)
-
-	RegisterAppMultiplexer(appMux NetworkTransportAppMultiplexer)
-	UnRegisterAppMultiplexer(appMux NetworkTransportAppMultiplexer)
+	Send(packet []byte) (err Error) // to send data use Send() that exist in stream of each connection
 
 	Shutdown()
-}
-
-// NetworkTransportAppMultiplexer indicate a transport packet multiplexer methods must implemented by any transport multiplexer in app layer!
-type NetworkTransportAppMultiplexer interface {
-	HeaderID() (id NetworkLinkNextHeaderID)
-	Receive(conn NetworkLinkConnection, packet []byte)
-	// Send method exist in stream of each connection
 }
