@@ -3,14 +3,15 @@
 package protocol
 
 type Connections interface {
-	GuestConnectionCount() uint64
-
-	GetConnectionByPeerAddr(addr [16]byte) (conn Connection)
+	GetConnectionByPeerAddr(addr [16]byte) (conn Connection, err Error)
 	// A connection can use just by single app node, so user can't use same connection to connect other node before close connection on usage node.
-	GetConnectionByUserIDDelegateUserID(userID, delegateUserID [16]byte) (conn Connection)
-	GetConnectionsByUserID(userID [16]byte) (conns []Connection)
-	GetConnectionByDomain(domain string) (conn Connection)
-	RegisterConnection(conn Connection)
+	GetConnectionByUserIDDelegateUserID(userID, delegateUserID [16]byte) (conn Connection, err Error)
+	GetConnectionsByUserID(userID [16]byte) (conns []Connection, err Error)
+	GetConnectionByDomain(domain string) (conn Connection, err Error)
+
+	RegisterConnection(conn Connection, err Error)
+	CloseConnection(conn Connection, err Error)
+	RevokeConnection(conn Connection, err Error)
 }
 
 // Connection or App2AppConnection indicate how connection create and save in time series data.
@@ -18,6 +19,9 @@ type Connections interface {
 type Connection interface {
 	/* Connection data */
 	MTU() int
+	Status() ConnectionState     // return last connection state
+	State() chan ConnectionState // return state channel to listen to new connection state. for more than one listener use channel hub(repeater)
+	Weight() ConnectionWeight
 
 	/* Peer data */
 	Addr() [16]byte
