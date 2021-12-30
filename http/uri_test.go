@@ -31,17 +31,17 @@ var uriTests = []uriTest{
 		wantURIEnd: 1,
 	}, {
 		name:    "origin-form1",
-		raw:     "/apis?2586547852#api ",
-		encoded: "/apis?2586547852",
+		raw:     "/m?2586547852#api ",
+		encoded: "/m?2586547852",
 		uri: URI{
-			uri:       "/apis?2586547852#api",
+			uri:       "/m?2586547852#api",
 			scheme:    "",
 			authority: "",
-			path:      "/apis",
+			path:      "/m",
 			query:     "2586547852",
 			fragment:  "api",
 		},
-		wantURIEnd: 20,
+		wantURIEnd: 17,
 	}, {
 		name:    "origin-form2",
 		raw:     "/action/do/show/411?2586547852#Test ",
@@ -96,17 +96,17 @@ var uriTests = []uriTest{
 		wantURIEnd: 45,
 	}, {
 		name:    "absolute-URI4",
-		raw:     "www.sabz.city/apis?2586547852#api ",
-		encoded: "www.sabz.city/apis?2586547852",
+		raw:     "www.sabz.city/m?2586547852#api ",
+		encoded: "www.sabz.city/m?2586547852",
 		uri: URI{
-			uri:       "www.sabz.city/apis?2586547852#api",
+			uri:       "www.sabz.city/m?2586547852#api",
 			scheme:    "",
 			authority: "www.sabz.city",
-			path:      "/apis",
+			path:      "/m",
 			query:     "2586547852",
 			fragment:  "api",
 		},
-		wantURIEnd: 33,
+		wantURIEnd: 30,
 	}, {
 		name:    "ftp1",
 		raw:     "ftp://webmaster@www.sabz.city/ ",
@@ -139,7 +139,7 @@ var uriTests = []uriTest{
 func TestURI_Unmarshal(t *testing.T) {
 	for _, tt := range uriTests {
 		t.Run(tt.name, func(t *testing.T) {
-			var gotURIEnd = tt.out.Unmarshal(tt.raw)
+			var gotURIEnd = tt.out.unmarshalFrom(tt.raw)
 			if gotURIEnd != tt.wantURIEnd {
 				t.Errorf("URI.Unmarshal() = %v, want %v", gotURIEnd, tt.wantURIEnd)
 			}

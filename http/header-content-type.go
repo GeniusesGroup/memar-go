@@ -3,6 +3,7 @@
 package http
 
 // ContentType store
+// https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Type
 type ContentType struct {
 	Type     mimeType
 	SubType  mimeSubType
@@ -10,8 +11,8 @@ type ContentType struct {
 	Boundary string
 }
 
-// GetContentType read all value about content in header
-func (h *header) GetContentType() (c ContentType) {
+// ContentType read all value about content in header
+func (h *header) ContentType() (c ContentType) {
 	var contentType = h.Get(HeaderKeyContentType)
 	return getContentType(contentType)
 }
@@ -59,16 +60,16 @@ type mimeType uint16
 
 // Standard HTTP content type
 const (
-	ContentTypeMimeTypeUnset       mimeType = 0
-	ContentTypeMimeTypeText                 = 1
-	ContentTypeMimeTypeApplication          = 2
+	ContentTypeMimeTypeUnset mimeType = iota
+	ContentTypeMimeTypeText
+	ContentTypeMimeTypeApplication
 )
 
 type mimeSubType uint16
 
 // Standard HTTP content type
 const (
-	ContentTypeMimeSubTypeUnset mimeSubType = 0
-	ContentTypeMimeSubTypeHTML              = 1
-	ContentTypeMimeSubTypeJSON              = 2
+	ContentTypeMimeSubTypeUnset mimeSubType = iota
+	ContentTypeMimeSubTypeHTML
+	ContentTypeMimeSubTypeJSON
 )

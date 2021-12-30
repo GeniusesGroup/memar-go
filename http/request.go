@@ -44,20 +44,15 @@ func (r *Request) MediaType() protocol.MediaType       { return mediatype.HTTPRe
 func (r *Request) CompressType() protocol.CompressType { return nil }
 func (r *Request) Len() (ln int) {
 	ln = r.LenWithoutBody()
-	if r.body.Codec != nil {
-		ln += r.body.Len()
-	}
+	ln += r.body.Len()
 	return
 }
 
-func (r *Request) Decode(reader io.Reader) (err protocol.Error) {
+func (r *Request) Decode(reader protocol.Reader) (err protocol.Error) {
 	// Make a buffer to hold incoming data.
 	var buf = make([]byte, MaxHTTPHeaderSize)
-	var headerReadLength, bodyReadLength int
-	var goErr error
-
 	// Read the incoming connection into the buffer.
-	headerReadLength, goErr = reader.Read(buf)
+	var headerReadLength, goErr = reader.Read(buf)
 	if goErr != nil || headerReadLength == 0 {
 		// err =
 		return
@@ -69,22 +64,19 @@ func (r *Request) Decode(reader io.Reader) (err protocol.Error) {
 		return
 	}
 
-	var contentLength = r.header.GetContentLength()
-	// TODO::: is below logic check include all situations??
-	if contentLength > 0 && r.body.Len() == 0 {
-		var bodyRaw = make([]byte, contentLength)
-		bodyReadLength, goErr = reader.Read(bodyRaw)
-		if bodyReadLength != int(contentLength) {
-			// err =
-		}
-		r.body.setIncomeBody(bodyRaw, &r.header)
+	_, goErr = r.body.readFrom(reader, &r.header)
+	if goErr != nil {
+		// err =
 	}
 	return
 }
 
 // Encode write request to given buffer writer.
-func (r *Request) Encode(writer io.Writer) (err error) {
-	_, err = r.WriteTo(writer)
+func (r *Request) Encode(writer protocol.Writer) (err protocol.Error) {
+	var _, goErr = r.WriteTo(writer)
+	if goErr != nil {
+		// err =
+	}
 	return
 }
 
@@ -114,6 +106,22 @@ func (r *Request) MarshalTo(httpPacket []byte) []byte {
 // Unmarshal parses and decodes data of given httpPacket to r *Request.
 // In some bad packet may occur panic, handle panic by recover otherwise app will crash and exit!
 func (r *Request) Unmarshal(httpPacket []byte) (err protocol.Error) {
+	var maybeBody []byte
+	maybeBody, err = r.UnmarshalFrom(httpPacket)
+	if err != nil {
+		return
+	}
+
+	// Just if body marshaled with first line and headers we need to do any action here
+	if len(maybeBody) > 0 {
+		r.body.setIncomeBody(maybeBody, &r.header)
+	}
+	return
+}
+
+// Unmarshal parses and decodes data of given httpPacket to r *Request.
+// In some bad packet may occur panic, handle panic by recover otherwise app will crash and exit!
+func (r *Request) UnmarshalFrom(httpPacket []byte) (maybeBody []byte, err protocol.Error) {
 	// By use unsafe pointer here all strings assign in Request will just point to httpPacket slice
 	// and no need to alloc lot of new memory locations and copy request line and headers keys & values!
 	var s = convert.UnsafeByteSliceToString(httpPacket)
@@ -122,17 +130,17 @@ func (r *Request) Unmarshal(httpPacket []byte) (err protocol.Error) {
 	var index int
 	index = strings.IndexByte(s, SP)
 	if index == -1 {
-		return ErrParseMethod
+		return httpPacket[:], ErrParseMethod
 	}
 	r.method = s[:index]
 	s = s[index+1:]
 
-	index = r.uri.Unmarshal(s)
+	index = r.uri.unmarshalFrom(s)
 	s = s[index+1:]
 
 	index = strings.IndexByte(s, '\r')
 	if index == -1 {
-		return ErrParseVersion
+		return httpPacket[index:], ErrParseVersion
 	}
 	r.version = s[:index]
 	s = s[index+2:] // +2 due to have "\r\n"
@@ -148,35 +156,7 @@ func (r *Request) Unmarshal(httpPacket []byte) (err protocol.Error) {
 	// By https://tools.ietf.org/html/rfc2616#section-4 very simple http packet must end with CRLF even packet without header or body!
 	// So it can be occur panic if very simple request end without any CRLF
 	index += 2 // +2 due to have "\r\n" after header end
-
-	r.body.setIncomeBody(httpPacket[index:], &r.header)
-	return
-}
-
-// MarshalWithoutBody enecodes r *Request data and return httpPacket without body part!
-func (r *Request) MarshalWithoutBody() (httpPacket []byte) {
-	httpPacket = make([]byte, 0, r.LenWithoutBody())
-
-	httpPacket = append(httpPacket, r.method...)
-	httpPacket = append(httpPacket, SP)
-	httpPacket = r.uri.MarshalTo(httpPacket)
-	httpPacket = append(httpPacket, SP)
-	httpPacket = append(httpPacket, r.version...)
-	httpPacket = append(httpPacket, CRLF...)
-
-	httpPacket = r.header.MarshalTo(httpPacket)
-	httpPacket = append(httpPacket, CRLF...)
-	return
-}
-
-// LenWithoutBody return length of request without body length
-func (r *Request) LenWithoutBody() (ln int) {
-	ln = 6 // 6=1+1+2+2=len(SP)+len(SP)+len(CRLF)+len(CRLF)
-	ln += len(r.method)
-	ln += r.uri.Len()
-	ln += len(r.version)
-	ln += r.header.Len()
-	return
+	return httpPacket[index:], nil
 }
 
 /*
@@ -188,7 +168,7 @@ func (r *Request) LenWithoutBody() (ln int) {
 func (r *Request) ReadFrom(reader io.Reader) (n int64, goErr error) {
 	// Make a buffer to hold incoming data.
 	var buf = make([]byte, MaxHTTPHeaderSize)
-	var headerReadLength, bodyReadLength int
+	var headerReadLength int
 	var err protocol.Error
 
 	// Read the incoming connection into the buffer.
@@ -198,36 +178,79 @@ func (r *Request) ReadFrom(reader io.Reader) (n int64, goErr error) {
 	}
 
 	buf = buf[:headerReadLength]
-	err = r.Unmarshal(buf)
+	buf, err = r.UnmarshalFrom(buf)
 	if err != nil {
 		return int64(headerReadLength), err
 	}
-
-	var contentLength = r.header.GetContentLength()
-	// TODO::: is below logic check include all situations??
-	if contentLength > 0 && r.body.Len() == 0 {
-		var bodyRaw = make([]byte, contentLength)
-		bodyReadLength, goErr = reader.Read(bodyRaw)
-		if bodyReadLength != int(contentLength) {
-			// goErr =
-		}
-		r.body.setIncomeBody(bodyRaw, &r.header)
+	// check if body sent with header in one buffer
+	if len(buf) > 0 {
+		r.body.setIncomeBody(buf, &r.header)
+	} else {
+		n, goErr = r.body.readFrom(reader, &r.header)
+		n += int64(headerReadLength)
 	}
-
-	return int64(headerReadLength + bodyReadLength), goErr
+	return
 }
 
 // WriteTo enecodes r *Request data and write it to given io.Writer!
 // Declare to respect io.WriterTo interface!
 func (r *Request) WriteTo(writer io.Writer) (n int64, err error) {
-	var reqMarshaled = r.MarshalWithoutBody()
-	var headerWriteLength int
+	var lenWithoutBody = r.LenWithoutBody()
+	var bodyLen = r.body.Len()
+	var wholeLen = lenWithoutBody + bodyLen
+	// Check if whole request has fewer length than MaxHTTPHeaderSize and Decide to send header and body separately
+	if wholeLen > MaxHTTPHeaderSize {
+		var httpPacket = make([]byte, 0, lenWithoutBody)
+		httpPacket = r.MarshalToWithoutBody(httpPacket)
 
-	headerWriteLength, err = writer.Write(reqMarshaled)
-	if err == nil {
-		err = r.body.Encode(writer)
+		var headerWriteLength int
+		headerWriteLength, err = writer.Write(httpPacket)
+		if err == nil && r.body.Codec != nil {
+			err = r.body.Encode(writer)
+		}
+
+		n = int64(bodyLen + headerWriteLength)
+	} else {
+		var httpPacket = make([]byte, 0, wholeLen)
+		httpPacket = r.MarshalTo(httpPacket)
+		var packetWriteLength int
+		packetWriteLength, err = writer.Write(httpPacket)
+		n = int64(packetWriteLength)
 	}
+	return
+}
 
-	n = int64(r.body.Len() + headerWriteLength)
+/*
+********** Other methods **********
+ */
+
+// MarshalWithoutBody enecodes r *Request data and return httpPacket without body part!
+func (r *Request) MarshalWithoutBody() (httpPacket []byte) {
+	httpPacket = make([]byte, 0, r.LenWithoutBody())
+	httpPacket = r.MarshalToWithoutBody(httpPacket)
+	return
+}
+
+// MarshalWithoutBody enecodes r *Request data and return httpPacket without body part!
+func (r *Request) MarshalToWithoutBody(httpPacket []byte) []byte {
+	httpPacket = append(httpPacket, r.method...)
+	httpPacket = append(httpPacket, SP)
+	httpPacket = r.uri.MarshalTo(httpPacket)
+	httpPacket = append(httpPacket, SP)
+	httpPacket = append(httpPacket, r.version...)
+	httpPacket = append(httpPacket, CRLF...)
+
+	httpPacket = r.header.MarshalTo(httpPacket)
+	httpPacket = append(httpPacket, CRLF...)
+	return httpPacket
+}
+
+// LenWithoutBody return length of request without body length
+func (r *Request) LenWithoutBody() (ln int) {
+	ln = 6 // 6=1+1+2+2=len(SP)+len(SP)+len(CRLF)+len(CRLF)
+	ln += len(r.method)
+	ln += r.uri.Len()
+	ln += len(r.version)
+	ln += r.header.Len()
 	return
 }

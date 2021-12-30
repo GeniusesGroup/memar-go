@@ -7,6 +7,7 @@ import (
 	"strings"
 )
 
+// https://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.1
 type mime struct {
 	media   string
 	quality float64
@@ -24,8 +25,8 @@ func insertMime(l []mime, e mime) []mime {
 	return append(l, e)
 }
 
-// sortedMimes returns a list of mime sorted (desc) by its specified quality.
-func sortedMimes(accept string) (sorted []mime) {
+// sortMimes returns a list of mime sorted (desc) by its specified quality.
+func sortMimes(accept string) (sorted []mime) {
 	for _, each := range strings.Split(accept, ",") {
 		typeAndQuality := strings.Split(strings.Trim(each, " "), ";")
 		if len(typeAndQuality) == 1 {

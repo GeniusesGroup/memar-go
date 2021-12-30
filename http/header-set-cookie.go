@@ -12,6 +12,32 @@ import (
 	"../protocol"
 )
 
+// GetSetCookies parses and returns the Set-Cookie headers.
+// By related RFC must exist just one Set-Cookie in each line of header.
+// https://tools.ietf.org/html/rfc6265#section-4.1.1
+func (h *header) SetCookies() (setCookies []SetCookie) {
+	var scs = h.Gets(HeaderKeySetCookie)
+	var setCookieCount = len(scs)
+	if setCookieCount == 0 {
+		return
+	}
+	setCookies = make([]SetCookie, setCookieCount)
+	for i := 0; i < setCookieCount; i++ {
+		setCookies[i].Unmarshal(scs[i])
+	}
+	return
+}
+
+// SetSetCookies parses and set given Set-Cookies to header.
+// By related RFC must exist just one Set-Cookie in each line of header.
+// https://tools.ietf.org/html/rfc6265#section-4.1.1
+func (h *header) MarshalSetSetCookies(setCookies []SetCookie) {
+	var ln = len(setCookies)
+	for i := 0; i < ln; i++ {
+		h.Add(HeaderKeySetCookie, setCookies[i].Marshal())
+	}
+}
+
 /*
 SetCookie structure and methods implement by https://tools.ietf.org/html/rfc6265#section-4.1
 
@@ -38,8 +64,17 @@ type SetCookie struct {
 // CheckAndSanitize use to check if the set-cookie is in standard by related RFCs.
 func (sc *SetCookie) CheckAndSanitize() (err protocol.Error) {
 	sc.Name, err = sanitizeCookieName(sc.Name)
+	if err != nil {
+		return
+	}
 	sc.Value, err = sanitizeCookieValue(sc.Value)
+	if err != nil {
+		return
+	}
 	sc.Path, err = sanitizeCookiePath(sc.Path)
+	if err != nil {
+		return
+	}
 	sc.Domain, err = sanitizeCookieDomain(sc.Domain)
 	return
 }
@@ -135,6 +170,7 @@ func (sc *SetCookie) SetSameSite(sameSite SetCookieSameSite) {
 
 // Marshal returns the serialization of the set-cookie.
 func (sc *SetCookie) Marshal() string {
+	// TODO::: make buffer by needed size.
 	var b strings.Builder
 
 	b.WriteString(sc.Name)

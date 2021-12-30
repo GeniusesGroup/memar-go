@@ -9,6 +9,50 @@ import (
 	"../protocol"
 )
 
+// Cookies parses and returns the Cookie headers.
+// By related RFC we just support one Cookie in header.
+// https://tools.ietf.org/html/rfc6265#section-5.4
+func (h *header) Cookies() (cookies []Cookie) {
+	var cookie = h.Get(HeaderKeyCookie)
+	if len(cookie) == 0 {
+		return
+	}
+	var index int
+	cookies = make([]Cookie, 0, 8)
+	var c Cookie
+	for {
+		index = strings.IndexByte(cookie, ';')
+		if index == -1 {
+			c.Unmarshal(cookie)
+			cookies = append(cookies, c)
+			return
+		}
+		c.Unmarshal(cookie[:index])
+		cookies = append(cookies, c)
+
+		cookie = cookie[index+2:]
+	}
+}
+
+// MarshalSetCookies parses and set them to Cookie header.
+func (h *header) MarshalSetCookies(cookies []Cookie) {
+	// TODO::: make buffer by needed size.
+	var b strings.Builder
+	var ln = len(cookies)
+	var i int
+	for ; ; i++ {
+		b.WriteString(cookies[i].Name)
+		b.WriteByte('=')
+		b.WriteString(cookies[i].Value)
+		if i < ln {
+			b.WriteString(SemiColonSpace)
+		} else {
+			break
+		}
+	}
+	h.Set(HeaderKeyCookie, b.String())
+}
+
 // Cookie represents an HTTP cookie as sent in the Cookie header of an HTTP request.
 // implement by https://tools.ietf.org/html/rfc6265#section-4.2
 type Cookie struct {

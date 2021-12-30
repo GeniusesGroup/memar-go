@@ -33,7 +33,7 @@ const (
 	LF             byte   = '\n' // <US-ASCII LF, linefeed (10)>
 	Colon          byte   = ':'
 	NumberSign     byte   = '#'
-	Coma           byte   = ','
+	Comma          byte   = ','
 	Question       byte   = '?'
 	Slash          byte   = '/'
 	Asterisk       byte   = '*'
@@ -65,6 +65,7 @@ const (
 )
 
 // Standard HTTP header keys
+// https://www.iana.org/assignments/message-headers/message-headers.xhtml
 // https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers
 const (
 	// Request context
@@ -75,8 +76,8 @@ const (
 	HeaderKeyUserAgent      = "User-Agent"
 
 	// Response context
-	HeaderKeyAllow  = "Allow"
-	HeaderKeyServer = "Server"
+	HeaderKeyAllow   = "Allow"
+	HeaderKeyServer  = "Server"
 	HeaderKeyErrorID = "Error-ID"
 
 	// Authentication
@@ -142,6 +143,7 @@ const (
 	HeaderKeyContentEncoding    = "Content-Encoding"    // res
 	HeaderKeyContentLanguage    = "Content-Language"    // res
 	HeaderKeyContentLocation    = "Content-Location"    // res
+	HeaderKeyTransferEncoding   = "Transfer-Encoding"   // res
 
 	// Not ordered
 	HeaderKeyCookie                  = "Cookie"
@@ -161,7 +163,6 @@ const (
 	HeaderKeyRetryAfter              = "Retry-After"               // res
 	HeaderKeyStrictTransportSecurity = "Strict-Transport-Security" // res
 	HeaderKeyTrailer                 = "Trailer"                   // res
-	HeaderKeyTransferEncoding        = "Transfer-Encoding"         // res
 	HeaderKeyTk                      = "Tk"                        // res
 	HeaderKeyXFrameOptions           = "X-Frame-Options"           // res
 	HeaderKeyNonAuthoritativeReason  = "Non-Authoritative-Reason"  // res
@@ -173,6 +174,12 @@ const (
 	// Connection management
 	HeaderValueKeepAlive = "Keep-Alive"
 	HeaderValueClose     = "Close"
+
+	// Message body information
+	HeaderValueChunked  = "chunked"
+	HeaderValueCompress = "compress"
+	HeaderValueDeflate  = "deflate"
+	HeaderValueGZIP     = "gzip"
 )
 
 // HTTP Status codes

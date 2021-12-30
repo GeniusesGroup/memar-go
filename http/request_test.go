@@ -6,40 +6,45 @@ import (
 	"bufio"
 	"bytes"
 	"fmt"
+	"io"
 	"net/http"
 	"reflect"
 	"runtime"
 	"testing"
 
+	"../compress"
+
 	"github.com/valyala/fasthttp"
 )
 
 /*
+note1: This benchmark is not apple to apple because libgo force RFCs rules in methods not in codec phase.
+note2: This benchmark is not apple to apple because both net/http and fasthttp force to marshal||unmarshal by pass *bufio.Reader||*bufio.Writer that not forced by libgo
+
 ------------------------------------------requestTests[0].packet-------------------------------------------
-BenchmarkNetHttpRequestDecode-8    	  387325	      2682 ns/op	    4721 B/op	       7 allocs/op
-BenchmarkLibgoRequestDecode-8      	 1000000	      1031 ns/op	    1712 B/op	       3 allocs/op
-BenchmarkFastHTTPRequestDecode-8   	  631910	      1872 ns/op	    4272 B/op	       7 allocs/op
+BenchmarkNetHttpRequestDecode-8		387325	      2682 ns/op	    4721 B/op	       7 allocs/op
+BenchmarkLibgoRequestUnmarshal-8	1000000	      1031 ns/op	    1712 B/op	       3 allocs/op
+BenchmarkFastHTTPRequestDecode-8	631910	      1872 ns/op	    4272 B/op	       7 allocs/op
 
-BenchmarkNetHttpRequestEncode-8    	  600348	      1979 ns/op	    1056 B/op	      10 allocs/op
-BenchmarkLibgoRequestEncode-8      	12630421	       100 ns/op	      32 B/op	       1 allocs/op
-BenchmarkFastHTTPRequestEncode-8   	  822142	      1420 ns/op	    4208 B/op	       3 allocs/op
+BenchmarkNetHttpRequestEncode-8		600348	      1979 ns/op	    1056 B/op			10 allocs/op
+BenchmarkLibgoRequestMarshal-8		12630421	  100 ns/op			32 B/op				1 allocs/op
+BenchmarkFastHTTPRequestEncode-8	822142	      1420 ns/op	    4208 B/op			3 allocs/op
 
-note1: This benchmark is not apple to apple because libgo force RFCs rules in methods not in encode||decode phase!
-note2: Libgo decoder performance better by: 2.6X from standard GO, 1.8X from FastHTTP
-note3: Libgo encoder performance better by: 19.8X from standard GO, 14.2X from FastHTTP
+note1: Libgo decoder performance better by: 2.6X from standard GO, 1.8X from FastHTTP
+note2: Libgo encoder performance better by: 19.8X from standard GO, 14.2X from FastHTTP
 
 ------------------------------------------requestTests[1].packet-------------------------------------------
-BenchmarkNetHttpRequestDecode-8    	  150092	      7604 ns/op	    5865 B/op	      22 allocs/op
-BenchmarkLibgoRequestDecode-8      	  551079	      2153 ns/op	    1712 B/op	       3 allocs/op
-BenchmarkFastHTTPRequestDecode-8   	  176703	      6903 ns/op	    6289 B/op	      32 allocs/op
+BenchmarkNetHttpRequestDecode-8		150092	      7604 ns/op	    5865 B/op	      22 allocs/op
+BenchmarkLibgoRequestUnmarshal-8	551079	      2153 ns/op	    1712 B/op	       3 allocs/op
+BenchmarkFastHTTPRequestDecode-8	193660	      6082 ns/op	    5713 B/op	      31 allocs/op
 
-BenchmarkNetHttpRequestEncode-8    	  226796	      6023 ns/op	    2069 B/op	      15 allocs/op
-BenchmarkLibgoRequestEncode-8      	 1271994	       946 ns/op	     352 B/op	       1 allocs/op
-BenchmarkFastHTTPRequestEncode-8   	  693639	      1718 ns/op	    4208 B/op	       3 allocs/op
+BenchmarkNetHttpRequestEncode-8		250158	      4937 ns/op	    2062 B/op	      15 allocs/op
+BenchmarkLibgoRequestMarshal-8		1287526	       939 ns/op	     352 B/op	       1 allocs/op
+BenchmarkLibgoRequestWriteTo-8		1272480	       953 ns/op	     352 B/op	       1 allocs/op
+BenchmarkFastHTTPRequestEncode-8	693639	      1718 ns/op	    4208 B/op	       3 allocs/op
 
-note1: This benchmark is not apple to apple because libgo force RFCs rules in methods not in encode||decode phase!
-note2: Libgo decoder performance better by: 3.5X from standard GO, 3.2X from FastHTTP
-note3: Libgo encoder performance better by: 6.4X from standard GO, 1.8X from FastHTTP
+note1: Libgo decoder performance better by: 3.5X from standard GO, 2.8X from FastHTTP
+note2: Libgo encoder performance better by: 5.2X from standard GO, 1.8X from FastHTTP
 */
 
 /*
@@ -53,28 +58,33 @@ type RequestTest struct {
 	out    *Request // parsed one
 }
 
+var test1Body = compress.Raw([]byte{})
+var test2Body = compress.Raw([]byte(`{"Omid":"OMID"}`))
+
 var requestTests = []RequestTest{
 	{
 		name:   "simple1",
-		packet: []byte("GET /apis HTTP/1.1\r\n" + "\r\n"),
+		packet: []byte("GET /m HTTP/1.1\r\n" + "\r\n"),
 		req: Request{
-			Method: "GET",
-			URI: URI{
-				Raw:       "/apis",
-				Scheme:    "",
-				Authority: "",
-				Path:      "/apis",
-				Query:     "",
-				Fragment:  "",
+			method: "GET",
+			uri: URI{
+				uri:       "/m",
+				scheme:    "",
+				authority: "",
+				path:      "/m",
+				query:     "",
+				fragment:  "",
 			},
-			Version: "HTTP/1.1",
-			Header:  header{},
-			Body:    []byte{},
+			version: "HTTP/1.1",
+			header:  header{},
+			body: body{
+				Codec: &test1Body,
+			},
 		},
-		out: MakeNewRequest(),
+		out: NewRequest(),
 	}, {
 		name: "full1",
-		packet: []byte("POST /apis?2586547852 HTTP/1.1\r\n" +
+		packet: []byte("POST /m?2586547852 HTTP/1.1\r\n" +
 			"Accept: text/html\r\n" +
 			"Accept-Encoding: gzip, deflate\r\n" +
 			"Accept-Language: en,fa;q=0.9\r\n" +
@@ -89,17 +99,17 @@ var requestTests = []RequestTest{
 			"\r\n" +
 			`{"Omid":"OMID"}`),
 		req: Request{
-			Method: "POST",
-			URI: URI{
-				Raw:       "/apis?2586547852",
-				Scheme:    "",
-				Authority: "",
-				Path:      "/apis",
-				Query:     "2586547852",
-				Fragment:  "",
+			method: "POST",
+			uri: URI{
+				uri:       "/m?2586547852",
+				scheme:    "",
+				authority: "",
+				path:      "/m",
+				query:     "2586547852",
+				fragment:  "",
 			},
-			Version: "HTTP/1.1",
-			Header: header{
+			version: "HTTP/1.1",
+			header: header{
 				headers: map[string][]string{
 					"Accept":                    []string{"text/html"},
 					"Accept-Encoding":           []string{"gzip, deflate"},
@@ -114,9 +124,11 @@ var requestTests = []RequestTest{
 					"User-Agent":                []string{"Mozilla"},
 				},
 			},
-			Body: []byte(`{"Omid":"OMID"}`),
+			body: body{
+				Codec: &test2Body,
+			},
 		},
-		out: MakeNewRequest(),
+		out: NewRequest(),
 	},
 }
 
@@ -136,10 +148,10 @@ func BenchmarkNetHttpRequestDecode(b *testing.B) {
 	}
 }
 
-func BenchmarkLibgoRequestDecode(b *testing.B) {
+func BenchmarkLibgoRequestUnmarshal(b *testing.B) {
 	for n := 0; n < b.N; n++ {
-		var r = MakeNewRequest()
-		r.UnMarshal(requestTests[1].packet)
+		var r = NewRequest()
+		r.Unmarshal(requestTests[1].packet)
 	}
 }
 
@@ -159,7 +171,7 @@ func BenchmarkNetHttpRequestEncode(b *testing.B) {
 	var buf = bufio.NewReader(r)
 	unMarshaledRequestNetHTTPTest1, err = http.ReadRequest(buf)
 	if err != nil {
-		b.Errorf("http.Request.UnMarshal() error = %v", err)
+		b.Errorf("http.Request.Unmarshal() error = %v", err)
 	}
 
 	for n := 0; n < b.N; n++ {
@@ -169,9 +181,15 @@ func BenchmarkNetHttpRequestEncode(b *testing.B) {
 	}
 }
 
-func BenchmarkLibgoRequestEncode(b *testing.B) {
+func BenchmarkLibgoRequestMarshal(b *testing.B) {
 	for n := 0; n < b.N; n++ {
 		requestTests[1].req.Marshal()
+	}
+}
+
+func BenchmarkLibgoRequestWriteTo(b *testing.B) {
+	for n := 0; n < b.N; n++ {
+		requestTests[1].req.WriteTo(io.Discard)
 	}
 }
 
@@ -182,7 +200,7 @@ func BenchmarkFastHTTPRequestEncode(b *testing.B) {
 	var fastBuf = bufio.NewReader(br)
 	err = unMarshaledRequestFastHTTPTest1.Read(fastBuf)
 	if err != nil {
-		b.Errorf("fasthttp.Request.UnMarshal() error = %v", err)
+		b.Errorf("fasthttp.Request.Unmarshal() error = %v", err)
 	}
 
 	for n := 0; n < b.N; n++ {
@@ -196,32 +214,32 @@ func BenchmarkFastHTTPRequestEncode(b *testing.B) {
 	Tests
 */
 
-func TestRequest_UnMarshal(t *testing.T) {
+func TestRequest_Unmarshal(t *testing.T) {
 	for _, tt := range requestTests {
 		t.Run(tt.name, func(t *testing.T) {
-			var err = tt.out.UnMarshal(tt.packet)
+			var err = tt.out.Unmarshal(tt.packet)
 			if err != nil {
-				t.Errorf("Request.UnMarshal() error = %v", err)
+				t.Errorf("Request.Unmarshal() error = %v", err)
 			}
-			if tt.out.Method != tt.req.Method {
-				t.Errorf("Request.UnMarshal(%q):\n\tgot  %v\n\twant %v\n", tt.packet, tt.out.Method, tt.req.Method)
+			if tt.out.method != tt.req.method {
+				t.Errorf("Request.Unmarshal(%q):\n\tgot  %v\n\twant %v\n", tt.packet, tt.out.method, tt.req.method)
 			}
-			if !reflect.DeepEqual(tt.out.URI, tt.req.URI) {
-				t.Errorf("Request.UnMarshal(%q):\n\tgot  %v\n\twant %v\n", tt.packet, tt.out.URI, tt.req.URI)
+			if !reflect.DeepEqual(tt.out.uri, tt.req.uri) {
+				t.Errorf("Request.Unmarshal(%q):\n\tgot  %v\n\twant %v\n", tt.packet, tt.out.uri, tt.req.uri)
 			}
-			if tt.out.Version != tt.req.Version {
-				t.Errorf("Request.UnMarshal(%q):\n\tgot  %v\n\twant %v\n", tt.packet, tt.out.Version, tt.req.Version)
+			if tt.out.version != tt.req.version {
+				t.Errorf("Request.Unmarshal(%q):\n\tgot  %v\n\twant %v\n", tt.packet, tt.out.version, tt.req.version)
 			}
-			// if !reflect.DeepEqual(tt.out.Header.headers, tt.req.Header.headers) {
-			// 	t.Errorf("Request.UnMarshal(%q):\n\tgot  %v\n\twant %v\n", tt.packet, tt.out.Header.headers, tt.req.Header.headers)
+			// if !reflect.DeepEqual(tt.out.header.headers, tt.req.header.headers) {
+			// 	t.Errorf("Request.Unmarshal(%q):\n\tgot  %v\n\twant %v\n", tt.packet, tt.out.header.headers, tt.req.header.headers)
 			// }
-			if !bytes.Equal(tt.out.Body, tt.req.Body) {
-				t.Errorf("Request.UnMarshal(%q):\n\tgot  %v\n\twant %v\n", tt.packet, tt.out.Body, tt.req.Body)
+			if !reflect.DeepEqual(tt.out.body, tt.req.body) {
+				t.Errorf("Request.Unmarshal(%q):\n\tgot  %v\n\twant %v\n", tt.packet, tt.out.body, tt.req.body)
 			}
 		})
 	}
 
-	// s := req.Header.GetSetCookies()[0]
+	// s := req.header.GetSetCookies()[0]
 	// err := s.CheckAndSanitize()
 	// fmt.Fprintf(os.Stderr, "%v\n", err)
 	// fmt.Fprintf(os.Stderr, "%v\n", s)
@@ -230,8 +248,7 @@ func TestRequest_UnMarshal(t *testing.T) {
 func TestRequest_Marshal(t *testing.T) {
 	for _, tt := range requestTests {
 		t.Run(tt.name, func(t *testing.T) {
-			var httpPacket []byte
-			httpPacket = tt.req.Marshal()
+			var httpPacket []byte = tt.req.Marshal()
 			if httpPacket == nil {
 				t.Errorf("Request.Marshal() return nil!")
 			}
@@ -267,7 +284,7 @@ func TestFastHTTPRequestEncode(t *testing.T) {
 	var fastBuf = bufio.NewReader(br)
 	err = unMarshaledRequestFastHTTPTest1.Read(fastBuf)
 	if err != nil {
-		t.Errorf("fasthttp.Request.UnMarshal() error = %v", err)
+		t.Errorf("fasthttp.Request.Unmarshal() error = %v", err)
 	}
 
 	var buf bytes.Buffer
