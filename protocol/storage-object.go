@@ -22,10 +22,16 @@ type StorageObjects interface {
 	Read(mediaTypeID uint64, uuid [32]byte, offset, limit uint64) (data []byte, err Error)
 	Save(mediaTypeID uint64, uuid [32]byte, object []byte) (err Error)
 	Write(mediaTypeID uint64, uuid [32]byte, offset uint64, data []byte) (err Error)
+
 	Append(mediaTypeID uint64, uuid [32]byte, data []byte) (err Error)
 	Prepend(mediaTypeID uint64, uuid [32]byte, data []byte) (err Error)
+	Extend(mediaTypeID uint64, uuid [32]byte, length uint64) (err Error)
+
 	// make invisible just by remove from primary index
 	Delete(mediaTypeID uint64, uuid [32]byte) (err Error)
-	// make invisible by remove from primary index & write random data to object location
-	Wipe(mediaTypeID uint64, uuid [32]byte) (err Error)
+	// make invisible by remove from primary index & write zero data to object location
+	Erase(mediaTypeID uint64, uuid [32]byte) (err Error)
+
+	// Multiple changes can be made in one atomic batch
+	// Batch()
 }

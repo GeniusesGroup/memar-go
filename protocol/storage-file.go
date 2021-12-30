@@ -22,7 +22,7 @@ type FileDirectory interface {
 	Copy(uriPath, newURIPath string) (err Error)
 	Move(uriPath, newURIPath string) (err Error)
 	Delete(uriPath string) (err Error) // make invisible just by remove from primary index
-	Wipe(uriPath string) (err Error)   // make invisible by remove from primary index & write random data to all file locations
+	Erase(uriPath string) (err Error)  // make invisible by remove from primary index & write zero data to all file locations
 }
 
 // FileDirectoryMetadata is the interface that must implement by any file and directory!

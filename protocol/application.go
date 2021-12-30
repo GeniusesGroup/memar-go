@@ -30,26 +30,13 @@ type Application interface {
 	NotifyState(notifyBy chan ApplicationState)
 	Shutdown()
 
-	ApplicationStorage
+	Cluster
+	Storages
 	Logger
-	ApplicationNodes
 	Services
 	Errors
 	Connections
 	NetworkApplicationMultiplexer
-}
-
-// ApplicationStorage is the interface that must implement by any Application to provide storage mechanism.
-type ApplicationStorage interface {
-	LocalObjects() StorageObjects      // Local object storage
-	LocalObjectsCache() StorageObjects // Local object storage. 
-	LocalFiles() FileDirectory         // Local file storage
-	LocalRecords() StorageRecords      // Local records storage
-	LocalRecordsCache() StorageRecords // Local cached records storage. Keep them on volatile memories and just save very common on non-volatile storages.
-
-	Objects() StorageObjects // Distributed objects storage
-	Files() FileDirectory    // Distributed files storage
-	Records() StorageRecords // Distributed records storage
 }
 
 // ApplicationManifest is the interface that must implement by any Application.
