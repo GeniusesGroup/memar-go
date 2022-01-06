@@ -12,15 +12,15 @@ import (
 // New returns a new error
 // "urn:giti:{{domain-name}}:error:{{error-name}}"
 func New(urn string) *Error {
-	if urn == "" {
-		protocol.App.LogFatal("Error must have URN to save it in platform errors pools!")
+	if protocol.AppDevMode && urn == "" {
+		// This condition will just be true in the dev phase.
+		panic("Error must have URN to save it in platform errors pools")
 	}
 
 	var err = Error{
 		detail: make(map[protocol.LanguageID]*Detail),
 	}
 	err.urn.Init(urn)
-	err.updateStrings()
 	return &err
 }
 
@@ -47,9 +47,6 @@ type Error struct {
 
 	stringMethod string
 	errorMethod  string
-
-	JSON   []byte
-	Syllab []byte
 }
 
 // SetDetail add error text details to existing error and return it.
@@ -69,10 +66,7 @@ func (e *Error) SetDetail(lang protocol.LanguageID, domain, summary, overview, u
 
 // Save finalize needed logic on given error and register in the application
 func (e *Error) Save() *Error {
-	e.Syllab = make([]byte, 8)
-	e.ToSyllab(e.Syllab, 0, 0)
-	e.JSON = e.ToJSON()
-
+	e.updateStrings()
 	// Force to check by runtime check, due to testing package not let us by any const!
 	if protocol.App != nil {
 		protocol.App.RegisterError(e)
@@ -83,7 +77,7 @@ func (e *Error) Save() *Error {
 func (e *Error) URN() protocol.GitiURN                                { return &e.urn }
 func (e *Error) Details() []protocol.ErrorDetail                      { return e.details }
 func (e *Error) Detail(lang protocol.LanguageID) protocol.ErrorDetail { return e.detail[lang] }
-func (e *Error) String() string                                       { return e.stringMethod }
+func (e *Error) ToString() string                                     { return e.stringMethod }
 
 // Equal compare two Error.
 func (e *Error) Equal(err protocol.Error) bool {
@@ -105,7 +99,7 @@ func (e *Error) IsEqual(err protocol.Error) bool {
 	return false
 }
 
-// Unwrap provides compatibility for Go 1.13 error chains.
+// Go compatibility methods. Unwrap provides compatibility for Go 1.13 error chains.
 func (e *Error) Error() string { return e.errorMethod }
 func (e *Error) Cause() error  { return e }
 func (e *Error) Unwrap() error { return e }

@@ -29,7 +29,7 @@ func (ce *ChainError) Details() []protocol.ErrorDetail { return ce.err.Details()
 func (ce *ChainError) Detail(lang protocol.LanguageID) protocol.ErrorDetail {
 	return ce.err.Detail(lang)
 }
-func (ce *ChainError) String() string {
+func (ce *ChainError) ToString() string {
 	return "\n	Chain Error - Cause ID: " + ce.err.URN().IDasString() + " - Info: " + ce.info
 }
 func (ce *ChainError) Equal(err protocol.Error) bool { return ce.err.Equal(err) }

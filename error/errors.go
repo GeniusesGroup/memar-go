@@ -10,27 +10,24 @@ import (
 type Errors struct {
 	poolByID  map[uint64]protocol.Error
 	poolByURN map[string]protocol.Error
-	jsSDK     map[protocol.LanguageID][]byte
 }
 
 func (e *Errors) Init() {
 	e.poolByID = make(map[uint64]protocol.Error, 512)
 	e.poolByURN = make(map[string]protocol.Error, 512)
-	e.jsSDK = map[protocol.LanguageID][]byte{}
 }
 
 func (e *Errors) RegisterError(err protocol.Error) {
 	var errID = err.URN().ID()
-	var exitingError = e.poolByID[errID]
-	if exitingError != nil {
-		protocol.App.Log(protocol.LogType_Warning, "Duplicate Error id exist, Check it now for bad urn set or collision occurred!")
-		protocol.App.Log(protocol.LogType_Warning, "Exiting error >> ", exitingError.URN(), " New error >> ", err.URN())
-		return
+	if protocol.AppDevMode && e.poolByID[errID] != nil {
+		// This condition will just be true in the dev phase.
+		panic("Error id exist and used for other Error. Check it now for bad urn set or collision occurred" +
+			"\nExiting error >> " + e.poolByID[errID].URN().URI() +
+			"\nNew error >> " + err.URN().URI())
 	}
 
 	e.poolByID[errID] = err
 	e.poolByURN[err.URN().URI()] = err
-	e.updateJsSDK(err)
 }
 
 func (e *Errors) UnRegisterError(err protocol.Error) {
@@ -57,25 +54,6 @@ func (e *Errors) GetErrorByURN(urn string) (err protocol.Error) {
 	err, ok = e.poolByURN[urn]
 	if !ok {
 		err = ErrNotFound
-	}
-	return
-}
-
-func (e *Errors) updateJsSDK(err protocol.Error) {
-	for _, detail := range err.Details() {
-		var lang = detail.Language()
-		e.jsSDK[lang] = append(e.jsSDK[lang], "GitiError.New(\""+err.URN().IDasString()+"\",\""+err.URN().URI()+"\").SetDetail(\""+detail.Domain()+"\",\""+detail.Summary()+"\",\""+detail.Overview()+"\",\""+detail.UserAction()+"\",\""+detail.DevAction()+"\")\n"...)
-	}
-}
-
-// ErrorsSDK can return nil slice if request not supported!
-func (e *Errors) ErrorsSDK(humanLanguage protocol.LanguageID, machineLanguage protocol.MediaType) (sdk []byte, err protocol.Error) {
-	switch machineLanguage.FileExtension() {
-	case "js":
-		sdk = e.jsSDK[humanLanguage]
-	}
-	if sdk == nil {
-		err = ErrSDKNotFound
 	}
 	return
 }
