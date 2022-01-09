@@ -28,23 +28,24 @@ func (ss *Services) RegisterService(s protocol.Service) {
 
 func (ss *Services) registerServiceByURN(s protocol.Service) {
 	var serviceID = s.URN().ID()
-	var existingService = ss.GetServiceByID(serviceID)
-	if existingService != nil {
-		// Warn developer this Service use ID for other service and panic app
-		protocol.App.Log(protocol.LogType_Warning, s.URN().URI()+" service with ", serviceID, " ID, Used before for other service and it illegal to reuse IDs")
-		protocol.App.LogFatal("Exiting service URN is " + existingService.URN().URI())
+	if protocol.AppDevMode && ss.GetServiceByID(serviceID) != nil {
+		// This condition will just be true in the dev phase.
+		panic("ID associated for '" + s.URN().URI() + "' Used before for other service and not legal to reuse same ID for other services\n" +
+			"Exiting service URN is: " + ss.GetServiceByID(serviceID).URN().URI())
 	} else {
 		ss.poolByID[serviceID] = s
 	}
 }
 
 func (ss *Services) registerServiceByURI(s protocol.Service) {
-	if len(s.URI()) != 0 {
-		if ss.GetServiceByURI(s.URN().Domain(), s.URI()) != nil {
-			// Warn developer this Service use ID for other service and this panic
-			protocol.App.LogFatal(s.URN().URI()+" service with ", s.URI(), " URI, Used before for other service and it illegal to reuse URI")
+	var serviceURI = s.URI()
+	if serviceURI != "" {
+		if protocol.AppDevMode && ss.GetServiceByURI(serviceURI) != nil {
+			// This condition will just be true in the dev phase.
+			panic("URI associated for '" + s.URN().URI() + " service with `" + serviceURI + "` as URI, Used before for other service and not legal to reuse URI for other services\n" +
+				"Exiting service URN is: " + ss.GetServiceByURI(serviceURI).URN().URI())
 		} else {
-			ss.poolByURI[s.URI()] = s
+			ss.poolByURI[serviceURI] = s
 		}
 	}
 }
@@ -55,7 +56,7 @@ func (ss *Services) GetServiceByID(serviceID uint64) protocol.Service {
 }
 
 // GetServiceByURI use to get specific service handler by service URI!
-func (ss *Services) GetServiceByURI(domain, uri string) protocol.Service {
+func (ss *Services) GetServiceByURI(uri string) protocol.Service {
 	return ss.poolByURI[uri]
 }
 

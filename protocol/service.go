@@ -17,27 +17,21 @@ type Service interface {
 	URN() GitiURN
 	URI() string // HTTPURI.Path
 	Status() SoftwareStatus
-	IssueDate() Time
-	ExpiryDate() Time
+	IssueDate() TimeUnix  // TODO::: Temporary use TimeUnix instead of Time
+	ExpiryDate() TimeUnix // TODO::: Temporary use TimeUnix instead of Time
 	ExpireInFavorOf() GitiURN
 
 	// Service Authorization
 	CRUDType() CRUD
 	UserType() UserType
 
-	// DirectHandler use to call a service without need to open any stream.
-	// It can also use when service request data is smaller than network MTU.
-	// Or use for time sensitive data like audio and video that streams shape in app layer
-	DirectHandler(conn Connection, request []byte) (response []byte, err Error)
+	// Handlers
 	SRPCHandler
-	HTTPHandler
-	CLIHandler
+	HTTPHandler // Some other protocol like gRPC, SOAP, ... must implement inside HTTP, If they are use HTTP as a transfer protocol.
 	// Due to specific args and returns, we can't standardize here.
-	// Do(st Stream, req interface{}) (res interface{}, err Error)
-	// DoSRPC(req interface{}) (res interface{}, err Error)
-	// DoHTTP(req interface{}) (res interface{}, err Error)
-
-	// JSON
+	// Do(st Stream, req interface{}) (res interface{}, err Error)	Call service locally by import service package to other one
+	// DoSRPC(req interface{}) (res interface{}, err Error)			Call service remotely by sRPC protocol
+	// DoHTTP(req interface{}) (res interface{}, err Error)			Call service remotely by HTTP protocol
 }
 
 // ServiceDetail return locale detail about the service.
