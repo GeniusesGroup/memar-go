@@ -6,25 +6,24 @@ import (
 	"sync/atomic"
 	"time"
 
-	etime "../earth-time"
 	"../protocol"
 )
 
 // Metric store the connection metric data and impelement protocol.ConnectionMetrics
 type Metric struct {
-	lastUsage                   etime.Time // Last use of this connection
-	maxBandwidth                uint64     // Byte/Second and Connection can limit to a fixed number
-	bytesSent                   uint64     // Counts the bytes of packets sent.
-	packetsSent                 uint64     // Counts sent packets.
-	bytesReceived               uint64     // Counts the bytes of packets receive.
-	packetsReceived             uint64     // Counts received packets.
-	failedPacketsReceived       uint64     // Counts failed packets receive for firewalling server from some attack types!
-	notRequestedPacketsReceived uint64     // Counts not requested packets received for firewalling server from some attack types!
-	succeedStreamCount          uint64     // Count successful request.
-	failedStreamCount           uint64     // Count failed services call e.g. data validation failed, ...
+	lastUsage                   int64  // Last use of this connection
+	maxBandwidth                uint64 // Byte/Second and Connection can limit to a fixed number
+	bytesSent                   uint64 // Counts the bytes of packets sent.
+	packetsSent                 uint64 // Counts sent packets.
+	bytesReceived               uint64 // Counts the bytes of packets receive.
+	packetsReceived             uint64 // Counts received packets.
+	failedPacketsReceived       uint64 // Counts failed packets receive for firewalling server from some attack types!
+	notRequestedPacketsReceived uint64 // Counts not requested packets received for firewalling server from some attack types!
+	succeedStreamCount          uint64 // Count successful request.
+	failedStreamCount           uint64 // Count failed services call e.g. data validation failed, ...
 }
 
-func (m *Metric) LastUsage() protocol.Time            { return m.lastUsage }
+func (m *Metric) LastUsage() protocol.TimeUnixMilli   { return protocol.TimeUnixMilli(m.lastUsage) }
 func (m *Metric) MaxBandwidth() uint64                { return m.maxBandwidth }
 func (m *Metric) BytesSent() uint64                   { return m.bytesSent }
 func (m *Metric) PacketsSent() uint64                 { return m.packetsSent }
@@ -52,12 +51,12 @@ func (m *Metric) StreamFailed() {
 
 func (m *Metric) PacketReceived(packetLength uint64) {
 	atomic.StoreInt64(&m.lastUsage, time.Now().Unix())
-	m.packetsReceived++
-	m.bytesReceived += packetLength
+	atomic.AddUint64(&m.packetsReceived, 1)
+	atomic.AddUint64(&m.bytesReceived, packetLength)
 }
 
 func (m *Metric) PacketSent(packetLength uint64) {
 	atomic.StoreInt64(&m.lastUsage, time.Now().Unix())
-	m.packetsSent++
-	m.bytesSent += packetLength
+	atomic.AddUint64(&m.packetsSent, 1)
+	atomic.AddUint64(&m.bytesSent, packetLength)
 }

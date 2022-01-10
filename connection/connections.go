@@ -3,11 +3,11 @@
 package connection
 
 import (
+	"strconv"
 	"sync"
 	"time"
 
-	"../authorization"
-	etime "../earth-time"
+	"../log"
 	"../protocol"
 )
 
@@ -20,6 +20,7 @@ type Connections struct {
 	poolByDomain               map[string]protocol.Connection
 	poolByBlackList            map[[16]byte]protocol.Connection // key is PeerAddr
 	guestConnectionCount       uint64
+	shutdownSignal             chan struct{}
 }
 
 func (c *Connections) Init() {
@@ -27,132 +28,158 @@ func (c *Connections) Init() {
 	c.poolByUserIDDelegateUserID = make(map[[32]byte]protocol.Connection, 16384)
 	c.poolByUserID = make(map[[16]byte][]protocol.Connection, 16384)
 	c.poolByDomain = make(map[string]protocol.Connection, 16384)
-	c.poolByBlackList = make(map[[32]byte]protocol.Connection, 256)
+	c.poolByBlackList = make(map[[16]byte]protocol.Connection, 256)
+	c.shutdownSignal = make(chan struct{})
 
 	go c.connectionIdleTimeoutSaveAndFree()
 }
 
 // GetConnectionByPeerAddr get a connection by peer GP from connections pool.
-func (c *connections) GetConnectionByPeerAddr(addr [16]byte) (conn protocol.Connection, err Error) {
-	return c.poolByPeerAddr[addr]
+func (c *Connections) GetConnectionByPeerAddr(addr [16]byte) (conn protocol.Connection, err protocol.Error) {
+	conn = c.poolByPeerAddr[addr]
+	if conn == nil {
+		err = ErrNoConnection
+	}
+	return
 }
 
 // GetConnectionByUserIDDelegateUserID return the connection from pool or app storage.
 // A connection can use just by single app node, so user can't use same connection to connect other node before close connection on usage node.
-func (c *Connections) GetConnectionByUserIDDelegateUserID(userID, delegateUserID [16]byte) (conn protocol.Connection, err Error) {
-	conn = c.poolByID[connID]
+func (c *Connections) GetConnectionByUserIDDelegateUserID(userID, delegateUserID [16]byte) (conn protocol.Connection, err protocol.Error) {
+	conn = c.poolByUserIDDelegateUserID[c.userIDDelegateUserID(userID, delegateUserID)]
 	if conn == nil {
-		conn = c.getConnectionByID(connID)
+		err = ErrNoConnection
 	}
 	return
 }
 
 // GetConnectionsByUserID get the connections by peer userID||domainID from connections pool.
-func (c *Connections) GetConnectionsByUserID(userID [32]byte) (conn []protocol.Connection, err Error) {
+func (c *Connections) GetConnectionsByUserID(userID [16]byte) (conn []protocol.Connection, err protocol.Error) {
 	conn = c.poolByUserID[userID]
 	if conn == nil {
-		// TODO::: check storage
+		err = ErrNoConnection
 	}
-	// TODO::: check if connection is in not ready status
 	return
 }
 
 // GetConnectionByDomain return the connection from pool or app storage if any exist.
-func (c *Connections) GetConnectionByDomain(domain string) (conn protocol.Connection, err Error) {
+func (c *Connections) GetConnectionByDomain(domain string) (conn protocol.Connection, err protocol.Error) {
 	conn = c.poolByDomain[domain]
 	if conn == nil {
-		// TODO::: check storage
+		err = ErrNoConnection
 	}
-	// TODO::: check if connection is in not ready status
 	return
 }
 
 // RegisterConnection register new connection in server connection pool
-func (c *connections) RegisterConnection(conn protocol.Connection, err Error) {
+func (c *Connections) RegisterConnection(conn protocol.Connection) (err protocol.Error) {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
-	c.poolByConnID[conn.ID] = conn
-	if conn.Addr() != AddrNil {
+
+	var userID = conn.UserID().UUID()
+	c.poolByUserIDDelegateUserID[c.userIDDelegateUserID(userID, conn.DelegateUserID().UUID())] = conn
+	if conn.Addr() != [16]byte{} {
 		c.poolByPeerAddr[conn.Addr()] = conn
 	}
-	if conn.UserID != [32]byte{} {
-		c.poolByUserID[conn.UserID()] = append(c.poolByUserID[conn.UserID()], conn)
+
+	var connDomain = conn.DomainName()
+	if connDomain != "" {
+		c.poolByDomain[connDomain] = conn
 	}
-	if conn.UserType == protocol.UserTypeGuest {
-		c.GuestConnectionCount++
+
+	if userID != [16]byte{} {
+		c.poolByUserID[userID] = append(c.poolByUserID[userID], conn)
 	}
+
+	if conn.UserID().Type() == protocol.UserType_Unset {
+		c.guestConnectionCount++
+	}
+	return
 }
 
-// CloseConnection un-register exiting connection in server connection pool
-func (c *connections) CloseConnection(conn *Connection, err Error) {
+// DeregisterConnection delete the given connection in connections pool
+func (c *Connections) DeregisterConnection(conn protocol.Connection) (err protocol.Error) {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
-	if conn.UserType == protocol.UserTypeGuest {
-		c.GuestConnectionCount--
-	}
-
-	// TODO::: Is it worth to don't delete connection just reset it and send it to pool of unused connection due to GC
-	delete(c.poolByConnID, conn.ID)
-	delete(c.poolByPeerAddr, conn.Addr())
-	// delete(c.poolByUserID, conn.UserID)
-
-	// Let unfinished stream handled
+	err = c.deregisterConnection(conn)
+	return
 }
 
-// RevokeConnection un-register exiting connection in server connection pool without given any time to finish any stream
-func (c *connections) RevokeConnection(conn *Connection, err Error) {
-	c.mutex.Lock()
-	defer c.mutex.Unlock()
-	if conn.UserType == protocol.UserTypeGuest {
-		c.GuestConnectionCount--
+func (c *Connections) deregisterConnection(conn protocol.Connection) (err protocol.Error) {
+	if conn.UserID().Type() == protocol.UserType_Unset {
+		c.guestConnectionCount--
 	}
 
-	// Remove all unfinished stream first
-
-	delete(c.poolByConnID, conn.ID)
+	var userID = conn.UserID().UUID()
+	delete(c.poolByUserIDDelegateUserID, c.userIDDelegateUserID(userID, conn.DelegateUserID().UUID()))
 	delete(c.poolByPeerAddr, conn.Addr())
-	// delete(c.poolByUserID, conn.UserID)
+	delete(c.poolByDomain, conn.DomainName())
+
+	var userConnections = c.poolByUserID[userID]
+	var userConnectionsLen =len(userConnections)
+	for i := 0; i < userConnectionsLen; i++ {
+		if userConnections[i].UserID().UUID() == userID {
+			var newUserConnectionsLen = userConnectionsLen - 1
+			// copy(userConnections[i:], userConnections[i+1:])
+			// userConnections = userConnections[:newUserConnectionsLen]
+			userConnections[i] = userConnections[newUserConnectionsLen]
+			userConnections = userConnections[:newUserConnectionsLen]
+			break
+		}
+	}
+	c.poolByUserID[userID] = userConnections
+	return
 }
 
 func (c *Connections) Shutdown() {
-	protocol.App.Log(protocol.Log_Information, "Connections - ShutDown - Saving proccess begin ...")
-	protocol.App.Log(protocol.Log_Information, "Connections - ShutDown - Number of active connections:", len(c.poolByUserIDDelegateUserID))
+	c.shutdownSignal <- struct{}{}
+
+	protocol.App.Log(log.InfoEvent(domainEnglish, "ShutDown - Saving proccess begin ...\n"+
+		"Number of active connections:"+c.activeConnectionsNumber()))
 	for _, conn := range c.poolByUserIDDelegateUserID {
-		go c.SaveConnection(conn)
+		go conn.Close()
 	}
-	protocol.App.Log(protocol.Log_Information, "Connections - ShutDown - Saving proccess end now")
+	protocol.App.Log(log.InfoEvent(domainEnglish, "ShutDown - Saving proccess end now"))
+}
+
+func (c *Connections) userIDDelegateUserID(userID, delegateUserID [16]byte) (userIDDelegateUserID [32]byte) {
+	copy(userIDDelegateUserID[:], userID[:])
+	copy(userIDDelegateUserID[16:], delegateUserID[:])
+	return
 }
 
 func (c *Connections) connectionIdleTimeoutSaveAndFree() {
-	var timer = time.NewTimer(Server.Manifest.TechnicalInfo.ConnectionIdleTimeout.ConvertToTimeDuration())
+	var timer = time.NewTimer(ConnectionIdleTimeout)
+	var timerTime time.Time
 	for {
 		select {
-		case <-timer.C:
-			protocol.App.Log(protocol.Log_Information, "Connections - Cron - Idle connections timeout save and free proccess begin ...")
-			protocol.App.Log(protocol.Log_Information, "Connections - Cron - Number of active connections:", len(c.poolByUserIDDelegateUserID))
-			// It is conccurent proccess and not take more than one or two second, so set timeNow here
-			var timeNow = etime.Now()
+		case timerTime = <-timer.C:
+			protocol.App.Log(log.InfoEvent(domainEnglish, "Cron - Idle connections timeout save and free proccess begin ...\n"+
+				"Number of active connections: "+c.activeConnectionsNumber()))
+
+			var timeNowMilli = timerTime.UnixMilli()
 
 			c.mutex.Lock()
 			defer c.mutex.Unlock()
 			for _, conn := range c.poolByUserIDDelegateUserID {
-				if !conn.LastUsage.AddDuration(Server.Manifest.TechnicalInfo.ConnectionIdleTimeout).Pass(timeNow) {
+				var lastUsage = int64(conn.LastUsage())
+				if lastUsage+ConnectionIdleTimeout < timeNowMilli {
 					continue
 				}
 
-				go c.SaveConnection(conn)
-
-				if conn.UserType == authorization.UserTypeGuest {
-					c.GuestConnectionCount--
-				}
-				// Remove all unfinished stream first
-				delete(c.poolByUserIDDelegateUserID, conn.ID)
-				delete(c.poolByPeerAddr, conn.Addr())
+				c.deregisterConnection(conn)
+				go conn.Close()
 			}
 
-			timer.Reset(Server.Manifest.TechnicalInfo.ConnectionIdleTimeout.ConvertToTimeDuration())
-			protocol.App.Log(protocol.Log_Information, "Connections - Cron - Number of active connections after:", len(c.poolByUserIDDelegateUserID))
-			protocol.App.Log(protocol.Log_Information, "Connections - Cron - Idle connections timeout save and free proccess end now")
+			timer.Reset(ConnectionIdleTimeout)
+			protocol.App.Log(log.InfoEvent(domainEnglish, "Cron - Number of active connections after:"+c.activeConnectionsNumber()+
+				"\nIdle connections timeout save and free proccess end now"))
+		case <-c.shutdownSignal:
+			return
 		}
 	}
+}
+
+func (c *Connections) activeConnectionsNumber() string {
+	return strconv.FormatInt(int64(len(c.poolByUserIDDelegateUserID)), 10)
 }

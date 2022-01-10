@@ -9,9 +9,9 @@ type Connections interface {
 	GetConnectionsByUserID(userID [16]byte) (conns []Connection, err Error)
 	GetConnectionByDomain(domain string) (conn Connection, err Error)
 
-	RegisterConnection(conn Connection, err Error)
-	CloseConnection(conn Connection, err Error)
-	RevokeConnection(conn Connection, err Error)
+	// state=unregistered -> 'register' -> state=registered -> 'deregister' -> state=unregistered.
+	RegisterConnection(conn Connection) (err Error)
+	DeregisterConnection(conn Connection) (err Error)
 }
 
 // Connection or App2AppConnection indicate how connection create and save in time series data.
@@ -28,10 +28,13 @@ type Connection interface {
 	AddrType() NetworkLinkNextHeaderID
 	DomainName() string // if exist
 	UserID() UserID
-	DelegateUserID() UserID // Persons can delegate to things(as a user type) in old devices that need to use protocols like HTTP, ...
+	DelegateUserID() UserID // Persons can delegate to things(as a user type)
 
 	/* Security data */
 	Cipher() Cipher
+
+	Close() (err Error)  // Just once
+	Revoke() (err Error) // Just once
 
 	Streams
 	ConnectionMetrics
@@ -39,15 +42,15 @@ type Connection interface {
 
 // ConnectionMetrics
 type ConnectionMetrics interface {
-	LastUsage() Time                     // Last use of the connection
+	LastUsage() TimeUnixMilli            // Last use of the connection
 	MaxBandwidth() uint64                // Byte/Second and Connection can limit to a fixed number
-	BytesSent() uint64                   // Counts the bytes of packets sent.
-	PacketsSent() uint64                 // Counts sent packets.
-	BytesReceived() uint64               // Counts the bytes of packets receive.
-	PacketsReceived() uint64             // Counts received packets.
-	FailedPacketsReceived() uint64       // Counts failed packets receive for firewalling server from some attack types!
-	NotRequestedPacketsReceived() uint64 // Counts not requested packets received for firewalling server from some attack types!
-	SucceedStreamCount() uint64          // Count successful request.
+	BytesSent() uint64                   // Counts the bytes of packets sent
+	PacketsSent() uint64                 // Counts sent packets
+	BytesReceived() uint64               // Counts the bytes of packets receive
+	PacketsReceived() uint64             // Counts received packets
+	FailedPacketsReceived() uint64       // Counts failed packets receive for firewalling server from some attack types
+	NotRequestedPacketsReceived() uint64 // Counts not requested packets received for firewalling server from some attack types
+	SucceedStreamCount() uint64          // Count successful request
 	FailedStreamCount() uint64           // Count failed services call e.g. data validation failed, ...
 
 	StreamSucceed()
@@ -74,10 +77,12 @@ const (
 	ConnectionStateRateLimited // connection||stream limited due to higher usage than permitted!
 
 	ConnectionStateBrokenPacket
+	ConnectionStateNeedMoreData
 	ConnectionStateSending
 	ConnectionStateReceiving
 	ConnectionStateReceivedCompletely
 	ConnectionStateSentCompletely
+
 	ConnectionStateEncrypted
 	ConnectionStateDecrypted
 	ConnectionStateReady
