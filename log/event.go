@@ -3,54 +3,90 @@
 package log
 
 import (
-	"io"
 	"runtime/debug"
+	"time"
 
-	// "../mediatype"
 	"../protocol"
 )
 
 func NewEvent(level protocol.LogType, domian, message string) (event *Event) {
 	return &Event{
 		level:   level,
+		time:    protocol.TimeUnixMilli(time.Now().UnixMilli()),
 		domain:  domian,
-		stack:   nil,
 		message: message,
+		stack:   nil,
 	}
 }
 
 func TraceEvent(level protocol.LogType, domian, message string) (event *Event) {
 	return &Event{
 		level:   level,
+		time:    protocol.TimeUnixMilli(time.Now().UnixMilli()),
 		domain:  domian,
-		stack:   debug.Stack(),
 		message: message,
+		stack:   debug.Stack(),
 	}
 }
 
 func InfoEvent(domian, message string) (event *Event) {
 	return &Event{
 		level:   protocol.Log_Information,
+		time:    protocol.TimeUnixMilli(time.Now().UnixMilli()),
 		domain:  domian,
-		stack:   nil,
 		message: message,
+		stack:   nil,
+	}
+}
+
+func NoticeEvent(domian, message string) (event *Event) {
+	return &Event{
+		level:   protocol.Log_Notice,
+		time:    protocol.TimeUnixMilli(time.Now().UnixMilli()),
+		domain:  domian,
+		message: message,
+		stack:   nil,
+	}
+}
+
+func DebugEvent(domian, message string) (event *Event) {
+	return &Event{
+		level:   protocol.Log_Debug,
+		time:    protocol.TimeUnixMilli(time.Now().UnixMilli()),
+		domain:  domian,
+		message: message,
+		stack:   nil,
+	}
+}
+
+func DeepDebugEvent(domian, message string) (event *Event) {
+	return &Event{
+		level:   protocol.Log_DeepDebug,
+		time:    protocol.TimeUnixMilli(time.Now().UnixMilli()),
+		domain:  domian,
+		message: message,
+		stack:   nil,
 	}
 }
 
 func WarnEvent(domian, message string) (event *Event) {
 	return &Event{
 		level:   protocol.Log_Warning,
+		time:    protocol.TimeUnixMilli(time.Now().UnixMilli()),
 		domain:  domian,
-		stack:   nil,
 		message: message,
+		stack:   nil,
 	}
 }
 
 // FatalEvent return new event with panic level and added stack trace.
-func PanicEvent() (event *Event) {
+func PanicEvent(domian, message string) (event *Event) {
 	return &Event{
-		level: protocol.Log_Panic,
-		stack: debug.Stack(),
+		level:   protocol.Log_Panic,
+		time:    protocol.TimeUnixMilli(time.Now().UnixMilli()),
+		domain:  domian,
+		message: message,
+		stack:   debug.Stack(),
 	}
 }
 
@@ -58,55 +94,38 @@ func PanicEvent() (event *Event) {
 func FatalEvent(domian, message string) (event *Event) {
 	return &Event{
 		level:   protocol.Log_Fatal,
+		time:    protocol.TimeUnixMilli(time.Now().UnixMilli()),
 		domain:  domian,
-		stack:   debug.Stack(),
 		message: message,
+		stack:   debug.Stack(),
+	}
+}
+
+// ConfEvent return new event with "Confidential" level
+func ConfEvent(domian, message string) (event *Event) {
+	return &Event{
+		level:   protocol.Log_Confidential,
+		time:    protocol.TimeUnixMilli(time.Now().UnixMilli()),
+		domain:  domian,
+		message: message,
+		stack:   nil,
 	}
 }
 
 // Event implement protocol.LogEvent
 type Event struct {
 	level   protocol.LogType
-	id      uint64
+	time    protocol.TimeUnixMilli
 	domain  string
-	stack   []byte
 	message string
+	stack   []byte
 }
 
-func (e *Event) Level() protocol.LogType { return e.level }
-func (e *Event) ID() uint64              { return e.id }
-func (e *Event) Domain() string          { return e.domain }
-func (e *Event) Stack() []byte           { return e.stack }
-func (e *Event) Message() string         { return e.message }
-
-/*
-********** protocol.Codec interface **********
- */
-func (e *Event) MediaType() protocol.MediaType                      { return nil } // mediatype.LOG }
-func (e *Event) CompressType() protocol.CompressType                { return nil }
-func (e *Event) Decode(reader protocol.Reader) (err protocol.Error) { return }
-func (e *Event) Encode(writer protocol.Writer) (err protocol.Error) {
-	var _, goErr = e.WriteTo(writer)
-	if goErr != nil {
-		// err =
-	}
-	return
-}
-func (e *Event) Marshal() (data []byte)                     { return }
-func (e *Event) MarshalTo(data []byte) []byte               { return data }
-func (e *Event) Unmarshal(data []byte) (err protocol.Error) { return }
-func (e *Event) Len() (ln int)                              { return }
-
-/*
-********** io package interfaces **********
- */
-func (e *Event) ReadFrom(reader io.Reader) (n int64, err error) { return }
-func (e *Event) WriteTo(w io.Writer) (totalWrite int64, err error) {
-	// var writeLen int
-	// writeLen, err = w.Write(r)
-	// totalWrite = int64(writeLen)
-	return
-}
+func (e *Event) Level() protocol.LogType      { return e.level }
+func (e *Event) Time() protocol.TimeUnixMilli { return e.time }
+func (e *Event) Domain() string               { return e.domain }
+func (e *Event) Message() string              { return e.message }
+func (e *Event) Stack() []byte                { return e.stack }
 
 /*
 	-- protocol.Syllab interface Encoder & Decoder --

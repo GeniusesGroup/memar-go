@@ -14,12 +14,10 @@ type Logger interface {
 
 type LogEvent interface {
 	Level() LogType
-	ID() uint64 // Any analytical log identifier like GitiURN.ID()
+	Time() TimeUnixMilli
 	Domain() string
-	Stack() []byte   // if log need to trace specially in panic situation
 	Message() string // save formated data e.g. fmt.Sprintf("Panic Exception: %s\nDebug Stack: %s", r, debug.Stack())
-
-	Codec
+	Stack() []byte   // if log need to trace, specially in panic situation
 }
 
 // LogType indicate log level
@@ -29,10 +27,10 @@ const (
 	Log_Unset LogType = iota
 	Log_Information
 	Log_Notice
+	Log_Debug // Detailed information on the flow through the system. Expect these to be written to logs only. Generally speaking, most lines logged by your application should be written as DEBUG.
+	Log_DeepDebug
 	Log_Warning // Use of deprecated APIs, poor use of API, 'almost' errors, other runtime situations that are undesirable or unexpected, but not necessarily "wrong". Expect these to be immediately visible on a status console.
 	Log_Error   // Other runtime errors or unexpected conditions
-	Log_Debug   // Detailed information on the flow through the system. Expect these to be written to logs only. Generally speaking, most lines logged by your application should be written as DEBUG.
-	Log_DeepDebug
 	Log_Alert
 	Log_Panic // in panic() it will add debug stack to trace more easily panic errors
 	Log_Critical
@@ -40,4 +38,10 @@ const (
 	Log_Fatal // Severe errors that cause premature termination
 	Log_Security
 	Log_Confidential
+)
+
+// If any below mode disabled, logger must not save that log type.
+const (
+	LogMode_Debug     = true
+	LogMode_DeepDebug = true
 )
