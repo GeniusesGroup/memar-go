@@ -9,6 +9,17 @@ import (
 	"../protocol"
 )
 
+type Cookies string
+
+// Cookies parses and returns the Cookie headers.
+// By related RFC we just support one Cookie in header.
+// https://tools.ietf.org/html/rfc6265#section-5.4
+func (c Cookies) Next() (cookie Cookie, remain Cookies) {
+	var rawRemain, _ = cookie.UnmarshalFrom(string(c))
+	remain = Cookies(rawRemain)
+	return
+}
+
 // Cookies parses and returns the Cookie headers.
 // By related RFC we just support one Cookie in header.
 // https://tools.ietf.org/html/rfc6265#section-5.4
@@ -34,8 +45,8 @@ func (h *header) Cookies() (cookies []Cookie) {
 	}
 }
 
-// MarshalSetCookies parses and set them to Cookie header.
-func (h *header) MarshalSetCookies(cookies []Cookie) {
+// MarshalCookies parses and set them to the Cookie header.
+func (h *header) MarshalCookies(cookies []Cookie) {
 	// TODO::: make buffer by needed size.
 	var b strings.Builder
 	var ln = len(cookies)
@@ -63,6 +74,9 @@ type Cookie struct {
 // CheckAndSanitize check if the cookie is in standard by RFC and try to fix them. It returns last error!
 func (c *Cookie) CheckAndSanitize() (err protocol.Error) {
 	c.Name, err = sanitizeCookieName(c.Name)
+	if err != nil {
+		return
+	}
 	c.Value, err = sanitizeCookieValue(c.Value)
 	return
 }
@@ -72,7 +86,7 @@ func (c *Cookie) Marshal() string {
 	return c.Name + "=" + c.Value
 }
 
-// Unmarshal parse given cookie value to c and return!
+// Unmarshal parse given cookie value to c and return
 func (c *Cookie) Unmarshal(cookie string) {
 	var equalIndex = strings.IndexByte(cookie, '=')
 	// First check no equal(=) sign or empty name or value
@@ -81,6 +95,26 @@ func (c *Cookie) Unmarshal(cookie string) {
 	}
 	c.Name = cookie[:equalIndex]
 	c.Value = cookie[equalIndex+1:]
+}
+
+// Unmarshal parse given cookies value to c and return
+func (c *Cookie) UnmarshalFrom(cookies string) (remain string, err protocol.Error) {
+	var equalIndex = strings.IndexByte(cookies, '=')
+	// First check no equal(=) sign or empty name or value
+	if equalIndex < 1 || equalIndex == len(cookies)-1 {
+		// err =
+		return
+	}
+	c.Name = cookies[:equalIndex]
+
+	var SemiColonIndex = strings.IndexByte(cookies, ';')
+	if SemiColonIndex == -1 {
+		c.Value = cookies[equalIndex+1:]
+	} else {
+		c.Value = cookies[equalIndex+1 : SemiColonIndex]
+		remain = cookies[SemiColonIndex+2:] // Due to have space after semi colon do +2
+	}
+	return
 }
 
 func sanitizeCookieName(n string) (name string, err protocol.Error) {

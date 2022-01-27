@@ -3,6 +3,7 @@
 package http
 
 import (
+	"../log"
 	"../protocol"
 	"../service"
 )
@@ -13,7 +14,7 @@ var HostSupportedService = hostSupportedService{
 			"",
 			``,
 			[]string{}).
-		SetAuthorization(protocol.CRUDAll, protocol.UserTypeAll).Expired(0, ""),
+		SetAuthorization(protocol.CRUDAll, protocol.UserType_All).Expired(0, ""),
 }
 
 type hostSupportedService struct {
@@ -30,8 +31,8 @@ func (ser *hostSupportedService) ServeHTTP(stream protocol.Stream, httpReq *Requ
 		// TODO::: noting to do or reject request??
 	} else if '0' <= host[0] && host[0] <= '9' {
 		// check of request send over IP
-		if protocol.AppDeepDebugMode {
-			protocol.App.Log(protocol.Log_Debug, "HTTP - Host Check - IP host:", host)
+		if protocol.LogMode_DeepDebug {
+			protocol.App.Log(log.DebugEvent(domainEnglish, "Host Check - IP host: "+host))
 		}
 
 		// TODO::: target alloc occur multiple, improve it.
@@ -40,20 +41,20 @@ func (ser *hostSupportedService) ServeHTTP(stream protocol.Stream, httpReq *Requ
 			target += "?" + query // + "&rd=tls" // TODO::: add rd query for analysis purpose??
 		}
 		httpRes.SetStatus(StatusMovedPermanentlyCode, StatusMovedPermanentlyPhrase)
-		httpRes.header.Set(HeaderKeyLocation, target)
-		httpRes.header.Set(HeaderKeyCacheControl, "max-age=31536000, immutable")
+		httpRes.H.Set(HeaderKeyLocation, target)
+		httpRes.H.Set(HeaderKeyCacheControl, "max-age=31536000, immutable")
 		return false
 	} else if len(host) > 4 && host[:4] == "www." {
 		if host[4:] != domainName {
-			if protocol.AppDeepDebugMode {
-				protocol.App.Log(protocol.Log_Debug, "HTTP - Host Check - Unknown WWW host:", host)
+			if protocol.LogMode_DeepDebug {
+				protocol.App.Log(log.DebugEvent(domainEnglish, "Host Check - Unknown WWW host: "+host))
 			}
 			// TODO::: Silently ignoring a request might not be a good idea and perhaps breaks the RFC's for HTTP.
 			return false
 		}
 
-		if protocol.AppDeepDebugMode {
-			protocol.App.Log(protocol.Log_Debug, "HTTP - Host Check - WWW host:", host)
+		if protocol.LogMode_DeepDebug {
+			protocol.App.Log(log.DebugEvent(domainEnglish, "Host Check - WWW host: "+host))
 		}
 
 		// Add www to domain. Just support http on www server app due to SE duplicate content both on www && non-www
@@ -63,12 +64,12 @@ func (ser *hostSupportedService) ServeHTTP(stream protocol.Stream, httpReq *Requ
 			target += "?" + query // + "&rd=tls" // TODO::: add rd query for analysis purpose??
 		}
 		httpRes.SetStatus(StatusMovedPermanentlyCode, StatusMovedPermanentlyPhrase)
-		httpRes.header.Set(HeaderKeyLocation, target)
-		httpRes.header.Set(HeaderKeyCacheControl, "max-age=31536000, immutable")
+		httpRes.H.Set(HeaderKeyLocation, target)
+		httpRes.H.Set(HeaderKeyCacheControl, "max-age=31536000, immutable")
 		return false
 	} else if host != domainName {
-		if protocol.AppDeepDebugMode {
-			protocol.App.Log(protocol.Log_Debug, "HTTP - Host Check - Unknown host:", host)
+		if protocol.LogMode_DeepDebug {
+			protocol.App.Log(log.DebugEvent(domainEnglish, "Host Check - Unknown host: "+host))
 		}
 		// TODO::: Silently ignoring a request might not be a good idea and perhaps breaks the RFC's for HTTP.
 		return false

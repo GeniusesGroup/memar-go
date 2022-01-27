@@ -15,7 +15,7 @@ var ServeWWWService = serveWWWService{
 			"",
 			``,
 			[]string{}).
-		SetAuthorization(protocol.CRUDAll, protocol.UserTypeAll).Expired(0, ""),
+		SetAuthorization(protocol.CRUDAll, protocol.UserType_All).Expired(0, ""),
 	WWW: www.Assets{
 		ContentEncodings: []string{compress.DeflateContentEncoding, compress.GZIPContentEncoding, compress.BrotliContentEncoding},
 	},
@@ -27,9 +27,7 @@ type serveWWWService struct {
 }
 
 // ServeWWW will serve WWW assets to request
-func (ser *serveWWWService) ServeHTTP(stream protocol.Stream, httpReq *Request, httpRes *Response) {
-	var connection = stream.Connection()
-
+func (ser *serveWWWService) ServeHTTP(stream protocol.Stream, httpReq *Request, httpRes *Response) (err protocol.Error) {
 	var reqFile, _ = ser.WWW.GUI.FileByPath(httpReq.uri.path)
 	if reqFile == nil {
 		// TODO::: SSR to serve-to-robots
@@ -37,10 +35,13 @@ func (ser *serveWWWService) ServeHTTP(stream protocol.Stream, httpReq *Request, 
 		// Send beauty HTML response in http error situation like 500, 404, ...
 
 		const supportedLang = "en" // TODO::: get from header
-		reqFile, _ = ser.WWW.MainHTMLDir.File(supportedLang)
+		reqFile, err = ser.WWW.MainHTMLDir.File(supportedLang)
+		// if err != nil {
+		// TODO::: check other user language and at the end send better error
+		// }
 	}
-	connection.StreamSucceed()
 	httpRes.SetStatus(StatusOKCode, StatusOKPhrase)
-	httpRes.header.Set(HeaderKeyCacheControl, "max-age=31536000, immutable")
+	httpRes.H.Set(HeaderKeyCacheControl, "max-age=31536000, immutable")
 	httpRes.SetBody(reqFile.Data())
+	return
 }

@@ -16,7 +16,7 @@ var MuxService = muxService{
 			"It use giti urn mechanism to call requested service",
 			``,
 			[]string{}).
-		SetAuthorization(protocol.CRUDAll, protocol.UserTypeAll).Expired(0, ""),
+		SetAuthorization(protocol.CRUDAll, protocol.UserType_All).Expired(0, ""),
 }
 
 type muxService struct {
@@ -24,10 +24,8 @@ type muxService struct {
 }
 
 func (ser *muxService) ServeHTTP(st protocol.Stream, httpReq *Request, httpRes *Response) (err protocol.Error) {
-	var connection = st.Connection()
-
 	if httpReq.method != MethodPOST {
-		connection.StreamFailed()
+		// err = 
 		httpRes.SetStatus(StatusMethodNotAllowedCode, StatusMethodNotAllowedPhrase)
 		return
 	}
@@ -38,30 +36,25 @@ func (ser *muxService) ServeHTTP(st protocol.Stream, httpReq *Request, httpRes *
 	if err == nil {
 		service, err = protocol.App.GetServiceByID(serviceID)
 		if err != nil {
-			connection.StreamFailed()
 			httpRes.SetStatus(StatusNotFoundCode, StatusNotFoundPhrase)
 			httpRes.SetError(ErrNotFound)
 			// err = ErrNotFound
 			return
 		}
 	} else {
-		connection.StreamFailed()
 		httpRes.SetStatus(StatusBadRequestCode, StatusBadRequestPhrase)
 		httpRes.SetError(err)
 		return
 	}
 
 	// Add some header for dynamically services like not index by SE(google, ...), ...
-	httpRes.header.Set("X-Robots-Tag", "noindex")
-	// httpRes.header.Set(HeaderKeyCacheControl, "no-store")
+	httpRes.H.Set("X-Robots-Tag", "noindex")
+	// httpRes.H.Set(HeaderKeyCacheControl, "no-store")
 
 	st.SetService(service)
 	err = service.ServeHTTP(st, httpReq, httpRes)
 	if err != nil {
-		connection.StreamFailed()
 		httpRes.SetError(err)
-	} else {
-		connection.StreamSucceed()
 	}
 	return
 }

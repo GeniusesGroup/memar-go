@@ -23,10 +23,10 @@ func (h *header) SetZeroContentLength() {
 
 // SetContentLength set body length to header.
 func (r *Request) SetContentLength() {
-	r.header.Set(HeaderKeyContentLength, strconv.FormatUint(uint64(r.body.Len()), 10))
+	r.H.Set(HeaderKeyContentLength, strconv.FormatUint(uint64(r.body.Len()), 10))
 }
 
 // SetContentLength set body length to header.
 func (r *Response) SetContentLength() {
-	r.header.Set(HeaderKeyContentLength, strconv.FormatUint(uint64(r.body.Len()), 10))
+	r.H.Set(HeaderKeyContentLength, strconv.FormatUint(uint64(r.body.Len()), 10))
 }

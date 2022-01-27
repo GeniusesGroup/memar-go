@@ -18,14 +18,14 @@ type Request struct {
 	uri     URI
 	version string
 
-	header header
+	H header // Exported field to let consumers use other methods that protocol.HTTPHeader
 	body
 }
 
 // NewRequest make new request with some default data
 func NewRequest() *Request {
 	var r Request
-	r.header.init()
+	r.H.init()
 	return &r
 }
 
@@ -34,7 +34,7 @@ func (r *Request) URI() protocol.HTTPURI       { return &r.uri }
 func (r *Request) Version() string             { return r.version }
 func (r *Request) SetMethod(method string)     { r.method = method }
 func (r *Request) SetVersion(version string)   { r.version = version }
-func (r *Request) Header() protocol.HTTPHeader { return &r.header }
+func (r *Request) Header() protocol.HTTPHeader { return &r.H }
 
 /*
 ********** protocol.Codec interface **********
@@ -59,14 +59,15 @@ func (r *Request) Decode(reader protocol.Reader) (err protocol.Error) {
 	}
 
 	buf = buf[:headerReadLength]
-	err = r.Unmarshal(buf)
+	buf, err = r.UnmarshalFrom(buf)
 	if err != nil {
-		return
+		return err
 	}
-
-	_, goErr = r.body.readFrom(reader, &r.header)
-	if goErr != nil {
-		// err =
+	// check if body sent with header in one buffer
+	if len(buf) > 0 {
+		r.body.setReadedIncomeBody(buf, &r.H)
+	} else {
+		r.body.setReaderAsIncomeBody(reader, &r.H)
 	}
 	return
 }
@@ -96,7 +97,7 @@ func (r *Request) MarshalTo(httpPacket []byte) []byte {
 	httpPacket = append(httpPacket, r.version...)
 	httpPacket = append(httpPacket, CRLF...)
 
-	httpPacket = r.header.MarshalTo(httpPacket)
+	httpPacket = r.H.MarshalTo(httpPacket)
 	httpPacket = append(httpPacket, CRLF...)
 
 	httpPacket = r.body.MarshalTo(httpPacket)
@@ -114,7 +115,7 @@ func (r *Request) Unmarshal(httpPacket []byte) (err protocol.Error) {
 
 	// Just if body marshaled with first line and headers we need to do any action here
 	if len(maybeBody) > 0 {
-		r.body.setIncomeBody(maybeBody, &r.header)
+		r.body.setReadedIncomeBody(maybeBody, &r.H)
 	}
 	return
 }
@@ -149,9 +150,9 @@ func (r *Request) UnmarshalFrom(httpPacket []byte) (maybeBody []byte, err protoc
 	// vs have 4 Int for each index
 	index = len(r.method) + len(r.uri.uri) + len(r.version) + 4
 
-	index += r.header.Unmarshal(s)
+	index += r.H.Unmarshal(s)
 
-	r.uri.checkHost(&r.header)
+	r.uri.checkHost(&r.H)
 
 	// By https://tools.ietf.org/html/rfc2616#section-4 very simple http packet must end with CRLF even packet without header or body!
 	// So it can be occur panic if very simple request end without any CRLF
@@ -184,11 +185,12 @@ func (r *Request) ReadFrom(reader io.Reader) (n int64, goErr error) {
 	}
 	// check if body sent with header in one buffer
 	if len(buf) > 0 {
-		r.body.setIncomeBody(buf, &r.header)
+		r.body.setReadedIncomeBody(buf, &r.H)
 	} else {
-		n, goErr = r.body.readFrom(reader, &r.header)
-		n += int64(headerReadLength)
+		r.body.setReaderAsIncomeBody(reader, &r.H)
 	}
+
+	n = int64(headerReadLength)
 	return
 }
 
@@ -240,7 +242,7 @@ func (r *Request) MarshalToWithoutBody(httpPacket []byte) []byte {
 	httpPacket = append(httpPacket, r.version...)
 	httpPacket = append(httpPacket, CRLF...)
 
-	httpPacket = r.header.MarshalTo(httpPacket)
+	httpPacket = r.H.MarshalTo(httpPacket)
 	httpPacket = append(httpPacket, CRLF...)
 	return httpPacket
 }
@@ -251,6 +253,6 @@ func (r *Request) LenWithoutBody() (ln int) {
 	ln += len(r.method)
 	ln += r.uri.Len()
 	ln += len(r.version)
-	ln += r.header.Len()
+	ln += r.H.Len()
 	return
 }

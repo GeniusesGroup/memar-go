@@ -19,14 +19,14 @@ type Response struct {
 	statusCode   string
 	reasonPhrase string
 
-	header header
+	H header // Exported field to let consumers use other methods that protocol.HTTPHeader
 	body
 }
 
 // NewResponse make new response with some default data and return it!
 func NewResponse() *Response {
 	var r Response
-	r.header.init()
+	r.H.init()
 	return &r
 }
 
@@ -35,7 +35,7 @@ func (r *Response) StatusCode() string            { return r.statusCode }
 func (r *Response) ReasonPhrase() string          { return r.reasonPhrase }
 func (r *Response) SetVersion(version string)     { r.version = version }
 func (r *Response) SetStatus(code, phrase string) { r.statusCode = code; r.reasonPhrase = phrase }
-func (r *Response) Header() protocol.HTTPHeader   { return &r.header }
+func (r *Response) Header() protocol.HTTPHeader   { return &r.H }
 
 // GetStatusCode get status code as uit16
 func (r *Response) GetStatusCode() (code uint16, err protocol.Error) {
@@ -49,7 +49,7 @@ func (r *Response) GetStatusCode() (code uint16, err protocol.Error) {
 
 // GetError return realted er.Error in header of the Response
 func (r *Response) GetError() (err protocol.Error) {
-	var errIDString = r.header.Get(HeaderKeyErrorID)
+	var errIDString = r.H.Get(HeaderKeyErrorID)
 	var errID, _ = strconv.ParseUint(errIDString, 10, 64)
 	err = protocol.App.GetErrorByID(errID)
 	return
@@ -57,14 +57,14 @@ func (r *Response) GetError() (err protocol.Error) {
 
 // SetError set given er.Error to header of the response
 func (r *Response) SetError(err protocol.Error) {
-	r.header.Set(HeaderKeyErrorID, err.URN().IDasString())
+	r.H.Set(HeaderKeyErrorID, err.URN().IDasString())
 }
 
 // Redirect set given status and target location to the response
 // httpRes.Redirect(http.StatusMovedPermanentlyCode, http.StatusMovedPermanentlyPhrase, "http://www.google.com/")
 func (r *Response) Redirect(code, phrase string, target string) {
 	r.SetStatus(code, phrase)
-	r.header.Set(HeaderKeyLocation, target)
+	r.H.Set(HeaderKeyLocation, target)
 }
 
 /*
@@ -90,14 +90,15 @@ func (r *Response) Decode(reader protocol.Reader) (err protocol.Error) {
 	}
 
 	buf = buf[:headerReadLength]
-	err = r.Unmarshal(buf)
+	buf, err = r.UnmarshalFrom(buf)
 	if err != nil {
-		return
+		return err
 	}
-
-	_, goErr = r.body.readFrom(reader, &r.header)
-	if goErr != nil {
-		// err =
+	// check if body sent with header in one buffer
+	if len(buf) > 0 {
+		r.body.setReadedIncomeBody(buf, &r.H)
+	} else {
+		r.body.setReaderAsIncomeBody(reader, &r.H)
 	}
 	return
 }
@@ -128,7 +129,7 @@ func (r *Response) MarshalTo(httpPacket []byte) []byte {
 	httpPacket = append(httpPacket, r.reasonPhrase...)
 	httpPacket = append(httpPacket, CRLF...)
 
-	httpPacket = r.header.MarshalTo(httpPacket)
+	httpPacket = r.H.MarshalTo(httpPacket)
 	httpPacket = append(httpPacket, CRLF...)
 
 	httpPacket = r.body.MarshalTo(httpPacket)
@@ -146,7 +147,7 @@ func (r *Response) Unmarshal(httpPacket []byte) (err protocol.Error) {
 
 	// Just if body marshaled with first line and headers we need to do any action here
 	if len(maybeBody) > 0 {
-		r.body.setIncomeBody(maybeBody, &r.header)
+		r.body.setReadedIncomeBody(maybeBody, &r.H)
 	}
 	return
 }
@@ -185,7 +186,7 @@ func (r *Response) UnmarshalFrom(httpPacket []byte) (maybeBody []byte, err proto
 	// vs have 4 Int for each index
 	index = len(r.version) + len(r.statusCode) + len(r.reasonPhrase) + 4
 
-	index += r.header.Unmarshal(s)
+	index += r.H.Unmarshal(s)
 
 	// By https://tools.ietf.org/html/rfc2616#section-4 very simple http packet must end with CRLF even packet without header or body!
 	// So it can be occur panic if very simple request end without any CRLF
@@ -218,12 +219,13 @@ func (r *Response) ReadFrom(reader io.Reader) (n int64, goErr error) {
 	}
 	// check if body sent with header in one buffer
 	if len(buf) > 0 {
-		r.body.setIncomeBody(buf, &r.header)
+		r.body.setReadedIncomeBody(buf, &r.H)
 		n = int64(headerReadLength)
 	} else {
-		n, goErr = r.body.readFrom(reader, &r.header)
-		n += int64(headerReadLength)
+		r.body.setReaderAsIncomeBody(reader, &r.H)
 	}
+
+	n = int64(headerReadLength)
 	return
 }
 
@@ -275,7 +277,7 @@ func (r *Response) MarshalToWithoutBody(httpPacket []byte) []byte {
 	httpPacket = append(httpPacket, r.reasonPhrase...)
 	httpPacket = append(httpPacket, CRLF...)
 
-	httpPacket = r.header.MarshalTo(httpPacket)
+	httpPacket = r.H.MarshalTo(httpPacket)
 	httpPacket = append(httpPacket, CRLF...)
 	return httpPacket
 }
@@ -286,6 +288,6 @@ func (r *Response) LenWithoutBody() (ln int) {
 	ln += len(r.version)
 	ln += len(r.statusCode)
 	ln += len(r.reasonPhrase)
-	ln += r.header.Len()
+	ln += r.H.Len()
 	return
 }
