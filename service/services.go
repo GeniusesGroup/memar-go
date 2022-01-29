@@ -28,7 +28,7 @@ func (ss *Services) RegisterService(s protocol.Service) {
 
 func (ss *Services) registerServiceByURN(s protocol.Service) {
 	var serviceID = s.URN().ID()
-	if protocol.AppDevMode && ss.GetServiceByID(serviceID) != nil {
+	if protocol.AppMode_Dev && ss.GetServiceByID(serviceID) != nil {
 		// This condition will just be true in the dev phase.
 		panic("ID associated for '" + s.URN().URI() + "' Used before for other service and not legal to reuse same ID for other services\n" +
 			"Exiting service URN is: " + ss.GetServiceByID(serviceID).URN().URI())
@@ -40,7 +40,7 @@ func (ss *Services) registerServiceByURN(s protocol.Service) {
 func (ss *Services) registerServiceByURI(s protocol.Service) {
 	var serviceURI = s.URI()
 	if serviceURI != "" {
-		if protocol.AppDevMode && ss.GetServiceByURI(serviceURI) != nil {
+		if protocol.AppMode_Dev && ss.GetServiceByURI(serviceURI) != nil {
 			// This condition will just be true in the dev phase.
 			panic("URI associated for '" + s.URN().URI() + " service with `" + serviceURI + "` as URI, Used before for other service and not legal to reuse URI for other services\n" +
 				"Exiting service URN is: " + ss.GetServiceByURI(serviceURI).URN().URI())

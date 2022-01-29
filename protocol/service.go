@@ -17,9 +17,10 @@ type Service interface {
 	URN() GitiURN
 	URI() string // HTTPURI.Path
 	Status() SoftwareStatus
-	IssueDate() TimeUnix  // TODO::: Temporary use TimeUnix instead of Time
-	ExpiryDate() TimeUnix // TODO::: Temporary use TimeUnix instead of Time
+	IssueDate() TimeUnixSec  // TODO::: Temporary use TimeUnixSec instead of Time
+	ExpiryDate() TimeUnixSec // TODO::: Temporary use TimeUnixSec instead of Time
 	ExpireInFavorOf() GitiURN
+	Weight() Weight // Use to queue requests by services weights
 
 	// Service Authorization
 	CRUDType() CRUD
