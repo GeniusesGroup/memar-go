@@ -2,8 +2,14 @@
 
 package mediatype
 
+import "../protocol"
+
 var (
-	WOFF  = newMediaType("", "font/woff", "woff", "Web Open Font Format")
-	WOFF2 = newMediaType("", "font/woff2", "woff2", "Web Open Font Format version 2")
-	TTF   = newMediaType("", "font/ttf", "ttf", "TrueType Font")
+	WOFF = New("font/woff", "woff").
+		SetDetail(protocol.LanguageEnglish, "Web Open Font Format", "", []string{})
+	WOFF2 = New("font/woff2", "woff2").
+		SetDetail(protocol.LanguageEnglish, "Web Open Font Format version 2", "", []string{})
+
+	TTF = New("font/ttf", "ttf").
+		SetDetail(protocol.LanguageEnglish, "TrueType Font", "", []string{})
 )

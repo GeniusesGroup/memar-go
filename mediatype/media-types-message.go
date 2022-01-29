@@ -2,6 +2,9 @@
 
 package mediatype
 
+import "../protocol"
+
 var (
-	EML = newMediaType("", "message/rfc822", "eml", "")
+	EML = New("message/rfc822", "eml").
+		SetDetail(protocol.LanguageEnglish, "", "", []string{})
 )

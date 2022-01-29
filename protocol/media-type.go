@@ -25,7 +25,7 @@ type MediaType interface {
 	Parameter() string // if any
 	FileExtension() string
 	Status() SoftwareStatus
-	IssueDate() Time
-	ExpiryDate() Time
+	IssueDate() TimeUnixSec  // TODO::: Temporary use TimeUnixSec instead of Time
+	ExpiryDate() TimeUnixSec // TODO::: Temporary use TimeUnixSec instead of Time
 	ExpireInFavorOf() MediaType
 }

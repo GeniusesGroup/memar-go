@@ -2,13 +2,27 @@
 
 package mediatype
 
+import "../protocol"
+
 var (
-	AAC          = newMediaType("", "audio/aac", "aac", "AAC audio file")
-	WAV          = newMediaType("", "audio/x-wav", "wav", "Waveform Audio Format")
-	WEBA         = newMediaType("", "audio/webm", "webm", "WEBM audio")
-	OGA          = newMediaType("", "audio/ogg", "ogg", "OGG audio")
-	MID          = newMediaType("", "audio/mid", "mid", "Musical Instrument Digital Interface")
-	MIDI         = newMediaType("", "audio/midi", "midi", "Musical Instrument Digital Interface")
-	ThreeGPAudio = newMediaType("", "audio/3gpp", "3gp", "3GPP audio container")
-	ThreeG2Audio = newMediaType("", "audio/3gpp2", "3g2", "3GPP2 audio container")
+	AAC = New("audio/aac", "aac").
+		SetDetail(protocol.LanguageEnglish, "AAC audio file", "", []string{})
+
+	WAV = New("audio/x-wav", "wav").
+		SetDetail(protocol.LanguageEnglish, "Waveform Audio Format", "", []string{})
+	WEBA = New("audio/webm", "webm").
+		SetDetail(protocol.LanguageEnglish, "WEBM audio", "", []string{})
+
+	OGA = New("audio/ogg", "ogg").
+		SetDetail(protocol.LanguageEnglish, "OGG audio", "", []string{})
+
+	MID = New("audio/mid", "mid").
+		SetDetail(protocol.LanguageEnglish, "Musical Instrument Digital Interface", "", []string{})
+	MIDI = New("audio/midi", "midi").
+		SetDetail(protocol.LanguageEnglish, "Musical Instrument Digital Interface", "", []string{})
+
+	ThreeGPAudio = New("audio/3gpp", "3gp").
+			SetDetail(protocol.LanguageEnglish, "3GPP audio container", "", []string{})
+	ThreeG2Audio = New("audio/3gpp2", "3g2").
+			SetDetail(protocol.LanguageEnglish, "3GPP2 audio container", "", []string{})
 )
