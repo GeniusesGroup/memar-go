@@ -12,6 +12,8 @@ import (
 	"runtime"
 	"testing"
 
+	"../protocol"
+
 	jsoniter "github.com/json-iterator/go"
 	jlexer "github.com/mailru/easyjson/jlexer"
 	jwriter "github.com/mailru/easyjson/jwriter"
@@ -226,187 +228,124 @@ func Test2EasyDecode(t *testing.T) {
 	libgo Encoder and decoder (this package)
 */
 
-func (t *test2) libgoDecoder(buf []byte) (err error) {
+func (t *test2) libgoDecoder(buf []byte) (err protocol.Error) {
 	var decoder = DecoderUnsafeMinifed{
 		Buf: buf,
 	}
-	for {
-		decoder.Offset(2)       // remove		'{"' && ',"'		due to don't need them
-		// fmt.Print(string(decoder.Buf[:40]), "\n")
-		switch decoder.Buf[0] { // Just check first letter first!
-		case 'A':
-			// Array":[],"ArraySlice":[],"ArrayBase64":""
-			if decoder.Buf[5] == 'S' {
-				decoder.SetFounded()
-				decoder.Offset(13)
-				t.ArraySlice = make([]uint64, 0, 8)
-				var value uint64
-				for !decoder.CheckToken(']') {
-					value, err = decoder.DecodeUInt64()
-					if err != nil {
-						return
+	for err == nil {
+		var keyName = decoder.DecodeKey()
+		fmt.Println(keyName)
+		switch keyName {
+		case "ArraySlice":
+			t.ArraySlice = make([]uint64, 0, 8)
+			var value uint64
+			for !decoder.CheckToken(']') {
+				value, err = decoder.DecodeUInt64()
+				t.ArraySlice = append(t.ArraySlice, value)
+				decoder.Offset(1)
+			}
+		case "ArrayBase64":
+			t.ArrayBase64, err = decoder.DecodeByteSliceAsBase64()
+		case "Array":
+			err = decoder.DecodeByteArrayAsNumber(t.Array[:])
+		case "Boolean": // Boolean":false, || Boolean":true,
+			t.Boolean, err = decoder.DecodeBool()
+		case "ComplexObject":
+			t.ComplexObject = make(map[string]*innerTest2, 16)
+			for decoder.Buf[0] != '}' {
+				var key string
+				var value innerTest2
+				decoder.Offset(2) // remove		'{"'	||	 ',"'
+				key = decoder.DecodeKey()
+				for !decoder.CheckToken('}') {
+					decoder.Offset(2) // remove		':"'	||	 ',"'
+					switch decoder.Buf[0] {
+					case 'S':
+						// String":"",
+						decoder.Offset(9)
+						value.String, err = decoder.DecodeString()
+					case 'N':
+						// Number":0}
+						decoder.Offset(8)
+						value.Number, err = decoder.DecodeUInt64()
+						if err != nil {
+							return
+						}
+						decoder.Offset(1)
 					}
-					t.ArraySlice = append(t.ArraySlice, value)
-					decoder.Offset(1)
 				}
-			} else if decoder.Buf[5] == 'B' {
-				decoder.SetFounded()
-				decoder.Offset(14)
-				t.ArrayBase64, err = decoder.DecodeSliceAsBase64()
+				t.ComplexObject[key] = &value
+			}
+		case "ComplexArray":
+			t.ComplexArray = make([]*innerTest2, 16)
+			for decoder.Buf[0] != ']' {
+				var value innerTest2
+				decoder.Offset(1) // remove		'['	||	 ','
+				for !decoder.CheckToken('}') {
+					decoder.Offset(2) // remove		'{"'
+					switch decoder.Buf[0] {
+					case 'S':
+						// String":"",
+						decoder.Offset(9)
+						value.String, err = decoder.DecodeString()
+					case 'N':
+						// Number":0}
+						decoder.Offset(8)
+						value.Number, err = decoder.DecodeUInt64()
+						if err != nil {
+							return
+						}
+					}
+				}
+				t.ComplexArray = append(t.ComplexArray, &value)
+			}
+		case "FloatNumber": // FloatNumber":12.3,
+			t.FloatNumber, err = decoder.DecodeFloat64AsNumber()
+		case "IntegerNumber": // IntegerNumber":0000,"
+			t.IntegerNumber, err = decoder.DecodeUInt64()
+		case "SimpleObject": // SimpleObject":{"":0,"":0}	StringObject":{"":"","":""}		String":""
+			t.SimpleObject = make(map[string]uint64, 16) // TODO::: make efficient enough?
+			for !decoder.CheckToken('}') {
+				var key string
+				var value uint64
+				decoder.Offset(2) // remove		'{"'	||	 ',"'
+				key = decoder.DecodeKey()
+				value, err = decoder.DecodeUInt64()
 				if err != nil {
 					return
 				}
-			} else {
-				decoder.SetFounded()
-				decoder.Offset(8)
-				var value uint8
-				for i := 0; i < 16; i++ {
-					value, err = decoder.DecodeUInt8()
-					if err != nil {
-						return
-					}
-					t.Array[i] = value
-					decoder.Offset(1)
-				}
+				t.SimpleObject[key] = value
 			}
-		case 'B':
-			// Boolean":false, || Boolean":true,
-			decoder.SetFounded()
-			if decoder.Buf[9] == 't' {
-				t.Boolean = true
-				decoder.Offset(13)
-			} else {
-				// t.Boolean = false
-				decoder.Offset(14)
-			}
-		case 'C':
-			// ComplexObject":{}	ComplexArray":[],
-			if decoder.Buf[7] == 'O' {
-				decoder.SetFounded()
-				decoder.Offset(15)
-				t.ComplexObject = make(map[string]*innerTest2, 16)
-				for decoder.Buf[0] != '}' {
-					var key string
-					var value innerTest2
-					decoder.Offset(2) // remove		'{"'	||	 ',"'
-					key = decoder.DecodeKey()
-					for !decoder.CheckToken('}') {
-						decoder.Offset(2) // remove		':"'	||	 ',"'
-						switch decoder.Buf[0] {
-						case 'S':
-							// String":"",
-							decoder.Offset(9)
-							value.String = decoder.DecodeString()
-						case 'N':
-							// Number":0}
-							decoder.Offset(8)
-							value.Number, err = decoder.DecodeUInt64()
-							if err != nil {
-								return
-							}
-							decoder.Offset(1)
-						}
-					}
-					t.ComplexObject[key] = &value
-				}
+			decoder.Offset(1)
+		case "StringObject":
+			var key string
+			var value string
+			t.StringObject = make(map[string]string, 16) // TODO::: make efficient enough?
+			for decoder.Buf[0] != '}' {
+				decoder.Offset(2)
+				key = decoder.DecodeKey()
 				decoder.Offset(1)
-			} else {
-				decoder.SetFounded()
-				decoder.Offset(14)
-				t.ComplexArray = make([]*innerTest2, 16)
-				for decoder.Buf[0] != ']' {
-					var value innerTest2
-					decoder.Offset(1) // remove		'['	||	 ','
-					for !decoder.CheckToken('}') {
-						decoder.Offset(2) // remove		'{"'
-						switch decoder.Buf[0] {
-						case 'S':
-							// String":"",
-							decoder.Offset(9)
-							value.String = decoder.DecodeString()
-						case 'N':
-							// Number":0}
-							decoder.Offset(8)
-							value.Number, err = decoder.DecodeUInt64()
-							if err != nil {
-								return
-							}
-							decoder.Offset(1)
-						}
-					}
-					t.ComplexArray = append(t.ComplexArray, &value)
-				}
-				decoder.Offset(1)
+				value, err = decoder.DecodeString()
+				t.StringObject[key] = value
 			}
-		case 'F':
-			// FloatNumber":12.3,
-			decoder.SetFounded()
-			decoder.Offset(13)
-			t.FloatNumber, err = decoder.DecodeFloat64AsNumber()
-			if err != nil {
-				return
-			}
-		case 'I':
-			// IntegerNumber":0000,"
-			decoder.SetFounded()
-			decoder.Offset(15)
-			t.IntegerNumber, err = decoder.DecodeUInt64()
-			if err != nil {
-				return
-			}
-		case 'S':
-			// SimpleObject":{"":0,"":0}	StringObject":{"":"","":""}		String":""
-			if decoder.Buf[1] == 'i' {
-				decoder.SetFounded()
-				decoder.Offset(14)
-				t.SimpleObject = make(map[string]uint64, 16) // TODO::: make efficient enough?
-				for !decoder.CheckToken('}') {
-					var key string
-					var value uint64
-					decoder.Offset(2) // remove		'{"'	||	 ',"'
-					key = decoder.DecodeKey()
-					value, err = decoder.DecodeUInt64()
-					if err != nil {
-						return
-					}
-					t.SimpleObject[key] = value
-				}
-				decoder.Offset(1)
-			} else if decoder.Buf[6] == 'O' {
-				decoder.SetFounded()
-				decoder.Offset(14)
-				var key string
-				var value string
-				t.StringObject = make(map[string]string, 16) // TODO::: make efficient enough?
-				for decoder.Buf[0] != '}' {
-					decoder.Offset(2)
-					key = decoder.DecodeKey()
-					decoder.Offset(1)
-					value = decoder.DecodeString()
-					t.StringObject[key] = value
-				}
-				decoder.Offset(1)
-			} else {
-				decoder.SetFounded()
-				decoder.Offset(9)
-				t.String = decoder.DecodeString()
-			}
+			decoder.Offset(1)
+		case "String":
+			t.String, err = decoder.DecodeString()
+		default:
+			err = decoder.NotFoundKeyStrict()
 		}
 
-		if len(decoder.Buf) < 2 {
+		if len(decoder.Buf) < 3 {
 			// Reach last item!
 			return
 		}
-		err = decoder.IterationCheck()
-		if err != nil {
-			return
-		}
 	}
+	return
 }
 
 func (t *test2) libgoEncoder() (buf []byte) {
 	var encoder = Encoder{
-		Buf: make([]byte, 0, t.jsonLen()),
+		Buf: make([]byte, 0, t.LenAsJSON()),
 	}
 
 	encoder.EncodeString(`{"SimpleObject":{`)
@@ -475,24 +414,19 @@ func (t *test2) libgoEncoder() (buf []byte) {
 	encoder.EncodeString(`,"FloatNumber":`)
 	encoder.EncodeFloat64(t.FloatNumber)
 
-	if t.Boolean {
-		encoder.EncodeString(`,"Boolean":true}`)
-	} else {
-		encoder.EncodeString(`,"Boolean":false}`)
-	}
-	// encoder.EncodeString(`,"Boolean":`)
-	// encoder.EncodeBoolean(t.Boolean)
-	// encoder.EncodeByte('}')
+	encoder.EncodeString(`,"Boolean":`)
+	encoder.EncodeBoolean(t.Boolean)
 
+	encoder.EncodeByte('}')
 	return encoder.Buf
 }
 
-func (t *test2) jsonLen() (ln int) {
-	ln = 185                       // len(`{"SimpleObject":{},"StringObject":{},"ComplexObject":{},"Array":[],"ArraySlice":[],"ArrayBase64":"","ComplexArray":[],"String":"","IntegerNumber":,"FloatNumber":,"Boolean":}`)
-	ln += len(t.SimpleObject) * 20 // TODO::: IS it worth to calculate value size??
+func (t *test2) LenAsJSON() (ln int) {
+	ln = 185 // len(`{"SimpleObject":{},"StringObject":{},"ComplexObject":{},"Array":[],"ArraySlice":[],"ArrayBase64":"","ComplexArray":[],"String":"","IntegerNumber":,"FloatNumber":,"Boolean":}`)
 	if t.SimpleObject != nil {
+		ln += len(t.SimpleObject) * 20 // TODO::: IS it worth to calculate value size??
 		for key := range t.SimpleObject {
-			ln += len(key)
+			ln += len(key) + 3 // 3 = len('"":')
 			// ln += 20 // TODO::: IS it worth to calculate value size??
 		}
 	}
@@ -528,7 +462,7 @@ func (t *test2) jsonLen() (ln int) {
 	ln += 20 // >> len(t.IntegerNumber) TODO::: Is it worth to calculate integer size??
 	ln += 20 // >> len(t.FloatNumber) TODO::: Is it worth to calculate integer size??
 	ln += 5  // >> len("false") as bigger one!!
-	return ln
+	return
 }
 
 /*
@@ -579,8 +513,7 @@ func easyjsonA6c3493fDecodeBench(in *jlexer.Lexer, out *test2) {
 				for !in.IsDelim('}') {
 					key := string(in.String())
 					in.WantColon()
-					var v1 uint64
-					v1 = uint64(in.Uint64())
+					var v1 uint64 = uint64(in.Uint64())
 					(out.SimpleObject)[key] = v1
 					in.WantComma()
 				}
@@ -595,8 +528,7 @@ func easyjsonA6c3493fDecodeBench(in *jlexer.Lexer, out *test2) {
 				for !in.IsDelim('}') {
 					key := string(in.String())
 					in.WantColon()
-					var v2 string
-					v2 = string(in.String())
+					var v2 string = string(in.String())
 					(out.StringObject)[key] = v2
 					in.WantComma()
 				}
@@ -648,8 +580,7 @@ func easyjsonA6c3493fDecodeBench(in *jlexer.Lexer, out *test2) {
 					out.ArraySlice = (out.ArraySlice)[:0]
 				}
 				for !in.IsDelim(']') {
-					var v5 uint64
-					v5 = uint64(in.Uint64())
+					var v5 uint64 = uint64(in.Uint64())
 					out.ArraySlice = append(out.ArraySlice, v5)
 					in.WantComma()
 				}

@@ -4,12 +4,14 @@ package json
 
 import (
 	"encoding/json"
+
+	"../protocol"
 )
 
 /*
 	********************PAY ATTENTION:*******************
-	We don't suggest use these 2 func instead use CompleteMethods() to autogenerate needed code before compile time
-	and reduce runtime proccess to improve performance of the app and gain max performance from this protocol!
+	We don't suggest use these codec instead use Codec and autogenerate needed code before compile time
+	and reduce runtime proccess to improve performance of the app and gain better performance from this protocol!
 */
 
 /*
@@ -30,15 +32,39 @@ Field int `json:"-,"`               // Field appears in JSON as key "-".
 */
 
 // Marshal encodes the value of s to the payload buffer in runtime.
-func Marshal(s interface{}) (p []byte, err error) {
+func Marshal(s interface{}) (p []byte, err protocol.Error) {
 	// TODO::: make better algorithm instead of below
-	p, err = json.Marshal(s)
+	var goErr error
+	p, goErr = json.Marshal(s)
+	if goErr != nil {
+		return nil, ErrEncodedCorrupted
+	}
 	return
 }
 
-// UnMarshal decode payload and stores the result in the value pointed to by s in runtime.
-func UnMarshal(p []byte, s interface{}) (err error) {
+// Unmarshal decode payload and stores the result in the value pointed to by s in runtime.
+func Unmarshal(p []byte, s interface{}) (err protocol.Error) {
 	// TODO::: make better algorithm instead of below
-	err = json.Unmarshal(p, s)
+	var goErr error = json.Unmarshal(p, s)
+	if goErr != nil {
+		return ErrEncodedCorrupted
+	}
+	return
+}
+
+// RunTimeCodec is a wrapper to use anywhere need protocol.Codec interface instead of protocol.JSON interface
+type RunTimeCodec struct {
+	t       interface{}
+	decoder interface{}
+	encoder interface{}
+	len     int
+}
+
+func NewRunTimeCodec(t interface{}) (codec *RunTimeCodec) {
+	codec = &RunTimeCodec{
+		t: t,
+		// len: json.LenAsJSON(),
+	}
+	// codec.encoder.buf = make([]byte, 0, codec.len)
 	return
 }

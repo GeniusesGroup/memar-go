@@ -2,20 +2,13 @@
 
 package protocol
 
-const (
-	JSONDomain = "json.protocol"
-
-	JSONCompleteGoJSONMethodsService = "urn:giti:json.protocol:service:complete-go-json-methods"
-	JSONGenerateGoJSONMethodsService = "urn:giti:json.protocol:service:generate-go-json-methods"
-)
-
-// JSON is the interface that must implement by any struct to be a JSON object!
+// JSON is the interface that must implement by any struct to be a JSON object.
 // Standards by https://www.json.org/json-en.html
 type JSON interface {
 	// ToJSON encode the struct pointer to JSON format
 	// actually payload is a byte slice buffer interface but due to prevent unnecessary memory allocation use simple []byte
 	ToJSON(payload []byte) []byte
-	// FromJSON decode JSON to the struct pointer!
+	// FromJSON decode JSON to the struct pointer
 	// actually payload is a byte slice buffer interface but due to prevent unnecessary memory allocation use simple []byte
 	FromJSON(payload []byte) (err Error)
 

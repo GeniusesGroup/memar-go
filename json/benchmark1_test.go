@@ -10,7 +10,8 @@ import (
 	"reflect"
 	"testing"
 
-	er "../error"
+	"../protocol"
+
 	jsoniter "github.com/json-iterator/go"
 	jlexer "github.com/mailru/easyjson/jlexer"
 	jwriter "github.com/mailru/easyjson/jwriter"
@@ -224,8 +225,7 @@ func Benchmark1JsoniterEncode(b *testing.B) {
 */
 
 func Test1LibgoEncode(t *testing.T) {
-	var buf []byte
-	buf = unMarshaledTest1.libgoEncoder()
+	var buf []byte = unMarshaledTest1.libgoEncoder()
 	if !bytes.Equal(buf, marshaledTest1Libgo) {
 		t.Error("Encoded unMarshaledTest1 not same\n")
 		t.Error("len--cap of test: ", len(buf), "--", cap(buf), "\n")
@@ -243,7 +243,7 @@ func Test1LibgoEncode(t *testing.T) {
 	libgo Encoder and decoder (this package)
 */
 
-func (t *test1) libgoDecoder(buf []byte) (err *er.Error) {
+func (t *test1) libgoDecoder(buf []byte) (err protocol.Error) {
 	var decoder = DecoderUnsafeMinifed{
 		Buf: buf,
 	}
@@ -268,21 +268,16 @@ func (t *test1) libgoDecoder(buf []byte) (err *er.Error) {
 }
 
 func (t *test1) libgoEncoder() []byte {
-	var encoder = Encoder{
-		Buf: make([]byte, 0, t.jsonLen()),
-	}
-
+	var encoder = Encoder{Buf: make([]byte, 0, t.LenAsJSON())}
 	encoder.EncodeString(`{"CaptchaID":"`)
 	encoder.EncodeByteSliceAsBase64(t.CaptchaID[:])
-
 	encoder.EncodeString(`","Image":"`)
 	encoder.EncodeByteSliceAsBase64(t.Image)
-
 	encoder.EncodeString(`"}`)
 	return encoder.Buf
 }
 
-func (t *test1) jsonLen() (ln int) {
+func (t *test1) LenAsJSON() (ln int) {
 	ln = ((len(t.Image)*8 + 5) / 6)
 	ln += 49
 	return

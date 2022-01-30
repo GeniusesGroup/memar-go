@@ -14,10 +14,16 @@ type Encoder struct {
 	Buf []byte
 }
 
+// AddTrailingComma add last value in Buf as trailing comma
+func (e *Encoder) AddTrailingComma() {
+	e.Buf = append(e.Buf, ',')
+}
+
 // RemoveTrailingComma remove last value in Buf as trailing comma
 func (e *Encoder) RemoveTrailingComma() {
-	if e.Buf[len(e.Buf)-1] == ',' {
-		e.Buf = e.Buf[:len(e.Buf)-1]
+	var lastItemIndex = len(e.Buf) - 1
+	if e.Buf[lastItemIndex] == ',' {
+		e.Buf = e.Buf[:lastItemIndex]
 	}
 }
 
