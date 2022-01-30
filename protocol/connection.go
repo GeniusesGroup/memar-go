@@ -3,6 +3,8 @@
 package protocol
 
 type Connections interface {
+	GuestConnectionCount() uint64
+
 	GetConnectionByPeerAddr(addr [16]byte) (conn Connection, err Error)
 	// A connection can use just by single app node, so user can't use same connection to connect other node before close connection on usage node.
 	GetConnectionByUserIDDelegateUserID(userID, delegateUserID [16]byte) (conn Connection, err Error)
@@ -21,7 +23,7 @@ type Connection interface {
 	MTU() int
 	Status() ConnectionState     // return last connection state
 	State() chan ConnectionState // return state channel to listen to new connection state. for more than one listener use channel hub(repeater)
-	Weight() ConnectionWeight
+	Weight() Weight
 
 	/* Peer data */
 	Addr() [16]byte
@@ -29,9 +31,6 @@ type Connection interface {
 	DomainName() string // if exist
 	UserID() UserID
 	DelegateUserID() UserID // Persons can delegate to things(as a user type)
-
-	/* Security data */
-	Cipher() Cipher
 
 	Close() (err Error)  // Just once
 	Revoke() (err Error) // Just once
@@ -48,6 +47,8 @@ type ConnectionMetrics interface {
 	PacketsSent() uint64                 // Counts sent packets
 	BytesReceived() uint64               // Counts the bytes of packets receive
 	PacketsReceived() uint64             // Counts received packets
+	LostPackets() uint64                 //
+	LostBytes() uint64                   //
 	FailedPacketsReceived() uint64       // Counts failed packets receive for firewalling server from some attack types
 	NotRequestedPacketsReceived() uint64 // Counts not requested packets received for firewalling server from some attack types
 	SucceedStreamCount() uint64          // Count successful request
@@ -57,49 +58,42 @@ type ConnectionMetrics interface {
 	StreamFailed()
 	PacketReceived(packetLength uint64)
 	PacketSent(packetLength uint64)
+	PacketResend(packetLength uint64)
 }
 
-// ConnectionWeight indicate connection and stream state
+// ConnectionState indicate connection and stream state
 type ConnectionState uint8
 
 // Standrad Connection States
 const (
-	ConnectionStateUnset  ConnectionState = iota // State not set yet!
-	ConnectionStateNew                           // means connection not saved yet to storage!
-	ConnectionStateLoaded                        // means connection load from storage
+	ConnectionState_Unset  ConnectionState = iota // State not set yet
+	ConnectionState_New                           // means connection not saved yet to storage
+	ConnectionState_Loaded                        // means connection load from storage
+	ConnectionState_Unregistered
 
-	ConnectionStateOpening // connection||stream plan to open and not ready to accept stream!
-	ConnectionStateOpen    // connection||stream is open and ready to use
-	ConnectionStateClosing // connection||stream plan to close and not accept new stream
-	ConnectionStateClosed  // connection||stream had been closed
+	ConnectionState_Opening // connection||stream plan to open and not ready to accept stream
+	ConnectionState_Open    // connection||stream is open and ready to use
+	ConnectionState_Closing // connection||stream plan to close and not accept new stream
+	ConnectionState_Closed  // connection||stream had been closed
 
-	ConnectionStateNotResponse // peer not response to recently send request!
-	ConnectionStateRateLimited // connection||stream limited due to higher usage than permitted!
+	ConnectionState_NotResponse // peer not response to recently send request
+	ConnectionState_RateLimited // connection||stream limited due to higher usage than permitted
+	ConnectionState_Timeout     // connection||stream timeout(DeadlineExceeded) and must close
 
-	ConnectionStateBrokenPacket
-	ConnectionStateNeedMoreData
-	ConnectionStateSending
-	ConnectionStateReceiving
-	ConnectionStateReceivedCompletely
-	ConnectionStateSentCompletely
+	ConnectionState_BrokenPacket
+	ConnectionState_NeedMoreData
+	ConnectionState_Sending
+	ConnectionState_Receiving
+	ConnectionState_ReceivedCompletely
+	ConnectionState_SentCompletely
 
-	ConnectionStateEncrypted
-	ConnectionStateDecrypted
-	ConnectionStateReady
-	ConnectionStateIdle
+	ConnectionState_Encrypted
+	ConnectionState_Decrypted
+	ConnectionState_Ready
+	ConnectionState_Idle
 
-	ConnectionStateBlocked
-	ConnectionStateBlockedByPeer
-)
+	ConnectionState_Blocked
+	ConnectionState_BlockedByPeer
 
-// ConnectionWeight indicate connection and stream weight
-type ConnectionWeight uint8
-
-// Standrad Connection Weights
-const (
-	ConnectionWeightUnset ConnectionWeight = iota
-
-	ConnectionWeightNormal
-	ConnectionWeightTimeSensitive // If true must call related service in each received packet. VoIP, IPTV, Sensors data, ...
-	// TODO::: 16 queue for priority weight of the connections exist.
+	// Each package can declare it's own state with ConnectionState > 127 e.g. tcp: TCP_SYN_SENT, TCP_SYN_RECV, ...
 )

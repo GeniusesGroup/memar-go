@@ -7,12 +7,11 @@ const (
 	// AppLanguage store global language to use by any locale text selector.
 	AppLanguage = LanguageEnglish
 
-	// AppDevMode use to save more log when enabled and disabled||enabled some rules.
-	AppDevMode = true
-	// AppDebugMode use to save more log when enabled.
-	AppDebugMode = true
-	// AppDeepDebugMode use to save most details log when enabled like RAW req&&res in any protocol like HTTP, sRPC, ...
-	AppDeepDebugMode = true
+	// AppMode_Dev use to indicate that app can do some more logic e.g.
+	// - Save more logs
+	// - Add more services like net/http/pprof for better debugging
+	// - Add more pages that just need only for developers
+	AppMode_Dev = true
 )
 
 // App is default global protocol.Application
