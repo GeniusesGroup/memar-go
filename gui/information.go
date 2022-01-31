@@ -1,6 +1,6 @@
 /* For license and copyright information please see LEGAL file in repository */
 
-package engine
+package gui
 
 // Information :
 type Information struct {

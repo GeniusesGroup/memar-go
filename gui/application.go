@@ -1,12 +1,12 @@
 /* For license and copyright information please see LEGAL file in repository */
 
-package engine
+package gui
 
 func init() {
 	
 }
 
-// Application :
+// Application store the data to run a GUI application
 type Application struct {
 	Domain                  string // full domain name use for gui app like gui.sabz.city
 	Icon                    []byte
