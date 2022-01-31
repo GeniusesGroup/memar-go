@@ -18,19 +18,16 @@ type Handler struct{}
 func (handler *Handler) HandleIncomeRequest(stream protocol.Stream) (err protocol.Error) {
 	var httpReq = NewRequest()
 	var httpRes = NewResponse()
+	var streamSocket = stream.Socket()
 
 	var maybeBody []byte
-	maybeBody, err = httpReq.UnmarshalFrom(stream.IncomeData().Marshal())
+	maybeBody, err = httpReq.UnmarshalFrom(streamSocket.Marshal())
 	if err != nil {
 		httpRes.SetStatus(StatusBadRequestCode, StatusBadRequestPhrase)
 		handler.HandleOutcomeResponse(stream, httpReq, httpRes)
 		return
 	}
-	if len(maybeBody) > 0 {
-		httpReq.body.setReadedIncomeBody(maybeBody, &httpReq.H)
-	} else {
-		httpReq.setCodecAsIncomeBody(stream.IncomeData(), &httpReq.H)
-	}
+	httpReq.body.checkAndSetCodecAsIncomeBody(maybeBody, streamSocket, &httpReq.H)
 
 	err = handler.ServeHTTP(stream, httpReq, httpRes)
 	return
@@ -119,7 +116,7 @@ func SendBidirectionalRequest(conn protocol.Connection, service protocol.Service
 			// err =
 		case protocol.ConnectionState_ReceivedCompletely:
 			httpRes = NewResponse()
-			err = httpRes.Unmarshal(stream.IncomeData().Marshal())
+			err = httpRes.Unmarshal(stream.Socket().Marshal())
 			if err == nil {
 				err = httpRes.GetError()
 			}

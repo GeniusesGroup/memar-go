@@ -63,12 +63,7 @@ func (r *Request) Decode(reader protocol.Reader) (err protocol.Error) {
 	if err != nil {
 		return err
 	}
-	// check if body sent with header in one buffer
-	if len(buf) > 0 {
-		r.body.setReadedIncomeBody(buf, &r.H)
-	} else {
-		r.body.setReaderAsIncomeBody(reader, &r.H)
-	}
+	r.body.checkAndSetReaderAsIncomeBody(buf, reader, &r.H)
 	return
 }
 
@@ -112,11 +107,7 @@ func (r *Request) Unmarshal(httpPacket []byte) (err protocol.Error) {
 	if err != nil {
 		return
 	}
-
-	// Just if body marshaled with first line and headers we need to do any action here
-	if len(maybeBody) > 0 {
-		r.body.setReadedIncomeBody(maybeBody, &r.H)
-	}
+	err = r.body.checkAndSetIncomeBody(maybeBody, &r.H)
 	return
 }
 
@@ -129,7 +120,7 @@ func (r *Request) UnmarshalFrom(httpPacket []byte) (maybeBody []byte, err protoc
 
 	// First line: GET /index.html HTTP/1.0
 	var index int
-	index = strings.IndexByte(s, SP)
+	index = strings.IndexByte(s[:methodMaxLength], SP)
 	if index == -1 {
 		return httpPacket[:], ErrParseMethod
 	}
@@ -139,7 +130,7 @@ func (r *Request) UnmarshalFrom(httpPacket []byte) (maybeBody []byte, err protoc
 	index = r.uri.unmarshalFrom(s)
 	s = s[index+1:]
 
-	index = strings.IndexByte(s, '\r')
+	index = strings.IndexByte(s[:versionMaxLength], '\r')
 	if index == -1 {
 		return httpPacket[index:], ErrParseVersion
 	}
@@ -183,12 +174,7 @@ func (r *Request) ReadFrom(reader io.Reader) (n int64, goErr error) {
 	if err != nil {
 		return int64(headerReadLength), err
 	}
-	// check if body sent with header in one buffer
-	if len(buf) > 0 {
-		r.body.setReadedIncomeBody(buf, &r.H)
-	} else {
-		r.body.setReaderAsIncomeBody(reader, &r.H)
-	}
+	r.body.checkAndSetReaderAsIncomeBody(buf, reader, &r.H)
 
 	n = int64(headerReadLength)
 	return

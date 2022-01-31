@@ -44,6 +44,8 @@ const (
 
 // Standard HTTP versions
 const (
+	versionMaxLength = 9 // plus one for ' ' or '\r' character after method name.
+
 	VersionHTTP1  = "HTTP/1.0"
 	VersionHTTP11 = "HTTP/1.1"
 	VersionHTTP2  = "HTTP/2.0"
@@ -53,6 +55,8 @@ const (
 // Standard HTTP methods
 // https://tools.ietf.org/html/rfc7231#section-4
 const (
+	methodMaxLength = 8 // plus one for ' ' character after method name.
+
 	MethodGET     = "GET"
 	MethodPOST    = "POST"
 	MethodHEAD    = "HEAD"
@@ -185,6 +189,9 @@ const (
 // HTTP Status codes
 // https://tools.ietf.org/html/rfc7231#section-6
 const (
+	statusCodeMaxLength = 4 // plus one for ' ' character after method name.
+	// Due to RFC(https://datatracker.ietf.org/doc/html/rfc2616#section-6.1.1) can't indicate phrase max length
+
 	StatusContinue                 uint16 = 100 // RFC 7231, 6.2.1
 	StatusContinueCode                    = "100"
 	StatusContinuePhrase                  = "Continue"

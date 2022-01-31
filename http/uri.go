@@ -28,8 +28,6 @@ type URI struct {
 }
 
 func (u *URI) Init(uri string) {
-	u.uri = uri
-	u.uriAsByte = convert.UnsafeStringToByteSlice(uri)
 	u.unmarshalFrom(uri)
 }
 
@@ -79,7 +77,7 @@ func (u *URI) Decode(reader protocol.Reader) (err protocol.Error) {
 	return
 }
 
-func (u *URI) Encode(writer protocol.Writer)  (err protocol.Error) {
+func (u *URI) Encode(writer protocol.Writer) (err protocol.Error) {
 	var encodedURI = u.Marshal()
 	var _, goErr = writer.Write(encodedURI)
 	if goErr != nil {
@@ -115,9 +113,7 @@ func (u *URI) Unmarshal(uri []byte) (err protocol.Error) {
 
 // UnmarshalFrom use to parse and decode given URI to u
 func (u *URI) UnmarshalFrom(data []byte) (remaining []byte, err protocol.Error) {
-	u.uri = convert.UnsafeByteSliceToString(data)
-	u.uriAsByte = data
-	var uriEnd = u.unmarshalFrom(u.uri)
+	var uriEnd = u.unmarshalFrom(convert.UnsafeByteSliceToString(data))
 	remaining = data[uriEnd:]
 	return
 }
@@ -126,7 +122,7 @@ func (u *URI) UnmarshalFrom(data []byte) (remaining []byte, err protocol.Error) 
 ********** io package interfaces **********
  */
 
- func (u *URI) WriteTo(writer io.Writer) (n int64, err error) {
+func (u *URI) WriteTo(writer io.Writer) (n int64, err error) {
 	var encodedURI = u.Marshal()
 	var writeLength int
 	writeLength, err = writer.Write(encodedURI)
@@ -164,65 +160,70 @@ func (u *URI) marshalTo(httpPacket []byte) []byte {
 // unmarshalFrom use to parse and decode given URI to u
 func (u *URI) unmarshalFrom(s string) (uriEnd int) {
 	if s[0] == Asterisk {
-		u.uri = s[:1]
-		return 1
-	}
+		uriEnd = 1
+	} else {
+		var originForm bool
+		if s[0] == '/' {
+			originForm = true
+		}
 
-	var originForm bool
-	if s[0] == '/' {
-		originForm = true
-	}
-
-	var authorityStartIndex, pathStartIndex, questionIndex, numberSignIndex int
-	var ln = len(s)
-	for i := 0; i < ln; i++ {
-		switch s[i] {
-		case Colon:
-			// Check : mark is first appear before any start||end sign or it is part of others!
-			if authorityStartIndex == 0 {
-				u.scheme = s[:i]
-				i += 2                      // next loop will i+=1 so we just add i+=2
-				authorityStartIndex = i + 1 // +3 due to have ://
-			}
-		case Slash:
-			// Just check slash in middle of URI! If URI in origin form pathStartIndex always be 0!
-			if authorityStartIndex != 0 && pathStartIndex == 0 {
-				pathStartIndex = i
-				u.authority = s[authorityStartIndex:pathStartIndex]
-			} else if !originForm && pathStartIndex == 0 && i != 0 {
-				pathStartIndex = i
-				u.authority = s[:i]
-			}
-		case Question:
-			// Check ? mark is first appear or it is part of some query key||value!
-			if questionIndex == 0 {
-				questionIndex = i
-				u.path = s[pathStartIndex:questionIndex]
-			}
-		case NumberSign:
-			if numberSignIndex == 0 {
-				numberSignIndex = i
-				if questionIndex == 0 {
-					u.path = s[pathStartIndex:numberSignIndex]
-				} else {
-					u.query = s[questionIndex+1 : numberSignIndex] // +1 due to we don't need '?'
+		var authorityStartIndex, pathStartIndex, questionIndex, numberSignIndex int
+		var ln = len(s)
+		var i int
+	Loop:
+		for i = 0; i < ln; i++ {
+			switch s[i] {
+			case Colon:
+				// Check : mark is first appear before any start||end sign or it is part of others!
+				if authorityStartIndex == 0 {
+					u.scheme = s[:i]
+					i += 2                      // next loop will i+=1 so we just add i+=2
+					authorityStartIndex = i + 1 // +3 due to have ://
 				}
+			case Slash:
+				// Just check slash in middle of URI! If URI in origin form pathStartIndex always be 0!
+				if authorityStartIndex != 0 && pathStartIndex == 0 {
+					pathStartIndex = i
+					u.authority = s[authorityStartIndex:pathStartIndex]
+				} else if !originForm && pathStartIndex == 0 && i != 0 {
+					pathStartIndex = i
+					u.authority = s[:i]
+				}
+			case Question:
+				// Check ? mark is first appear or it is part of some query key||value!
+				if questionIndex == 0 {
+					questionIndex = i
+					u.path = s[pathStartIndex:questionIndex]
+				}
+			case NumberSign:
+				if numberSignIndex == 0 {
+					numberSignIndex = i
+					if questionIndex == 0 {
+						u.path = s[pathStartIndex:numberSignIndex]
+					} else {
+						u.query = s[questionIndex+1 : numberSignIndex] // +1 due to we don't need '?'
+					}
+				}
+			case SP:
+				// Don't need to continue loop anymore
+				break Loop
 			}
-		case SP:
-			uriEnd = i
-			if questionIndex == 0 && numberSignIndex == 0 {
-				u.path = s[pathStartIndex:uriEnd]
-			}
-			if numberSignIndex != 0 {
-				u.fragment = s[numberSignIndex+1 : uriEnd] // +1 due to we don't need '#'
-			}
-			if questionIndex != 0 && numberSignIndex == 0 {
-				u.query = s[questionIndex+1 : uriEnd] // +1 due to we don't need '?'
-			}
-			// Don't need to continue loop!
-			return
+		}
+
+		uriEnd = i
+		if questionIndex == 0 && numberSignIndex == 0 {
+			u.path = s[pathStartIndex:uriEnd]
+		}
+		if numberSignIndex != 0 {
+			u.fragment = s[numberSignIndex+1 : uriEnd] // +1 due to we don't need '#'
+		}
+		if questionIndex != 0 && numberSignIndex == 0 {
+			u.query = s[questionIndex+1 : uriEnd] // +1 due to we don't need '?'
 		}
 	}
+
+	u.uri = s[:uriEnd]
+	u.uriAsByte = convert.UnsafeStringToByteSlice(s[:uriEnd])
 	return
 }
 

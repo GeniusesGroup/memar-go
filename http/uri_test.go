@@ -30,6 +30,19 @@ var uriTests = []uriTest{
 		},
 		wantURIEnd: 1,
 	}, {
+		name:    "simple path",
+		raw:     "/ ",
+		encoded: "/",
+		uri: URI{
+			uri:       "/",
+			scheme:    "",
+			authority: "",
+			path:      "/",
+			query:     "",
+			fragment:  "",
+		},
+		wantURIEnd: 1,
+	}, {
 		name:    "origin-form1",
 		raw:     "/m?2586547852#api ",
 		encoded: "/m?2586547852",
@@ -141,10 +154,10 @@ func TestURI_Unmarshal(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			var gotURIEnd = tt.out.unmarshalFrom(tt.raw)
 			if gotURIEnd != tt.wantURIEnd {
-				t.Errorf("URI.Unmarshal() = %v, want %v", gotURIEnd, tt.wantURIEnd)
+				t.Errorf("URI.Unmarshal(%q) = %v, want %v",tt.name, gotURIEnd, tt.wantURIEnd)
 			}
 			if tt.out.scheme != tt.uri.scheme || tt.out.authority != tt.uri.authority || tt.out.path != tt.uri.path || tt.out.query != tt.uri.query || tt.out.fragment != tt.uri.fragment {
-				t.Errorf("URI.Unmarshal(%q):\n\tgot  %v\n\twant %v\n", tt.uri, tt.out, tt.uri)
+				t.Errorf("URI.Unmarshal(%q):\n\tgot  %v\n\twant %v\n", tt.name, tt.out, tt.uri)
 			}
 		})
 	}

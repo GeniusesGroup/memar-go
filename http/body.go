@@ -3,8 +3,6 @@
 package http
 
 import (
-	"io"
-
 	"../compress"
 	"../protocol"
 )
@@ -18,16 +16,99 @@ type body struct {
 
 func (b *body) Body() protocol.Codec         { return b.Codec }
 func (b *body) SetBody(codec protocol.Codec) { b.Codec = codec }
+
+/*
+********** protocol.Codec interface **********
+ */
+
 func (b *body) Len() int {
 	if b.Codec != nil {
 		return b.Codec.Len()
 	}
 	return 0
 }
+func (b *body) MediaType() protocol.MediaType {
+	if b.Codec != nil {
+		return b.Codec.MediaType()
+	}
+	return nil
+}
+func (b *body) CompressType() protocol.CompressType {
+	if b.Codec != nil {
+		return b.Codec.CompressType()
+	}
+	return nil
+}
+func (b *body) Decode(reader protocol.Reader) (err protocol.Error) {
+	if b.Codec != nil {
+		err = b.Codec.Decode(reader)
+	}
+	return
+}
+func (b *body) Encode(writer protocol.Writer) (err protocol.Error) {
+	if b.Codec != nil {
+		err = b.Codec.Encode(writer)
+	}
+	return
+}
+func (b *body) Marshal() (data []byte) {
+	if b.Codec != nil {
+		data = b.Codec.Marshal()
+	}
+	return
+}
+func (b *body) MarshalTo(data []byte) []byte {
+	if b.Codec != nil {
+		return b.Codec.MarshalTo(data)
+	}
+	return data
+}
+func (b *body) Unmarshal(data []byte) (err protocol.Error) {
+	if b.Codec != nil {
+		err = b.Codec.Unmarshal(data)
+	}
+	return
+}
+func (b *body) UnmarshalFrom(data []byte) (remaining []byte, err protocol.Error) {
+	if b.Codec != nil {
+		return b.Codec.UnmarshalFrom(data)
+	}
+	return
+}
 
 /*
 ********** local methods **********
  */
+
+func (b *body) checkAndSetCodecAsIncomeBody(maybeBody []byte, c protocol.Codec, h *header) {
+	// TODO::: check h.TransferEncoding() and h.ContentLength()??
+	if len(maybeBody) > 0 {
+		b.setReadedIncomeBody(maybeBody, h)
+	} else {
+		b.setCodecAsIncomeBody(c, h)
+	}
+}
+
+func (b *body) checkAndSetReaderAsIncomeBody(maybeBody []byte, reader protocol.Reader, h *header) {
+	// TODO::: check h.TransferEncoding() and h.ContentLength()??
+	if len(maybeBody) > 0 {
+		// check if body sent with header in one buffer
+		b.setReadedIncomeBody(maybeBody, h)
+	} else {
+		b.setReaderAsIncomeBody(reader, h)
+	}
+}
+
+func (b *body) checkAndSetIncomeBody(maybeBody []byte, h *header) (err protocol.Error) {
+	// TODO::: check h.TransferEncoding() and h.ContentLength()??
+	if len(maybeBody) > 0 {
+		// Just if body marshaled with first line and headers we need to do any action here
+		b.setReadedIncomeBody(maybeBody, h)
+	} else {
+		// err =
+	}
+	return
+}
 
 func (b *body) setCodecAsIncomeBody(c protocol.Codec, h *header) {
 	b.Codec = c
@@ -35,7 +116,7 @@ func (b *body) setCodecAsIncomeBody(c protocol.Codec, h *header) {
 	// TODO::: What about header length maybe other than stream income data length e.g. send body in multiple TCP.PSH flag set.
 }
 
-func (b *body) setReaderAsIncomeBody(reader io.Reader, h *header) {
+func (b *body) setReaderAsIncomeBody(reader protocol.Reader, h *header) {
 	var transferEncoding, _ = h.TransferEncoding()
 	switch transferEncoding {
 	case "":
@@ -86,7 +167,7 @@ func (b *body) setReadedIncomeBody(body []byte, h *header) {
 	}
 }
 
-func (b *body) readFull(reader io.Reader, h *header) (n int64, goErr error) {
+func (b *body) readFull(reader protocol.Reader, h *header) (n int64, goErr error) {
 	var transferEncoding, _ = h.TransferEncoding()
 	switch transferEncoding {
 	case "":
