@@ -15,17 +15,28 @@ var (
 	GZIP = NewCompressType("urn:giti:compress.protocol:data-structure:gzip", GZIPContentEncoding, GZIPExtension, GzipCompressor, GzipDecompressor)
 )
 
-func GzipCompressor(raw protocol.Codec, compressLevel protocol.CompressLevel) (compress protocol.Codec) {
-	var gzip = gzipCompressor{
-		source:        raw,
+func GzipCompressor(gzip protocol.Codec, compressLevel protocol.CompressLevel) (compress protocol.Codec) {
+	return &gzipCompressor{
+		source:        gzip,
 		compressLevel: compressLevel,
 	}
-	return &gzip
 }
 
-func GzipDecompressor(compress protocol.Codec) (raw protocol.Codec) {
-	var gzip = gzipDecompressor{
-		source: compress,
-	}
-	return &gzip
+func GzipDecompressor(compressed protocol.Codec) (gzip protocol.Codec) {
+	var gzipDecoder gzipDecompressor
+	gzipDecoder.initByCodec(compressed)
+	return &gzipDecoder
+}
+
+func GzipDecompressorFromSlice(compressed []byte) (gzip protocol.Codec) {
+	var gzipDecoder gzipDecompressor
+	gzipDecoder.Unmarshal(compressed)
+	return &gzipDecoder
+}
+
+func GzipDecompressorFromReader(reader protocol.Reader, compressedLen int) (gzip protocol.Codec) {
+	var gzipDecoder gzipDecompressor
+	gzipDecoder.comLen = compressedLen
+	gzipDecoder.Decode(reader)
+	return &gzipDecoder
 }

@@ -34,12 +34,15 @@ func (d *deflateDecompressor) init() {
 func (d *deflateDecompressor) MediaType() protocol.MediaType       { return d.source.MediaType() }
 func (d *deflateDecompressor) CompressType() protocol.CompressType { return Deflate }
 
-func (d *deflateDecompressor) Decode(reader io.Reader) (err protocol.Error) {
+func (d *deflateDecompressor) Decode(reader protocol.Reader) (err protocol.Error) {
 	err = ErrSourceNotChangeable
 	return
 }
-func (d *deflateDecompressor) Encode(writer io.Writer) (err error) {
-	_, err = d.WriteTo(writer)
+func (d *deflateDecompressor) Encode(writer protocol.Writer) (err protocol.Error) {
+	var _, goErr = d.WriteTo(writer)
+	if goErr != nil {
+		// err =
+	}
 	return
 }
 func (d *deflateDecompressor) Marshal() (data []byte) {
@@ -57,6 +60,10 @@ func (d *deflateDecompressor) MarshalTo(data []byte) []byte {
 func (d *deflateDecompressor) Unmarshal(data []byte) (err protocol.Error) {
 	err = ErrSourceNotChangeable
 	return
+}
+func (d *deflateDecompressor) UnmarshalFrom(data []byte) (remaining []byte, err protocol.Error) { 
+	err = ErrSourceNotChangeable
+	return 
 }
 
 // Len return length of decompressed data

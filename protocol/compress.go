@@ -2,6 +2,14 @@
 
 package protocol
 
+type CompressTypes interface {
+	RegisterCompressType(ct CompressType)
+	GetCompressTypeByID(urnID uint64) CompressType
+	GetCompressTypeByURN(urnURI string) CompressType
+	GetCompressTypeByFileExtension(ex string) CompressType
+	GetCompressTypeByContentEncoding(ce string) CompressType
+}
+
 // CompressType is standard shape of any compress coding type
 // https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Encoding
 // https://en.wikipedia.org/wiki/HTTP_compression

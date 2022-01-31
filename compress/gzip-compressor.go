@@ -32,11 +32,17 @@ func (g *gzipCompressor) init() {
 func (g *gzipCompressor) MediaType() protocol.MediaType       { return g.source.MediaType() }
 func (g *gzipCompressor) CompressType() protocol.CompressType { return GZIP }
 
-func (g *gzipCompressor) Decode(reader io.Reader) (err protocol.Error) {
+func (g *gzipCompressor) Decode(reader protocol.Reader) (err protocol.Error) {
 	err = ErrSourceNotChangeable
 	return
 }
-func (g *gzipCompressor) Encode(writer io.Writer) (err error) { _, err = g.WriteTo(writer); return }
+func (g *gzipCompressor) Encode(writer protocol.Writer) (err protocol.Error) {
+	var _, goErr = g.WriteTo(writer)
+	if goErr != nil {
+		// err =
+	}
+	return
+}
 func (g *gzipCompressor) Marshal() (data []byte) {
 	if g.compressedData == nil {
 		g.init()
@@ -52,6 +58,10 @@ func (g *gzipCompressor) MarshalTo(data []byte) []byte {
 func (g *gzipCompressor) Unmarshal(data []byte) (err protocol.Error) {
 	err = ErrSourceNotChangeable
 	return
+}
+func (g *gzipCompressor) UnmarshalFrom(data []byte) (remaining []byte, err protocol.Error) { 
+	err = ErrSourceNotChangeable
+	return 
 }
 
 // Len return length of compressed data
