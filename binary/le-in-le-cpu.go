@@ -1,7 +1,7 @@
 // For license and copyright information please see LEGAL file in repository
 
-//go:build !armbe || !arm64be || !mips || !mips64 || !mips64p32 || !ppc || !ppc64 || !s390 || !s390x || !sparc || !sparc64
-// +build !armbe !arm64be !mips !mips64 !mips64p32 !ppc !ppc64 !s390 !s390x !sparc !sparc64
+//go:build 386 || amd64 || amd64p32 || arm || arm64 || loong64 || mips64le || mips64p32le || mipsle || ppc64le || riscv || riscv64 || wasm
+// +build 386 amd64 amd64p32 arm arm64 loong64 mips64le mips64p32le mipsle ppc64le riscv riscv64 wasm
 
 package binary
 
@@ -43,6 +43,9 @@ func (littleEndian) PutUint64(b []byte, v uint64) {
 	b[6] = byte(v >> 48)
 	b[7] = byte(v >> 56)
 }
+
+// *data = math.Float32frombits(order.Uint32(bs))
+// *data = math.Float64frombits(order.Uint64(bs))
 
 func init() {
 	i := uint32(1)
