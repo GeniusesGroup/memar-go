@@ -8,16 +8,17 @@ import (
 
 // The currently registered types
 const (
-	MimeSubTypeApplication = "application"
-	MimeSubTypeAudio       = "audio"
-	MimeSubTypeFont        = "font"
-	MimeSubTypeExample     = "example"
-	MimeSubTypeImage       = "image"
-	MimeSubTypeMessage     = "message"
-	MimeSubTypeModel       = "model"
-	MimeSubTypeMultipart   = "multipart"
-	MimeSubTypeText        = "text"
-	MimeSubTypeVideo       = "video"
+	MimeMainTypeDomain      = "domain"
+	MimeMainTypeApplication = "application"
+	MimeMainTypeAudio       = "audio"
+	MimeMainTypeFont        = "font"
+	MimeMainTypeExample     = "example"
+	MimeMainTypeImage       = "image"
+	MimeMainTypeMessage     = "message"
+	MimeMainTypeModel       = "model"
+	MimeMainTypeMultipart   = "multipart"
+	MimeMainTypeText        = "text"
+	MimeMainTypeVideo       = "video"
 )
 
 // MediaTypes store all data structure details
@@ -31,7 +32,10 @@ func (dss *MediaTypes) RegisterMediaType(mt protocol.MediaType) {
 
 	poolByMediaType[mt.MediaType()] = mt
 	poolByID[mt.ID()] = mt
-	poolByFileExtension[mt.FileExtension()] = mt
+	var fe = mt.FileExtension()
+	if fe != "" {
+		poolByFileExtension[fe] = mt
+	}
 }
 
 func (dss *MediaTypes) GetMediaTypeByID(id uint64) protocol.MediaType { return ByID(id) }
