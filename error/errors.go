@@ -8,31 +8,31 @@ import (
 
 // Errors store
 type Errors struct {
-	poolByID  map[uint64]protocol.Error
-	poolByURN map[string]protocol.Error
+	poolByID        map[uint64]protocol.Error
+	poolByMediaType map[string]protocol.Error
 }
 
 func (e *Errors) Init() {
 	e.poolByID = make(map[uint64]protocol.Error, 512)
-	e.poolByURN = make(map[string]protocol.Error, 512)
+	e.poolByMediaType = make(map[string]protocol.Error, 512)
 }
 
 func (e *Errors) RegisterError(err protocol.Error) {
-	var errID = err.URN().ID()
-	if protocol.AppDevMode && e.poolByID[errID] != nil {
+	var errID = err.ID()
+	if protocol.AppMode_Dev && e.poolByID[errID] != nil {
 		// This condition will just be true in the dev phase.
 		panic("Error id exist and used for other Error. Check it now for bad urn set or collision occurred" +
-			"\nExiting error >> " + e.poolByID[errID].URN().URI() +
-			"\nNew error >> " + err.URN().URI())
+			"\nExiting error >> " + e.poolByID[errID].MediaType().MediaType() +
+			"\nNew error >> " + err.MediaType().MediaType())
 	}
 
 	e.poolByID[errID] = err
-	e.poolByURN[err.URN().URI()] = err
+	e.poolByMediaType[err.MediaType().MediaType()] = err
 }
 
 func (e *Errors) UnRegisterError(err protocol.Error) {
-	delete(e.poolByID, err.URN().ID())
-	delete(e.poolByURN, err.URN().URI())
+	delete(e.poolByID, err.ID())
+	delete(e.poolByMediaType, err.MediaType().MediaType())
 }
 
 // GetErrorByID returns desire error if exist or ErrNotFound!
@@ -48,10 +48,10 @@ func (e *Errors) GetErrorByID(id uint64) (err protocol.Error) {
 	return
 }
 
-// GetErrorByID returns desire error if exist or ErrNotFound!
-func (e *Errors) GetErrorByURN(urn string) (err protocol.Error) {
+// GetErrorByMediaType returns desire error if exist or ErrNotFound!
+func (e *Errors) GetErrorByMediaType(urn string) (err protocol.Error) {
 	var ok bool
-	err, ok = e.poolByURN[urn]
+	err, ok = e.poolByMediaType[urn]
 	if !ok {
 		err = ErrNotFound
 	}

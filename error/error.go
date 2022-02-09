@@ -5,22 +5,29 @@ package error
 import (
 	"fmt"
 
+	"../mediatype"
 	"../protocol"
-	"../urn"
 )
 
 // New returns a new error
 // "urn:giti:{{domain-name}}:error:{{error-name}}"
-func New(urn string) *Error {
-	if protocol.AppDevMode && urn == "" {
+func New(mediatype *mediatype.MediaType) *Error {
+	if mediatype.ID() == 0 {
 		// This condition will just be true in the dev phase.
-		panic("Error must have URN to save it in platform errors pools")
+		panic("Error must have valid ID to save it in platform errors pools")
 	}
 
 	var err = Error{
-		detail: make(map[protocol.LanguageID]*Detail),
+		id:        mediatype.ID(),
+		mediatype: mediatype,
 	}
-	err.urn.Init(urn)
+
+	// Save finalize needed logic on given error and register in the application
+	err.updateStrings()
+	// Force to check by runtime check, due to testing package not let us by any const!
+	if protocol.App != nil {
+		protocol.App.RegisterError(&err)
+	}
 	return &err
 }
 
@@ -31,60 +38,32 @@ func GetID(err error) uint64 {
 	}
 	var exErr *Error = err.(*Error)
 	if exErr != nil {
-		return exErr.urn.ID()
+		return exErr.mediatype.ID()
 	}
 	// if error not nil but not Error, pass biggest number!
 	return 18446744073709551615
 }
 
 // Error is a extended implementation of error.
-// Never change urn due to it adds unnecessary complicated troubleshooting errors on SDK!
-// Read more : https://github.com/GeniusesGroup/RFCs/blob/master/Error.md
+// Never change urn due to it adds unnecessary complicated troubleshooting errors on SDK.
 type Error struct {
-	urn     urn.Giti
-	detail  map[protocol.LanguageID]*Detail
-	details []protocol.ErrorDetail
+	id        uint64
+	mediatype *mediatype.MediaType
 
 	stringMethod string
 	errorMethod  string
 }
 
-// SetDetail add error text details to existing error and return it.
-func (e *Error) SetDetail(lang protocol.LanguageID, domain, summary, overview, userAction, devAction string) *Error {
-	var errDetail = Detail{
-		languageID: lang,
-		domain:     domain,
-		summary:    summary,
-		overview:   overview,
-		userAction: userAction,
-		devAction:  devAction,
-	}
-	e.detail[lang] = &errDetail
-	e.details = append(e.details, &errDetail)
-	return e
-}
-
-// Save finalize needed logic on given error and register in the application
-func (e *Error) Save() *Error {
-	e.updateStrings()
-	// Force to check by runtime check, due to testing package not let us by any const!
-	if protocol.App != nil {
-		protocol.App.RegisterError(e)
-	}
-	return e
-}
-
-func (e *Error) URN() protocol.GitiURN                                { return &e.urn }
-func (e *Error) Details() []protocol.ErrorDetail                      { return e.details }
-func (e *Error) Detail(lang protocol.LanguageID) protocol.ErrorDetail { return e.detail[lang] }
-func (e *Error) ToString() string                                     { return e.stringMethod }
+func (e *Error) ID() uint64                    { return e.id }
+func (e *Error) MediaType() protocol.MediaType { return e.mediatype }
+func (e *Error) ToString() string              { return e.stringMethod }
 
 // Equal compare two Error.
 func (e *Error) Equal(err protocol.Error) bool {
 	if e == nil && err == nil {
 		return true
 	}
-	if e != nil && err != nil && e.urn.ID() == err.URN().ID() {
+	if e != nil && err != nil && e.mediatype.ID() == err.MediaType().ID() {
 		return true
 	}
 	return false
@@ -93,7 +72,7 @@ func (e *Error) Equal(err protocol.Error) bool {
 // IsEqual compare two error.
 func (e *Error) IsEqual(err protocol.Error) bool {
 	var exErr = err.(*Error)
-	if exErr != nil && e.urn.ID() == exErr.urn.ID() {
+	if exErr != nil && e.mediatype.ID() == exErr.mediatype.ID() {
 		return true
 	}
 	return false
@@ -105,6 +84,7 @@ func (e *Error) Cause() error  { return e }
 func (e *Error) Unwrap() error { return e }
 
 func (e *Error) updateStrings() {
-	e.stringMethod = "Error ID: " + e.urn.IDasString()
-	e.errorMethod = fmt.Sprintf("Error ID: %s\n	Summary: %s\n	Overview: %s\n", e.urn.IDasString(), e.detail[protocol.AppLanguage].summary, e.detail[protocol.AppLanguage].overview)
+	e.stringMethod = "Error ID: " + e.mediatype.IDasString()
+	var localeDetail = e.mediatype.Detail(protocol.AppLanguage)
+	e.errorMethod = fmt.Sprintf("Error ID: %s\n	Summary: %s\n	Overview: %s\n", e.mediatype.IDasString(), localeDetail.Summary(), localeDetail.Overview())
 }

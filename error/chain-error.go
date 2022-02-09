@@ -23,14 +23,11 @@ type ChainError struct {
 	info string
 }
 
-func (ce *ChainError) PastChain() *ChainError          { return ce.err.(*ChainError) }
-func (ce *ChainError) URN() protocol.GitiURN           { return ce.err.URN() }
-func (ce *ChainError) Details() []protocol.ErrorDetail { return ce.err.Details() }
-func (ce *ChainError) Detail(lang protocol.LanguageID) protocol.ErrorDetail {
-	return ce.err.Detail(lang)
-}
+func (ce *ChainError) PastChain() *ChainError        { return ce.err.(*ChainError) }
+func (ce *ChainError) ID() uint64                    { return ce.err.ID() }
+func (ce *ChainError) MediaType() protocol.MediaType { return ce.err.MediaType() }
 func (ce *ChainError) ToString() string {
-	return "\n	Chain Error - Cause ID: " + ce.err.URN().IDasString() + " - Info: " + ce.info
+	return "\n	Chain Error - Cause by: " + ce.err.ToString() + " - Info: " + ce.info
 }
 func (ce *ChainError) Equal(err protocol.Error) bool { return ce.err.Equal(err) }
 
