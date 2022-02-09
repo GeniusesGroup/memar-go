@@ -10,3 +10,12 @@ type URI interface {
 
 	// Codec
 }
+
+// https://en.wikipedia.org/wiki/Uniform_Resource_Name
+type URN interface {
+	URI
+	// URI() string // e.g. "urn:isbn:0451450523"
+	// Scheme() string // always return "urn"
+	NID() string // NID is the namespace identifier
+	NSS() string // NSS is the namespace-specific
+}
