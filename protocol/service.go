@@ -5,24 +5,22 @@ package protocol
 // Services is the interface that must implement by any Application!
 type Services interface {
 	RegisterService(s Service)
-	GetServiceByID(urnID uint64) (ser Service, err Error)
-	GetServiceByURN(urn string) (ser Service, err Error)
+	GetServiceByID(mtID uint64) (ser Service, err Error)
+	GetServiceByMediaType(mt string) (ser Service, err Error)
 	GetServiceByURI(uri string) (ser Service, err Error)
 }
 
 // Service is the interface that must implement by any struct to be a service!
 // Set fields methods in this type must accept just once to prevent any mistake by change after set first!
 type Service interface {
-	Detail(lang LanguageID) ServiceDetail
-	URN() GitiURN
-	URI() string // HTTPURI.Path
-	Status() SoftwareStatus
-	IssueDate() TimeUnixSec  // TODO::: Temporary use TimeUnixSec instead of Time
-	ExpiryDate() TimeUnixSec // TODO::: Temporary use TimeUnixSec instead of Time
-	ExpireInFavorOf() GitiURN
+	MediaType() MediaType
+	// Request() MediaType
+	// Response() MediaType
+	URI() string    // HTTPURI.Path
 	Weight() Weight // Use to queue requests by services weights
 
 	// Service Authorization
+	ID() uint64 // copy of MediaType().ID() to improve authorization mechanism performance
 	CRUDType() CRUD
 	UserType() UserType
 
@@ -33,19 +31,4 @@ type Service interface {
 	// Do(st Stream, req interface{}) (res interface{}, err Error)	Call service locally by import service package to other one
 	// DoSRPC(req interface{}) (res interface{}, err Error)			Call service remotely by sRPC protocol
 	// DoHTTP(req interface{}) (res interface{}, err Error)			Call service remotely by HTTP protocol
-}
-
-// ServiceDetail return locale detail about the service.
-type ServiceDetail interface {
-	Language() LanguageID
-	// Domain return locale domain name that service belongs to it.
-	Domain() string
-	// Summary return locale general summary service text that gives the main points in a concise form.
-	Summary() string
-	// Overview return locale general service text that gives the main ideas without explaining all the details.
-	Overview() string
-	// Description return locale service text that gives the main ideas with explaining all the details and purposes.
-	Description() string
-	// TAGS  return locale service tags to sort service in groups for any purpose e.g. in GUI to help org manager to give service delegate authorization to staffs.
-	TAGS() []string
 }
