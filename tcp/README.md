@@ -1,7 +1,8 @@
 # TCP on UserSpace
 In services as API era, almost all services call transfer under two TCP packets, So many logics that consume both memory (e.g. Go just use [2KB for each goroutine](https://go.dev/doc/go1.4#runtime)) and computing resources (e.g. many [context switch](https://en.wikipedia.org/wiki/Context_switch) between kernel and userspace) to handle these few packets are not acceptable anymore.
 
-Some suggestion such as using [epool](https://github.com/eranyanay/1m-go-websockets) has many other problems 
+Some suggestion such as using [epoll](https://github.com/eranyanay/1m-go-websockets) has many other problems:
+- Go internally use this mechanism in runtime package, So it is easier to just worker mechanism to limit max number of goroutine. We know in this case first Read() on any connection cause to one unneeded context-switch on some OS like linux to check if any data ready to read before schedule for future until get read ready state.
 - OS depend on implementation can very tricky tasks
 - OS depend optimization need to change such as the number of the active and open file in UNIX based OSs known as ulimit
 - Balance between the number of events and timeout(milliseconds) in high and low app load isn't easy.
@@ -31,10 +32,20 @@ Some suggestion such as using [epool](https://github.com/eranyanay/1m-go-websock
 - Support some protocols like [PLPMTUD - Packetization Layer Path MTU Discovery](https://www.ietf.org/rfc/rfc4821.txt) for bad networks that don't serve L3 IP/ICMP services?
 - Why [tcp checksum computation](https://en.wikipedia.org/wiki/Transmission_Control_Protocol#Checksum_computation) must change depending on the below layer!!??
 
-## Little Endian vs Big Endian
-Go don't support [automatic endian detection](https://groups.google.com/g/golang-nuts/c/3GEzwKfRRQw), So we must have some mechanism to detect CPU architecture and do logics correctly. So by some [help](https://gist.github.com/asukakenji/f15ba7e588ac42795f421b48b8aede63) we must indicate 
+## RFCs
+- https://www.iana.org/assignments/tcp-parameters/tcp-parameters.xhtml
+- https://datatracker.ietf.org/doc/html/rfc7805
+- https://datatracker.ietf.org/doc/html/rfc7414
+- https://datatracker.ietf.org/doc/html/rfc675
+- https://datatracker.ietf.org/doc/html/rfc791
+- https://datatracker.ietf.org/doc/html/rfc793
+- https://datatracker.ietf.org/doc/html/rfc1122
+- https://datatracker.ietf.org/doc/html/rfc6298
+- https://datatracker.ietf.org/doc/html/rfc1948
+- https://datatracker.ietf.org/doc/html/rfc4413
 
 ## Similar Projects
+- https://github.com/search?l=Go&q=tcp+userspace&type=Repositories
 - https://github.com/Xilinx-CNS/onload
 - https://github.com/mtcp-stack/mtcp
 - https://github.com/golang/go/issues/15735
@@ -42,9 +53,13 @@ Go don't support [automatic endian detection](https://groups.google.com/g/golang
 - https://github.com/lesismal/nbio
 - https://github.com/saminiir/level-ip
 - https://github.com/google/gopacket/blob/master/layers/tcp.go
+- https://github.com/Samangan/go-tcp
+- https://github.com/panjf2000/gnet
 
 ## Resources
+- https://en.wikipedia.org/wiki/OSI_model
 - https://en.wikipedia.org/wiki/Transmission_Control_Protocol
+- https://man7.org/linux/man-pages/man7/tcp.7.html
 - https://github.com/torvalds/linux/blob/master/net/ipv4/tcp.c
 - https://github.com/torvalds/linux/blob/master/net/ipv6/tcp_ipv6.c
 
@@ -57,6 +72,7 @@ Go don't support [automatic endian detection](https://groups.google.com/g/golang
 - https://blog.cloudflare.com/path-mtu-discovery-in-practice/
 - https://www.fastly.com/blog/measuring-quic-vs-tcp-computational-efficiency
 - https://stackoverflow.com/questions/8509152/max-number-of-goroutines
+- https://developpaper.com/deep-analysis-of-source-code-for-building-native-network-model-with-go-netpol-i-o-multiplexing/
 
 # Abbreviations
 - L3    >> layer 3 OSI

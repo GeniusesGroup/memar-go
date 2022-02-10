@@ -4,23 +4,38 @@ package tcp
 
 import (
 	"../binary"
+	"../protocol"
 )
 
 // Packet implement all methods to Get||Set data to a packet as a byte slice with 0-alloc
+// https://datatracker.ietf.org/doc/html/rfc793#section-3.1
 type Packet []byte
+
+// CheckPacket will check packet for any bad situation.
+// Always check packet before use any other packet methods otherwise panic occur.
+func (p Packet) CheckPacket() protocol.Error {
+	var packetLen = len(p)
+	if packetLen < MinPacketLen {
+		return ErrPacketTooShort
+	}
+	if packetLen < int(p.DataOffset()) {
+		return ErrPacketWrongLength
+	}
+	return nil
+}
 
 /*
 ********** Get Methods **********
  */
 func (p Packet) SourcePort() uint16      { return binary.BigEndian.Uint16(p[0:]) }
 func (p Packet) DestinationPort() uint16 { return binary.BigEndian.Uint16(p[2:]) }
-func (p Packet) SequenceNumber() uint32  { return binary.BigEndian.Uint32(p[4:8]) }
+func (p Packet) SequenceNumber() uint32  { return binary.BigEndian.Uint32(p[4:]) }
 func (p Packet) AckNumber() uint32       { return binary.BigEndian.Uint32(p[8:]) }
 func (p Packet) DataOffset() uint8       { return (p[12] >> 4) * 4 }
 func (p Packet) Window() uint16          { return binary.BigEndian.Uint16(p[14:]) }
-func (p Packet) GetChecksum() uint16     { return binary.BigEndian.Uint16(p[16:18]) }
-func (p Packet) UrgentPointer() uint16   { return binary.BigEndian.Uint16(p[18:20]) }
-func (p Packet) Options() []byte         { return p[21:p.DataOffset()] }
+func (p Packet) GetChecksum() uint16     { return binary.BigEndian.Uint16(p[16:]) }
+func (p Packet) UrgentPointer() uint16   { return binary.BigEndian.Uint16(p[18:]) }
+func (p Packet) Options() []byte         { return p[20:p.DataOffset()] }
 func (p Packet) Payload() []byte         { return p[p.DataOffset():] }
 
 /*
@@ -30,13 +45,13 @@ func (p Packet) SetSourcePort(port uint16)      { binary.BigEndian.PutUint16(p[0
 func (p Packet) SetDestinationPort(port uint16) { binary.BigEndian.PutUint16(p[2:], port) }
 func (p Packet) SetSequenceNumber(v uint32)     { binary.BigEndian.PutUint32(p[4:], v) }
 func (p Packet) SetAckNumber(v uint32)          { binary.BigEndian.PutUint32(p[8:], v) }
-func (p Packet) SetDataOffset(v uint8)          { p[12] = byte((v/4)<<4) | byte(p[12]>>4) }
+func (p Packet) SetDataOffset(v uint8)          { p[12] = byte((v/4)<<4) | p[12] }
 func (p Packet) SetFlagPartOne(flags byte)      { p[12] = p[12] | flags }
 func (p Packet) SetFlagPartTwo(flags byte)      { p[13] = flags }
 func (p Packet) SetWindow(v uint16)             { binary.BigEndian.PutUint16(p[14:], v) }
 func (p Packet) SetChecksum(v uint16)           { binary.BigEndian.PutUint16(p[16:], v) }
 func (p Packet) SetUrgentPointer(v uint16)      { binary.BigEndian.PutUint16(p[18:], v) }
-func (p Packet) SetOptions(o []byte)            { copy(p[21:], o) }
+func (p Packet) SetOptions(o []byte)            { copy(p[20:], o) }
 func (p Packet) SetPayload(payload []byte)      { copy(p[p.DataOffset():], payload) }
 
 /*
@@ -67,3 +82,16 @@ func (p Packet) SetFlagPSH()       { p[13] |= Flag_PSH }
 func (p Packet) SetFlagRST()       { p[13] |= Flag_RST }
 func (p Packet) SetFlagSYN()       { p[13] |= Flag_SYN }
 func (p Packet) SetFlagFIN()       { p[13] |= Flag_FIN }
+
+func (p Packet) UnsetFlagReserved1() { p[12] &= ^Flag_Reserved1 }
+func (p Packet) UnsetFlagReserved2() { p[12] &= ^Flag_Reserved2 }
+func (p Packet) UnsetFlagReserved3() { p[12] &= ^Flag_Reserved3 }
+func (p Packet) UnsetFlagNS()        { p[12] &= ^Flag_NS }
+func (p Packet) UnsetFlagCWR()       { p[13] &= ^Flag_CWR }
+func (p Packet) UnsetFlagECE()       { p[13] &= ^Flag_ECE }
+func (p Packet) UnsetFlagURG()       { p[13] &= ^Flag_URG }
+func (p Packet) UnsetFlagACK()       { p[13] &= ^Flag_ACK }
+func (p Packet) UnsetFlagPSH()       { p[13] &= ^Flag_PSH }
+func (p Packet) UnsetFlagRST()       { p[13] &= ^Flag_RST }
+func (p Packet) UnsetFlagSYN()       { p[13] &= ^Flag_SYN }
+func (p Packet) UnsetFlagFIN()       { p[13] &= ^Flag_FIN }

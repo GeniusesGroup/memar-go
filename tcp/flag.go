@@ -3,18 +3,18 @@
 package tcp
 
 const (
-	Flag_FIN       byte = 0x01
-	Flag_SYN       byte = 0x02
-	Flag_RST       byte = 0x04
-	Flag_PSH       byte = 0x08
-	Flag_ACK       byte = 0x10
-	Flag_URG       byte = 0x20
-	Flag_ECE       byte = 0x40
-	Flag_CWR       byte = 0x80
-	Flag_NS        byte = 0x01
-	Flag_Reserved3 byte = 0x02
-	Flag_Reserved2 byte = 0x04
-	Flag_Reserved1 byte = 0x08
+	Flag_Reserved1 byte = 0b00001000
+	Flag_Reserved2 byte = 0b00000100
+	Flag_Reserved3 byte = 0b00000010
+	Flag_NS        byte = 0b00000001
+	Flag_CWR       byte = 0b10000000
+	Flag_ECE       byte = 0b01000000
+	Flag_URG       byte = 0b00100000
+	Flag_ACK       byte = 0b00010000
+	Flag_PSH       byte = 0b00001000
+	Flag_RST       byte = 0b00000100
+	Flag_SYN       byte = 0b00000010
+	Flag_FIN       byte = 0b00000001
 )
 
 // Each flag in TCP is an individual bit representing On or Off—to manage data flow in specific situations.
