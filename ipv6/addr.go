@@ -2,58 +2,34 @@
 
 package ipv6
 
-// An Addr is a IPv6 IP address.
-type Addr [IPv6len]byte
+import "../protocol"
+
+// An Addr is an IP address version 6.
+type Addr [Addrlen]byte
 
 const (
-	// IPv6len address lengths 128 bit || 16 byte.
-	IPv6len = 16
+	// Addrlen address lengths 128 bit || 16 byte.
+	Addrlen = 16
 
 	hextable = "0123456789abcdef"
 )
 
 // Well-known IPv6 addresses
 var (
-	IPv6zero                   = Addr{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
-	IPv6unspecified            = Addr{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
-	IPv6loopback               = Addr{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1}
-	IPv6interfacelocalallnodes = Addr{0xff, 0x01, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x01}
-	IPv6linklocalallnodes      = Addr{0xff, 0x02, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x01}
-	IPv6linklocalallrouters    = Addr{0xff, 0x02, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x02}
-
-	IPv6MaxStringLen = len("ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff")
+	AddrZero                   = Addr{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
+	AddrUnspecified            = Addr{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0} // "::"
+	AddrLoopback               = Addr{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1}
+	AddrInterfaceLocalAllNodes = Addr{0xff, 0x01, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x01}
+	AddrLinkLocalAllnodes      = Addr{0xff, 0x02, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x01}
+	AddrLinkLocalAllRouters    = Addr{0xff, 0x02, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x02}
 )
 
-// IsUnspecified reports whether addr is an unspecified address "::".
-func (addr *Addr) IsUnspecified() bool {
-	return *addr == IPv6unspecified
-}
-
-// IsLoopback reports whether ip is a loopback address.
-func (addr *Addr) IsLoopback() bool {
-	return *addr == IPv6loopback
-}
-
-// IsMulticast reports whether ip is a multicast address.
-func (addr *Addr) IsMulticast() bool {
-	return addr[0] == 0xff
-}
-
-// IsInterfaceLocalMulticast reports whether ip is
-// an interface-local multicast address.
-func (addr *Addr) IsInterfaceLocalMulticast() bool {
-	return addr[0] == 0xff && addr[1]&0x0f == 0x01
-}
-
-// IsLinkLocalMulticast reports whether ip is a link-local multicast address.
-func (addr *Addr) IsLinkLocalMulticast() bool {
-	return addr[0] == 0xff && addr[1]&0x0f == 0x02
-}
-
-// IsLinkLocalUnicast reports whether ip is a link-local unicast address.
-func (addr *Addr) IsLinkLocalUnicast() bool {
-	return addr[0] == 0xfe && addr[1]&0xc0 == 0x80
-}
+func (addr Addr) IsUnspecified() bool             { return addr == AddrUnspecified }
+func (addr Addr) IsLoopback() bool                { return addr == AddrLoopback }
+func (addr Addr) IsMulticast() bool               { return addr[0] == 0xff }
+func (addr Addr) IsInterfaceLocalMulticast() bool { return addr[0] == 0xff && addr[1]&0x0f == 0x01 }
+func (addr Addr) IsLinkLocalMulticast() bool      { return addr[0] == 0xff && addr[1]&0x0f == 0x02 }
+func (addr Addr) IsLinkLocalUnicast() bool        { return addr[0] == 0xfe && addr[1]&0xc0 == 0x80 }
 
 // IsGlobalUnicast reports whether ip is a global unicast address.
 // It returns true even if ip is local IPv6 unicast address space.
@@ -68,14 +44,13 @@ func (addr *Addr) IsGlobalUnicast() bool {
 }
 
 // ToString returns canonical string representation of IPv6.
-func (addr *Addr) ToString() string {
-	p := *addr
+func (addr Addr) ToString() string {
 	// Find longest run of zeros.
-	e0 := -1
-	e1 := -1
-	for i := 0; i < IPv6len; i += 2 {
+	var e0 = -1
+	var e1 = -1
+	for i := 0; i < Addrlen; i += 2 {
 		j := i
-		for j < IPv6len && p[j] == 0 && p[j+1] == 0 {
+		for j < Addrlen && addr[j] == 0 && addr[j+1] == 0 {
 			j += 2
 		}
 		if j > i && j-i > e1-e0 {
@@ -90,28 +65,29 @@ func (addr *Addr) ToString() string {
 		e1 = -1
 	}
 
-	b := make([]byte, 0, IPv6MaxStringLen)
+	const maxStringLen = len("ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff")
+	var b = make([]byte, 0, maxStringLen)
 
 	// Print with possible :: in place of run of zeros
-	for i := 0; i < IPv6len; i += 2 {
+	for i := 0; i < Addrlen; i += 2 {
 		if i == e0 {
 			b = append(b, ':', ':')
 			i = e1
-			if i >= IPv6len {
+			if i >= Addrlen {
 				break
 			}
 		} else if i > 0 {
 			b = append(b, ':')
 		}
-		b[i*2] = hextable[p[i]>>4]
-		b[i*2+1] = hextable[p[i+1]&0x0f]
+		b[i*2] = hextable[addr[i]>>4]
+		b[i*2+1] = hextable[addr[i+1]&0x0f]
 	}
 	return string(b)
 }
 
 // FromString parses ip as a literal IPv6 address described in RFC 4291 and RFC 5952.
-func (addr *Addr) FromString(ip string) {
-	ellipsis := -1 // position of ellipsis in ip
+func (addr *Addr) FromString(ip string) (err protocol.Error) {
+	var ellipsis = -1 // position of ellipsis in ip
 
 	// Might have leading ellipsis
 	if len(ip) >= 2 && ip[0] == ':' && ip[1] == ':' {
@@ -124,8 +100,8 @@ func (addr *Addr) FromString(ip string) {
 	}
 
 	// Loop, parsing hex numbers followed by colon.
-	i := 0
-	for i < IPv6len {
+	var i = 0
+	for i < Addrlen {
 		// Hex number.
 		n, c, ok := xtoi(ip)
 		if !ok || n > 0xFFFF {
@@ -152,7 +128,7 @@ func (addr *Addr) FromString(ip string) {
 		// Look for ellipsis.
 		if ip[0] == ':' {
 			if ellipsis >= 0 { // already have one
-				return 
+				return
 			}
 			ellipsis = i
 			ip = ip[1:]
@@ -164,15 +140,15 @@ func (addr *Addr) FromString(ip string) {
 
 	// Must have used entire string.
 	if len(ip) != 0 {
-		return 
+		return
 	}
 
 	// If didn't parse enough, expand ellipsis.
-	if i < IPv6len {
+	if i < Addrlen {
 		if ellipsis < 0 {
 			return
 		}
-		n := IPv6len - i
+		var n = Addrlen - i
 		for j := i - 1; j >= ellipsis; j-- {
 			addr[j+n] = addr[j]
 		}
@@ -183,4 +159,34 @@ func (addr *Addr) FromString(ip string) {
 		// Ellipsis must represent at least one 0 group.
 		return
 	}
+}
+
+// Bigger than we need, not too big to worry about overflow
+const big = 0xFFFFFF
+
+// Hexadecimal to integer.
+// Returns number, characters consumed, success.
+func xtoi(s string) (n int, i int, ok bool) {
+	n = 0
+	for i = 0; i < len(s); i++ {
+		if '0' <= s[i] && s[i] <= '9' {
+			n *= 16
+			n += int(s[i] - '0')
+		} else if 'a' <= s[i] && s[i] <= 'f' {
+			n *= 16
+			n += int(s[i]-'a') + 10
+		} else if 'A' <= s[i] && s[i] <= 'F' {
+			n *= 16
+			n += int(s[i]-'A') + 10
+		} else {
+			break
+		}
+		if n >= big {
+			return 0, i, false
+		}
+	}
+	if i == 0 {
+		return 0, i, false
+	}
+	return n, i, true
 }

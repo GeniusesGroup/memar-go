@@ -2,70 +2,45 @@
 
 package ipv6
 
-// Packet use for packet methods!
-type Packet []byte
-
-const (
-	// Version of protocol
-	Version = 6
-	// HeaderLen is minimum header length of IPv6 header
-	HeaderLen = 40
+import (
+	"../binary"
+	"../protocol"
 )
 
-// CheckPacket will check packet for any bad situation!
-// Always check packet before use any other packet methods otherwise panic may occur!
-func (p *Packet) CheckPacket() (err error) {
-	if len(*p) < HeaderLen {
-		return PacketTooShort
-	}
+// Packet implement all methods to Get||Set data to a packet as a byte slice with 0-alloc
+type Packet []byte
 
+// CheckPacket checks packet for any bad situation
+// Always check packet before use any other packet methods otherwise panic may occur
+func (p Packet) CheckPacket() protocol.Error {
+	if len(p) < HeaderLen {
+		return ErrPacketTooShort
+	}
 	return nil
 }
 
-// GetVersion will return packet version in memory safe way!
-func (p *Packet) GetVersion() (Version uint8) {
-	return uint8((*p)[0]) >> 4
-}
+/*
+********** Get Methods **********
+ */
+func (p Packet) Version() uint8                  { return p[0] >> 4 }
+func (p Packet) TrafficClass() uint8             { return p[0]<<4 | p[1]>>4 }
+func (p Packet) FlowLabel() (fl [3]byte)         { copy(fl[:], p[1:]); fl[0] &= 0x0f; return }
+func (p Packet) PayloadLength() uint16           { return binary.BigEndian.Uint16(p[4:]) }
+func (p Packet) NextHeader() uint8               { return p[6] }
+func (p Packet) HopLimit() uint8                 { return p[7] }
+func (p Packet) SourceAddr() (srcAddr Addr)      { copy(srcAddr[:], p[8:]); return }
+func (p Packet) DestinationAddr() (desAddr Addr) { copy(desAddr[:], p[24:]); return }
+func (p Packet) Payload() []byte                 { return p[40:] }
 
-// GetTrafficClass will return packet TrafficClass in memory safe way!
-func (p *Packet) GetTrafficClass() (TrafficClass uint8) {
-	return uint8((*p)[0]&0x0f)<<4 | uint8((*p)[1])>>4
-}
-
-// GetFlowLabel will return packet FlowLabel in memory safe way!
-func (p *Packet) GetFlowLabel() (FlowLabel uint32) {
-	return uint32((*p)[1]&0x0f)<<16 | uint32((*p)[2])<<8 | uint32((*p)[3])
-}
-
-// GetPayloadLength will return packet PayloadLength in memory safe way!
-func (p *Packet) GetPayloadLength() (PayloadLength uint16) {
-	return uint16((*p)[4]) | uint16((*p)[5])<<8
-}
-
-// GetNextHeader will return packet NextHeader in memory safe way!
-func (p *Packet) GetNextHeader() (NextHeader uint8) {
-	return uint8((*p)[6])
-}
-
-// GetHopLimit will return packet HopLimit in memory safe way!
-func (p *Packet) GetHopLimit() (HopLimit uint8) {
-	return uint8((*p)[7])
-}
-
-// GetSourceIP will return SourceIPAddress in memory safe way!
-func (p *Packet) GetSourceIP() (SourceIPAddress [16]byte) {
-	copy(SourceIPAddress[:], (*p)[8:24])
-	return SourceIPAddress
-}
-
-// GetDestinationIP will return DestinationIPAddress in memory safe way!
-func (p *Packet) GetDestinationIP() (DestinationIPAddress [16]byte) {
-	copy(DestinationIPAddress[:], (*p)[24:40])
-	return DestinationIPAddress
-}
-
-// GetPayload will return Payload in memory safe way!
-func (p *Packet) GetPayload() (Payload []byte) {
-	// TODO : Check first payload location by GetNextHeader method!
-	return (*p)[40:]
-}
+/*
+********** Set Methods **********
+ */
+func (p Packet) SetVersion(v uint8)              { p[0] = (v << 4) }
+func (p Packet) SetTrafficClass(tc uint8)        { p[0] |= (tc >> 4); p[1] = (tc << 4) }
+func (p Packet) SetFlowLabel(fl [3]byte)         { p[1] |= fl[0]; p[2] = fl[1]; p[3] = fl[2] }
+func (p Packet) SetPayloadLength(ln uint16)      { binary.BigEndian.SetUint16(p[4:], ln) }
+func (p Packet) SetNextHeader(nh uint8)          { p[6] = nh }
+func (p Packet) SetHopLimit(hl uint8)            { p[7] = hl }
+func (p Packet) SetSourceAddr(srcAddr Addr)      { copy(p[8:], srcAddr[:]) }
+func (p Packet) SetDestinationAddr(desAddr Addr) { copy(p[24:], desAddr[:]) }
+func (p Packet) SetPayload(payload []byte)       { copy(p[40:], payload) }

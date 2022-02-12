@@ -2,14 +2,22 @@
 
 package ipv6
 
-import "../error"
-
-// Declare IPv6 errors number
-const (
-	packetTooShort = 00000 + (iota + 1)
+import (
+	er "../error"
+	"../mediatype"
+	"../protocol"
 )
 
-// Declare Errors Details
+const domainEnglish = "IPv6"
+const domainPersian = "IPv6"
+
+// Errors
 var (
-	PacketTooShort = error.NewError("IPv6 packet is empty or too short than standard header", packetTooShort, 0)
+	ErrPacketTooShort = er.New(mediatype.New("domain/ipv6.protocol.error; name=packet-too-short").SetDetail(protocol.LanguageEnglish, domainEnglish,
+		"Packet Too Short",
+		"IPv6 packet is empty or too short than standard minimum size. It must include at least 40Byte header",
+		"",
+		"",
+		nil).
+		Expired(0, nil))
 )
