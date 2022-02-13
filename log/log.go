@@ -8,27 +8,33 @@ import (
 	"../protocol"
 )
 
-type Logger struct{}
+type Logger struct {
+	Listeners
+}
+
+func (l *Logger) Init() {
+	l.Listeners.init()
+}
 
 // PanicHandler recover from panics if exist to prevent app stop.
 // Call it by defer in any goroutine due to >> https://github.com/golang/go/issues/20161
 func (l *Logger) PanicHandler() {
 	var r = recover()
 	if r != nil {
-		var logEvent, ok = r.(protocol.LogEvent)
-		if !ok {
-			switch message := r.(type) {
-			case protocol.Error:
-				logEvent = PanicEvent("Unknown protocol.Error Domain", message.ToString())
-			case error:
-				logEvent = PanicEvent("Unknown Error Domain", message.Error())
-			case string:
-				logEvent = PanicEvent("Unknown string Domain", message)
-			case protocol.Stringer:
-				logEvent = PanicEvent("Unknown Stringer Domain", message.ToString())
-			default:
-				logEvent = PanicEvent("Unknown Domain", fmt.Sprint(r))
-			}
+		var logEvent protocol.LogEvent
+		switch message := r.(type) {
+		case protocol.LogEvent:
+			logEvent = message
+		case protocol.Error:
+			logEvent = PanicEvent("Unknown protocol.Error Domain", message.ToString())
+		case error:
+			logEvent = PanicEvent("Unknown Error Domain", message.Error())
+		case string:
+			logEvent = PanicEvent("Unknown string Domain", message)
+		case protocol.Stringer:
+			logEvent = PanicEvent("Unknown Stringer Domain", message.ToString())
+		default:
+			logEvent = PanicEvent("Unknown Domain", fmt.Sprint(r))
 		}
 		l.Log(logEvent)
 	}
@@ -43,12 +49,11 @@ func (l *Logger) Log(event protocol.LogEvent) {
 		return
 	}
 
-	l.saveLog(event)
+	l.sendToListeners(event)
+	l.saveEvent(event)
 }
 
-func (l *Logger) saveLog(event protocol.LogEvent) {
-	// TODO::: Implement some mechanism to listen to important logs, ...
-
+func (l *Logger) saveEvent(event protocol.LogEvent) {
 	// TODO::: First save locally as cache to reduce network trip for non important data??
 
 	// TODO::: Each day, Save logs to storage in one object with this ID: sha3.256(mediatype.LOG.ID(), NodeID, TimeRoundToDay)

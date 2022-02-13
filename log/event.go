@@ -4,15 +4,15 @@ package log
 
 import (
 	"runtime/debug"
-	"time"
 
+	"../time"
 	"../protocol"
 )
 
 func NewEvent(level protocol.LogType, domian, message string) (event *Event) {
 	return &Event{
 		level:   level,
-		time:    protocol.TimeUnixMilli(time.Now().UnixMilli()),
+		time:    time.UnixNowMilli(),
 		domain:  domian,
 		message: message,
 		stack:   nil,
@@ -22,7 +22,7 @@ func NewEvent(level protocol.LogType, domian, message string) (event *Event) {
 func TraceEvent(level protocol.LogType, domian, message string) (event *Event) {
 	return &Event{
 		level:   level,
-		time:    protocol.TimeUnixMilli(time.Now().UnixMilli()),
+		time:    time.UnixNowMilli(),
 		domain:  domian,
 		message: message,
 		stack:   debug.Stack(),
@@ -32,7 +32,7 @@ func TraceEvent(level protocol.LogType, domian, message string) (event *Event) {
 func InfoEvent(domian, message string) (event *Event) {
 	return &Event{
 		level:   protocol.Log_Information,
-		time:    protocol.TimeUnixMilli(time.Now().UnixMilli()),
+		time:    time.UnixNowMilli(),
 		domain:  domian,
 		message: message,
 		stack:   nil,
@@ -42,7 +42,7 @@ func InfoEvent(domian, message string) (event *Event) {
 func NoticeEvent(domian, message string) (event *Event) {
 	return &Event{
 		level:   protocol.Log_Notice,
-		time:    protocol.TimeUnixMilli(time.Now().UnixMilli()),
+		time:    time.UnixNowMilli(),
 		domain:  domian,
 		message: message,
 		stack:   nil,
@@ -52,7 +52,7 @@ func NoticeEvent(domian, message string) (event *Event) {
 func DebugEvent(domian, message string) (event *Event) {
 	return &Event{
 		level:   protocol.Log_Debug,
-		time:    protocol.TimeUnixMilli(time.Now().UnixMilli()),
+		time:    time.UnixNowMilli(),
 		domain:  domian,
 		message: message,
 		stack:   nil,
@@ -62,7 +62,7 @@ func DebugEvent(domian, message string) (event *Event) {
 func DeepDebugEvent(domian, message string) (event *Event) {
 	return &Event{
 		level:   protocol.Log_DeepDebug,
-		time:    protocol.TimeUnixMilli(time.Now().UnixMilli()),
+		time:    time.UnixNowMilli(),
 		domain:  domian,
 		message: message,
 		stack:   nil,
@@ -72,7 +72,7 @@ func DeepDebugEvent(domian, message string) (event *Event) {
 func WarnEvent(domian, message string) (event *Event) {
 	return &Event{
 		level:   protocol.Log_Warning,
-		time:    protocol.TimeUnixMilli(time.Now().UnixMilli()),
+		time:    time.UnixNowMilli(),
 		domain:  domian,
 		message: message,
 		stack:   nil,
@@ -83,7 +83,7 @@ func WarnEvent(domian, message string) (event *Event) {
 func PanicEvent(domian, message string) (event *Event) {
 	return &Event{
 		level:   protocol.Log_Panic,
-		time:    protocol.TimeUnixMilli(time.Now().UnixMilli()),
+		time:    time.UnixNowMilli(),
 		domain:  domian,
 		message: message,
 		stack:   debug.Stack(),
@@ -94,7 +94,7 @@ func PanicEvent(domian, message string) (event *Event) {
 func FatalEvent(domian, message string) (event *Event) {
 	return &Event{
 		level:   protocol.Log_Fatal,
-		time:    protocol.TimeUnixMilli(time.Now().UnixMilli()),
+		time:    time.UnixNowMilli(),
 		domain:  domian,
 		message: message,
 		stack:   debug.Stack(),
@@ -105,7 +105,7 @@ func FatalEvent(domian, message string) (event *Event) {
 func ConfEvent(domian, message string) (event *Event) {
 	return &Event{
 		level:   protocol.Log_Confidential,
-		time:    protocol.TimeUnixMilli(time.Now().UnixMilli()),
+		time:    time.UnixNowMilli(),
 		domain:  domian,
 		message: message,
 		stack:   nil,

@@ -5,11 +5,14 @@ package protocol
 // Logger save logs as records in time chain for the node that create log.
 // Suggest that RecordID time chain by sha3.256(LogMediatypeID, NodeID, TimeRoundToDay)
 type Logger interface {
+	// PanicHandler recover from panics in a goroutine if exist, to prevent the application unexpected stopping.
 	PanicHandler()
 
 	Log(event LogEvent)
 	// Due to expect Fatal terminate app and it brake the app, Dev must design it in the app architecture with panic and log the event with Log_Fatal
 	// LogFatal(event LogEvent)
+
+	RegisterListener(level LogType, domain string, ll LogListener) (err Error)
 }
 
 type LogEvent interface {
@@ -18,6 +21,15 @@ type LogEvent interface {
 	Domain() string
 	Message() string // save formated data e.g. fmt.Sprintf("Panic Exception: %s\nDebug Stack: %s", r, debug.Stack())
 	Stack() []byte   // if log need to trace, specially in panic situation
+}
+
+// LogListener Usually implement on a distributed service that will carry log event to desire node and
+// - Show on screen in control room of the software
+// - Notify to related person about critical log that must check as soon as possible
+// But it can also implement by local GUI application to notify the dev users in AppMode_Dev
+type LogListener interface {
+	// Non-Blocking, means It must not block the caller in any ways.
+	LogEventHandler(le LogEvent)
 }
 
 // LogType indicate log level
