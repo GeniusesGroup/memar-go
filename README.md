@@ -30,7 +30,7 @@ A standard is a formalized protocol accepted by most of the parties that impleme
 - go run -gcflags='-m -m' {{file-name}}.go
 
 # Enterprise
-Contact us by [this](ict@sabz.city) or  [this](omidhekayati@gmail.com) if you need enterprise support for developing high available and distributed software. See features available in enterprise package:
+Contact us by [this](mailto:ict@sabz.city) or  [this](mailto:omidhekayati@gmail.com) if you need enterprise support for developing high available and distributed software. See features available in enterprise package:
 - Develope exclusive features in very short time
 - Bug fixing quickly
 - 
