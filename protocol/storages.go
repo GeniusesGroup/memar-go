@@ -2,21 +2,28 @@
 
 package protocol
 
-// Storages is the interface that can implement by any Application to provide storage mechanism.
-type Storages interface {
-	Objects() StorageObjects      // Distributed objects storage
-	LocalObjects() StorageObjects // Local object storage
-	ObjectsCache() StorageObjects // Local cached object storage. Keep them on volatile memories and just save very common on non-volatile storages.
+// StoragesDistributed is the interface that can implement by any Application to provide distributed storage mechanism.
+type StoragesDistributed interface {
+	Objects() StorageObjects
+	Files() FileDirectory
+	Records() StorageRecords
+	KeyValues() StorageKeyValue
+}
 
-	Files() FileDirectory      // Distributed files storage
-	LocalFiles() FileDirectory // Local file storage
-	FilesCache() FileDirectory // Local cached files storage. Keep them on volatile memories and just save very common on non-volatile storages.
+// StoragesLocal is the interface that can implement by any Application to provide local storage mechanism.
+type StoragesLocal interface {
+	LocalObjects() StorageObjects
+	LocalFiles() FileDirectory
+	LocalRecords() StorageRecords
+	LocalKeyValues() StorageKeyValue
+}
 
-	Records() StorageRecords      // Distributed records storage
-	LocalRecords() StorageRecords // Local records storage
-	RecordsCache() StorageRecords // Local cached records storage. Keep them on volatile memories and just save very common on non-volatile storages.
-
-	KeyValues() StorageKeyValue      // Distributed key/value storage
-	LocalKeyValues() StorageKeyValue // Local key/value storage
-	KeyValuesCache() StorageKeyValue // Local cached key/value storage. Keep them on volatile memories and just save very common on non-volatile storages.
+// StoragesCache is the interface that can implement by any Application to provide cache storage mechanism.
+// Keep them on volatile memories and just save very common on non-volatile storages.
+// All GUI & edge nodes of any software must use cache in many cases to improve performance.
+type StoragesCache interface {
+	ObjectsCache() StorageObjects
+	FilesCache() FileDirectory
+	RecordsCache() StorageRecords
+	KeyValuesCache() StorageKeyValue
 }
