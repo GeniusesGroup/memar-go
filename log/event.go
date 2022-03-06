@@ -5,8 +5,8 @@ package log
 import (
 	"runtime/debug"
 
-	"../time"
 	"../protocol"
+	"../time"
 )
 
 func NewEvent(level protocol.LogType, domian, message string) (event *Event) {
@@ -31,7 +31,7 @@ func TraceEvent(level protocol.LogType, domian, message string) (event *Event) {
 
 func InfoEvent(domian, message string) (event *Event) {
 	return &Event{
-		level:   protocol.Log_Information,
+		level:   protocol.LogEvent_Information,
 		time:    time.UnixNowMilli(),
 		domain:  domian,
 		message: message,
@@ -41,7 +41,7 @@ func InfoEvent(domian, message string) (event *Event) {
 
 func NoticeEvent(domian, message string) (event *Event) {
 	return &Event{
-		level:   protocol.Log_Notice,
+		level:   protocol.LogEvent_Notice,
 		time:    time.UnixNowMilli(),
 		domain:  domian,
 		message: message,
@@ -51,7 +51,7 @@ func NoticeEvent(domian, message string) (event *Event) {
 
 func DebugEvent(domian, message string) (event *Event) {
 	return &Event{
-		level:   protocol.Log_Debug,
+		level:   protocol.LogEvent_Debug,
 		time:    time.UnixNowMilli(),
 		domain:  domian,
 		message: message,
@@ -61,7 +61,7 @@ func DebugEvent(domian, message string) (event *Event) {
 
 func DeepDebugEvent(domian, message string) (event *Event) {
 	return &Event{
-		level:   protocol.Log_DeepDebug,
+		level:   protocol.LogEvent_DeepDebug,
 		time:    time.UnixNowMilli(),
 		domain:  domian,
 		message: message,
@@ -71,7 +71,7 @@ func DeepDebugEvent(domian, message string) (event *Event) {
 
 func WarnEvent(domian, message string) (event *Event) {
 	return &Event{
-		level:   protocol.Log_Warning,
+		level:   protocol.LogEvent_Warning,
 		time:    time.UnixNowMilli(),
 		domain:  domian,
 		message: message,
@@ -82,7 +82,7 @@ func WarnEvent(domian, message string) (event *Event) {
 // FatalEvent return new event with panic level and added stack trace.
 func PanicEvent(domian, message string) (event *Event) {
 	return &Event{
-		level:   protocol.Log_Panic,
+		level:   protocol.LogEvent_Panic,
 		time:    time.UnixNowMilli(),
 		domain:  domian,
 		message: message,
@@ -93,7 +93,7 @@ func PanicEvent(domian, message string) (event *Event) {
 // FatalEvent return new event with fatal level and added stack trace.
 func FatalEvent(domian, message string) (event *Event) {
 	return &Event{
-		level:   protocol.Log_Fatal,
+		level:   protocol.LogEvent_Fatal,
 		time:    time.UnixNowMilli(),
 		domain:  domian,
 		message: message,
@@ -104,7 +104,7 @@ func FatalEvent(domian, message string) (event *Event) {
 // ConfEvent return new event with "Confidential" level
 func ConfEvent(domian, message string) (event *Event) {
 	return &Event{
-		level:   protocol.Log_Confidential,
+		level:   protocol.LogEvent_Confidential,
 		time:    time.UnixNowMilli(),
 		domain:  domian,
 		message: message,
@@ -120,6 +120,13 @@ type Event struct {
 	message string
 	stack   []byte
 }
+
+func (e *Event) MainType() protocol.EventMainType { return protocol.EventMainType_Log }
+func (e *Event) SubType() protocol.EventSubType   { return protocol.EventSubType(e.level) }
+func (e *Event) Cancelable() bool                 { return false }
+func (e *Event) DefaultPrevented() bool           { return false }
+func (e *Event) Bubbles() bool                    { return false }
+func (e *Event) PreventDefault()                  {}
 
 func (e *Event) Level() protocol.LogType      { return e.level }
 func (e *Event) Time() protocol.TimeUnixMilli { return e.time }

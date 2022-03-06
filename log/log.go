@@ -5,15 +5,12 @@ package log
 import (
 	"fmt"
 
+	"../event"
 	"../protocol"
 )
 
 type Logger struct {
-	Listeners
-}
-
-func (l *Logger) Init() {
-	l.Listeners.init()
+	event.EventTarget
 }
 
 // PanicHandler recover from panics if exist to prevent app stop.
@@ -43,13 +40,13 @@ func (l *Logger) PanicHandler() {
 func (l *Logger) Log(event protocol.LogEvent) {
 	// TODO::: it is a huge performance impact to check each logging, force caller to check before call log?
 	// This func can inline means constants check on compile time?
-	if (!protocol.AppMode_Dev && event.Level() == protocol.Log_Unset) ||
-		(!protocol.LogMode_Debug && event.Level() == protocol.Log_Debug) ||
-		(!protocol.LogMode_DeepDebug && event.Level() == protocol.Log_DeepDebug) {
+	if (!protocol.AppMode_Dev && event.Level() == protocol.LogEvent_Unset) ||
+		(!protocol.LogMode_Debug && event.Level() == protocol.LogEvent_Debug) ||
+		(!protocol.LogMode_DeepDebug && event.Level() == protocol.LogEvent_DeepDebug) {
 		return
 	}
 
-	l.sendToListeners(event)
+	l.DispatchEvent(event)
 	l.saveEvent(event)
 }
 
