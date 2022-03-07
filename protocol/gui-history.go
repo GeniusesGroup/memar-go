@@ -3,20 +3,8 @@
 package protocol
 
 type GUIHistory interface {
-	ActivePageState() GUIPageState
 	PreviousPageState() GUIPageState
 	FollowingPageState() GUIPageState
 
 	// Find states by PageID, Title, ...
-}
-
-// GUIPageState :
-type GUIPageState interface {
-	Page() GUIPage
-	Title() string
-	Description() string
-	Conditions() map[string]string
-	Fragment() string
-	ActiveDate() Time
-	EndDate() Time
 }

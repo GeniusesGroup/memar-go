@@ -22,6 +22,8 @@ var App Application
 
 // Application is the interface that must implement by any Application.
 type Application interface {
+	Engine() ApplicationEngine
+
 	SoftwareStatus() SoftwareStatus
 	Status() ApplicationState
 	// Listen to the app state changes. Can return the channel instead of get as arg, but a channel listener can lost very fast app state changing.
@@ -38,18 +40,24 @@ type Application interface {
 	Errors
 	Connections
 	NetworkApplicationMultiplexer
+	EventTarget
 
 	// Server specific applications
 	StoragesDistributed
 
-	// UI (GUI, VUI, ...) specific applications
-	DOM
-	GUIPages
-	GUIHistory
+	GUIApplication
+}
+
+// ApplicationEngine is the interface that return some useful data about the engine that implement Application protocol
+// In many ways it is like window.navigator in web ecosystem
+type ApplicationEngine interface {
+	Name() string
+	CharacterSet() string
 }
 
 // ApplicationManifest is the interface that must implement by any Application.
 type ApplicationManifest interface {
+	Icon() []byte
 	DomainName() string
 	Email() string
 
@@ -57,6 +65,9 @@ type ApplicationManifest interface {
 	UserID() (userID uint32)
 	AppUUID() (appUUID [32]byte)
 	AppID() (appID uint16) // local OS application ID
+
+	ContentPreferences()
+	PresentationPreferences()
 }
 
 // ApplicationState indicate application state
@@ -65,17 +76,18 @@ type ApplicationState uint32
 
 // Application State
 const (
-	ApplicationStateUnset    ApplicationState = iota // State not set yet!
-	ApplicationStateStarting                         // plan to start
-	ApplicationStateRunning
-	ApplicationStateStopping
-	ApplicationStateStoped
+	ApplicationState_Unset    ApplicationState = iota // State not set yet!
+	ApplicationState_Starting                         // plan to start
+	ApplicationState_Running
+	ApplicationState_Stopping
+	ApplicationState_Stopped
 
-	ApplicationStateLocalNode
-	ApplicationStateStable
-	ApplicationStateNotResponse
+	ApplicationState_PowerFailure
 
-	ApplicationStateSplitting
-	ApplicationStateReAllocate
-	// ApplicationStateAcceptWrite
+	ApplicationState_Stable
+	ApplicationState_NotResponse
+
+	ApplicationState_Splitting
+	ApplicationState_ReAllocate
+	// ApplicationState_AcceptWrite
 )
