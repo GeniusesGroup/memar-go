@@ -24,10 +24,13 @@ type ChainError struct {
 }
 
 func (ce *ChainError) PastChain() *ChainError        { return ce.err.(*ChainError) }
+func (ce *ChainError) Internal() bool                { return ce.err.Internal() }
+func (ce *ChainError) Temporary() bool               { return ce.err.Temporary() }
 func (ce *ChainError) ID() uint64                    { return ce.err.ID() }
+func (ce *ChainError) IDasString() string            { return ce.err.IDasString() }
 func (ce *ChainError) MediaType() protocol.MediaType { return ce.err.MediaType() }
 func (ce *ChainError) ToString() string {
-	return "\n	Chain Error - Cause by: " + ce.err.ToString() + " - Info: " + ce.info
+	return "\n" + ce.err.ToString() + "\n	Chain Info: " + ce.info
 }
 func (ce *ChainError) Equal(err protocol.Error) bool { return ce.err.Equal(err) }
 

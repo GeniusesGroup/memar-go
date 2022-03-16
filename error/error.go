@@ -18,8 +18,9 @@ func New(mediatype *mediatype.MediaType) *Error {
 	}
 
 	var err = Error{
-		id:        mediatype.ID(),
-		mediatype: mediatype,
+		id:         mediatype.ID(),
+		idAsString: mediatype.IDasString(),
+		mediatype:  mediatype,
 	}
 
 	// Save finalize needed logic on given error and register in the application
@@ -47,16 +48,25 @@ func GetID(err error) uint64 {
 // Error is a extended implementation of error.
 // Never change urn due to it adds unnecessary complicated troubleshooting errors on SDK.
 type Error struct {
-	id        uint64
-	mediatype *mediatype.MediaType
+	id         uint64
+	idAsString string
+	internal   bool
+	temporary  bool
+	mediatype  *mediatype.MediaType
 
 	stringMethod string
 	errorMethod  string
 }
 
 func (e *Error) ID() uint64                    { return e.id }
+func (e *Error) IDasString() string            { return e.idAsString }
+func (e *Error) Internal() bool                { return e.internal }
+func (e *Error) Temporary() bool               { return e.temporary }
 func (e *Error) MediaType() protocol.MediaType { return e.mediatype }
 func (e *Error) ToString() string              { return e.stringMethod }
+
+func (e *Error) SetInternal()  { e.internal = true }
+func (e *Error) SetTemporary() { e.temporary = true }
 
 // Equal compare two Error.
 func (e *Error) Equal(err protocol.Error) bool {
@@ -84,7 +94,7 @@ func (e *Error) Cause() error  { return e }
 func (e *Error) Unwrap() error { return e }
 
 func (e *Error) updateStrings() {
-	e.stringMethod = "Error ID: " + e.mediatype.IDasString()
+	e.stringMethod = e.mediatype.IDasString()
 	var localeDetail = e.mediatype.Detail(protocol.AppLanguage)
 	e.errorMethod = fmt.Sprintf("Error ID: %s\n	Summary: %s\n	Overview: %s\n", e.mediatype.IDasString(), localeDetail.Summary(), localeDetail.Overview())
 }
