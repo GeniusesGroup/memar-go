@@ -4,8 +4,8 @@ package protocol
 
 type CompressTypes interface {
 	RegisterCompressType(ct CompressType)
-	GetCompressTypeByID(urnID uint64) CompressType
-	GetCompressTypeByURN(urnURI string) CompressType
+	GetCompressTypeByID(id uint64) CompressType
+	GetCompressTypeByMediaType(mt string) CompressType
 	GetCompressTypeByFileExtension(ex string) CompressType
 	GetCompressTypeByContentEncoding(ce string) CompressType
 }
@@ -14,21 +14,31 @@ type CompressTypes interface {
 // https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Encoding
 // https://en.wikipedia.org/wiki/HTTP_compression
 type CompressType interface {
-	URN() GitiURN
+	MediaType() MediaType
 	ContentEncoding() string
-	Extension() string
-	Compression(raw Codec, compressLevel CompressLevel) (compress Codec)
-	Decompression(compress Codec) (raw Codec)
+	FileExtension() string // copy of MediaType().FileExtension() to improve performance
+
+	Compress(raw Codec, options CompressOptions) (compressed Codec, err Error)
+	CompressBySlice(raw []byte, options CompressOptions) (compressed Codec, err Error)
+	CompressByReader(raw Reader, options CompressOptions) (compressed Codec, err Error)
+
+	Decompress(compressed Codec) (raw Codec, err Error)
+	DecompressFromSlice(compressed []byte) (raw Codec, err Error)
+	DecompressFromReader(compressed Reader, compressedLen int) (raw Codec, err Error)
+}
+
+type CompressOptions struct {
+	CompressLevel CompressLevel
 }
 
 type CompressLevel int
 
 // Compress Levels
 const (
-	NoCompression        CompressLevel = 0
-	BestSpeedCompression CompressLevel = 1
-	BestCompression      CompressLevel = 9
-	DefaultCompression   CompressLevel = -1
+	CompressLevel_NoCompression   CompressLevel = 0
+	CompressLevel_BestSpeed       CompressLevel = 1
+	CompressLevel_BestCompression CompressLevel = 9
+	CompressLevel_Default         CompressLevel = -1
 
 	// HuffmanOnly disables Lempel-Ziv match searching and only performs Huffman
 	// entropy encoding. This mode is useful in compressing data that has
@@ -39,5 +49,5 @@ const (
 	// Note that HuffmanOnly produces a compressed output that is
 	// RFC 1951 compliant. That is, any valid DEFLATE decompressor will
 	// continue to be able to decompress this output.
-	HuffmanOnlyCompression CompressLevel = -2
+	CompressLevel_HuffmanOnly CompressLevel = -2
 )

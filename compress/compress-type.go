@@ -3,42 +3,31 @@
 package compress
 
 import (
+	"../mediatype"
 	"../protocol"
-	"../urn"
 )
 
-type compressType struct {
-	urn             urn.Giti
+type CompressType struct {
+	mediatype       *mediatype.MediaType
 	contentEncoding string
-	extension       string // Use as file extension usually in windows os
-	compression     compression
-	decompression   decompression
+	extension       string
 }
 
-type compression func(raw protocol.Codec, compressLevel protocol.CompressLevel) (compress protocol.Codec)
-type decompression func(compress protocol.Codec) (raw protocol.Codec)
+func (ct *CompressType) MediaType() protocol.MediaType { return ct.mediatype }
+func (ct *CompressType) ContentEncoding() string       { return ct.contentEncoding }
+func (ct *CompressType) FileExtension() string         { return ct.extension }
 
-func (ct *compressType) URN() protocol.GitiURN   { return &ct.urn }
-func (ct *compressType) ContentEncoding() string { return ct.contentEncoding }
-func (ct *compressType) Extension() string       { return ct.extension }
-func (ct *compressType) Compression(raw protocol.Codec, compressLevel protocol.CompressLevel) (compress protocol.Codec) {
-	return ct.compression(raw, compressLevel)
-}
-func (ct *compressType) Decompression(compress protocol.Codec) (raw protocol.Codec) {
-	return ct.decompression(raw)
-}
-
-func NewCompressType(urn, contentEncoding, extension string, compression compression, decompression decompression) (ct *compressType) {
-	ct = &compressType{
-		contentEncoding: contentEncoding,
-		extension:       extension,
-		compression:     compression,
-		decompression:   decompression,
+func New(contentEncoding string, mediatype *mediatype.MediaType) (ct *CompressType) {
+	if mediatype == nil {
+		panic("CompressType doesn't has a valid MediaType. Can't make it.")
 	}
-	ct.urn.Init(urn)
-
-	compressTypeByID[ct.urn.ID()] = ct
-	compressTypeByContentEncoding[ct.contentEncoding] = ct
-	compressTypeByFileExtension[ct.extension] = ct
+	if contentEncoding == "" {
+		panic("CompressType doesn't has a valid ContentEncoding. Can't make it.")
+	}
+	ct = &CompressType{
+		mediatype:       mediatype,
+		contentEncoding: contentEncoding,
+		extension:       mediatype.FileExtension(),
+	}
 	return
 }

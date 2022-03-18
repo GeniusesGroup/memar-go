@@ -4,16 +4,19 @@ package compress
 
 import (
 	er "../error"
+	"../mediatype"
 	"../protocol"
 )
 
-const errorEnglishDomain = "Compress"
-const errorPersianDomain = "فشرده سازی"
+const domainEnglish = "Compress"
+const domainPersian = "فشرده سازی"
 
 // Errors
 var (
-	ErrSourceNotChangeable = er.New("urn:giti:compress.protocol:error:source-not-changeable").SetDetail(protocol.LanguageEnglish, errorEnglishDomain, "Source not Changeable",
+	ErrSourceNotChangeable = er.New(mediatype.New("domain/compress.protocol.error; name=source-not-changeable").SetDetail(protocol.LanguageEnglish, domainEnglish,
+		"Source not Changeable",
 		"Can't read from other source than source given in compression||decompression creation",
 		"",
-		"").Save()
+		"",
+		nil))
 )
