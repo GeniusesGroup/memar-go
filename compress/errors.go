@@ -13,6 +13,13 @@ const domainPersian = "فشرده سازی"
 
 // Errors
 var (
+	ErrNotFound = er.New(mediatype.New("domain/compress.protocol.error; name=not-found").SetDetail(protocol.LanguageEnglish, domainEnglish,
+		"Not Found",
+		"Can't find requested compression||decompression algorithm",
+		"",
+		"",
+		nil))
+
 	ErrSourceNotChangeable = er.New(mediatype.New("domain/compress.protocol.error; name=source-not-changeable").SetDetail(protocol.LanguageEnglish, domainEnglish,
 		"Source not Changeable",
 		"Can't read from other source than source given in compression||decompression creation",

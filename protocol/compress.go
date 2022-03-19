@@ -4,10 +4,11 @@ package protocol
 
 type CompressTypes interface {
 	RegisterCompressType(ct CompressType)
-	GetCompressTypeByID(id uint64) CompressType
-	GetCompressTypeByMediaType(mt string) CompressType
-	GetCompressTypeByFileExtension(ex string) CompressType
-	GetCompressTypeByContentEncoding(ce string) CompressType
+	GetCompressTypeByID(id uint64) (ct CompressType, err Error)
+	GetCompressTypeByMediaType(mt string) (ct CompressType, err Error)
+	GetCompressTypeByFileExtension(ex string) (ct CompressType, err Error)
+	GetCompressTypeByContentEncoding(ce string) (ct CompressType, err Error)
+	ContentEncodings() []string
 }
 
 // CompressType is standard shape of any compress coding type
