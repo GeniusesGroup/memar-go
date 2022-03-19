@@ -3,7 +3,7 @@
 package http
 
 import (
-	"../urn"
+	"../mediatype"
 	"../protocol"
 	"../service"
 )
@@ -11,28 +11,29 @@ import (
 const serviceMuxPath = "/m"
 
 var MuxService = muxService{
-	Service: service.New("urn:giti:http.protocol:service:service-multiplexer", serviceMuxPath, protocol.Software_PreAlpha, 1587282740).
-		SetDetail(protocol.LanguageEnglish, domainEnglish, "Service Multiplexer", 
-			"It use giti urn mechanism to call requested service",
-			``,
-			[]string{}).
-		SetAuthorization(protocol.CRUDAll, protocol.UserType_All).Expired(0, ""),
+	Service: service.New("", mediatype.New("domain/http.protocol.service; name=service-multiplexer").SetDetail(protocol.LanguageEnglish, domainEnglish,
+		"Service Multiplexer",
+		"Multiplex services by its ID with impressive performance",
+		"",
+		"",
+		nil).SetInfo(protocol.Software_PreAlpha, 1587282740, "")).
+		SetAuthorization(protocol.CRUDAll, protocol.UserType_All),
 }
 
 type muxService struct {
-	service.Service
+	*service.Service
 }
 
 func (ser *muxService) ServeHTTP(st protocol.Stream, httpReq *Request, httpRes *Response) (err protocol.Error) {
 	if httpReq.method != MethodPOST {
-		// err = 
+		// err =
 		httpRes.SetStatus(StatusMethodNotAllowedCode, StatusMethodNotAllowedPhrase)
 		return
 	}
 
 	var serviceID uint64
 	var service protocol.Service
-	serviceID, err = urn.IDfromString(httpReq.uri.query)
+	serviceID, err = mediatype.IDfromString(httpReq.uri.query)
 	if err == nil {
 		service, err = protocol.App.GetServiceByID(serviceID)
 		if err != nil {
@@ -52,6 +53,7 @@ func (ser *muxService) ServeHTTP(st protocol.Stream, httpReq *Request, httpRes *
 	// httpRes.H.Set(HeaderKeyCacheControl, "no-store")
 
 	st.SetService(service)
+	// TODO::: can't easily call service and must schedule it by its weight.
 	err = service.ServeHTTP(st, httpReq, httpRes)
 	if err != nil {
 		httpRes.SetError(err)

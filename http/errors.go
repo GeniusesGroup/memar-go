@@ -4,6 +4,7 @@ package http
 
 import (
 	er "../error"
+	"../mediatype"
 	"../protocol"
 )
 
@@ -12,83 +13,113 @@ const domainPersian = "HTTP"
 
 // Declare Errors Details
 var (
-	ErrNoConnection = er.New("urn:giti:http.protocol:error:no-connection").SetDetail(protocol.LanguageEnglish, domainEnglish, "No Connection",
+	ErrNoConnection = er.New(mediatype.New("domain/http.protocol.error; name=no-connection").SetDetail(protocol.LanguageEnglish, domainEnglish,
+		"No Connection",
 		"There is no connection to peer(server or client) to proccess request",
 		"",
-		"").
-		SetDetail(protocol.LanguagePersian, domainPersian, "عدم وجود ارتباط",
-			"هیچ راه ارتباطی با رایانه مقصد برای پردازش درخواست مورد نظر وجود ندارد",
-			"",
-			"").Save()
+		"",
+		nil).SetDetail(protocol.LanguagePersian, domainPersian,
+		"عدم وجود ارتباط",
+		"هیچ راه ارتباطی با رایانه مقصد برای پردازش درخواست مورد نظر وجود ندارد",
+		"",
+		"",
+		nil))
 
-	ErrPacketTooShort = er.New("urn:giti:http.protocol:error:packet-too-short").SetDetail(protocol.LanguageEnglish, domainEnglish, "Packet Too Short",
+	ErrPacketTooShort = er.New(mediatype.New("domain/http.protocol.error; name=packet-too-short").SetDetail(protocol.LanguageEnglish, domainEnglish,
+		"Packet Too Short",
 		"Received HTTP packet size is shorter than expected and can't use",
 		"",
-		"").Save()
+		"",
+		nil))
 
-	ErrPacketTooLong = er.New("urn:giti:http.protocol:error:packet-too-long").SetDetail(protocol.LanguageEnglish, domainEnglish, "Packet Too Long",
+	ErrPacketTooLong = er.New(mediatype.New("domain/http.protocol.error; name=packet-too-long").SetDetail(protocol.LanguageEnglish, domainEnglish,
+		"Packet Too Long",
 		"Received HTTP packet size is larger than expected and can't use",
 		"",
-		"").Save()
+		"",
+		nil))
 
-	ErrParseMethod = er.New("urn:giti:http.protocol:error:parse-method").SetDetail(protocol.LanguageEnglish, domainEnglish, "Parse Method",
+	ErrParseMethod = er.New(mediatype.New("domain/http.protocol.error; name=parse-method").SetDetail(protocol.LanguageEnglish, domainEnglish,
+		"Parse Method",
 		"Parsing received HTTP packet encounter unknown situation in Method part",
 		"",
-		"").Save()
+		"",
+		nil))
 
-	ErrParseURI = er.New("urn:giti:http.protocol:error:parse-uri").SetDetail(protocol.LanguageEnglish, domainEnglish, "Parse URI",
+	ErrParseURI = er.New(mediatype.New("domain/http.protocol.error; name=parse-uri").SetDetail(protocol.LanguageEnglish, domainEnglish,
+		"Parse URI",
 		"Parsing received HTTP packet encounter unknown situation in URI part",
 		"",
-		"").Save()
+		"",
+		nil))
 
-	ErrParseVersion = er.New("urn:giti:http.protocol:error:parse-version").SetDetail(protocol.LanguageEnglish, domainEnglish, "Parse Version",
+	ErrParseVersion = er.New(mediatype.New("domain/http.protocol.error; name=parse-version").SetDetail(protocol.LanguageEnglish, domainEnglish,
+		"Parse Version",
 		"Parsing received HTTP packet encounter unknown situation in Version part",
 		"",
-		"").Save()
+		"",
+		nil))
 
-	ErrParseStatusCode = er.New("urn:giti:http.protocol:error:parse-status-code").SetDetail(protocol.LanguageEnglish, domainEnglish, "Parse Status Code",
+	ErrParseStatusCode = er.New(mediatype.New("domain/http.protocol.error; name=parse-status-code").SetDetail(protocol.LanguageEnglish, domainEnglish,
+		"Parse Status Code",
 		"Parsing received HTTP packet encounter unknown situation in StatusCode part",
 		"",
-		"").Save()
+		"",
+		nil))
 
-	ErrParseReasonPhrase = er.New("urn:giti:http.protocol:error:parse-reason-phrase").SetDetail(protocol.LanguageEnglish, domainEnglish, "Parse Reason Phrase",
+	ErrParseReasonPhrase = er.New(mediatype.New("domain/http.protocol.error; name=parse-reason-phrase").SetDetail(protocol.LanguageEnglish, domainEnglish,
+		"Parse Reason Phrase",
 		"Parsing received HTTP packet encounter unknown situation in ReasonPhrase part",
 		"",
-		"").Save()
+		"",
+		nil))
 
-	ErrParseHeaderTooLarge = er.New("urn:giti:http.protocol:error:parse-header-too-large").SetDetail(protocol.LanguageEnglish, domainEnglish, "Parse Header Too Large",
+	ErrParseHeaderTooLarge = er.New(mediatype.New("domain/http.protocol.error; name=parse-header-too-large").SetDetail(protocol.LanguageEnglish, domainEnglish,
+		"Parse Header Too Large",
 		"Parsing received HTTP packet encounter situation that header part of http packet is larger than expected",
 		"",
-		"").Save()
+		"",
+		nil))
 
-	ErrCookieBadName = er.New("urn:giti:http.protocol:error:cookie-bad-name").SetDetail(protocol.LanguageEnglish, domainEnglish, "Cookie Bad Name",
+	ErrCookieBadName = er.New(mediatype.New("domain/http.protocol.error; name=cookie-bad-name").SetDetail(protocol.LanguageEnglish, domainEnglish,
+		"Cookie Bad Name",
 		"Cookie name include illegal charecter by related RFC",
 		"",
-		"").Save()
+		"",
+		nil))
 
-	ErrCookieBadValue = er.New("urn:giti:http.protocol:error:cookie-bad-value").SetDetail(protocol.LanguageEnglish, domainEnglish, "Cookie Bad Value",
+	ErrCookieBadValue = er.New(mediatype.New("domain/http.protocol.error; name=cookie-bad-value").SetDetail(protocol.LanguageEnglish, domainEnglish,
+		"Cookie Bad Value",
 		"Cookie value include illegal charecter by related RFC",
 		"",
-		"").
-		Save()
+		"",
+		nil))
 
-	ErrCookieBadPath = er.New("urn:giti:http.protocol:error:cookie-bad-path").SetDetail(protocol.LanguageEnglish, domainEnglish, "Cookie Bad Path",
+	ErrCookieBadPath = er.New(mediatype.New("domain/http.protocol.error; name=cookie-bad-path").SetDetail(protocol.LanguageEnglish, domainEnglish,
+		"Cookie Bad Path",
 		"Cookie path include illegal charecter by related RFC",
 		"",
-		"").Save()
+		"",
+		nil))
 
-	ErrCookieBadDomain = er.New("urn:giti:http.protocol:error:cookie-bad-domain").SetDetail(protocol.LanguageEnglish, domainEnglish, "Cookie Bad Domain",
+	ErrCookieBadDomain = er.New(mediatype.New("domain/http.protocol.error; name=cookie-bad-domain").SetDetail(protocol.LanguageEnglish, domainEnglish,
+		"Cookie Bad Domain",
 		"Cookie domain is not valid by related RFC",
 		"",
-		"").Save()
+		"",
+		nil))
 
-	ErrNotFound = er.New("urn:giti:http.protocol:error:not-found").SetDetail(protocol.LanguageEnglish, domainEnglish, "Not Found",
+	ErrNotFound = er.New(mediatype.New("domain/http.protocol.error; name=not-found").SetDetail(protocol.LanguageEnglish, domainEnglish,
+		"Not Found",
 		"Requested HTTP URI Service is not found in this instance of app",
 		"",
-		"").Save()
+		"",
+		nil))
 
-	ErrUnsupportedMediaType = er.New("urn:giti:http.protocol:error:unsupported-media-type").SetDetail(protocol.LanguageEnglish, domainEnglish, "Unsupported Media Type",
+	ErrUnsupportedMediaType = er.New(mediatype.New("domain/http.protocol.error; name=unsupported-media-type").SetDetail(protocol.LanguageEnglish, domainEnglish,
+		"Unsupported Media Type",
 		"Refuse to accept the request or response because the payload format or encoding is in an unsupported format",
 		"",
-		"").Save()
+		"",
+		nil))
 )

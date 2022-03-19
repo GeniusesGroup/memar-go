@@ -4,21 +4,23 @@ package http
 
 import (
 	"../log"
+	"../mediatype"
 	"../protocol"
 	"../service"
 )
 
 var HostSupportedService = hostSupportedService{
-	Service: service.New("urn:giti:http.protocol:service:host-supported", "", protocol.Software_PreAlpha, 1587282740).
-		SetDetail(protocol.LanguageEnglish, domainEnglish, "Service Multiplexer",
-			"",
-			``,
-			[]string{}).
-		SetAuthorization(protocol.CRUDAll, protocol.UserType_All).Expired(0, ""),
+	Service: service.New("", mediatype.New("domain/http.protocol.service; name=host-supported").SetDetail(protocol.LanguageEnglish, domainEnglish,
+		"Host Supported",
+		"Service to check if requested host is valid or not",
+		"",
+		"",
+		nil).SetInfo(protocol.Software_PreAlpha, 1587282740, "")).
+		SetAuthorization(protocol.CRUDAll, protocol.UserType_All),
 }
 
 type hostSupportedService struct {
-	service.Service
+	*service.Service
 }
 
 func (ser *hostSupportedService) ServeHTTP(stream protocol.Stream, httpReq *Request, httpRes *Response) (supported bool) {

@@ -3,7 +3,7 @@
 package http
 
 import (
-	"../compress"
+	"../compress/raw"
 	"../protocol"
 )
 
@@ -14,7 +14,7 @@ type body struct {
 	protocol.Codec
 }
 
-func (b *body) Body() protocol.Codec         { return b.Codec }
+func (b *body) Body() protocol.Codec         { return b }
 func (b *body) SetBody(codec protocol.Codec) { b.Codec = codec }
 
 /*
@@ -80,63 +80,67 @@ func (b *body) UnmarshalFrom(data []byte) (remaining []byte, err protocol.Error)
 ********** local methods **********
  */
 
-func (b *body) checkAndSetCodecAsIncomeBody(maybeBody []byte, c protocol.Codec, h *header) {
-	// TODO::: check h.TransferEncoding() and h.ContentLength()??
-	if len(maybeBody) > 0 {
-		b.setReadedIncomeBody(maybeBody, h)
-	} else {
-		b.setCodecAsIncomeBody(c, h)
-	}
-}
-
-func (b *body) checkAndSetReaderAsIncomeBody(maybeBody []byte, reader protocol.Reader, h *header) {
-	// TODO::: check h.TransferEncoding() and h.ContentLength()??
-	if len(maybeBody) > 0 {
-		// check if body sent with header in one buffer
-		b.setReadedIncomeBody(maybeBody, h)
-	} else {
-		b.setReaderAsIncomeBody(reader, h)
-	}
-}
-
-func (b *body) checkAndSetIncomeBody(maybeBody []byte, h *header) (err protocol.Error) {
-	// TODO::: check h.TransferEncoding() and h.ContentLength()??
-	if len(maybeBody) > 0 {
-		// Just if body marshaled with first line and headers we need to do any action here
-		b.setReadedIncomeBody(maybeBody, h)
-	} else {
+func (b *body) checkAndSetCodecAsIncomeBody(maybeBody []byte, c protocol.Codec, h *header) (err protocol.Error) {
+	var transferEncoding, _ = h.TransferEncoding()
+	switch transferEncoding {
+	case "":
+		var contentLength = h.ContentLength()
+		var maybeBodyLength = len(maybeBody)
+		if maybeBodyLength == int(contentLength) {
+			b.setReadedIncomeBody(maybeBody, h)
+		} else {
+			// Header length maybe other than stream income data length e.g. send body in multiple TCP.PSH flag set.
+			if maybeBodyLength > 0 {
+				var bodySlice = make([]byte, maybeBodyLength, contentLength)
+				copy(bodySlice, maybeBody)
+				for {
+					bodySlice = c.MarshalTo(bodySlice)
+					if len(bodySlice) == int(contentLength) {
+						break
+					}
+				}
+				b.setReadedIncomeBody(bodySlice, h)
+			} else {
+				b.setCodecAsIncomeBody(c, h)
+			}
+		}
+	case HeaderValueChunked:
+		// TODO:::
+	default:
+		// Like nginx, due to security, we only support a single Transfer-Encoding header field, and
+		// only if set to "chunked".
 		// err =
 	}
 	return
 }
 
-func (b *body) setCodecAsIncomeBody(c protocol.Codec, h *header) {
-	b.Codec = c
-	// TODO::: check transferEncoding & contentEncoding
-	// TODO::: What about header length maybe other than stream income data length e.g. send body in multiple TCP.PSH flag set.
-}
-
-func (b *body) setReaderAsIncomeBody(reader protocol.Reader, h *header) {
+func (b *body) checkAndSetReaderAsIncomeBody(maybeBody []byte, reader protocol.Reader, h *header) (err protocol.Error) {
 	var transferEncoding, _ = h.TransferEncoding()
 	switch transferEncoding {
 	case "":
 		var contentLength = h.ContentLength()
-		if contentLength > 0 {
-			var contentEncoding, _ = h.ContentEncoding()
-			// TODO::: add more encoding
-			switch contentEncoding {
-			case "":
-				b.Codec = compress.RAWDecompressorFromReader(reader, contentLength)
-			case HeaderValueChunked:
-				// TODO:::
-			case HeaderValueCompress:
-				// TODO:::
-			case HeaderValueDeflate:
-				// TODO:::
-			case HeaderValueGZIP:
-				b.Codec = compress.GzipDecompressorFromReader(reader, int(contentLength))
-			default:
-				// TODO:::
+		var maybeBodyLength = len(maybeBody)
+		if maybeBodyLength == int(contentLength) {
+			b.setReadedIncomeBody(maybeBody, h)
+		} else {
+			// Header length maybe other than stream income data length e.g. send body in multiple TCP.PSH flag set.
+			if maybeBodyLength > 0 {
+				var bodyReadLength int
+				var goErr error
+				var bodySlice = make([]byte, contentLength)
+				bodyReadLength, goErr = reader.Read(bodySlice[maybeBodyLength:])
+				if goErr != nil {
+					// err =
+					return
+				}
+				if bodyReadLength+maybeBodyLength != int(contentLength) {
+					// err =
+					return
+				}
+				copy(bodySlice, maybeBody)
+				b.setReadedIncomeBody(bodySlice, h)
+			} else {
+				b.setReaderAsIncomeBody(reader, h, contentLength)
 			}
 		}
 	case HeaderValueChunked:
@@ -146,49 +150,67 @@ func (b *body) setReaderAsIncomeBody(reader protocol.Reader, h *header) {
 		// only if set to "chunked".
 		// err =
 	}
+	return
 }
 
-func (b *body) setReadedIncomeBody(body []byte, h *header) {
+// Call this method just if body marshaled with first line and headers.
+func (b *body) checkAndSetIncomeBody(maybeBody []byte, h *header) (err protocol.Error) {
+	var maybeBodyLength = len(maybeBody)
+	if maybeBodyLength > 0 {
+		var contentLength = h.ContentLength()
+		if maybeBodyLength == int(contentLength) {
+			b.setReadedIncomeBody(maybeBody, h)
+		} else {
+			// err =
+		}
+	}
+	return
+}
+
+func (b *body) setCodecAsIncomeBody(c protocol.Codec, h *header) (err protocol.Error) {
 	var contentEncoding, _ = h.ContentEncoding()
-	// TODO::: add more encoding
-	switch contentEncoding {
-	case "":
-		b.Codec = compress.RAWDecompressorFromSlice(body)
-	case HeaderValueChunked:
-		// TODO:::
-	case HeaderValueCompress:
-		// TODO:::
-	case HeaderValueDeflate:
-		// TODO:::
-	case HeaderValueGZIP:
-		b.Codec = compress.GzipDecompressorFromSlice(body)
-	default:
-		// TODO:::
+	if contentEncoding == "" {
+		b.Codec = c
+		return
 	}
+
+	var compressType protocol.CompressType
+	compressType, err = protocol.OS.GetCompressTypeByContentEncoding(contentEncoding)
+	if err != nil {
+		return
+	}
+	b.Codec, err = compressType.Decompress(c)
+	return
 }
 
-func (b *body) readFull(reader protocol.Reader, h *header) (n int64, goErr error) {
-	var transferEncoding, _ = h.TransferEncoding()
-	switch transferEncoding {
-	case "":
-		var contentLength = h.ContentLength()
-		if contentLength > 0 {
-			var bodyReadLength int
-			var bodyRaw = make([]byte, contentLength)
-			// TODO::: is below logic check include all situations? If body send by multi part e.g. multi TCP-PSH flag?
-			bodyReadLength, goErr = reader.Read(bodyRaw)
-			if bodyReadLength != int(contentLength) {
-				// goErr =
-			}
-
-			b.setReadedIncomeBody(bodyRaw, h)
-		}
-	case HeaderValueChunked:
-		// TODO:::
-	default:
-		// Like nginx, due to security, we only support a single Transfer-Encoding header field, and
-		// only if set to "chunked".
-		// err =
+func (b *body) setReaderAsIncomeBody(reader protocol.Reader, h *header, contentLength uint64) (err protocol.Error) {
+	var contentEncoding, _ = h.ContentEncoding()
+	if contentEncoding == "" {
+		b.Codec, err = raw.RAW.DecompressFromReader(reader, int(contentLength))
+		return
 	}
+
+	var compressType protocol.CompressType
+	compressType, err = protocol.OS.GetCompressTypeByContentEncoding(contentEncoding)
+	if err != nil {
+		return
+	}
+	b.Codec, err = compressType.DecompressFromReader(reader, int(contentLength))
+	return
+}
+
+func (b *body) setReadedIncomeBody(body []byte, h *header) (err protocol.Error) {
+	var contentEncoding, _ = h.ContentEncoding()
+	if contentEncoding == "" {
+		b.Codec, err = raw.RAW.DecompressFromSlice(body)
+		return
+	}
+
+	var compressType protocol.CompressType
+	compressType, err = protocol.OS.GetCompressTypeByContentEncoding(contentEncoding)
+	if err != nil {
+		return
+	}
+	b.Codec, err = compressType.DecompressFromSlice(body)
 	return
 }

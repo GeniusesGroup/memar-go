@@ -3,26 +3,24 @@
 package http
 
 import (
-	"../compress"
+	"../mediatype"
 	"../protocol"
 	"../service"
 	"../www"
 )
 
 var ServeWWWService = serveWWWService{
-	Service: service.New("urn:giti:http.protocol:service:serve-www", "", protocol.Software_PreAlpha, 1587282740).
-		SetDetail(protocol.LanguageEnglish, domainEnglish, "Service Multiplexer",
-			"",
-			``,
-			[]string{}).
-		SetAuthorization(protocol.CRUDAll, protocol.UserType_All).Expired(0, ""),
-	WWW: www.Assets{
-		ContentEncodings: []string{compress.DeflateContentEncoding, compress.GZIPContentEncoding, compress.BrotliContentEncoding},
-	},
+	Service: service.New("", mediatype.New("domain/http.protocol.service; name=serve-www").SetDetail(protocol.LanguageEnglish, domainEnglish,
+		"Serve WWW",
+		"",
+		"",
+		"",
+		nil).SetInfo(protocol.Software_PreAlpha, 1587282740, "")).
+		SetAuthorization(protocol.CRUDAll, protocol.UserType_All),
 }
 
 type serveWWWService struct {
-	service.Service
+	*service.Service
 	WWW www.Assets
 }
 
