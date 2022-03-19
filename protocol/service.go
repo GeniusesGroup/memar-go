@@ -16,8 +16,10 @@ type Service interface {
 	MediaType() MediaType
 	// Request() MediaType
 	// Response() MediaType
-	URI() string    // HTTPURI.Path
-	Weight() Weight // Use to queue requests by services weights
+	URI() string // HTTPURI.Path
+
+	Priority() Priority // Use to queue requests by its priority
+	Weight() Weight     // Use to queue requests by its weights in the same priority
 
 	// Service Authorization
 	ID() uint64 // copy of MediaType().ID() to improve authorization mechanism performance
