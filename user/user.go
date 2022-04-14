@@ -4,38 +4,39 @@ package user
 
 import (
 	"crypto/rand"
-	"time"
 
+	"../binary"
 	"../protocol"
+	"../time/unix"
 )
 
 func NewID(userType protocol.UserType) (id UUID) {
-	setTime(id, time.Now().UnixMilli())
-	id[8] = byte(userType)
-	rand.Read(id[9:])
+	var now = unix.Now()
+	id.setSecondElapsed(now.SecondElapsed())
+	id.setNanoSecondElapsed(now.NanoSecondElapsed())
+	id[12] = byte(userType)
+	// TODO::: moved to heap: id, Is it any way to prevent heap alloc??
+	rand.Read(id[13:])
 	return
 }
 
+// 0...7 >> second elapsed
+// 8...11 >> nano second elapsed
+// 12...12 >> type
+// 13...15 >> random id
 type UUID [16]byte
 
-func (id UUID) UUID() [16]byte                        { return id }
-func (id UUID) ExistenceTime() protocol.TimeUnixMilli { return protocol.TimeUnixMilli(getTime(id)) }
-func (id UUID) Type() protocol.UserType               { return protocol.UserType(id[8]) }
-func (id UUID) ID() uint64                            { return getID(id) }
+func (id UUID) UUID() [16]byte          { return id }
+func (id UUID) Type() protocol.UserType { return protocol.UserType(id[8]) }
+func (id UUID) ID() [3]byte             { return id.id() }
+func (id UUID) ExistenceTime() protocol.Time {
+	var time unix.Time
+	time.ChangeTo(unix.SecElapsed(id.secondElapsed()), id.nanoSecondElapsed())
+	return &time
+}
 
-func getTime(uuid [16]byte) int64 {
-	return int64(uuid[0]) | int64(uuid[1])<<8 | int64(uuid[2])<<16 | int64(uuid[3])<<24 | int64(uuid[4])<<32 | int64(uuid[5])<<40 | int64(uuid[6])<<48 | int64(uuid[7])<<56
-}
-func getID(uuid [16]byte) uint64 {
-	return uint64(uuid[9]) | uint64(uuid[10])<<8 | uint64(uuid[11])<<16 | uint64(uuid[12])<<24 | uint64(uuid[13])<<32 | uint64(uuid[14])<<40 | uint64(uuid[15])<<48
-}
-func setTime(uuid [16]byte, time int64) {
-	uuid[0] = byte(time)
-	uuid[1] = byte(time >> 8)
-	uuid[2] = byte(time >> 16)
-	uuid[3] = byte(time >> 24)
-	uuid[4] = byte(time >> 32)
-	uuid[5] = byte(time >> 40)
-	uuid[6] = byte(time >> 48)
-	uuid[7] = byte(time >> 56)
-}
+func (id UUID) id() (rid [3]byte)               { copy(rid[:], id[13:]); return }
+func (id UUID) secondElapsed() int64            { return int64(binary.LittleEndian.Uint64(id[0:])) }
+func (id UUID) nanoSecondElapsed() int32        { return int32(binary.LittleEndian.Uint32(id[8:])) }
+func (id UUID) setSecondElapsed(sec int64)      { binary.LittleEndian.PutUint64(id[0:], uint64(sec)) }
+func (id UUID) setNanoSecondElapsed(nsec int32) { binary.LittleEndian.PutUint32(id[8:], uint32(nsec)) }
