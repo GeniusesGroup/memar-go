@@ -25,7 +25,7 @@ type LogEvent interface {
 	Event
 
 	Level() LogType
-	Time() TimeUnixMilli
+	Time() Time
 	Domain() string
 	Message() string // save formated data e.g. fmt.Sprintf("Panic Exception: %s\nDebug Stack: %s", r, debug.Stack())
 	Stack() []byte   // if log need to trace, specially in panic situation

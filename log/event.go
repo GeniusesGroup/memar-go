@@ -6,13 +6,13 @@ import (
 	"runtime/debug"
 
 	"../protocol"
-	"../time"
+	"../time/unix"
 )
 
 func NewEvent(level protocol.LogType, domian, message string) (event *Event) {
 	return &Event{
 		level:   level,
-		time:    time.UnixNowMilli(),
+		time:    unix.Now(),
 		domain:  domian,
 		message: message,
 		stack:   nil,
@@ -22,7 +22,7 @@ func NewEvent(level protocol.LogType, domian, message string) (event *Event) {
 func TraceEvent(level protocol.LogType, domian, message string) (event *Event) {
 	return &Event{
 		level:   level,
-		time:    time.UnixNowMilli(),
+		time:    unix.Now(),
 		domain:  domian,
 		message: message,
 		stack:   debug.Stack(),
@@ -32,7 +32,7 @@ func TraceEvent(level protocol.LogType, domian, message string) (event *Event) {
 func InfoEvent(domian, message string) (event *Event) {
 	return &Event{
 		level:   protocol.LogEvent_Information,
-		time:    time.UnixNowMilli(),
+		time:    unix.Now(),
 		domain:  domian,
 		message: message,
 		stack:   nil,
@@ -42,7 +42,7 @@ func InfoEvent(domian, message string) (event *Event) {
 func NoticeEvent(domian, message string) (event *Event) {
 	return &Event{
 		level:   protocol.LogEvent_Notice,
-		time:    time.UnixNowMilli(),
+		time:    unix.Now(),
 		domain:  domian,
 		message: message,
 		stack:   nil,
@@ -52,7 +52,7 @@ func NoticeEvent(domian, message string) (event *Event) {
 func DebugEvent(domian, message string) (event *Event) {
 	return &Event{
 		level:   protocol.LogEvent_Debug,
-		time:    time.UnixNowMilli(),
+		time:    unix.Now(),
 		domain:  domian,
 		message: message,
 		stack:   nil,
@@ -62,7 +62,7 @@ func DebugEvent(domian, message string) (event *Event) {
 func DeepDebugEvent(domian, message string) (event *Event) {
 	return &Event{
 		level:   protocol.LogEvent_DeepDebug,
-		time:    time.UnixNowMilli(),
+		time:    unix.Now(),
 		domain:  domian,
 		message: message,
 		stack:   nil,
@@ -72,7 +72,7 @@ func DeepDebugEvent(domian, message string) (event *Event) {
 func WarnEvent(domian, message string) (event *Event) {
 	return &Event{
 		level:   protocol.LogEvent_Warning,
-		time:    time.UnixNowMilli(),
+		time:    unix.Now(),
 		domain:  domian,
 		message: message,
 		stack:   nil,
@@ -83,7 +83,7 @@ func WarnEvent(domian, message string) (event *Event) {
 func PanicEvent(domian, message string) (event *Event) {
 	return &Event{
 		level:   protocol.LogEvent_Panic,
-		time:    time.UnixNowMilli(),
+		time:    unix.Now(),
 		domain:  domian,
 		message: message,
 		stack:   debug.Stack(),
@@ -94,7 +94,7 @@ func PanicEvent(domian, message string) (event *Event) {
 func FatalEvent(domian, message string) (event *Event) {
 	return &Event{
 		level:   protocol.LogEvent_Fatal,
-		time:    time.UnixNowMilli(),
+		time:    unix.Now(),
 		domain:  domian,
 		message: message,
 		stack:   debug.Stack(),
@@ -105,7 +105,7 @@ func FatalEvent(domian, message string) (event *Event) {
 func ConfEvent(domian, message string) (event *Event) {
 	return &Event{
 		level:   protocol.LogEvent_Confidential,
-		time:    time.UnixNowMilli(),
+		time:    unix.Now(),
 		domain:  domian,
 		message: message,
 		stack:   nil,
@@ -115,7 +115,7 @@ func ConfEvent(domian, message string) (event *Event) {
 // Event implement protocol.LogEvent
 type Event struct {
 	level   protocol.LogType
-	time    protocol.TimeUnixMilli
+	time    unix.Time
 	domain  string
 	message string
 	stack   []byte
@@ -128,11 +128,11 @@ func (e *Event) DefaultPrevented() bool           { return false }
 func (e *Event) Bubbles() bool                    { return false }
 func (e *Event) PreventDefault()                  {}
 
-func (e *Event) Level() protocol.LogType      { return e.level }
-func (e *Event) Time() protocol.TimeUnixMilli { return e.time }
-func (e *Event) Domain() string               { return e.domain }
-func (e *Event) Message() string              { return e.message }
-func (e *Event) Stack() []byte                { return e.stack }
+func (e *Event) Level() protocol.LogType { return e.level }
+func (e *Event) Time() protocol.Time     { return &e.time }
+func (e *Event) Domain() string          { return e.domain }
+func (e *Event) Message() string         { return e.message }
+func (e *Event) Stack() []byte           { return e.stack }
 
 /*
 	-- protocol.Syllab interface Encoder & Decoder --
