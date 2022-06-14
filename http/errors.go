@@ -4,122 +4,170 @@ package http
 
 import (
 	er "../error"
-	"../mediatype"
 	"../protocol"
 )
 
 const domainEnglish = "HTTP"
 const domainPersian = "HTTP"
 
-// Declare Errors Details
+// Declare package errors
 var (
-	ErrNoConnection = er.New(mediatype.New("domain/http.protocol.error; name=no-connection").SetDetail(protocol.LanguageEnglish, domainEnglish,
+	ErrNoConnection         er.Error
+	ErrPacketTooShort       er.Error
+	ErrPacketTooLong        er.Error
+	ErrParseMethod          er.Error
+	ErrParseURI             er.Error
+	ErrParseVersion         er.Error
+	ErrParseStatusCode      er.Error
+	ErrParseReasonPhrase    er.Error
+	ErrParseHeaderTooLarge  er.Error
+	ErrCookieBadName        er.Error
+	ErrCookieBadValue       er.Error
+	ErrCookieBadPath        er.Error
+	ErrCookieBadDomain      er.Error
+	ErrNotFound             er.Error
+	ErrUnsupportedMediaType er.Error
+)
+
+func init() {
+	ErrNoConnection.Init("domain/http.protocol.error; name=no-connection")
+	ErrNoConnection.SetDetail(protocol.LanguageEnglish, domainEnglish,
 		"No Connection",
 		"There is no connection to peer(server or client) to proccess request",
 		"",
 		"",
-		nil).SetDetail(protocol.LanguagePersian, domainPersian,
+		nil)
+	ErrNoConnection.SetDetail(protocol.LanguagePersian, domainPersian,
 		"عدم وجود ارتباط",
 		"هیچ راه ارتباطی با رایانه مقصد برای پردازش درخواست مورد نظر وجود ندارد",
 		"",
 		"",
-		nil))
+		nil)
+	ErrNoConnection.RegisterError()
 
-	ErrPacketTooShort = er.New(mediatype.New("domain/http.protocol.error; name=packet-too-short").SetDetail(protocol.LanguageEnglish, domainEnglish,
+	ErrPacketTooShort.Init("domain/http.protocol.error; name=packet-too-short")
+	ErrPacketTooShort.SetDetail(protocol.LanguageEnglish, domainEnglish,
 		"Packet Too Short",
 		"Received HTTP packet size is shorter than expected and can't use",
 		"",
 		"",
-		nil))
+		nil)
+	ErrPacketTooShort.RegisterError()
 
-	ErrPacketTooLong = er.New(mediatype.New("domain/http.protocol.error; name=packet-too-long").SetDetail(protocol.LanguageEnglish, domainEnglish,
+	ErrPacketTooLong.Init("domain/http.protocol.error; name=packet-too-long")
+	ErrPacketTooLong.SetDetail(protocol.LanguageEnglish, domainEnglish,
 		"Packet Too Long",
 		"Received HTTP packet size is larger than expected and can't use",
 		"",
 		"",
-		nil))
+		nil)
+	ErrPacketTooLong.RegisterError()
 
-	ErrParseMethod = er.New(mediatype.New("domain/http.protocol.error; name=parse-method").SetDetail(protocol.LanguageEnglish, domainEnglish,
+	ErrParseMethod.Init("domain/http.protocol.error; name=parse-method")
+	ErrParseMethod.SetDetail(protocol.LanguageEnglish, domainEnglish,
 		"Parse Method",
 		"Parsing received HTTP packet encounter unknown situation in Method part",
 		"",
 		"",
-		nil))
+		nil)
+	ErrParseMethod.RegisterError()
 
-	ErrParseURI = er.New(mediatype.New("domain/http.protocol.error; name=parse-uri").SetDetail(protocol.LanguageEnglish, domainEnglish,
+	ErrParseURI.Init("domain/http.protocol.error; name=parse-uri")
+	ErrParseURI.SetDetail(protocol.LanguageEnglish, domainEnglish,
 		"Parse URI",
 		"Parsing received HTTP packet encounter unknown situation in URI part",
 		"",
 		"",
-		nil))
+		nil)
+	ErrParseURI.RegisterError()
 
-	ErrParseVersion = er.New(mediatype.New("domain/http.protocol.error; name=parse-version").SetDetail(protocol.LanguageEnglish, domainEnglish,
+	ErrParseVersion.Init("domain/http.protocol.error; name=parse-version")
+	ErrParseVersion.SetDetail(protocol.LanguageEnglish, domainEnglish,
 		"Parse Version",
 		"Parsing received HTTP packet encounter unknown situation in Version part",
 		"",
 		"",
-		nil))
+		nil)
+	ErrParseVersion.RegisterError()
 
-	ErrParseStatusCode = er.New(mediatype.New("domain/http.protocol.error; name=parse-status-code").SetDetail(protocol.LanguageEnglish, domainEnglish,
+	ErrParseStatusCode.Init("domain/http.protocol.error; name=parse-status-code")
+	ErrParseStatusCode.SetDetail(protocol.LanguageEnglish, domainEnglish,
 		"Parse Status Code",
 		"Parsing received HTTP packet encounter unknown situation in StatusCode part",
 		"",
 		"",
-		nil))
+		nil)
+	ErrParseStatusCode.RegisterError()
 
-	ErrParseReasonPhrase = er.New(mediatype.New("domain/http.protocol.error; name=parse-reason-phrase").SetDetail(protocol.LanguageEnglish, domainEnglish,
+	ErrParseReasonPhrase.Init("domain/http.protocol.error; name=parse-reason-phrase")
+	ErrParseReasonPhrase.SetDetail(protocol.LanguageEnglish, domainEnglish,
 		"Parse Reason Phrase",
 		"Parsing received HTTP packet encounter unknown situation in ReasonPhrase part",
 		"",
 		"",
-		nil))
+		nil)
+	ErrParseReasonPhrase.RegisterError()
 
-	ErrParseHeaderTooLarge = er.New(mediatype.New("domain/http.protocol.error; name=parse-header-too-large").SetDetail(protocol.LanguageEnglish, domainEnglish,
+	ErrParseHeaderTooLarge.Init("domain/http.protocol.error; name=parse-header-too-large")
+	ErrParseHeaderTooLarge.SetDetail(protocol.LanguageEnglish, domainEnglish,
 		"Parse Header Too Large",
 		"Parsing received HTTP packet encounter situation that header part of http packet is larger than expected",
 		"",
 		"",
-		nil))
+		nil)
+	ErrParseHeaderTooLarge.RegisterError()
 
-	ErrCookieBadName = er.New(mediatype.New("domain/http.protocol.error; name=cookie-bad-name").SetDetail(protocol.LanguageEnglish, domainEnglish,
+	ErrCookieBadName.Init("domain/http.protocol.error; name=cookie-bad-name")
+	ErrCookieBadName.SetDetail(protocol.LanguageEnglish, domainEnglish,
 		"Cookie Bad Name",
 		"Cookie name include illegal charecter by related RFC",
 		"",
 		"",
-		nil))
+		nil)
+	ErrCookieBadName.RegisterError()
 
-	ErrCookieBadValue = er.New(mediatype.New("domain/http.protocol.error; name=cookie-bad-value").SetDetail(protocol.LanguageEnglish, domainEnglish,
+	ErrCookieBadValue.Init("domain/http.protocol.error; name=cookie-bad-value")
+	ErrCookieBadValue.SetDetail(protocol.LanguageEnglish, domainEnglish,
 		"Cookie Bad Value",
 		"Cookie value include illegal charecter by related RFC",
 		"",
 		"",
-		nil))
+		nil)
+	ErrCookieBadValue.RegisterError()
 
-	ErrCookieBadPath = er.New(mediatype.New("domain/http.protocol.error; name=cookie-bad-path").SetDetail(protocol.LanguageEnglish, domainEnglish,
+	ErrCookieBadPath.Init("domain/http.protocol.error; name=cookie-bad-path")
+	ErrCookieBadPath.SetDetail(protocol.LanguageEnglish, domainEnglish,
 		"Cookie Bad Path",
 		"Cookie path include illegal charecter by related RFC",
 		"",
 		"",
-		nil))
+		nil)
+	ErrCookieBadPath.RegisterError()
 
-	ErrCookieBadDomain = er.New(mediatype.New("domain/http.protocol.error; name=cookie-bad-domain").SetDetail(protocol.LanguageEnglish, domainEnglish,
+	ErrCookieBadDomain.Init("domain/http.protocol.error; name=cookie-bad-domain")
+	ErrCookieBadDomain.SetDetail(protocol.LanguageEnglish, domainEnglish,
 		"Cookie Bad Domain",
 		"Cookie domain is not valid by related RFC",
 		"",
 		"",
-		nil))
+		nil)
+	ErrCookieBadDomain.RegisterError()
 
-	ErrNotFound = er.New(mediatype.New("domain/http.protocol.error; name=not-found").SetDetail(protocol.LanguageEnglish, domainEnglish,
+	ErrNotFound.Init("domain/http.protocol.error; name=not-found")
+	ErrNotFound.SetDetail(protocol.LanguageEnglish, domainEnglish,
 		"Not Found",
 		"Requested HTTP URI Service is not found in this instance of app",
 		"",
 		"",
-		nil))
+		nil)
+	ErrNotFound.RegisterError()
 
-	ErrUnsupportedMediaType = er.New(mediatype.New("domain/http.protocol.error; name=unsupported-media-type").SetDetail(protocol.LanguageEnglish, domainEnglish,
+	ErrUnsupportedMediaType.Init("domain/http.protocol.error; name=unsupported-media-type")
+	ErrUnsupportedMediaType.SetDetail(protocol.LanguageEnglish, domainEnglish,
 		"Unsupported Media Type",
 		"Refuse to accept the request or response because the payload format or encoding is in an unsupported format",
 		"",
 		"",
-		nil))
-)
+		nil)
+	ErrUnsupportedMediaType.RegisterError()
+}

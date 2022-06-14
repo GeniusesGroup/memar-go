@@ -16,20 +16,22 @@ type Handler struct{}
 // Protocol Standard - HTTP/2 : https://httpwg.org/specs/rfc7540.html
 // Protocol Standard - HTTP/3 : https://quicwg.org/base-drafts/draft-ietf-quic-http.html
 func (handler *Handler) HandleIncomeRequest(stream protocol.Stream) (err protocol.Error) {
-	var httpReq = NewRequest()
-	var httpRes = NewResponse()
+	var httpReq Request
+	var httpRes Response
+	httpReq.Init()
+	httpRes.Init()
 	var streamSocket = stream.Socket()
 
 	var maybeBody []byte
 	maybeBody, err = httpReq.UnmarshalFrom(streamSocket.Marshal())
 	if err != nil {
 		httpRes.SetStatus(StatusBadRequestCode, StatusBadRequestPhrase)
-		handler.HandleOutcomeResponse(stream, httpReq, httpRes)
+		handler.HandleOutcomeResponse(stream, &httpReq, &httpRes)
 		return
 	}
 	httpReq.body.checkAndSetCodecAsIncomeBody(maybeBody, streamSocket, &httpReq.H)
 
-	err = handler.ServeHTTP(stream, httpReq, httpRes)
+	err = handler.ServeHTTP(stream, &httpReq, &httpRes)
 	return
 }
 
@@ -44,8 +46,6 @@ func (handler *Handler) ServeHTTP(stream protocol.Stream, httpReq *Request, http
 	switch httpReq.uri.path {
 	case serviceMuxPath:
 		err = MuxService.ServeHTTP(stream, httpReq, httpRes)
-	case shortenerPath:
-		// TODO:::
 	case landingPath:
 		// TODO:::
 	default:
@@ -55,6 +55,8 @@ func (handler *Handler) ServeHTTP(stream protocol.Stream, httpReq *Request, http
 		if service == nil {
 			// If project don't have any logic that support data on e.g. HTTP (restful, ...) we send platform GUI app for web
 			err = ServeWWWService.ServeHTTP(stream, httpReq, httpRes)
+		} else {
+			err = service.ServeHTTP(stream, httpReq, httpRes)
 		}
 	}
 	handler.HandleOutcomeResponse(stream, httpReq, httpRes)
@@ -115,11 +117,13 @@ func SendBidirectionalRequest(conn protocol.Connection, service protocol.Service
 		case protocol.ConnectionState_Timeout:
 			// err =
 		case protocol.ConnectionState_ReceivedCompletely:
-			httpRes = NewResponse()
-			err = httpRes.Unmarshal(stream.Socket().Marshal())
+			var res Response
+			res.Init()
+			err = res.Unmarshal(stream.Socket().Marshal())
 			if err == nil {
-				err = httpRes.GetError()
+				err = res.GetError()
 			}
+			httpRes = &res
 		default:
 			continue
 		}

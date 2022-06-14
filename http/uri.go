@@ -27,10 +27,17 @@ type URI struct {
 	fragment  string // fragment for references, without '#'
 }
 
-func (u *URI) Init(uri string) {
-	u.unmarshalFrom(uri)
+func (u *URI) Init(uri string) { u.unmarshalFrom(uri) }
+func (u *URI) Reset() {
+	u.uri = ""
+	u.uriAsByte = []byte{}
+	u.scheme = ""
+	u.authority = ""
+	u.host = ""
+	u.path = ""
+	u.query = ""
+	u.fragment = ""
 }
-
 func (u *URI) Set(scheme, authority, path, query string) {
 	u.scheme, u.authority, u.path, u.query = scheme, authority, path, query
 }

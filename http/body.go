@@ -16,6 +16,7 @@ type body struct {
 
 func (b *body) Body() protocol.Codec         { return b }
 func (b *body) SetBody(codec protocol.Codec) { b.Codec = codec }
+func (b *body) Reset()                       { b.Codec = nil }
 
 /*
 ********** protocol.Codec interface **********

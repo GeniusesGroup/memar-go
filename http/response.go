@@ -23,11 +23,13 @@ type Response struct {
 	body
 }
 
-// NewResponse make new response with some default data and return it!
-func NewResponse() *Response {
-	var r Response
-	r.H.init()
-	return &r
+func (r *Response) Init() { r.H.Init() }
+func (r *Response) Reset() {
+	r.version = ""
+	r.statusCode = ""
+	r.reasonPhrase = ""
+	r.H.Reset()
+	r.body.Reset()
 }
 
 func (r *Response) Version() string               { return r.version }
@@ -51,13 +53,16 @@ func (r *Response) GetStatusCode() (code uint16, err protocol.Error) {
 func (r *Response) GetError() (err protocol.Error) {
 	var errIDString = r.H.Get(HeaderKeyErrorID)
 	var errID, _ = strconv.ParseUint(errIDString, 10, 64)
+	if errID == 0 {
+		return
+	}
 	err = protocol.App.GetErrorByID(errID)
 	return
 }
 
 // SetError set given er.Error to header of the response
 func (r *Response) SetError(err protocol.Error) {
-	r.H.Set(HeaderKeyErrorID, err.URN().IDasString())
+	r.H.Set(HeaderKeyErrorID, err.IDasString())
 }
 
 // Redirect set given status and target location to the response
@@ -94,7 +99,7 @@ func (r *Response) Decode(reader protocol.Reader) (err protocol.Error) {
 	if err != nil {
 		return err
 	}
-	r.body.checkAndSetReaderAsIncomeBody(buf, reader, &r.H)
+	err = r.body.checkAndSetReaderAsIncomeBody(buf, reader, &r.H)
 	return
 }
 
@@ -208,8 +213,7 @@ func (r *Response) ReadFrom(reader io.Reader) (n int64, goErr error) {
 	if err != nil {
 		return int64(headerReadLength), err
 	}
-	r.body.checkAndSetReaderAsIncomeBody(buf, reader, &r.H)
-
+	err = r.body.checkAndSetReaderAsIncomeBody(buf, reader, &r.H)
 	n = int64(headerReadLength)
 	return
 }

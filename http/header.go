@@ -5,6 +5,8 @@ package http
 import (
 	"strings"
 
+	"golang.org/x/exp/maps"
+
 	"../protocol"
 )
 
@@ -14,9 +16,13 @@ type header struct {
 	valuesPool []string // shared backing array for headers' values
 }
 
-func (h *header) init() {
+func (h *header) Init() {
 	h.headers = make(map[string][]string, 16)
 	h.valuesPool = make([]string, 16)
+}
+func (h *header) Reset() {
+	maps.Clear(h.headers)
+	h.valuesPool = h.valuesPool[:0]
 }
 
 // Get returns the first value associated with the given key.

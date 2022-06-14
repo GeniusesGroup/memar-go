@@ -11,7 +11,7 @@ import (
 	"../protocol"
 )
 
-// Request is represent HTTP request protocol structure!
+// Request is represent HTTP request protocol structure.
 // https://tools.ietf.org/html/rfc2616#section-5
 type Request struct {
 	method  string
@@ -22,11 +22,13 @@ type Request struct {
 	body
 }
 
-// NewRequest make new request with some default data
-func NewRequest() *Request {
-	var r Request
-	r.H.init()
-	return &r
+func (r *Request) Init() { r.H.Init() }
+func (r *Request) Reset() {
+	r.method = ""
+	r.uri.Reset()
+	r.version = ""
+	r.H.Reset()
+	r.body.Reset()
 }
 
 func (r *Request) Method() string              { return r.method }
@@ -63,7 +65,7 @@ func (r *Request) Decode(reader protocol.Reader) (err protocol.Error) {
 	if err != nil {
 		return err
 	}
-	r.body.checkAndSetReaderAsIncomeBody(buf, reader, &r.H)
+	err = r.body.checkAndSetReaderAsIncomeBody(buf, reader, &r.H)
 	return
 }
 
@@ -174,8 +176,7 @@ func (r *Request) ReadFrom(reader io.Reader) (n int64, goErr error) {
 	if err != nil {
 		return int64(headerReadLength), err
 	}
-	r.body.checkAndSetReaderAsIncomeBody(buf, reader, &r.H)
-
+	err = r.body.checkAndSetReaderAsIncomeBody(buf, reader, &r.H)
 	n = int64(headerReadLength)
 	return
 }

@@ -8,14 +8,14 @@ import (
 	"reflect"
 	"testing"
 
-	"../compress"
+	"../compress/raw"
 )
 
 type RequestTest struct {
 	name   string
 	packet []byte
-	req    Request  // expected parse
-	out    *Request // parsed one
+	req    Request // expected parse
+	out    Request // parsed one
 }
 
 var requestTests = []RequestTest{
@@ -39,7 +39,6 @@ var requestTests = []RequestTest{
 				Codec: nil,
 			},
 		},
-		out: NewRequest(),
 	}, {
 		name: "full1",
 		packet: []byte("POST /m?2586547852 HTTP/1.1\r\n" +
@@ -84,10 +83,11 @@ var requestTests = []RequestTest{
 				},
 			},
 			body: body{
-				Codec: compress.RAWDecompressorFromSlice([]byte(`{"Omid":"OMID"}`)),
+				Codec: &raw.ComDecom{
+					Data: []byte(`{"Omid":"OMID"}`),
+				},
 			},
 		},
-		out: NewRequest(),
 	}, {
 		name: "without-body",
 		packet: []byte("POST /m?2586547852 HTTP/1.1\r\n" +
@@ -134,13 +134,13 @@ var requestTests = []RequestTest{
 				Codec: nil,
 			},
 		},
-		out: NewRequest(),
 	},
 }
 
 func TestRequest_Unmarshal(t *testing.T) {
 	for _, tt := range requestTests {
 		t.Run(tt.name, func(t *testing.T) {
+			tt.out.Init()
 			var err = tt.out.Unmarshal(tt.packet)
 			if err != nil {
 				t.Errorf("Request.Unmarshal() error = %v", err)
@@ -179,10 +179,24 @@ func TestRequest_Marshal(t *testing.T) {
 				t.Errorf("Request.Marshal() return nil!")
 			}
 			if !bytes.Equal(tt.packet, httpPacket) {
-				fmt.Print("encoded not same with original or just encode headers in not same order!\n")
+				fmt.Println("encoded not same with original or just encode headers in not same order! ", tt.name)
 				fmt.Println(string(httpPacket))
 				// t.Errorf("Request.Marshal(%q):\n\tgot  %v\n\twant %v\n", tt.req, httpPacket, tt.packet)
 			}
 		})
+	}
+}
+
+func BenchmarkRequest_Unmarshal(b *testing.B) {
+	for n := 0; n < b.N; n++ {
+		var httpReq Request
+		httpReq.Init()
+		httpReq.Unmarshal(requestTests[1].packet)
+	}
+}
+
+func BenchmarkRequest_Marshal(b *testing.B) {
+	for n := 0; n < b.N; n++ {
+		requestTests[1].req.Marshal()
 	}
 }
