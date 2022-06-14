@@ -10,31 +10,35 @@ type MediaTypes interface {
 }
 
 // MediaType is standard shape of any coding media-type
-// MediaType or MimeType standrad list can found here:
+// MediaType or MimeType standard list can found here:
 // http://www.iana.org/assignments/media-types/media-types.xhtml
 // https://en.wikipedia.org/wiki/Media_type
 // https://tools.ietf.org/html/rfc6838
 // https://developer.mozilla.org/en-US/docs/Web/HTTP/Basics_of_HTTP/MIME_types
 // It must also implement our RFC details on https://github.com/GeniusesGroup/RFCs/blob/master/media-type.md
+// maintype "/" [tree "."] subtype ["+" suffix]* [";" parameters]
+// domain/sabz.city.storage+syllab; name=quiddity
 type MediaType interface {
 	UUID() [32]byte     // Hash of MediaType()
 	ID() uint64         // first 64bit of UUID
 	IDasString() string // Base64 of ID
 
-	MediaType() string    // must
-	Type() string         // must
-	Tree() string         // if any
-	SubType() string      // must
-	Suffix() string       // if any
-	Parameters() []string // if any
-	FileExtension() string
+	MediaType() string     // must
+	MainType() string      // must
+	Tree() string          // if any
+	SubType() string       // must
+	Suffix() string        // if any
+	Parameters() []string  // if any
+	FileExtension() string // if any
 
 	Status() SoftwareStatus
-	IssueDate() TimeUnixSec  // TODO::: Temporary use TimeUnixSec instead of Time
-	ExpiryDate() TimeUnixSec // TODO::: Temporary use TimeUnixSec instead of Time
+	IssueDate() Time
+	ExpiryDate() Time
 	ExpireInFavorOf() MediaType
 	Details() []MediaTypeDetail
 	Detail(lang LanguageID) MediaTypeDetail
+
+	Fields() []Field // In explicit mediatype like domain maintype not like "application/json"
 }
 
 type MediaTypeDetail interface {

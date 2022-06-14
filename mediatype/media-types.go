@@ -6,36 +6,15 @@ import (
 	"../protocol"
 )
 
-// The currently registered types
-const (
-	MimeMainTypeDomain      = "domain"
-	MimeMainTypeApplication = "application"
-	MimeMainTypeAudio       = "audio"
-	MimeMainTypeFont        = "font"
-	MimeMainTypeExample     = "example"
-	MimeMainTypeImage       = "image"
-	MimeMainTypeMessage     = "message"
-	MimeMainTypeModel       = "model"
-	MimeMainTypeMultipart   = "multipart"
-	MimeMainTypeText        = "text"
-	MimeMainTypeVideo       = "video"
-)
-
 // MediaTypes store all data structure details
 type MediaTypes struct{}
 
-// RegisterMediaType register given datastructure
+// RegisterMediaType register given MediaType to the application
 func (dss *MediaTypes) RegisterMediaType(mt protocol.MediaType) {
 	if mt.MediaType() == "" {
 		panic("Mediatype doesn't has an MediaType. Can't register empty mediatype.")
 	}
-
-	poolByMediaType[mt.MediaType()] = mt
-	poolByID[mt.ID()] = mt
-	var fe = mt.FileExtension()
-	if fe != "" {
-		poolByFileExtension[fe] = mt
-	}
+	register(mt)
 }
 
 func (dss *MediaTypes) GetMediaTypeByID(id uint64) protocol.MediaType { return ByID(id) }
@@ -55,3 +34,13 @@ var (
 func ByMediaType(mediaType string) protocol.MediaType { return poolByMediaType[mediaType] }
 func ByID(id uint64) protocol.MediaType               { return poolByID[id] }
 func ByFileExtension(ex string) protocol.MediaType    { return poolByFileExtension[ex] }
+
+func register(mt protocol.MediaType) {
+	// TODO::: lock??
+	poolByMediaType[mt.MediaType()] = mt
+	poolByID[mt.ID()] = mt
+	var fe = mt.FileExtension()
+	if fe != "" {
+		poolByFileExtension[fe] = mt
+	}
+}
