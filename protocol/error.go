@@ -11,11 +11,8 @@ type Errors interface {
 
 // New() function in any package must call Application.RegisterError() to save the error in application
 // It is similar to opaque error model describe here: https://dave.cheney.net/paste/gocon-spring-2016.pdf
+// or this RFC: https://tools.ietf.org/html/rfc7807
 type Error interface {
-	ID() uint64         // copy of MediaType().ID() to improve performance
-	IDasString() string // copy of MediaType().IDasString() to improve performance
-	MediaType() MediaType
-
 	// Check both flat or chain situation.
 	Equal(Error) bool
 
@@ -25,11 +22,9 @@ type Error interface {
 	Internal() bool
 	Temporary() bool // opposite is permanent situation
 
-	// Notify by graphic, sound and vibration or just log it
-	// Notify()
+	// Notify error to user by graphic, sound and vibration (Haptic Feedback)
+	Notify()
 
-	// Add below method is not force by this interface but you must impelement it to respect golang error interface as inner syntax
-	Error() string
-	// Rarely use, But can use in logging, so It must always return very simple string as "err.ID()" and GUI app can provide more human friendly details
+	MediaType
 	Stringer
 }
