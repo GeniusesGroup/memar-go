@@ -16,20 +16,20 @@ type MediaTypes interface {
 // https://tools.ietf.org/html/rfc6838
 // https://developer.mozilla.org/en-US/docs/Web/HTTP/Basics_of_HTTP/MIME_types
 // It must also implement our RFC details on https://github.com/GeniusesGroup/RFCs/blob/master/media-type.md
-// maintype "/" [tree "."] subtype ["+" suffix]* [";" parameters]
 // domain/sabz.city.storage+syllab; name=quiddity
 type MediaType interface {
+	// Below names are case-insensitive.
+	MainType() string     // must
+	Tree() string         // if any
+	SubType() string      // must
+	Suffix() string       // if any
+	Parameters() []string // if any
+
+	FileExtension() string // if any
+
 	UUID() [32]byte     // Hash of MediaType()
 	ID() uint64         // first 64bit of UUID
 	IDasString() string // Base64 of ID
-
-	MediaType() string     // must
-	MainType() string      // must
-	Tree() string          // if any
-	SubType() string       // must
-	Suffix() string        // if any
-	Parameters() []string  // if any
-	FileExtension() string // if any
 
 	Status() SoftwareStatus
 	IssueDate() Time
@@ -39,12 +39,14 @@ type MediaType interface {
 	Detail(lang LanguageID) MediaTypeDetail
 
 	Fields() []Field // In explicit mediatype like domain maintype not like "application/json"
+
+	Stringer // must "maintype "/" [tree "."] subtype ["+" suffix]* [";" parameters]"
 }
 
 type MediaTypeDetail interface {
 	Language() LanguageID
 	// Domain return locale domain name that MediaType belongs to it.
-	// More userfriendly domian name to show to users on screens.
+	// More user friendly domain name to show to users on screens.
 	Domain() string
 	// Summary return locale general summary MediaType text that gives the main points in a concise form
 	Summary() string

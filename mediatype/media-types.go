@@ -11,8 +11,8 @@ type MediaTypes struct{}
 
 // RegisterMediaType register given MediaType to the application
 func (dss *MediaTypes) RegisterMediaType(mt protocol.MediaType) {
-	if mt.MediaType() == "" {
-		panic("Mediatype doesn't has an MediaType. Can't register empty mediatype.")
+	if mt.MainType() == "" && mt.SubType() == "" {
+		panic("Mediatype doesn't has main and sub type. Can't register empty mediatype.")
 	}
 	register(mt)
 }
@@ -37,7 +37,7 @@ func ByFileExtension(ex string) protocol.MediaType    { return poolByFileExtensi
 
 func register(mt protocol.MediaType) {
 	// TODO::: lock??
-	poolByMediaType[mt.MediaType()] = mt
+	poolByMediaType[mt.ToString()] = mt
 	poolByID[mt.ID()] = mt
 	var fe = mt.FileExtension()
 	if fe != "" {

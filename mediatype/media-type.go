@@ -67,7 +67,6 @@ func (mt *MediaType) RegisterMediaType() {
 func (mt *MediaType) UUID() [32]byte                      { return mt.uuid }
 func (mt *MediaType) ID() uint64                          { return mt.id }
 func (mt *MediaType) IDasString() string                  { return mt.idAsString }
-func (mt *MediaType) MediaType() string                   { return mt.mediaType }
 func (mt *MediaType) MainType() string                    { return mt.mainType }
 func (mt *MediaType) Tree() string                        { return mt.tree }
 func (mt *MediaType) SubType() string                     { return mt.subType }
@@ -83,6 +82,7 @@ func (mt *MediaType) Detail(lang protocol.LanguageID) protocol.MediaTypeDetail {
 	return mt.detail[lang]
 }
 func (mt *MediaType) Fields() []protocol.Field { return mt.fields }
+func (mt *MediaType) ToString() string         { return mt.mediaType }
 
 func (mt *MediaType) SetFileExtension(fileExtension string) {
 	mt.fileExtension = fileExtension
