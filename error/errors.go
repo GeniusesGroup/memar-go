@@ -27,18 +27,18 @@ func (e *Errors) RegisterError(err protocol.Error) {
 
 	if protocol.AppMode_Dev && e.poolByID[errID] != nil {
 		// This condition will just be true in the dev phase.
-		panic("Error id exist and used for other Error. Check it now for bad urn set or collision occurred" +
-			"\nExiting error >> " + e.poolByID[errID].MediaType() +
-			"\nNew error >> " + err.MediaType())
+		panic("Error id exist and used for other Error. Check it now for bad media-type set or collision occurred" +
+			"\nExiting error >> " + e.poolByID[errID].ToString() +
+			"\nNew error >> " + err.ToString())
 	}
 
 	e.poolByID[errID] = err
-	e.poolByMediaType[err.MediaType()] = err
+	e.poolByMediaType[err.ToString()] = err
 }
 
 func (e *Errors) UnRegisterError(err protocol.Error) {
 	delete(e.poolByID, err.ID())
-	delete(e.poolByMediaType, err.MediaType())
+	delete(e.poolByMediaType, err.ToString())
 }
 
 // GetErrorByID returns desire error if exist or ErrNotFound!
@@ -55,9 +55,9 @@ func (e *Errors) GetErrorByID(id uint64) (err protocol.Error) {
 }
 
 // GetErrorByMediaType returns desire error if exist or ErrNotFound!
-func (e *Errors) GetErrorByMediaType(urn string) (err protocol.Error) {
+func (e *Errors) GetErrorByMediaType(mt string) (err protocol.Error) {
 	var ok bool
-	err, ok = e.poolByMediaType[urn]
+	err, ok = e.poolByMediaType[mt]
 	if !ok {
 		err = &ErrNotFound
 	}

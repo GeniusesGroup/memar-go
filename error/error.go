@@ -16,10 +16,10 @@ type Error struct {
 	mediatype.MediaType
 }
 
-// func (e *Error) Init() {}
+func (e *Error) Init(mediatype string) {
+	e.MediaType.Init(mediatype)
 
-// RegisterError will register in the application.
-func (e *Error) RegisterError() {
+	// RegisterError will register in the application.
 	// Force to check by runtime check, due to testing package not let us by any const!
 	if protocol.App != nil {
 		protocol.App.RegisterError(e)
@@ -37,9 +37,8 @@ func (e *Error) Equal(err protocol.Error) bool {
 	return false
 }
 
-func (e *Error) Internal() bool   { return e.internal }
-func (e *Error) Temporary() bool  { return e.temporary }
-func (e *Error) ToString() string { return e.IDasString() }
+func (e *Error) Internal() bool  { return e.internal }
+func (e *Error) Temporary() bool { return e.temporary }
 
 func (e *Error) SetInternal()  { e.internal = true }
 func (e *Error) SetTemporary() { e.temporary = true }
@@ -47,3 +46,8 @@ func (e *Error) SetTemporary() { e.temporary = true }
 func (e *Error) Notify() {
 	// TODO:::
 }
+
+// Go compatibility methods. Unwrap provides compatibility for Go 1.13 error chains.
+func (e *Error) Error() string { return e.ToString() }
+func (e *Error) Cause() error  { return e }
+func (e *Error) Unwrap() error { return e }
