@@ -16,6 +16,10 @@ type StoragesLocal interface {
 	LocalFiles() FileDirectory
 	LocalRecords() StorageRecords
 	LocalKeyValues() StorageKeyValue
+
+	// It is like old kernels file systems that shared between all applications.
+	// It serve by the GUI app that run on the OS as default user interface.
+	LocalSharedFiles() FileDirectory
 }
 
 // StoragesCache is the interface that can implement by any Application to provide cache storage mechanism.

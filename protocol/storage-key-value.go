@@ -14,7 +14,7 @@ type StorageKeyValue interface {
 
 	Length(key []byte) (ln int, err Error)
 	Get(key []byte) (value []byte, err Error)
-	Set(key []byte, value []byte) (err Error)
+	Set(key []byte, value []byte, options StorageKeyValue_SaveOptions) (err Error)
 
 	// make invisible just by remove from primary index
 	Delete(key []byte) (err Error)
@@ -23,4 +23,9 @@ type StorageKeyValue interface {
 
 	// Multiple changes can be made in one atomic batch
 	// Batch()
+}
+
+type StorageKeyValue_SaveOptions struct {
+	// TTL(Time-To-Live) or Expiration Number of nanoseconds until record expires.
+	TTL Duration
 }
