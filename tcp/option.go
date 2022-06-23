@@ -2,38 +2,24 @@
 
 package tcp
 
+/*
+type option struct {
+	Kind    byte
+	Payload []byte // Can be nil in some kinds
+}
+*/
 type Options []byte
 
-func (o Options) HasNext() bool {
-	return len(o) > 0
-}
-
-func (o Options) Next() (opt Option, remain Options) {
-	opt.Kind = OptionKind(o[0])
-	switch opt.Kind {
-	case OptionKind_EndList, OptionKind_Nop:
-		opt.Length = 1
-	default:
-		opt.Length = o[1]
-		opt.Data = o[2:opt.Length]
-	}
-	remain = o[opt.Length:]
-	return
-}
-
-// https://datatracker.ietf.org/doc/html/rfc4413#section-4.3.1
-type Option struct {
-	Kind   OptionKind
-	Length uint8 // including the header fields
-	Data   []byte
-}
+func (o Options) Kind() optionKind { return optionKind(o[0]) }
+func (o Options) Payload() []byte  { return o[1:] }
 
 // OptionKind represents a TCP option kind code.
-type OptionKind uint8
+type optionKind byte
 
 // https://www.iana.org/assignments/tcp-parameters/tcp-parameters.xhtml
+// https://datatracker.ietf.org/doc/html/rfc4413#section-4.3.1
 const (
-	OptionKind_EndList OptionKind = iota
+	OptionKind_EndList optionKind = iota
 	OptionKind_Nop
 	OptionKind_MSS                             // len = 4, Maximum Segment Size
 	OptionKind_WindowScale                     // len = 3

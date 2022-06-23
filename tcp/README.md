@@ -1,8 +1,8 @@
 # TCP on UserSpace
 In services as API era, almost all services call transfer under two TCP packets, So many logics that consume both memory (e.g. Go just use [2KB for each goroutine](https://go.dev/doc/go1.4#runtime)) and computing resources (e.g. many [context switch](https://en.wikipedia.org/wiki/Context_switch) between kernel and userspace) to handle these few packets are not acceptable anymore.
 
-Some suggestion such as using [epoll](https://github.com/eranyanay/1m-go-websockets) has many other problems:
-- Go internally use this mechanism in runtime package, So it is easier to just worker mechanism to limit max number of goroutine. We know in this case first Read() on any connection cause to one unneeded context-switch on some OS like linux to check if any data ready to read before schedule for future until get read ready state.
+Some suggestion such as [change net package](https://github.com/golang/go/issues/15735) or using [epoll](https://en.wikipedia.org/wiki/Epoll) or [kqueue](https://en.wikipedia.org/wiki/Kqueue) and discard net package at all like [this](https://github.com/xtaci/gaio), [this](https://github.com/lesismal/nbio), [this](https://github.com/eranyanay/1m-go-websockets) or [this](https://github.com/panjf2000/gnet) has many other problems:
+- Go internally use this mechanism in runtime package, So it is easier to just worker mechanism to limit max number of goroutine like [FastHTTP](https://github.com/valyala/fasthttp). We know in this case first Read() on any connection cause to two or more unneeded context-switch on some OS like linux to check if any data ready to read before schedule for future until get read ready state.
 - OS depend on implementation can very tricky tasks
 - OS depend optimization need to change such as the number of the active and open file in UNIX based OSs known as ulimit
 - Balance between the number of events and timeout(milliseconds) in high and low app load isn't easy.
@@ -48,13 +48,11 @@ Some suggestion such as using [epoll](https://github.com/eranyanay/1m-go-websock
 - https://github.com/search?l=Go&q=tcp+userspace&type=Repositories
 - https://github.com/Xilinx-CNS/onload
 - https://github.com/mtcp-stack/mtcp
-- https://github.com/golang/go/issues/15735
-- https://github.com/xtaci/gaio
-- https://github.com/lesismal/nbio
+- https://github.com/tass-belgium/picotcp/blob/master/modules/pico_tcp.c
 - https://github.com/saminiir/level-ip
 - https://github.com/google/gopacket/blob/master/layers/tcp.go
 - https://github.com/Samangan/go-tcp
-- https://github.com/panjf2000/gnet
+- https://github.com/mit-pdos/biscuit/blob/master/biscuit/src/inet/
 
 ## Resources
 - https://en.wikipedia.org/wiki/OSI_model
@@ -62,6 +60,9 @@ Some suggestion such as using [epoll](https://github.com/eranyanay/1m-go-websock
 - https://man7.org/linux/man-pages/man7/tcp.7.html
 - https://github.com/torvalds/linux/blob/master/net/ipv4/tcp.c
 - https://github.com/torvalds/linux/blob/master/net/ipv6/tcp_ipv6.c
+
+## Attacks
+- https://www.akamai.com/blog/security/tcp-middlebox-reflection
 
 ## Articles
 - https://ieeexplore.ieee.org/document/8672289
