@@ -9,12 +9,7 @@ type GUINavigator interface {
 	HomePage() (page GUIPage)
 	ActivePage() (page GUIPage)
 	// It must reorder by recently active page be last item in the array
-	Pages() (page []GUIPage)
+	ActivePages() (pages []GUIPage)
 
-	ActivatePage(state GUIPageState, options ActivatePageOptions)
-	ActivatePageByURL(url string)
-}
-
-type ActivatePageOptions struct {
-	Screen GUIScreen
+	ActivatePage(url string) // Navigate(url string)
 }

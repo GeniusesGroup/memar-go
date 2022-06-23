@@ -2,7 +2,4 @@
 
 package protocol
 
-// DOM as Document-Object-Model
-type DOM interface {
-
-}
+type DOM interface {}

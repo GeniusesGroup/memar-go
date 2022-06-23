@@ -2,11 +2,12 @@
 
 package protocol
 
-/** A screen, usually the one on which the current window is being rendered, and is obtained using window.screen. */
+// Screen indicate some information about screen that a page-state(window) can render to it.
+// https://developer.mozilla.org/en-US/docs/Web/API/Screen
 type GUIScreen interface {
 	ID() int
 	Type() ScreenType
-	State() ScreenMode
+	Mode() ScreenMode
 
 	Height() int
 	Width() int
@@ -18,31 +19,45 @@ type GUIScreen interface {
 	ColorDepth() int
 	Orientation() ScreenOrientation
 
-	Show()     // bring to front
-	Minimize() // bring to back
-	SetTitle(title string)
-
-	LockOrientation(orientation ScreenOrientation)
-	UnlockOrientation()
-
 	EventTarget
 }
 
 type ScreenType uint8
 
-// Unset "primary" "secondary" "any"
+const (
+	ScreenType_Unset ScreenType = iota
+	ScreenType_Primary
+	ScreenType_Secondary
+	ScreenType_Extend
+	ScreenType_Duplicate
+)
+
+// ScreenMode is the window mode (ScreenMode.Option sets it).
+// Note that mode can be changed programmatically as well as by the user
+// clicking on the minimize/maximize buttons on the window's title bar.
+type ScreenMode uint8
+
+const (
+	ScreenMode_Unset ScreenMode = iota
+	// Screened is the normal window mode with any OS specific window decorations.
+	ScreenMode_Screened
+	// FullScreen is the full screen window mode.
+	ScreenMode_FullScreen
+	// Minimized is for systems where the window can be minimized to an icon.
+	ScreenMode_Minimized
+	// Maximized is for systems where the window can be made to fill the available monitor area.
+	ScreenMode_Maximized
+)
 
 type ScreenOrientation uint8
 
-// Unset or Any
-// Natural Landscape" Portrait
 const (
-	// AnyOrientation allows the window to be freely orientated.
-	AnyOrientation ScreenOrientation = iota
-	// LandscapeOrientation constrains the window to landscape orientations.
-	LandscapeOrientation
-	// PortraitOrientation constrains the window to portrait orientations.
-	PortraitOrientation
+	// ScreenOrientation_Any or Unset or Natural allows the window to be freely orientated.
+	ScreenOrientation_Any ScreenOrientation = iota
+	// ScreenOrientation_Landscape constrains the window to landscape orientations.
+	ScreenOrientation_Landscape
+	// ScreenOrientation_Portrait constrains the window to portrait orientations.
+	ScreenOrientation_Portrait
 )
 
 type ScreenEvent uint8
@@ -51,19 +66,3 @@ type ScreenEvent uint8
 // alpha?: number | null;
 // beta?: number | null;
 // gamma?: number | null;
-
-// ScreenMode is the window mode (ScreenMode.Option sets it).
-// Note that mode can be changed programatically as well as by the user
-// clicking on the minimize/maximize buttons on the window's title bar.
-type ScreenMode uint8
-
-const (
-	// Screened is the normal window mode with OS specific window decorations.
-	Screened ScreenMode = iota
-	// Fullscreen is the full screen window mode.
-	Fullscreen
-	// Minimized is for systems where the window can be minimized to an icon.
-	Minimized
-	// Maximized is for systems where the window can be made to fill the available monitor area.
-	Maximized
-)
