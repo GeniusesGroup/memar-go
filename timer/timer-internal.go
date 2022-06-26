@@ -3,9 +3,11 @@
 package timer
 
 import (
-	"runtime/internal/atomic"
+	"sync/atomic"
+	"unsafe"
 
 	"../protocol"
+	"../race"
 	"../time/monotonic"
 )
 
@@ -19,41 +21,36 @@ func when(d protocol.Duration) (t int64) {
 		return
 	}
 	t += int64(d)
+	// check for overflow.
 	if t < 0 {
 		// N.B. monotonic.RuntimeNano() and d are always positive, so addition
 		// (including overflow) will never result in t == 0.
-		t = 1<<63 - 1 // math.MaxInt64
+		t = maxWhen
 	}
 	return
 }
 
-type goFunc func()
-
-func (g goFunc) concurrentRun() {
-	go g()
-}
-
-// NotifyChannel does a non-blocking send the signal on t.signal
-func (t *Timer) notifyChannel() {
-	select {
-	case t.signal <- struct{}{}:
-	default:
-	}
-}
-
 func (t *Timer) checkAndPanicInStart() {
 	t.checkAndPanic()
+	if t.timers != nil {
+		panic("timer: timers already set in timer")
+	}
 	if t.status != status_Unset {
 		panic("timer: start called with initialized timer")
 	}
 }
 
-func (t *Timer) checkAndPanicInModify() {
-	t.checkAndPanic()
+func (t *Timer) checkAndPanicInModify(d protocol.Duration) {
+	if d <= 0 {
+		panic("timer: timer must have positive duration")
+	}
+	if t.callback == nil {
+		panic("timer: Timer must initialized before start or reset")
+	}
 }
 
 func (t *Timer) checkAndPanicInStop() {
-	if t.function == nil {
+	if t.callback == nil {
 		panic("timer: Stop called on uninitialized Timer")
 	}
 }
@@ -68,30 +65,24 @@ func (t *Timer) checkAndPanic() {
 	if t.period < 0 {
 		panic("timer: period must be non-negative")
 	}
-	if t.function == nil {
+	if t.callback == nil {
 		panic("timer: Timer must initialized before start or reset")
 	}
 }
 
-// add adds a timer to the current P.
+// add adds a timer to the running cpu core timers.
 // This should only be called with a newly created timer.
 // That avoids the risk of changing the when field of a timer in some P's heap,
 // which could cause the heap to become unsorted.
-func (t *Timer) add() {
+func (t *Timer) add(d protocol.Duration) {
+	t.when = when(d)
+	t.checkAndPanicInStart()
+	if race.DetectorEnabled {
+		race.Release(unsafe.Pointer(t))
+	}
 	t.status = status_Waiting
-
-	// Disable preemption while using pp to avoid changing another P's heap.
-	mp := acquirem()
-
-	pp := getg().m.p.ptr()
-	lock(&pp.timersLock)
-	cleantimers(pp)
-	doaddtimer(pp, t)
-	unlock(&pp.timersLock)
-
-	wakeNetPoller(t.when)
-
-	releasem(mp)
+	t.timers = &poolByCores[getg().m.p.ptr().core()]
+	t.timers.addTimer(t)
 }
 
 // delete deletes the timer t. It may be on some other P, so we can't
@@ -99,45 +90,31 @@ func (t *Timer) add() {
 // It will be removed in due course by the P whose heap it is on.
 // Reports whether the timer was removed before it was run.
 func (t *Timer) delete() bool {
+	t.checkAndPanicInStop()
 	for {
 		var status = t.status.Load()
 		switch status {
 		case status_Waiting, status_ModifiedLater:
-			// Prevent preemption while the timer is in status_Modifying.
-			// This could lead to a self-deadlock. See #38070.
-			mp := acquirem()
 			if t.status.CompareAndSwap(status, status_Modifying) {
-				// Must fetch t.pp before changing status,
-				// as cleantimers in another goroutine
-				// can clear t.pp of a status_Deleted timer.
-				tpp := t.pp.ptr()
+				// Must fetch t.timers before changing status,
+				// as ts.cleanTimers in another goroutine can clear t.timers of a status_Deleted timer.
+				var timers = t.timers
 				if !t.status.CompareAndSwap(status_Modifying, status_Deleted) {
 					badTimer()
 				}
-				releasem(mp)
-				atomic.Xadd(&tpp.deletedTimers, 1)
+				atomic.AddInt32(&timers.deletedTimers, 1)
 				// Timer was not yet run.
 				return true
-			} else {
-				releasem(mp)
 			}
 		case status_ModifiedEarlier:
-			// Prevent preemption while the timer is in status_Modifying.
-			// This could lead to a self-deadlock. See #38070.
-			mp := acquirem()
 			if t.status.CompareAndSwap(status, status_Modifying) {
-				// Must fetch t.pp before setting status
-				// to status_Deleted.
-				tpp := t.pp.ptr()
+				var timers = t.timers
 				if !t.status.CompareAndSwap(status_Modifying, status_Deleted) {
 					badTimer()
 				}
-				releasem(mp)
-				atomic.Xadd(&tpp.deletedTimers, 1)
+				atomic.AddInt32(&timers.deletedTimers, 1)
 				// Timer was not yet run.
 				return true
-			} else {
-				releasem(mp)
 			}
 		case status_Deleted, status_Removing, status_Removed:
 			// Timer was already run.
@@ -161,48 +138,38 @@ func (t *Timer) delete() bool {
 }
 
 // modify modifies an existing timer.
-// This is called by the netpoll code or time.Ticker.Reset or time.Timer.Reset.
+// It's OK to call modify() on a newly allocated Timer.
 // Reports whether the timer was modified before it was run.
-func (t *Timer) modify() bool {
-	wasRemoved := false
-	var pending bool
-	var mp *m
+func (t *Timer) modify(d protocol.Duration) (pending bool) {
+	t.checkAndPanicInModify(d)
+	if race.DetectorEnabled {
+		race.Release(unsafe.Pointer(t))
+	}
+
+	var wasRemoved = false
 loop:
 	for {
 		var status = t.status.Load()
 		switch status {
 		case status_Waiting, status_ModifiedEarlier, status_ModifiedLater:
-			// Prevent preemption while the timer is in status_Modifying.
-			// This could lead to a self-deadlock. See #38070.
-			mp = acquirem()
 			if t.status.CompareAndSwap(status, status_Modifying) {
 				pending = true // timer not yet run
 				break loop
 			}
-			releasem(mp)
 		case status_Unset, status_Removed:
-			// Prevent preemption while the timer is in status_Modifying.
-			// This could lead to a self-deadlock. See #38070.
-			mp = acquirem()
-
 			// Timer was already run and t is no longer in a heap.
-			// Act like addtimer.
+			// Act like addTimer.
 			if t.status.CompareAndSwap(status, status_Modifying) {
 				wasRemoved = true
 				pending = false // timer already run or stopped
 				break loop
 			}
-			releasem(mp)
 		case status_Deleted:
-			// Prevent preemption while the timer is in status_Modifying.
-			// This could lead to a self-deadlock. See #38070.
-			mp = acquirem()
 			if t.status.CompareAndSwap(status, status_Modifying) {
-				atomic.Xadd(&t.pp.ptr().deletedTimers, -1)
+				atomic.AddInt32(&t.timers.deletedTimers, -1)
 				pending = false // timer already stopped
 				break loop
 			}
-			releasem(mp)
 		case status_Running, status_Removing, status_Moving:
 			// The timer is being run or moved, by a different P.
 			// Wait for it to complete.
@@ -216,47 +183,32 @@ loop:
 		}
 	}
 
+	var timerOldWhen = t.when
+	var timerNewWhen = when(d)
+	t.when = timerNewWhen
+	if t.period != 0 {
+		t.period = int64(d)
+	}
 	if wasRemoved {
-		t.when = when
-		pp := getg().m.p.ptr()
-		lock(&pp.timersLock)
-		doaddtimer(pp, t)
-		unlock(&pp.timersLock)
+		t.timers = poolByCores[getg().m.p.ptr().core()]
+		t.timers.addTimer(t)
 		if !t.status.CompareAndSwap(status_Modifying, status_Waiting) {
 			badTimer()
 		}
-		releasem(mp)
-		wakeNetPoller(when)
 	} else {
-		// The timer is in some other P's heap, so we can't change
-		// the when field. If we did, the other P's heap would
-		// be out of order. So we put the new when value in the
-		// nextwhen field, and let the other P set the when field
-		// when it is prepared to resort the heap.
-		t.nextwhen = when
-
-		newStatus := status_ModifiedLater
-		if when < t.when {
+		var newStatus = status_ModifiedLater
+		if timerNewWhen < timerOldWhen {
 			newStatus = status_ModifiedEarlier
 		}
-
-		tpp := t.pp.ptr()
-
 		if newStatus == status_ModifiedEarlier {
-			updateTimerModifiedEarliest(tpp, when)
+			t.timers.updateTimerModifiedEarliest(timerNewWhen)
 		}
 
 		// Set the new status of the timer.
 		if !t.status.CompareAndSwap(status_Modifying, newStatus) {
 			badTimer()
 		}
-		releasem(mp)
-
-		// If the new status is earlier, wake up the poller.
-		if newStatus == status_ModifiedEarlier {
-			wakeNetPoller(when)
-		}
 	}
 
-	return pending
+	return
 }
