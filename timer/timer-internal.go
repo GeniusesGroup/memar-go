@@ -6,6 +6,7 @@ import (
 	"sync/atomic"
 	"unsafe"
 
+	"../cpu"
 	"../protocol"
 	"../race"
 	"../time/monotonic"
@@ -81,7 +82,7 @@ func (t *Timer) add(d protocol.Duration) {
 		race.Release(unsafe.Pointer(t))
 	}
 	t.status = status_Waiting
-	t.timers = &poolByCores[getg().m.p.ptr().core()]
+	t.timers = &poolByCores[cpu.ActiveCoreID()]
 	t.timers.addTimer(t)
 }
 
@@ -190,7 +191,7 @@ loop:
 		t.period = int64(d)
 	}
 	if wasRemoved {
-		t.timers = poolByCores[getg().m.p.ptr().core()]
+		t.timers = poolByCores[cpu.ActiveCoreID()]
 		t.timers.addTimer(t)
 		if !t.status.CompareAndSwap(status_Modifying, status_Waiting) {
 			badTimer()
