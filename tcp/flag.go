@@ -2,6 +2,8 @@
 
 package tcp
 
+type flag byte
+
 const (
 	Flag_Reserved1 byte = 0b00001000
 	Flag_Reserved2 byte = 0b00000100

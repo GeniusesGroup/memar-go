@@ -23,3 +23,7 @@ type sendSequenceSpace struct {
 	iss  uint32 // initial send sequence number
 	// buf    []byte Don't need it, because we don't need to copy buffer between kernel and userpspace
 }
+
+func (s *sendSequenceSpace) init() {
+	// TODO:::
+}

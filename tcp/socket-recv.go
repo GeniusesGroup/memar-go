@@ -24,15 +24,19 @@ type recvSequenceSpace struct {
 	// TODO::: not in order segments
 	buf buffer.Queue
 
-	pushFlag chan struct{}
-
-	status recvSequenceSpaceState
-	state  chan recvSequenceSpaceState
+	// TODO::: Send more than these flags: push, reset, finish, urgent
+	flag chan flag
 }
 
-func (r *recvSequenceSpace) sendPushFlagSignal() {
+func (r *recvSequenceSpace) init() {
+	r.flag = make(chan flag, 1)
+	// TODO:::
+}
+
+// sendFlagSignal use to notify listener in the r.flag channel
+func (r *recvSequenceSpace) sendFlagSignal(f flag) {
 	select {
-	case r.pushFlag <- struct{}{}:
+	case r.flag <- f:
 		// nothing to do
 	default:
 		break
