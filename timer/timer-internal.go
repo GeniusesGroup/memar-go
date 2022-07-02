@@ -31,44 +31,11 @@ func when(d protocol.Duration) (t int64) {
 	return
 }
 
-func (t *Timer) checkAndPanicInStart() {
-	t.checkAndPanic()
-	if t.timers != nil {
-		panic("timer: timers already set in timer")
-	}
-	if t.status != status_Unset {
-		panic("timer: start called with initialized timer")
-	}
-}
-
-func (t *Timer) checkAndPanicInModify(d protocol.Duration) {
-	if d <= 0 {
-		panic("timer: timer must have positive duration")
-	}
-	if t.callback == nil {
-		panic("timer: Timer must initialized before start or reset")
-	}
-}
-
-func (t *Timer) checkAndPanicInStop() {
-	if t.callback == nil {
-		panic("timer: Stop called on uninitialized Timer")
-	}
-}
-
-func (t *Timer) checkAndPanic() {
-	// when must be positive. A negative value will cause runtimer to
-	// overflow during its delta calculation and never expire other runtime
-	// timers. Zero will cause checkTimers to fail to notice the timer.
-	if t.when <= 0 {
-		panic("timer: timer must have positive duration")
-	}
-	if t.period < 0 {
-		panic("timer: period must be non-negative")
-	}
-	if t.callback == nil {
-		panic("timer: Timer must initialized before start or reset")
-	}
+// use to prevent memory leak
+func (t *Timer) reset() {
+	t.callback = nil
+	t.arg = nil
+	t.timers = nil
 }
 
 // add adds a timer to the running cpu core timers.
@@ -76,11 +43,26 @@ func (t *Timer) checkAndPanic() {
 // That avoids the risk of changing the when field of a timer in some P's heap,
 // which could cause the heap to become unsorted.
 func (t *Timer) add(d protocol.Duration) {
-	t.when = when(d)
-	t.checkAndPanicInStart()
+	if t.callback == nil {
+		panic("timer: Timer must initialized before start")
+	}
+	if t.status != status_Unset {
+		panic("timer: start called with initialized timer")
+	}
+	if t.timers != nil {
+		panic("timer: timers already set in timer")
+	}
+	// when must be positive. A negative value will cause ts.runTimer to
+	// overflow during its delta calculation and never expire other runtime timers.
+	// Zero will cause checkTimers to fail to notice the timer.
+	if d < 1 {
+		panic("timer: timer must have positive duration.")
+	}
+
 	if race.DetectorEnabled {
 		race.Release(unsafe.Pointer(t))
 	}
+	t.when = when(d)
 	t.status = status_Waiting
 	t.timers = &poolByCores[cpu.ActiveCoreID()]
 	t.timers.addTimer(t)
@@ -91,7 +73,10 @@ func (t *Timer) add(d protocol.Duration) {
 // It will be removed in due course by the P whose heap it is on.
 // Reports whether the timer was removed before it was run.
 func (t *Timer) delete() bool {
-	t.checkAndPanicInStop()
+	if t.callback == nil {
+		panic("timer: Stop called on uninitialized Timer")
+	}
+
 	for {
 		var status = t.status.Load()
 		switch status {
@@ -129,7 +114,7 @@ func (t *Timer) delete() bool {
 			// has already been run. Also see issue 21874.
 			return false
 		case status_Modifying:
-			// Simultaneous calls to deltimer and modtimer.
+			// Simultaneous calls to delete and modify.
 			// Wait for the other call to complete.
 			osyield()
 		default:
@@ -142,7 +127,16 @@ func (t *Timer) delete() bool {
 // It's OK to call modify() on a newly allocated Timer.
 // Reports whether the timer was modified before it was run.
 func (t *Timer) modify(d protocol.Duration) (pending bool) {
-	t.checkAndPanicInModify(d)
+	// when must be positive. A negative value will cause ts.runTimer to
+	// overflow during its delta calculation and never expire other runtime timers.
+	// Zero will cause checkTimers to fail to notice the timer.
+	if d < 1 {
+		panic("timer: timer must have positive duration")
+	}
+	if t.callback == nil {
+		panic("timer: Timer must initialized before reset")
+	}
+
 	if race.DetectorEnabled {
 		race.Release(unsafe.Pointer(t))
 	}
@@ -176,7 +170,7 @@ loop:
 			// Wait for it to complete.
 			osyield()
 		case status_Modifying:
-			// Multiple simultaneous calls to modtimer.
+			// Multiple simultaneous calls to modify.
 			// Wait for the other call to complete.
 			osyield()
 		default:

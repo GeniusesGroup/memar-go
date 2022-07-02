@@ -7,23 +7,25 @@ import (
 )
 
 // A Timer must be created with Init, After or AfterFunc.
+// Due to atomic function need memory alignment, Don't change fields order.
 type Timer struct {
+	// Timer wakes up at when, and then at when+period, ... (period > 0 only)
+	// each time calling callback(arg) in the timer goroutine, so callback must be
+	// a well-behaved function and not block.
+	// when must be positive on an active timer.
+	when         int64
+	period       int64
+	periodNumber int64 // -1 means no limit
+
+	// The status field holds one of the values in status file.
+	status status
+
 	signal chan struct{}
 
 	// callback function that call when reach
 	// it is possible that callback will be called a little after the delay.
 	callback func(arg any) // NOTE: must not be closure and must not block the caller.
 	arg      any
-
-	// Timer wakes up at when, and then at when+period, ... (period > 0 only)
-	// each time calling callback(arg) in the timer goroutine, so callback must be
-	// a well-behaved function and not block.
-	// when must be positive on an active timer.
-	when   int64
-	period int64
-
-	// The status field holds one of the values in status file.
-	status status
 
 	timers *Timers
 }
@@ -32,7 +34,7 @@ type Timer struct {
 // Be aware that given function must not be closure and must not block the caller.
 func (t *Timer) Init(callback func(arg any), arg any) {
 	if t.callback != nil {
-		panic("timer: Don't initialize a timer twice. Use Modify() method to change the timer.")
+		panic("timer: Don't initialize a timer twice. Use Reset() method to change the timer.")
 	}
 
 	if callback == nil {
@@ -41,8 +43,10 @@ func (t *Timer) Init(callback func(arg any), arg any) {
 		// on the floor until the client catches up.
 		t.signal = make(chan struct{}, 1)
 		t.callback = notifyTimerChannel
+		t.arg = t
 	} else {
 		t.callback = callback
+		t.arg = arg
 	}
 }
 func (t *Timer) Signal() <-chan struct{}                           { return t.signal }

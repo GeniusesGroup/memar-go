@@ -1,7 +1,8 @@
 /* For license and copyright information please see LEGAL file in repository */
 
-package timer
-
+// Package timer provides timer functionality that supports the following
+// features:
+// 
 // The Timer type represents a single event.
 // When the Timer expires, a signal will be sent on Signal() channel,
 // unless the Timer was created by AfterFunc.
@@ -18,10 +19,10 @@ package timer
 //
 // We don't permit calling addtimer/deltimer/modtimer/resettimer simultaneously,
 // but adjusttimers and runtimer can be called at the same time as any of those.
-
+// 
 // Init initialize the Timer with given callback function or make the channel and send signal on it
 // Be aware that given function must not be closure and must not block the caller.
-
+// 
 // Stop prevents the Timer from firing (no more ticks will be sent).
 // It returns true if the call stops the timer, false if the timer has already
 // expired or been stopped (It reports whether t was stopped before being run.).
@@ -44,7 +45,7 @@ package timer
 // Stop does not wait for f to complete before returning.
 // If the caller needs to know whether f is completed, it must coordinate
 // with f explicitly.
-
+// 
 // Reset changes the timer to expire after duration d.
 // It returns true if the timer had been active, false if the timer had
 // expired or been stopped.
@@ -83,19 +84,20 @@ package timer
 // Reset stops a ticker and resets its period to the specified duration.
 // The next tick will arrive after the new period elapses. The duration d
 // must be greater than zero; if not, Reset will panic.
-
+// 
 // Modify modifies an existing timer.
 // Reports whether the timer was modified before it was run.
 // An inactive timer may be passed to Modify to turn into an
 // active timer with an updated when, period fields.
 // It's OK to call Modify() on a newly allocated Timer.
 // An active timer may call Modify(). No fields may be touched. It remains an active timer.
-
+// 
 // After waits for the duration to elapse and then sends signal on the returned channel.
 // The underlying Timer is not recovered by the garbage collector
 // until the timer fires. If efficiency is a concern, copy the body
 // instead and call timer.Stop() if the timer is no longer needed.
-
+// 
 // AfterFunc waits for the duration to elapse and then calls f
 // in its own goroutine. It returns a Timer that can
 // be used to cancel the call using its Stop method.
+package timer
