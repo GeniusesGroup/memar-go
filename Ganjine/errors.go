@@ -3,21 +3,42 @@
 package ganjine
 
 import (
-	"../errors"
+	er "../error"
+	"../protocol"
 )
 
-// Declare Errors Details
+const domainEnglish = "Ganjine"
+const domainPersian = "گنجینه"
+
+// Errors
 var (
-	ErrHashIndexRecordNil         = errors.New("HashIndexRecordNil", "Given hash record can't be nil")
-	ErrHashIndexRecordNotValid    = errors.New("HashIndexRecordNotValid", "Given recordID exist in storage devices but has diffrent StructureID")
-	ErrHashIndexRecordNotExist    = errors.New("HashIndexRecordNotExist", "Given recordID not exist in any storage devices")
-	ErrHashIndexRecordManipulated = errors.New("HashIndexRecordManipulated", "HashIndex record has problem when engine try to read it from storage devices")
-
-	ErrNodeNotGanjineNode = errors.New("NodeNotGanjineNode", "Given request can't proccess due to send to an non Ganjine node")
-
-	// ErrContentAlreadyExist     = errors.New("This content was already exist")
-	// ErrCantPrepareStatement    = errors.New("Can't prepare a new statement to database")
-	// ErrStoringDataNotComplete  = errors.New("We have some problem in storing your data in our databases. Send your request again! If error exist contact SabzCity platform administrators")
-	// ErrDatabaseConnectionError = errors.New("Could not connect to database")
-	// ErrDatabasePingOut         = errors.New("Error ocurred in Ping to database")
+	ErrBadNode   er.Error
+	ErrWrongNode er.Error
+	// ErrContentAlreadyExist     er.Error
+	// ErrCantPrepareStatement    er.Error
+	// ErrStoringDataNotComplete  er.Error
+	// ErrDatabaseConnectionError er.Error
+	// ErrDatabasePingOut         er.Error
 )
+
+func init() {
+	ErrBadNode.Init("urn:giti:ganjine.protocol:error:bad-node")
+	ErrBadNode.SetDetail(protocol.LanguageEnglish, domainEnglish, "Bad Node",
+		"Given request can't proccess due to send to an non Ganjine node",
+		"",
+		"",
+		nil)
+
+	ErrWrongNode.Init("urn:giti:ganjine.protocol:error:wrong-node")
+	ErrWrongNode.SetDetail(protocol.LanguageEnglish, domainEnglish, "Wrong Node",
+		"Given request can't proccess due to send to a Ganjine node that not own the request range!",
+		"",
+		"",
+		nil)
+
+	// ErrContentAlreadyExist     = er.New("This content was already exist")
+	// ErrCantPrepareStatement    = er.New("Can't prepare a new statement to database")
+	// ErrStoringDataNotComplete  = er.New("We have some problem in storing your data in our databases. Send your request again! If error exist contact SabzCity platform administrators")
+	// ErrDatabaseConnectionError = er.New("Could not connect to database")
+	// ErrDatabasePingOut         = er.New("Error ocurred in Ping to database")
+}
