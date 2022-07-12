@@ -18,7 +18,7 @@ type IndexTextGetRes struct {
 }
 
 // IndexTextGet return index data of given terms if any exist
-func IndexTextGet(req *IndexTextGetReq) (res *IndexTextGetRes, err *er.Error) {
+func IndexTextGet(req *IndexTextGetReq) (res *IndexTextGetRes, err protocol.Error) {
 
 	res = &IndexTextGetRes{}
 

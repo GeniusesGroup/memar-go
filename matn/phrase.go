@@ -3,37 +3,32 @@
 package matn
 
 import (
-	"crypto/sha512"
+	"golang.org/x/crypto/sha3"
 
-	"../achaemenid"
-	etime "../earth-time"
-	er "../error"
 	"../ganjine"
-	gsdk "../ganjine-sdk"
-	gs "../ganjine-services"
 	"../json"
-	lang "../language"
 	"../pehrest"
-	psdk "../pehrest-sdk"
+	"../protocol"
 	"../syllab"
+	"../time/utc"
 )
 
-const indexPhraseStructureID uint64 = 504952921428380083
+const indexPhraseStructureID uint64 = 736712670881955651
 
-var indexPhraseStructure = ganjine.DataStructure{
-	ID:                504952921428380083,
-	IssueDate:         1608786641,
-	ExpiryDate:        0,
-	ExpireInFavorOf:   "", // Other structure name
-	ExpireInFavorOfID: 0,  // Other StructureID! Handy ID or Hash of ExpireInFavorOf!
-	Status:            ganjine.DataStructureStatePreAlpha,
-	Structure:         IndexPhrase{},
+var indexPhraseStructure = ds.DataStructure{
+	URN:             "urn:giti:matn.protocol:data-structure:index-phrase",
+	ID:              indexPhraseStructureID,
+	IssueDate:       1608786641,
+	ExpiryDate:      0,
+	ExpireInFavorOf: "",
+	Status:          protocol.Software_PreAlpha,
+	Structure:       IndexPhrase{},
 
-	Name: map[lang.Language]string{
-		lang.LanguageEnglish: "Index Phrase",
+	Name: map[protocol.LanguageID]string{
+		protocol.LanguageEnglish: "Index Phrase",
 	},
-	Description: map[lang.Language]string{
-		lang.LanguageEnglish: "Store the phrase index",
+	Description: map[protocol.LanguageID]string{
+		protocol.LanguageEnglish: "Store the phrase index",
 	},
 	TAGS: []string{
 		"",
@@ -43,14 +38,7 @@ var indexPhraseStructure = ganjine.DataStructure{
 // IndexPhrase is standard structure to store any hash byte index!!
 // It is simple secondary index e.g. hash("user@email.com")
 type IndexPhrase struct {
-	/* Common header data */
-	RecordID          [32]byte
-	RecordStructureID uint64
-	RecordSize        uint64
-	WriteTime         etime.Time
-	OwnerAppID        [32]byte
-
-	/* Unique data */
+	RecordID   [32]byte
 	Terms      []string `index-hash:"RecordID[pair,PageNumber]"` // Array must be order to retrievable!
 	PageNumber uint64
 	Tokens     [10]PhraseToken // Order of PhraseTokens index changed by algorithm in exact period of time!
@@ -66,7 +54,7 @@ type PhraseToken struct {
 }
 
 // SaveNew method set some data and write entire IndexPhrase record with all indexes!
-func (ip *IndexPhrase) SaveNew() (err *er.Error) {
+func (ip *IndexPhrase) SaveNew() (err protocol.Error) {
 	err = ip.Set()
 	if err != nil {
 		return
@@ -76,17 +64,17 @@ func (ip *IndexPhrase) SaveNew() (err *er.Error) {
 }
 
 // Set method set some data and write entire IndexPhrase record!
-func (ip *IndexPhrase) Set() (err *er.Error) {
+func (ip *IndexPhrase) Set() (err protocol.Error) {
 	ip.RecordStructureID = indexPhraseStructureID
-	ip.RecordSize = ip.syllabLen()
-	ip.WriteTime = etime.Now()
-	ip.OwnerAppID = achaemenid.Server.AppID
+	ip.RecordSize = ip.LenAsSyllab()
+	ip.WriteTime = utc.Now()
+	ip.OwnerAppID = protocol.OS.AppManifest().AppUUID()
 
-	var req = gs.SetRecordReq{
-		Type:   gs.RequestTypeBroadcast,
-		Record: ip.syllabEncoder(),
+	var req = ganjine.SetRecordReq{
+		Type:   ganjine.RequestTypeBroadcast,
+		Record: ip.ToSyllab(),
 	}
-	ip.RecordID = sha512.Sum512_256(req.Record[32:])
+	ip.RecordID = sha3.Sum256(req.Record[32:])
 	copy(req.Record[0:], ip.RecordID[:])
 
 	err = gsdk.SetRecord(&req)
@@ -94,18 +82,18 @@ func (ip *IndexPhrase) Set() (err *er.Error) {
 }
 
 // GetByRecordID method read all existing record data by given RecordID!
-func (ip *IndexPhrase) GetByRecordID() (err *er.Error) {
-	var req = gs.GetRecordReq{
+func (ip *IndexPhrase) GetByRecordID() (err protocol.Error) {
+	var req = ganjine.GetRecordReq{
 		RecordID:          ip.RecordID,
 		RecordStructureID: indexPhraseStructureID,
 	}
-	var res *gs.GetRecordRes
+	var res *ganjine.GetRecordRes
 	res, err = gsdk.GetRecord(&req)
 	if err != nil {
 		return
 	}
 
-	err = ip.syllabDecoder(res.Record)
+	err = ip.FromSyllab(res.Record)
 	if err != nil {
 		return
 	}
@@ -121,7 +109,7 @@ func (ip *IndexPhrase) GetByRecordID() (err *er.Error) {
 */
 
 // FindRecordsIDByTermsPageNumber find RecordsID by given Terms+PageNumber
-func (ip *IndexPhrase) FindRecordsIDByTermsPageNumber(offset, limit uint64) (RecordsID [][32]byte, err *er.Error) {
+func (ip *IndexPhrase) FindRecordsIDByTermsPageNumber(offset, limit uint64) (RecordsID [][32]byte, err protocol.Error) {
 	var indexReq = &pehrest.HashGetValuesReq{
 		IndexKey: ip.hashTermsPageNumberForRecordID(),
 		Offset:   offset,
@@ -141,7 +129,7 @@ func (ip *IndexPhrase) FindRecordsIDByTermsPageNumber(offset, limit uint64) (Rec
 // Call in each update to the exiting record!
 func (ip *IndexPhrase) IndexRecordIDForTermsPageNumber() {
 	var indexRequest = pehrest.HashSetValueReq{
-		Type:       gs.RequestTypeBroadcast,
+		Type:       ganjine.RequestTypeBroadcast,
 		IndexKey:   ip.hashTermsPageNumberForRecordID(),
 		IndexValue: ip.RecordID,
 	}
@@ -166,107 +154,91 @@ func (ip *IndexPhrase) hashTermsPageNumberForRecordID() (hash [32]byte) {
 		copy(buf[bufLen:], t)
 		bufLen += len(t)
 	}
-	return sha512.Sum512_256(buf[:])
+	return sha3.Sum256(buf[:])
 }
 
 /*
 	-- Syllab Encoder & Decoder --
 */
 
-func (ip *IndexPhrase) syllabDecoder(buf []byte) (err *er.Error) {
-	if uint32(len(buf)) < ip.syllabStackLen() {
-		err = syllab.ErrSyllabDecodeSmallSlice
+func (ip *IndexPhrase) FromSyllab(payload []byte, stackIndex uint32) {
+	if uint32(len(payload)) < ip.LenOfSyllabStack() {
+		err = syllab.ErrShortArrayDecode
 		return
 	}
 
-	copy(ip.RecordID[:], buf[0:])
-	ip.RecordStructureID = syllab.GetUInt64(buf, 32)
-	ip.RecordSize = syllab.GetUInt64(buf, 40)
-	ip.WriteTime = etime.Time(syllab.GetInt64(buf, 48))
-	copy(ip.OwnerAppID[:], buf[56:])
-
-	ip.Terms = syllab.UnsafeGetStringArray(buf, 88)
-	ip.PageNumber = syllab.GetUInt64(buf, 96)
+	ip.Terms = syllab.UnsafeGetStringArray(payload, 88)
+	ip.PageNumber = syllab.GetUInt64(payload, 96)
 
 	var si uint32 = 104
 	for i := 0; i < 10; i++ {
-		ip.Tokens[i].syllabDecoder(buf, si)
-		si += uint32(ip.Tokens[i].syllabLen())
+		ip.Tokens[i].FromSyllab(payload, si)
+		si += uint32(ip.Tokens[i].LenAsSyllab())
 	}
 	return
 }
 
-func (ip *IndexPhrase) syllabEncoder() (buf []byte) {
-	buf = make([]byte, ip.syllabLen())
-	var hi uint32 = ip.syllabStackLen() // Heap index || Stack size!
-
-	// copy(buf[0:], ip.RecordID[:])
-	syllab.SetUInt64(buf, 32, ip.RecordStructureID)
-	syllab.SetUInt64(buf, 40, ip.RecordSize)
-	syllab.SetInt64(buf, 48, int64(ip.WriteTime))
-	copy(buf[56:], ip.OwnerAppID[:])
-
-	hi = syllab.SetStringArray(buf, ip.Terms, 88, hi)
-	syllab.SetUInt64(buf, 96, ip.PageNumber)
+func (ip *IndexPhrase) ToSyllab(payload []byte, stackIndex, heapIndex uint32) (freeHeapIndex uint32) {
+	heapIndex = syllab.SetStringArray(payload, ip.Terms, 88, heapIndex)
+	syllab.SetUInt64(payload, 96, ip.PageNumber)
 
 	var si uint32 = 104
 	for i := 0; i < 10; i++ {
-		ip.Tokens[i].syllabEncoder(buf, si, 0)
-		si += uint32(ip.Tokens[i].syllabLen())
+		ip.Tokens[i].ToSyllab(payload, si)
+		si += uint32(ip.Tokens[i].LenAsSyllab())
 	}
-	return
+	return heapIndex
 }
 
-func (ip *IndexPhrase) syllabStackLen() (ln uint32) {
+func (ip *IndexPhrase) LenOfSyllabStack() (ln uint32) {
 	ln = 104
-	ln += uint32(len(ip.Tokens)) * ip.Tokens[0].syllabStackLen()
+	ln += uint32(len(ip.Tokens)) * ip.Tokens[0].LenOfSyllabStack()
 	return
 }
 
-func (ip *IndexPhrase) syllabHeapLen() (ln uint32) {
+func (ip *IndexPhrase) LenOfSyllabHeap() (ln uint32) {
 	for i := 0; i < len(ip.Terms); i++ {
 		ln += uint32(len(ip.Terms[i]))
 	}
-	// ln += uint32(len(ip.Tokens)) * ip.Tokens[0].syllabHeapLen()
+	// ln += uint32(len(ip.Tokens)) * ip.Tokens[0].LenOfSyllabHeap
 	return
 }
 
-func (ip *IndexPhrase) syllabLen() (ln uint64) {
-	return uint64(ip.syllabStackLen() + ip.syllabHeapLen())
+func (ip *IndexPhrase) LenAsSyllab() uint64 {
+	return uint64(ip.LenOfSyllabStack() + ip.LenOfSyllabHeap())
 }
 
 /*
 	-- PhraseToken Encoder & Decoder --
 */
 
-func (pt *PhraseToken) syllabDecoder(buf []byte, stackIndex uint32) {
+func (pt *PhraseToken) FromSyllab(buf []byte, stackIndex uint32) {
 	copy(pt.RecordID[:], buf[stackIndex:])
 	pt.RecordStructureID = syllab.GetUInt64(buf, stackIndex+32)
 	pt.RecordFieldID = syllab.GetUInt8(buf, stackIndex+40)
 	copy(pt.RecordPrimaryKey[:], buf[stackIndex+41:])
 }
 
-func (pt *PhraseToken) syllabEncoder(buf []byte, stackIndex, heapIndex uint32) (nextHeapAddr uint32) {
+func (pt *PhraseToken) ToSyllab(buf []byte, stackIndex uint32) {
 	copy(buf[0:], pt.RecordID[stackIndex:])
 	syllab.SetUInt64(buf, stackIndex+32, pt.RecordStructureID)
 	syllab.SetUInt8(buf, stackIndex+40, pt.RecordFieldID)
 	copy(buf[stackIndex+41:], pt.RecordPrimaryKey[:])
-	return heapIndex
 }
 
-func (pt *PhraseToken) syllabStackLen() (ln uint32) {
+func (pt *PhraseToken) LenOfSyllabStack() uint32 {
 	return 73
 }
 
-func (pt *PhraseToken) syllabHeapLen() (ln uint32) {
+func (pt *PhraseToken) LenOfSyllabHeap() (ln uint32) {
 	return
 }
 
-func (pt *PhraseToken) syllabLen() (ln uint64) {
-	return uint64(pt.syllabStackLen() + pt.syllabHeapLen())
+func (pt *PhraseToken) LenAsSyllab() uint64 {
+	return uint64(pt.LenOfSyllabStack() + pt.LenOfSyllabHea)
 }
 
-func (pt *PhraseToken) jsonDecoder(decoder json.DecoderUnsafeMinifed) (err *er.Error) {
+func (pt *PhraseToken) FromJSON(decoder *json.DecoderUnsafeMinified) (err protocol.Error) {
 	for err == nil {
 		var keyName = decoder.DecodeKey()
 		switch keyName {
@@ -282,14 +254,16 @@ func (pt *PhraseToken) jsonDecoder(decoder json.DecoderUnsafeMinifed) (err *er.E
 			err = decoder.NotFoundKeyStrict()
 		}
 
-		if len(decoder.Buf) < 3 {
+		if decoder.End() {
 			return
 		}
 	}
 	return
 }
 
-func (pt *PhraseToken) jsonEncoder(encoder json.Encoder) {
+func (pt *PhraseToken) ToJSON(payload []byte) []byte {
+	var encoder = json.Encoder{Buf: payload}
+
 	encoder.EncodeString(`{"RecordID":"`)
 	encoder.EncodeByteSliceAsBase64(pt.RecordID[:])
 
@@ -303,9 +277,10 @@ func (pt *PhraseToken) jsonEncoder(encoder json.Encoder) {
 	encoder.EncodeByteSliceAsBase64(pt.RecordPrimaryKey[:])
 
 	encoder.EncodeString(`"}`)
+	return encoder.Buf
 }
 
-func (pt *PhraseToken) jsonLen() (ln int) {
+func (pt *PhraseToken) LenAsJSON() (ln int) {
 	ln = 184
 	return
 }

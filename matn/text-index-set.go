@@ -18,7 +18,7 @@ type TextIndexSetReq struct {
 }
 
 // TextIndexSet index given text
-func TextIndexSet(req *TextIndexSetReq) (err *er.Error) {
+func TextIndexSet(req *TextIndexSetReq) (err protocol.Error) {
 	var indexes = WordTokenization(req)
 
 	for _, index := range indexes {

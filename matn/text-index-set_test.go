@@ -3,20 +3,17 @@
 package matn
 
 import (
-	"reflect"
+	"fmt"
 	"testing"
-
-	er "../error"
 )
 
-func TestTextIndexSet(t *testing.T) {
+func TestTextWordTokenization(t *testing.T) {
 	type args struct {
 		req *TextIndexSetReq
 	}
 	tests := []struct {
-		name    string
-		args    args
-		wantErr *er.Error
+		name string
+		args args
 	}{
 		{
 			name: "test1",
@@ -25,13 +22,22 @@ func TestTextIndexSet(t *testing.T) {
 					Text: "test is best",
 				},
 			},
-			wantErr: nil,
+		},
+		{
+			name: "test2",
+			args: args{
+				req: &TextIndexSetReq{
+					Text: "مجتمع سبز - گلستان شیراز",
+				},
+			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if gotErr := TextIndexSet(tt.args.req); !reflect.DeepEqual(gotErr, tt.wantErr) {
-				t.Errorf("TextIndexSet() = %v, want %v", gotErr, tt.wantErr)
+			fmt.Println("WordTokenization() for", tt.name)
+			indexes := WordTokenization(tt.args.req)
+			for _, index := range indexes {
+				fmt.Println(index.Word)
 			}
 		})
 	}

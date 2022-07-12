@@ -3,36 +3,32 @@
 package matn
 
 import (
-	"crypto/sha512"
+	"golang.org/x/crypto/sha3"
 
-	"../achaemenid"
-	etime "../earth-time"
-	er "../error"
 	"../ganjine"
-	gsdk "../ganjine-sdk"
-	gs "../ganjine-services"
-	lang "../language"
+	"../object"
 	"../pehrest"
-	psdk "../pehrest-sdk"
+	"../protocol"
 	"../syllab"
+	"../time"
 )
 
-const indexWordStructureID uint64 = 7165704319104393939
+const indexWordStructureID uint64 = 17895727148230071652
 
-var indexWordStructure = ganjine.DataStructure{
-	ID:                7165704319104393939,
-	IssueDate:         1608786632,
-	ExpiryDate:        0,
-	ExpireInFavorOf:   "", // Other structure name
-	ExpireInFavorOfID: 0,  // Other StructureID! Handy ID or Hash of ExpireInFavorOf!
-	Status:            ganjine.DataStructureStatePreAlpha,
-	Structure:         IndexWord{},
+var indexWordStructure = ds.DataStructure{
+	URN:             "urn:giti:matn.protocol:data-structure:index-word",
+	ID:              17895727148230071652,
+	IssueDate:       1608786632,
+	ExpiryDate:      0,
+	ExpireInFavorOf: "",
+	Status:          protocol.Software_PreAlpha,
+	Structure:       IndexWord{},
 
-	Name: map[lang.Language]string{
-		lang.LanguageEnglish: "Index Word",
+	Name: map[protocol.LanguageID]string{
+		protocol.LanguageEnglish: "Index Word",
 	},
-	Description: map[lang.Language]string{
-		lang.LanguageEnglish: "store the word index data",
+	Description: map[protocol.LanguageID]string{
+		protocol.LanguageEnglish: "store the word index data",
 	},
 	TAGS: []string{
 		"",
@@ -41,25 +37,18 @@ var indexWordStructure = ganjine.DataStructure{
 
 // IndexWord is standard structure to store the word index data!
 type IndexWord struct {
-	/* Common header data */
-	RecordID          [32]byte
-	RecordStructureID uint64
-	RecordSize        uint64
-	WriteTime         etime.Time
-	OwnerAppID        [32]byte
-
-	/* Unique data */
 	Word               string `index-hash:"RecordID,RecordID[pair,RecordStructure],RecordID[pair,RecordSecondaryKey],RecordID[pair,RecordOwnerID]"` // Order of recordIDs index changed by algorithm in exact period of time!
 	RecordStructure    uint64
-	RecordPrimaryKey   [32]byte // Store any primary ID or any data up to 32 byte length e.g. ID
-	RecordSecondaryKey [32]byte // Store any secondary ID or any data up to 32 byte length e.g. GroupID
-	RecordOwnerID      [32]byte
-	Tokens             []WordToken
+	RecordPrimaryKey   [16]byte // Store any primary ID or any data up to 16 byte length e.g. ID
+	RecordSecondaryKey [16]byte // Store any secondary ID or any data up to 16 byte length e.g. GroupID
+	RecordOwnerID      [16]byte
+	// It is array because may be more than one location in object have this word
+	Tokens []WordToken
 }
 
 // WordToken store detail about a word in the record to index
 type WordToken struct {
-	RecordID             [32]byte `json:",string"`
+	RecordID             [16]byte `json:",string"`
 	RecordFieldID        uint8
 	WordType             WordType
 	WordOffsetInSentence uint64 //  Position of the word in the sentence
@@ -69,7 +58,7 @@ type WordToken struct {
 }
 
 // SaveNew method set some data and write entire IndexWord record with all indexes!
-func (iw *IndexWord) SaveNew() (err *er.Error) {
+func (iw *IndexWord) SaveNew() (err protocol.Error) {
 	err = iw.Set()
 	if err != nil {
 		return
@@ -84,14 +73,16 @@ func (iw *IndexWord) SaveNew() (err *er.Error) {
 }
 
 // SaveOrUpdate method set some data and write entire IndexWord record with all indexes or update exiting one!
-func (iw *IndexWord) SaveOrUpdate() (err *er.Error) {
+func (iw *IndexWord) SaveOrUpdate() (err protocol.Error) {
 	var check = IndexWord{
 		Word:             iw.Word,
 		RecordPrimaryKey: iw.RecordPrimaryKey,
 	}
 	err = check.GetByWordRecordPrimaryKey()
-	if err.Equal(ganjine.ErrRecordNotFound) {
+	if err.Equal(object.ErrNotExist) {
 		err = iw.SaveNew()
+	} else if err != nil {
+		// TODO::: handle error
 	} else {
 		iw.Tokens = append(iw.Tokens, make([]WordToken, 0, len(iw.Tokens)+len(check.Tokens))...)
 		for _, token := range check.Tokens {
@@ -104,16 +95,16 @@ func (iw *IndexWord) SaveOrUpdate() (err *er.Error) {
 }
 
 // Set method set some data and write entire IndexWord record!
-func (iw *IndexWord) Set() (err *er.Error) {
+func (iw *IndexWord) Set() (err protocol.Error) {
 	iw.RecordID = iw.hashWordRecordPrimaryKeyForRecordID()
 	iw.RecordStructureID = indexWordStructureID
-	iw.RecordSize = iw.syllabLen()
-	iw.WriteTime = etime.Now()
-	iw.OwnerAppID = achaemenid.Server.AppID
+	iw.RecordSize = iw.LenAsSyllab()
+	iw.WriteTime = time.Now()
+	iw.OwnerAppID = protocol.OS.AppManifest().AppUUID()
 
-	var req = gs.SetRecordReq{
-		Type:   gs.RequestTypeBroadcast,
-		Record: iw.syllabEncoder(),
+	var req = ganjine.SetRecordReq{
+		Type:   ganjine.RequestTypeBroadcast,
+		Record: iw.ToSyllab(),
 	}
 	err = gsdk.SetRecord(&req)
 	return
@@ -126,22 +117,22 @@ func (iw *IndexWord) hashWordRecordPrimaryKeyForRecordID() (hash [32]byte) {
 	copy(buf[8:], iw.RecordPrimaryKey[:])
 	copy(buf[40:], field)
 	copy(buf[40+len(field):], iw.Word)
-	return sha512.Sum512_256(buf)
+	return sha3.Sum256(buf)
 }
 
 // GetByRecordID method read all existing record data by given RecordID!
-func (iw *IndexWord) GetByRecordID() (err *er.Error) {
-	var req = gs.GetRecordReq{
+func (iw *IndexWord) GetByRecordID() (err protocol.Error) {
+	var req = ganjine.GetRecordReq{
 		RecordID:          iw.RecordID,
 		RecordStructureID: indexWordStructureID,
 	}
-	var res *gs.GetRecordRes
+	var res *ganjine.GetRecordRes
 	res, err = gsdk.GetRecord(&req)
 	if err != nil {
 		return
 	}
 
-	err = iw.syllabDecoder(res.Record)
+	err = iw.FromSyllab(res.Record)
 	if err != nil {
 		return
 	}
@@ -153,7 +144,7 @@ func (iw *IndexWord) GetByRecordID() (err *er.Error) {
 }
 
 // GetByWordRecordPrimaryKey find RecordsID by given Word+RecordPrimaryKey
-func (iw *IndexWord) GetByWordRecordPrimaryKey() (err *er.Error) {
+func (iw *IndexWord) GetByWordRecordPrimaryKey() (err protocol.Error) {
 	iw.RecordID = iw.hashWordRecordPrimaryKeyForRecordID()
 	err = iw.GetByRecordID()
 	return
@@ -164,7 +155,7 @@ func (iw *IndexWord) GetByWordRecordPrimaryKey() (err *er.Error) {
 */
 
 // FindRecordsIDByWord find RecordsID by given ID
-func (iw *IndexWord) FindRecordsIDByWord(offset, limit uint64) (RecordsID [][32]byte, err *er.Error) {
+func (iw *IndexWord) FindRecordsIDByWord(offset, limit uint64) (RecordsID [][32]byte, err protocol.Error) {
 	var indexReq = &pehrest.HashGetValuesReq{
 		IndexKey: iw.hashWordforRecordID(),
 		Offset:   offset,
@@ -177,7 +168,7 @@ func (iw *IndexWord) FindRecordsIDByWord(offset, limit uint64) (RecordsID [][32]
 }
 
 // FindRecordsIDByWordRecordStructure find RecordsID by given Word+RecordStructure
-func (iw *IndexWord) FindRecordsIDByWordRecordStructure(offset, limit uint64) (RecordsID [][32]byte, err *er.Error) {
+func (iw *IndexWord) FindRecordsIDByWordRecordStructure(offset, limit uint64) (RecordsID [][32]byte, err protocol.Error) {
 	var indexReq = &pehrest.HashGetValuesReq{
 		IndexKey: iw.hashWordRecordStructureForRecordID(),
 		Offset:   offset,
@@ -190,7 +181,7 @@ func (iw *IndexWord) FindRecordsIDByWordRecordStructure(offset, limit uint64) (R
 }
 
 // FindRecordsIDByWordSecondaryKey find RecordsID by given Word+SecondaryKey
-func (iw *IndexWord) FindRecordsIDByWordSecondaryKey(offset, limit uint64) (RecordsID [][32]byte, err *er.Error) {
+func (iw *IndexWord) FindRecordsIDByWordSecondaryKey(offset, limit uint64) (RecordsID [][32]byte, err protocol.Error) {
 	var indexReq = &pehrest.HashGetValuesReq{
 		IndexKey: iw.hashWordRecordSecondaryKeyForRecordID(),
 		Offset:   offset,
@@ -203,7 +194,7 @@ func (iw *IndexWord) FindRecordsIDByWordSecondaryKey(offset, limit uint64) (Reco
 }
 
 // FindRecordsIDByWordRecordOwnerID find RecordsID by given Word+RecordOwnerID
-func (iw *IndexWord) FindRecordsIDByWordRecordOwnerID(offset, limit uint64) (RecordsID [][32]byte, err *er.Error) {
+func (iw *IndexWord) FindRecordsIDByWordRecordOwnerID(offset, limit uint64) (RecordsID [][32]byte, err protocol.Error) {
 	var indexReq = &pehrest.HashGetValuesReq{
 		IndexKey: iw.hashWordRecordOwnerIDForRecordID(),
 		Offset:   offset,
@@ -216,7 +207,7 @@ func (iw *IndexWord) FindRecordsIDByWordRecordOwnerID(offset, limit uint64) (Rec
 }
 
 // FindByWordRecordStructure find  by given Word+RecordStructure
-func (iw *IndexWord) FindByWordRecordStructure(offset, limit uint64) (phraseTokens []PhraseToken, err *er.Error) {
+func (iw *IndexWord) FindByWordRecordStructure(offset, limit uint64) (phraseTokens []PhraseToken, err protocol.Error) {
 	var indexReq = &pehrest.HashGetValuesReq{
 		IndexKey: iw.hashWordRecordStructureForRecordID(),
 		Offset:   offset,
@@ -249,7 +240,7 @@ func (iw *IndexWord) FindByWordRecordStructure(offset, limit uint64) (phraseToke
 // Call in each update to the exiting record!
 func (iw *IndexWord) IndexRecordIDForWord() {
 	var indexRequest = pehrest.HashSetValueReq{
-		Type:       gs.RequestTypeBroadcast,
+		Type:       ganjine.RequestTypeBroadcast,
 		IndexKey:   iw.hashWordforRecordID(),
 		IndexValue: iw.RecordID,
 	}
@@ -265,7 +256,7 @@ func (iw *IndexWord) hashWordforRecordID() (hash [32]byte) {
 	syllab.SetUInt64(buf, 0, indexWordStructureID)
 	copy(buf[8:], field)
 	copy(buf[8+len(field):], iw.Word)
-	return sha512.Sum512_256(buf[:])
+	return sha3.Sum256(buf[:])
 }
 
 /*
@@ -276,7 +267,7 @@ func (iw *IndexWord) hashWordforRecordID() (hash [32]byte) {
 // Don't call in update to an exiting record!
 func (iw *IndexWord) IndexRecordIDForWordRecordStructure() {
 	var indexRequest = pehrest.HashSetValueReq{
-		Type:       gs.RequestTypeBroadcast,
+		Type:       ganjine.RequestTypeBroadcast,
 		IndexKey:   iw.hashWordRecordStructureForRecordID(),
 		IndexValue: iw.RecordID,
 	}
@@ -288,19 +279,19 @@ func (iw *IndexWord) IndexRecordIDForWordRecordStructure() {
 
 func (iw *IndexWord) hashWordRecordStructureForRecordID() (hash [32]byte) {
 	const field = "WordRecordStructure"
-	var buf = make([]byte, 8+len(field)+len(iw.Word)) // 8+8
+	var buf = make([]byte, 16+len(field)+len(iw.Word)) // 8+8
 	syllab.SetUInt64(buf, 0, indexWordStructureID)
 	syllab.SetUInt64(buf, 8, iw.RecordStructure)
 	copy(buf[16:], field)
 	copy(buf[16+len(field):], iw.Word)
-	return sha512.Sum512_256(buf)
+	return sha3.Sum256(buf)
 }
 
 // IndexRecordIDForWordRecordSecondaryKey save RecordID chain for Word+RecordSecondaryKey
 // Don't call in update to an exiting record!
 func (iw *IndexWord) IndexRecordIDForWordRecordSecondaryKey() {
 	var indexRequest = pehrest.HashSetValueReq{
-		Type:       gs.RequestTypeBroadcast,
+		Type:       ganjine.RequestTypeBroadcast,
 		IndexKey:   iw.hashWordRecordSecondaryKeyForRecordID(),
 		IndexValue: iw.RecordID,
 	}
@@ -317,14 +308,14 @@ func (iw *IndexWord) hashWordRecordSecondaryKeyForRecordID() (hash [32]byte) {
 	copy(buf[8:], iw.RecordSecondaryKey[:])
 	copy(buf[40:], field)
 	copy(buf[40+len(field):], iw.Word)
-	return sha512.Sum512_256(buf)
+	return sha3.Sum256(buf)
 }
 
 // IndexRecordIDForWordRecordOwnerID save RecordID chain for Word+RecordOwnerID
 // Don't call in update to an exiting record!
 func (iw *IndexWord) IndexRecordIDForWordRecordOwnerID() {
 	var indexRequest = pehrest.HashSetValueReq{
-		Type:       gs.RequestTypeBroadcast,
+		Type:       ganjine.RequestTypeBroadcast,
 		IndexKey:   iw.hashWordRecordOwnerIDForRecordID(),
 		IndexValue: iw.RecordID,
 	}
@@ -341,25 +332,19 @@ func (iw *IndexWord) hashWordRecordOwnerIDForRecordID() (hash [32]byte) {
 	copy(buf[8:], iw.RecordOwnerID[:])
 	copy(buf[40:], field)
 	copy(buf[40+len(field):], iw.Word)
-	return sha512.Sum512_256(buf)
+	return sha3.Sum256(buf)
 }
 
 /*
 	-- Syllab Encoder & Decoder --
 */
 
-func (iw *IndexWord) syllabDecoder(buf []byte) (err *er.Error) {
-	if uint32(len(buf)) < iw.syllabStackLen() {
-		err = syllab.ErrSyllabDecodeSmallSlice
+func (iw *IndexWord) FromSyllab(payload []byte, stackIndex uint32) {
+	if uint32(len(buf)) < iw.LenOfSyllabStack() {
+		err = syllab.ErrShortArrayDecode
 		return
 	}
 	var i, add, ln uint32 // index, address and len of strings, slices, maps, ...
-
-	copy(iw.RecordID[:], buf[0:])
-	iw.RecordStructureID = syllab.GetUInt64(buf, 32)
-	iw.RecordSize = syllab.GetUInt64(buf, 40)
-	iw.WriteTime = etime.Time(syllab.GetInt64(buf, 48))
-	copy(iw.OwnerAppID[:], buf[56:])
 
 	iw.Word = syllab.UnsafeGetString(buf, 88)
 	iw.RecordStructure = syllab.GetUInt64(buf, 96)
@@ -371,21 +356,15 @@ func (iw *IndexWord) syllabDecoder(buf []byte) (err *er.Error) {
 	ln = syllab.GetUInt32(buf, 204)
 	iw.Tokens = make([]WordToken, ln)
 	for i = 0; i < ln; i++ {
-		iw.Tokens[i].syllabDecoder(buf, add)
-		add += uint32(iw.Tokens[i].syllabLen())
+		iw.Tokens[i].FromSyllab(buf, add)
+		add += uint32(iw.Tokens[i].LenAsSyllab())
 	}
 	return
 }
 
-func (iw *IndexWord) syllabEncoder() (buf []byte) {
-	buf = make([]byte, iw.syllabLen())
-	var hi uint32 = iw.syllabStackLen() // Heap index || Stack size!
-
-	copy(buf[0:], iw.RecordID[:])
-	syllab.SetUInt64(buf, 32, iw.RecordStructureID)
-	syllab.SetUInt64(buf, 40, iw.RecordSize)
-	syllab.SetInt64(buf, 48, int64(iw.WriteTime))
-	copy(buf[56:], iw.OwnerAppID[:])
+func (iw *IndexWord) ToSyllab(payload []byte, stackIndex, heapIndex uint32) (freeHeapIndex uint32) {
+	buf = make([]byte, iw.LenAsSyllab())
+	var hi uint32 = iw.LenOfSyllabStack() // Heap index || Stack size!
 
 	hi = syllab.SetString(buf, iw.Word, 88, hi)
 	syllab.SetUInt64(buf, 96, iw.RecordStructure)
@@ -396,33 +375,33 @@ func (iw *IndexWord) syllabEncoder() (buf []byte) {
 	syllab.SetUInt32(buf, 200, hi)
 	syllab.SetUInt32(buf, 204, uint32(len(iw.Tokens)))
 	for i := 0; i < len(iw.Tokens); i++ {
-		iw.Tokens[i].syllabEncoder(buf, hi, 0)
-		hi += uint32(iw.Tokens[i].syllabLen())
+		iw.Tokens[i].ToSyllab(buf, hi)
+		hi += uint32(iw.Tokens[i].LenAsSyllab())
 	}
 	return
 }
 
-func (iw *IndexWord) syllabStackLen() (ln uint32) {
+func (iw *IndexWord) LenOfSyllabStack() uint32 {
 	ln = 208
-	ln += uint32(len(iw.Tokens)) * iw.Tokens[0].syllabStackLen()
 	return
 }
 
-func (iw *IndexWord) syllabHeapLen() (ln uint32) {
+func (iw *IndexWord) LenOfSyllabHeap() (ln uint32) {
 	ln += uint32(len(iw.Word))
-	// ln += uint32(len(iw.Tokens)) * iw.Tokens[0].syllabHeapLen()
+	ln += (uint32(len(iw.Tokens)) * iw.Tokens[0].LenOfSyllabStack())
+	// ln += uint32(len(iw.Tokens)) * iw.Tokens[0].LenOfSyllabHeap()
 	return
 }
 
-func (iw *IndexWord) syllabLen() (ln uint64) {
-	return uint64(iw.syllabStackLen() + iw.syllabHeapLen())
+func (iw *IndexWord) LenAsSyllab() uint64 {
+	return uint64(iw.LenOfSyllabStack() + iw.LenOfSyllabHeap())
 }
 
 /*
 	-- Syllab Encoder & Decoder --
 */
 
-func (wt *WordToken) syllabDecoder(buf []byte, stackIndex uint32) {
+func (wt *WordToken) FromSyllab(buf []byte, stackIndex uint32) {
 	copy(wt.RecordID[:], buf[stackIndex:])
 	wt.RecordFieldID = syllab.GetUInt8(buf, stackIndex+32)
 	wt.WordType = WordType(syllab.GetUInt16(buf, stackIndex+33))
@@ -432,25 +411,24 @@ func (wt *WordToken) syllabDecoder(buf []byte, stackIndex uint32) {
 	wt.OffsetInText = syllab.GetUInt64(buf, stackIndex+59)
 }
 
-func (wt *WordToken) syllabEncoder(buf []byte, stackIndex, heapIndex uint32) (nextHeapAddr uint32) {
-	copy(buf[0:], wt.RecordID[stackIndex:])
+func (wt *WordToken) ToSyllab(buf []byte, stackIndex uint32) {
+	copy(buf[stackIndex:], wt.RecordID[:])
 	syllab.SetUInt8(buf, stackIndex+32, wt.RecordFieldID)
 	syllab.SetUInt16(buf, stackIndex+33, uint16(wt.WordType))
 	syllab.SetUInt64(buf, stackIndex+35, wt.WordOffsetInSentence)
 	syllab.SetUInt64(buf, stackIndex+43, wt.WordOffsetInText)
 	syllab.SetUInt64(buf, stackIndex+51, wt.OffsetInSentence)
 	syllab.SetUInt64(buf, stackIndex+59, wt.OffsetInText)
-	return heapIndex
 }
 
-func (wt *WordToken) syllabStackLen() (ln uint32) {
+func (wt *WordToken) LenOfSyllabStack() uint32 {
 	return 67
 }
 
-func (wt *WordToken) syllabHeapLen() (ln uint32) {
+func (wt *WordToken) LenOfSyllabHeap() (ln uint32) {
 	return
 }
 
-func (wt *WordToken) syllabLen() (ln uint64) {
-	return uint64(wt.syllabStackLen() + wt.syllabHeapLen())
+func (wt *WordToken) LenAsSyllab() uint64 {
+	return uint64(wt.LenOfSyllabStack() + wt.LenOfSyllabHeap())
 }
