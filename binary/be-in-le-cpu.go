@@ -1,7 +1,6 @@
 // For license and copyright information please see LEGAL file in repository
 
 //go:build 386 || amd64 || amd64p32 || arm || arm64 || loong64 || mips64le || mips64p32le || mipsle || ppc64le || riscv || riscv64 || wasm
-// +build 386 amd64 amd64p32 arm arm64 loong64 mips64le mips64p32le mipsle ppc64le riscv riscv64 wasm
 
 package binary
 

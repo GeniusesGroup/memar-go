@@ -1,7 +1,6 @@
 // For license and copyright information please see LEGAL file in repository
 
 //go:build armbe || arm64be || mips || mips64 || mips64p32 || ppc || ppc64 || s390 || s390x || sparc || sparc64
-// +build armbe arm64be mips mips64 mips64p32 ppc ppc64 s390 s390x sparc sparc64
 
 package binary
 
