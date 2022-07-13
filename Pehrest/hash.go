@@ -3,66 +3,50 @@
 package pehrest
 
 import (
-	persiaos "../PersiaOS-sdk"
-	"../achaemenid"
 	"../convert"
-	etime "../earth-time"
-	er "../error"
+	"../time"
 	"../ganjine"
-	lang "../language"
+	"../mediatype"
+	"../os/persiaos"
+	"../protocol"
 	"../syllab"
 )
 
-const indexHashStructureID uint64 = 14141993521672016749
+const indexHashStructureID uint64 = 1404190754065006447
 
-var indexHashStructure = ganjine.DataStructure{
-	ID:                14141993521672016749,
-	IssueDate:         1599286551,
-	ExpiryDate:        0,
-	ExpireInFavorOf:   "", // Other structure name
-	ExpireInFavorOfID: 0,  // Other StructureID! Handy ID or Hash of ExpireInFavorOf!
-	Status:            ganjine.DataStructureStatePreAlpha,
-	Structure:         IndexHash{},
+var IndexHashStructure = indexHashStructure{
+	MediaType: mediatype.New("urn:giti:index.protocol:data-structure:hash", "application/vnd.index.protocol.hash", "", "").
+		SetInfo(protocol.Software_PreAlpha, 1599286551, IndexHash{}).
+		SetDetail(protocol.LanguageEnglish, "Index Hash",
+			"Store the hash index data by 32byte key as ObjectID and any 16byte value",
+			[]string{}),
+}
 
-	Name: map[lang.Language]string{
-		lang.LanguageEnglish: "IndexHash",
-	},
-	Description: map[lang.Language]string{
-		lang.LanguageEnglish: "Store the hash index data by 32byte key and any 32byte value",
-	},
-	TAGS: []string{
-		"",
-	},
+type indexHashStructure struct {
+	mediatype.MediaType
 }
 
 // IndexHash is standard structure to store any hash byte index!!
 // It is simple secondary index e.g. hash(RecordStructureID, "user@email.com")
 type IndexHash struct {
-	/* Common header data */
-	RecordID          [32]byte
-	RecordStructureID uint64
-	RecordSize        uint64
-	WriteTime         etime.Time
-	OwnerAppID        [32]byte
-
-	/* Unique data */
-	EarlierExpandTime   etime.Time
-	LastExpandTime      etime.Time
+	WriteTime           time.Time
+	EarlierExpandTime   time.Time
+	LastExpandTime      time.Time
 	IndexValuesNumber   uint64     // IndexValues len
-	IndexValuesCapacity uint64     // IndexValues cap.
-	IndexValues         [][32]byte // Can store RecordsID or any data up to 32 byte length and store by time of added to index
+	IndexValuesCapacity uint64     // IndexValues cap
+	IndexValues         [][16]byte // Can store RecordsID or any data up to 16 byte length and store by time of added to index
 }
 
 // ReadHeader get needed data from storage and decode to given ih without IndexValues array data
-func (ih *IndexHash) ReadHeader() (err *er.Error) {
+func (ih *IndexHash) ReadHeader() (err protocol.Error) {
 	// Get first cluster of record to read header data
 	var header []byte
-	header, err = persiaos.StorageReadRecord(ih.RecordID, indexHashStructureID, 0, uint64(ih.syllabStackLen()))
+	header, err = persiaos.StorageReadRecord(ih.RecordID, indexHashStructureID, 0, uint64(ih.LenOfSyllabStack()))
 	if err != nil {
 		return
 	}
 
-	err = ih.syllabDecoder(header)
+	err = ih.FromSyllab(header)
 	if err != nil {
 		return
 	}
@@ -71,15 +55,15 @@ func (ih *IndexHash) ReadHeader() (err *er.Error) {
 }
 
 // Pop return last RecordID in given index and delete it from index!
-func (ih *IndexHash) Pop() (recordID [32]byte, err *er.Error) {
+func (ih *IndexHash) Pop() (recordID [32]byte, err protocol.Error) {
 	// Get first cluster of record to read header data
 	var header []byte
-	header, err = persiaos.StorageReadRecord(ih.RecordID, indexHashStructureID, 0, uint64(ih.syllabStackLen()))
+	header, err = persiaos.StorageReadRecord(ih.RecordID, indexHashStructureID, 0, uint64(ih.LenOfSyllabStack()))
 	if err != nil {
 		return
 	}
 
-	err = ih.syllabDecoder(header)
+	err = ih.FromSyllab(header)
 	if err != nil {
 		return
 	}
@@ -87,16 +71,16 @@ func (ih *IndexHash) Pop() (recordID [32]byte, err *er.Error) {
 	if ih.IndexValuesNumber > 1 {
 		ih.IndexValuesNumber--
 		var record []byte
-		var recordOffset = uint64(ih.syllabStackLen()) + (ih.IndexValuesNumber * 32)
+		var recordOffset = uint64(ih.LenOfSyllabStack()) + (ih.IndexValuesNumber * 32)
 		record, err = persiaos.StorageReadRecord(ih.RecordID, indexHashStructureID, recordOffset, 32)
 		if err != nil {
 			return
 		}
 		copy(recordID[:], record[:])
 
-		ih.WriteTime = etime.Now()
-		var buf = make([]byte, ih.syllabStackLen())
-		ih.syllabEncoderHeader(buf)
+		ih.WriteTime = time.Now()
+		var buf = make([]byte, ih.LenOfSyllabStack())
+		ih.ToSyllabHeader(buf)
 		err = persiaos.StorageWriteRecord(ih.RecordID, indexHashStructureID, 0, buf)
 		err = persiaos.StorageWriteRecord(ih.RecordID, indexHashStructureID, recordOffset, make([]byte, 32))
 	} else {
@@ -108,21 +92,21 @@ func (ih *IndexHash) Pop() (recordID [32]byte, err *er.Error) {
 }
 
 // Peek return last recordID pushed to given index. unlike Pop() it won't delete it from index!
-func (ih *IndexHash) Peek() (recordID [32]byte, err *er.Error) {
+func (ih *IndexHash) Peek() (recordID [32]byte, err protocol.Error) {
 	// Get first cluster of record to read header data
 	var header []byte
-	header, err = persiaos.StorageReadRecord(ih.RecordID, indexHashStructureID, 0, uint64(ih.syllabStackLen()))
+	header, err = persiaos.StorageReadRecord(ih.RecordID, indexHashStructureID, 0, uint64(ih.LenOfSyllabStack()))
 	if err != nil {
 		return
 	}
 
-	err = ih.syllabDecoder(header)
+	err = ih.FromSyllab(header)
 	if err != nil {
 		return
 	}
 
 	var record []byte
-	var recordOffset = uint64(ih.syllabStackLen()) + ((ih.IndexValuesNumber - 1) * 32)
+	var recordOffset = uint64(ih.LenOfSyllabStack()) + ((ih.IndexValuesNumber - 1) * 32)
 	record, err = persiaos.StorageReadRecord(ih.RecordID, indexHashStructureID, recordOffset, 32)
 	if err != nil {
 		return
@@ -133,16 +117,16 @@ func (ih *IndexHash) Peek() (recordID [32]byte, err *er.Error) {
 }
 
 // Get return related records ID to given index with offset and limit!
-func (ih *IndexHash) Get(offset, limit uint64) (indexValues [][32]byte, err *er.Error) {
+func (ih *IndexHash) Get(offset, limit uint64) (indexValues [][32]byte, err protocol.Error) {
 	// Get first cluster of record to read header data
 	var header []byte
-	header, err = persiaos.StorageReadRecord(ih.RecordID, indexHashStructureID, 0, uint64(ih.syllabStackLen()))
+	header, err = persiaos.StorageReadRecord(ih.RecordID, indexHashStructureID, 0, uint64(ih.LenOfSyllabStack()))
 	if err != nil {
 		err = ganjine.ErrRecordNotFound
 		return
 	}
 
-	err = ih.syllabDecoder(header)
+	err = ih.FromSyllab(header)
 	if err != nil {
 		return
 	}
@@ -152,7 +136,7 @@ func (ih *IndexHash) Get(offset, limit uint64) (indexValues [][32]byte, err *er.
 		limit = ih.IndexValuesNumber
 	} else {
 		if offset > ih.IndexValuesNumber {
-			// If offset set to ihgher than exiting number of record always return last records by given limit!
+			// If offset set to higher than exiting number of record always return last records by given limit!
 			offset = ih.IndexValuesNumber - limit
 		}
 
@@ -167,7 +151,7 @@ func (ih *IndexHash) Get(offset, limit uint64) (indexValues [][32]byte, err *er.
 		}
 	}
 
-	offset = uint64(ih.syllabStackLen()) + (offset * 32)
+	offset = uint64(ih.LenOfSyllabStack()) + (offset * 32)
 	limit = limit * 32
 	var record []byte
 	record, err = persiaos.StorageReadRecord(ih.RecordID, indexHashStructureID, offset, limit)
@@ -181,39 +165,116 @@ func (ih *IndexHash) Get(offset, limit uint64) (indexValues [][32]byte, err *er.
 }
 
 // Push add given RecordID to then end of given hash index!
-func (ih *IndexHash) Push(recordID [32]byte) (err *er.Error) {
-	var timeNow = etime.Now()
+func (ih *IndexHash) Push(recordID [32]byte) (err protocol.Error) {
+	var timeNow = time.Now()
 
 	// Get first cluster of record to read header data
 	var record []byte
-	record, err = persiaos.StorageReadRecord(ih.RecordID, indexHashStructureID, 0, uint64(ih.syllabStackLen()))
+	record, err = persiaos.StorageReadRecord(ih.RecordID, indexHashStructureID, 0, uint64(ih.LenOfSyllabStack()))
 	if err != nil {
-		if err.Equal(persiaos.ErrPersiaOSStorageNotExist) {
+		if err.Equal(object.ErrNotExist) {
 			// desire record not found. write new one!
 			ih.RecordStructureID = indexHashStructureID
-			ih.RecordSize = uint64(ih.syllabStackLen()) + (1 * 32)
+			ih.RecordSize = uint64(ih.LenOfSyllabStack()) + (1 * 32)
 			ih.WriteTime = timeNow
-			ih.OwnerAppID = achaemenid.Server.AppID
+			ih.OwnerAppID = protocol.OS.AppManifest().AppUUID()
 			// ih.EarlierExpandTime = timeNow
 			ih.LastExpandTime = timeNow
 			ih.IndexValuesNumber = 1
 			ih.IndexValuesCapacity = 1
 			ih.IndexValues = make([][32]byte, 1)
 			ih.IndexValues[0] = recordID
-			err = persiaos.StorageSetRecord(ih.syllabEncoderFull())
+			err = persiaos.StorageSetRecord(ih.ToSyllabFull())
 		} else {
 			// err =
 		}
 		return
 	}
 
-	err = ih.syllabDecoder(record)
+	err = ih.FromSyllab(record)
 	if err != nil {
 		return
 	}
 
 	// Check and expand record if needed
-	if ih.IndexValuesNumber >= ih.IndexValuesCapacity {
+	err = ih.checkAndExpand(timeNow)
+	if err != nil {
+		return
+	}
+
+	persiaos.StorageWriteRecord(ih.RecordID, indexHashStructureID, uint64(ih.LenOfSyllabStack())+(ih.IndexValuesNumber*32), recordID[:])
+
+	ih.WriteTime = timeNow
+	ih.IndexValuesNumber++
+	ih.ToSyllabHeader(record)
+	err = persiaos.StorageWriteRecord(ih.RecordID, indexHashStructureID, 0, record)
+	return
+}
+
+// Insert add given RecordID to the end of given hash index and return error if it is exist already!
+func (ih *IndexHash) Insert(recordID [32]byte) (err protocol.Error) {
+	var timeNow = time.Now()
+
+	var record []byte
+	record, err = persiaos.StorageGetRecord(ih.RecordID, indexHashStructureID)
+	if err != nil {
+		if err.Equal(object.ErrNotExist) {
+			// desire record not found. write new one!
+			ih.RecordStructureID = indexHashStructureID
+			ih.RecordSize = uint64(ih.LenOfSyllabStack()) + (1 * 32)
+			ih.WriteTime = timeNow
+			ih.OwnerAppID = protocol.OS.AppManifest().AppUUID()
+			// ih.EarlierExpandTime = timeNow
+			ih.LastExpandTime = timeNow
+			ih.IndexValuesNumber = 1
+			ih.IndexValuesCapacity = 1
+			ih.IndexValues = make([][32]byte, 1)
+			ih.IndexValues[0] = recordID
+			err = persiaos.StorageSetRecord(ih.ToSyllabFull())
+		} else {
+			// err =
+		}
+		return
+	}
+
+	err = ih.FromSyllab(record)
+	if err != nil {
+		return
+	}
+
+	for _, value := range ih.IndexValues {
+		if recordID == value {
+			err = ErrIndexValueAlreadyExist
+			return
+		}
+	}
+
+	// Check and expand record if needed
+	err = ih.checkAndExpand(timeNow)
+	if err != nil {
+		return
+	}
+
+	persiaos.StorageWriteRecord(ih.RecordID, indexHashStructureID, uint64(ih.LenOfSyllabStack())+(ih.IndexValuesNumber*32), recordID[:])
+
+	ih.WriteTime = timeNow
+	ih.IndexValuesNumber++
+
+	var newRecord = record[:ih.LenOfSyllabStack()]
+	ih.ToSyllabHeader(newRecord)
+	err = persiaos.StorageWriteRecord(ih.RecordID, indexHashStructureID, 0, newRecord)
+	return
+}
+
+// InsertInOrder add given RecordID to the given hash index in order and return error if it is exist already!
+func (ih *IndexHash) InsertInOrder(recordID [32]byte) (err protocol.Error) {
+
+	return
+}
+
+// Check and expand record if needed
+func (ih *IndexHash) checkAndExpand(timeNow time.Time) (err protocol.Error) {
+	if ih.IndexValuesNumber == ih.IndexValuesCapacity {
 		var expandNumber = ih.calculateExpandNumber(timeNow)
 		var expandSize = expandNumber * 32
 		ih.RecordSize += expandSize
@@ -225,18 +286,11 @@ func (ih *IndexHash) Push(recordID [32]byte) (err *er.Error) {
 			return
 		}
 	}
-
-	persiaos.StorageWriteRecord(ih.RecordID, indexHashStructureID, uint64(ih.syllabStackLen())+(ih.IndexValuesNumber*32), recordID[:])
-
-	ih.WriteTime = timeNow
-	ih.IndexValuesNumber++
-	ih.syllabEncoderHeader(record)
-	err = persiaos.StorageWriteRecord(ih.RecordID, indexHashStructureID, 0, record)
 	return
 }
 
 // TODO::: Improve expand algorithm
-func (ih *IndexHash) calculateExpandNumber(timeNow etime.Time) (expandNumber uint64) {
+func (ih *IndexHash) calculateExpandNumber(timeNow time.Time) (expandNumber uint64) {
 	var ln = ih.IndexValuesCapacity
 	if ih.LastExpandTime-ih.EarlierExpandTime < (60 * 60) { // Expanded twice in less than 60 minutes
 		if timeNow < ih.LastExpandTime+(60*60) { // Last expand earlier than 60 minutes
@@ -266,26 +320,26 @@ func (ih *IndexHash) calculateExpandNumber(timeNow etime.Time) (expandNumber uin
 }
 
 // Append add given RecordID with any logic need like expand!
-func (ih *IndexHash) Append(recordID ...[32]byte) (err *er.Error) {
+func (ih *IndexHash) Append(recordID ...[32]byte) (err protocol.Error) {
 	return
 }
 
 // DeleteRecord use to delete given record ID form given indexHash!
-func (ih *IndexHash) DeleteRecord() (err *er.Error) {
+func (ih *IndexHash) DeleteRecord() (err protocol.Error) {
 	// Do for i=0 as local node
 	err = persiaos.StorageDeleteRecord(ih.RecordID, indexHashStructureID)
 	return
 }
 
 // Delete use to delete given record ID form given indexHash!
-func (ih *IndexHash) Delete(recordID [32]byte) (err *er.Error) {
+func (ih *IndexHash) Delete(recordID [32]byte) (err protocol.Error) {
 	var record []byte
 	record, err = persiaos.StorageGetRecord(ih.RecordID, indexHashStructureID)
 	if err != nil {
 		return
 	}
 
-	err = ih.syllabDecoder(record)
+	err = ih.FromSyllab(record)
 	if err != nil {
 		return
 	}
@@ -301,12 +355,12 @@ func (ih *IndexHash) Delete(recordID [32]byte) (err *er.Error) {
 		ih.IndexValues[i] = [32]byte{}
 	}
 
-	err = persiaos.StorageSetRecord(ih.syllabEncoderFull())
+	err = persiaos.StorageSetRecord(ih.ToSyllabFull())
 	return
 }
 
 // Deletes use to delete given records ID form given indexHash!
-func (ih *IndexHash) Deletes(indexValues [][32]byte) (err *er.Error) {
+func (ih *IndexHash) Deletes(indexValues [][32]byte) (err protocol.Error) {
 	// Get first cluster of record to read header data
 	var record []byte
 	record, err = persiaos.StorageGetRecord(ih.RecordID, indexHashStructureID)
@@ -314,7 +368,7 @@ func (ih *IndexHash) Deletes(indexValues [][32]byte) (err *er.Error) {
 		return
 	}
 
-	err = ih.syllabDecoder(record)
+	err = ih.FromSyllab(record)
 	if err != nil {
 		return
 	}
@@ -333,20 +387,24 @@ func (ih *IndexHash) Deletes(indexValues [][32]byte) (err *er.Error) {
 		ih.IndexValues[i] = [32]byte{}
 	}
 
-	err = persiaos.StorageSetRecord(ih.syllabEncoderFull())
+	err = persiaos.StorageSetRecord(ih.ToSyllabFull())
 	return
 }
 
-func (ih *IndexHash) syllabDecoder(buf []byte) (err *er.Error) {
-	if uint32(len(buf)) < ih.syllabStackLen() {
-		err = syllab.ErrSyllabDecodeSmallSlice
+/*
+	-- Syllab Encoder & Decoder --
+*/
+
+func (ih *IndexHash) FromSyllab(payload []byte, stackIndex uint32) {
+	if uint32(len(buf)) < ih.LenOfSyllabStack() {
+		err = syllab.ErrShortArrayDecode
 		return
 	}
 
 	copy(ih.RecordID[:], buf[0:])
 	ih.RecordStructureID = syllab.GetUInt64(buf, 32)
 	ih.RecordSize = syllab.GetUInt64(buf, 40)
-	ih.WriteTime = etime.Time(syllab.GetInt64(buf, 48))
+	ih.WriteTime = time.Time(syllab.GetInt64(buf, 48))
 	copy(ih.OwnerAppID[:], buf[56:])
 
 	if ih.RecordStructureID != indexHashStructureID {
@@ -354,24 +412,24 @@ func (ih *IndexHash) syllabDecoder(buf []byte) (err *er.Error) {
 		return
 	}
 
-	ih.EarlierExpandTime = etime.Time(syllab.GetInt64(buf, 88))
-	ih.LastExpandTime = etime.Time(syllab.GetInt64(buf, 96))
+	ih.EarlierExpandTime = time.Time(syllab.GetInt64(buf, 88))
+	ih.LastExpandTime = time.Time(syllab.GetInt64(buf, 96))
 	ih.IndexValuesNumber = syllab.GetUInt64(buf, 104)
 	ih.IndexValuesCapacity = syllab.GetUInt64(buf, 112)
 	// Break syllab rules and don't get IndexValues Add&&len
-	buf = buf[ih.syllabStackLen():]
+	buf = buf[ih.LenOfSyllabStack():]
 	ih.IndexValues = convert.UnsafeByteSliceTo32ByteArraySlice(buf)
 	return
 }
 
-func (ih *IndexHash) syllabEncoderFull() (buf []byte) {
-	buf = make([]byte, uint64(ih.syllabLen()))
-	copy(buf[ih.syllabStackLen():], convert.Unsafe32ByteArraySliceToByteSlice(ih.IndexValues))
-	ih.syllabEncoderHeader(buf)
+func (ih *IndexHash) ToSyllabFull() (buf []byte) {
+	buf = make([]byte, uint64(ih.LenAsSyllab()))
+	copy(buf[ih.LenOfSyllabStack():], convert.Unsafe32ByteArraySliceToByteSlice(ih.IndexValues))
+	ih.ToSyllabHeader(buf)
 	return
 }
 
-func (ih *IndexHash) syllabEncoderHeader(buf []byte) {
+func (ih *IndexHash) ToSyllabHeader(buf []byte) {
 	copy(buf[0:], ih.RecordID[:])
 	syllab.SetUInt64(buf, 32, indexHashStructureID)
 	syllab.SetUInt64(buf, 40, ih.RecordSize)
@@ -385,15 +443,15 @@ func (ih *IndexHash) syllabEncoderHeader(buf []byte) {
 	// Break syllab rules and don't set IndexValues Add&&len
 }
 
-func (ih *IndexHash) syllabStackLen() (ln uint32) {
+func (ih *IndexHash) LenOfSyllabStack() uint32 {
 	return 120 // 88 + 8 + 8 + 8 + 8 + ?  !!don't need IndexValues Add&&len!!
 }
 
-func (ih *IndexHash) syllabHeapLen() (ln uint32) {
+func (ih *IndexHash) LenOfSyllabHeap() (ln uint32) {
 	ln += uint32(ih.IndexValuesCapacity * 32)
 	return
 }
 
-func (ih *IndexHash) syllabLen() (ln uint64) {
-	return uint64(ih.syllabStackLen() + ih.syllabHeapLen())
+func (ih *IndexHash) LenAsSyllab() uint64 {
+	return uint64(ih.LenOfSyllabStack() + ih.LenOfSyllabHeap())
 }

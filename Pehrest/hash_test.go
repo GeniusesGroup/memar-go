@@ -7,11 +7,11 @@ import (
 	"testing"
 )
 
-func TestIndexHash_syllabDecoder(t *testing.T) {
-	var record, err = ioutil.ReadFile("D:/SabzCity/platform/sabz.city/datastore-files/" + "IH4EZ5Hlzf6XhLfsvPOJqpXTY4Tz_4Es4t16EDyAguM")
+func TestIndexHash_FromSyllab(t *testing.T) {
+	var record, err = ioutil.ReadFile("D:/GeniusesGroup/platform/sabz.city/datastore-files/" + "IH4EZ5Hlzf6XhLfsvPOJqpXTY4Tz_4Es4t16EDyAguM")
 	t.Error(err)
 	var hi IndexHash
-	hi.syllabDecoder(record)
+	hi.FromSyllab(record)
 	t.Error(hi)
 }
 

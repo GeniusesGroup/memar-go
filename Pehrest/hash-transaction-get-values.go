@@ -3,62 +3,92 @@
 package pehrest
 
 import (
-	"../achaemenid"
 	"../authorization"
 	"../convert"
-	er "../error"
 	"../ganjine"
-	lang "../language"
+	"../protocol"
 	"../srpc"
 	"../syllab"
 )
 
 // HashTransactionGetValuesService store details about HashTransactionGetValues service
-var HashTransactionGetValuesService = achaemenid.Service{
-	ID:                2502111331,
-	IssueDate:         1587282740,
-	ExpiryDate:        0,
-	ExpireInFavorOf:   "", // English name of favor service just to show off!
-	ExpireInFavorOfID: 0,
-	Status:            achaemenid.ServiceStatePreAlpha,
+var HashTransactionGetValuesService = service.Service{
+	URN:                "urn:giti:index.protocol:service:hash-transaction-get-values",
+	Domain:             DomainName,
+	ID:                 6289164385419840057,
+	IssueDate:          1587282740,
+	ExpiryDate:         0,
+	ExpireInFavorOfURN: "",
+	ExpireInFavorOfID:  0,
+	Status:             protocol.Software_PreAlpha,
 
 	Authorization: authorization.Service{
 		CRUD:     authorization.CRUDRead,
-		UserType: authorization.UserTypeApp,
+		UserType: protocol.UserType_App,
 	},
 
-	Name: map[lang.Language]string{
-		lang.LanguageEnglish: "Index Hash - Transaction Get Values",
-	},
-	Description: map[lang.Language]string{
-		lang.LanguageEnglish: `Find records by indexes that store before in consistently!
+	Detail: map[protocol.LanguageID]service.ServiceDetail{
+		protocol.LanguageEnglish: {
+			Name: "Index Hash - Transaction Get Values",
+			Description: `Find records by indexes that store before in consistently!
 It will get index from transaction managers not indexes nodes!`,
-	},
-	TAGS: []string{
-		"",
+			TAGS: []string{},
+		},
 	},
 
 	SRPCHandler: HashTransactionGetValuesSRPC,
 }
 
+// HashTransactionGetValues find records by indexes that store before in consistently!
+// It will get index from transaction managers not indexes nodes!
+func HashTransactionGetValues(req *HashTransactionGetValuesReq) (res *HashTransactionGetValuesRes, err protocol.Error) {
+	var node protocol.ApplicationNode
+	node, err = protocol.App.GetNodeByStorage(req.MediaTypeID, req.IndexKey)
+	if err != nil {
+		return
+	}
+
+	if node.Node.State == protocol.ApplicationState_LocalNode {
+		return HashTransactionGetValues(req)
+	}
+
+	var st protocol.Stream
+	st, err = node.Conn.MakeOutcomeStream(0)
+	if err != nil {
+		return
+	}
+
+	st.Service = &HashTransactionGetValuesService
+	st.OutcomePayload = req.ToSyllab()
+
+	err = node.Conn.Send(st)
+	if err != nil {
+		return
+	}
+
+	res = &HashTransactionGetValuesRes{}
+	res.FromSyllab(srpc.GetPayload(st.IncomePayload))
+	return
+}
+
 // HashTransactionGetValuesSRPC is sRPC handler of HashTransactionGetValues service.
-func HashTransactionGetValuesSRPC(st *achaemenid.Stream) {
-	if st.Connection.UserID != achaemenid.Server.AppID {
+func HashTransactionGetValuesSRPC(st protocol.Stream) {
+	if st.Connection.UserID != protocol.OS.AppManifest().AppUUID() {
 		// TODO::: Attack??
-		st.Err = ganjine.ErrNotAuthorizeRequest
+		err = authorization.ErrUserNotAllow
 		return
 	}
 
 	var req = &HashTransactionGetValuesReq{}
-	req.SyllabDecoder(srpc.GetPayload(st.IncomePayload))
+	req.FromSyllab(srpc.GetPayload(st.IncomePayload))
 
 	var res *HashTransactionGetValuesRes
-	res, st.Err = HashTransactionGetValues(req)
-	if st.Err != nil {
+	res, err = HashTransactionGetValues(req)
+	if err != nil {
 		return
 	}
 
-	st.OutcomePayload = res.SyllabEncoder()
+	st.OutcomePayload = res.ToSyllab()
 }
 
 // HashTransactionGetValuesReq is request structure of HashTransactionGetValues()
@@ -72,7 +102,7 @@ type HashTransactionGetValuesRes struct {
 }
 
 // HashTransactionGetValues find records by indexes that store before in consistently!
-func HashTransactionGetValues(req *HashTransactionGetValuesReq) (res *HashTransactionGetValuesRes, err *er.Error) {
+func HashTransactionGetValues(req *HashTransactionGetValuesReq) (res *HashTransactionGetValuesRes, err protocol.Error) {
 	res = &HashTransactionGetValuesRes{
 		// get index from transaction managers not indexes nodes
 		IndexValues: ganjine.Cluster.TransactionManager.GetIndexRecords(req.IndexKey),
@@ -84,58 +114,57 @@ func HashTransactionGetValues(req *HashTransactionGetValuesReq) (res *HashTransa
 	-- Syllab Encoder & Decoder --
 */
 
-// SyllabDecoder decode from buf to req
+// FromSyllab decode from buf to req
 // Due to this service just use internally, It skip check buf size syllab rule! Panic occur if bad request received!
-func (req *HashTransactionGetValuesReq) SyllabDecoder(buf []byte) {
+func (req *HashTransactionGetValuesReq) FromSyllab(payload []byte, stackIndex uint32) {
 	copy(req.IndexKey[:], buf[:])
 	return
 }
 
-// SyllabEncoder encode req to buf
-func (req *HashTransactionGetValuesReq) SyllabEncoder() (buf []byte) {
-	buf = make([]byte, req.syllabLen()+4) // +4 for sRPC ID instead get offset argument
+// ToSyllab encode req to buf
+func (req *HashTransactionGetValuesReq) ToSyllab(payload []byte, stackIndex, heapIndex uint32) (freeHeapIndex uint32) {
+	buf = make([]byte, req.LenAsSyllab()+4) // +4 for sRPC ID instead get offset argument
 	copy(buf[4:], req.IndexKey[:])
 	return
 }
 
-func (req *HashTransactionGetValuesReq) syllabStackLen() (ln uint32) {
+func (req *HashTransactionGetValuesReq) LenOfSyllabStack() uint32 {
 	return 32
 }
 
-func (req *HashTransactionGetValuesReq) syllabHeapLen() (ln uint32) {
+func (req *HashTransactionGetValuesReq) LenOfSyllabHeap() (ln uint32) {
 	return
 }
 
-func (req *HashTransactionGetValuesReq) syllabLen() (ln uint64) {
-	return uint64(req.syllabStackLen() + req.syllabHeapLen())
+func (req *HashTransactionGetValuesReq) LenAsSyllab() uint64 {
+	return uint64(req.LenOfSyllabStack() + req.LenOfSyllabHeap())
 }
 
-// SyllabDecoder decode from buf to req
+// FromSyllab decode from buf to req
 // Due to this service just use internally, It skip check buf size syllab rule! Panic occur if bad request received!
-func (res *HashTransactionGetValuesRes) SyllabDecoder(buf []byte) {
+func (res *HashTransactionGetValuesRes) FromSyllab(payload []byte, stackIndex uint32) {
 	buf = buf[8:]
 	res.IndexValues = convert.UnsafeByteSliceTo32ByteArraySlice(buf)
 	return
 }
 
-// SyllabEncoder encode req to buf
-func (res *HashTransactionGetValuesRes) SyllabEncoder() (buf []byte) {
-	buf = make([]byte, res.syllabLen()+4) // +4 for sRPC ID instead get offset argument
+// ToSyllab encode req to buf
+func (res *HashTransactionGetValuesRes) ToSyllab(payload []byte, stackIndex, heapIndex uint32) (freeHeapIndex uint32) {
 	// Due to just have one field in res structure we skip set address of res.IndexValues in buf
-	// syllab.SetUInt32(buf, 4, res.syllabStackLen())
+	// syllab.SetUInt32(buf, 4, res.LenOfSyllabStack())
 	syllab.SetUInt32(buf, 8, uint32(len(res.IndexValues)))
-	copy(buf[res.syllabStackLen():], convert.Unsafe32ByteArraySliceToByteSlice(res.IndexValues))
+	copy(buf[res.LenOfSyllabStack():], convert.Unsafe32ByteArraySliceToByteSlice(res.IndexValues))
 	return
 }
 
-func (res *HashTransactionGetValuesRes) syllabStackLen() (ln uint32) {
+func (res *HashTransactionGetValuesRes) LenOfSyllabStack() uint32 {
 	return 8
 }
 
-func (res *HashTransactionGetValuesRes) syllabHeapLen() (ln uint32) {
+func (res *HashTransactionGetValuesRes) LenOfSyllabHeap() (ln uint32) {
 	return
 }
 
-func (res *HashTransactionGetValuesRes) syllabLen() (ln uint64) {
-	return uint64(res.syllabStackLen() + res.syllabHeapLen())
+func (res *HashTransactionGetValuesRes) LenAsSyllab() uint64 {
+	return uint64(res.LenOfSyllabStack() + res.LenOfSyllabHeap())
 }

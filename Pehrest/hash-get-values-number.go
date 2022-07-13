@@ -3,60 +3,88 @@
 package pehrest
 
 import (
-	"../achaemenid"
 	"../authorization"
-	er "../error"
-	"../ganjine"
-	lang "../language"
+	"../protocol"
 	"../srpc"
 	"../syllab"
 )
 
 // HashGetValuesNumberService store details about HashGetValuesNumber service
-var HashGetValuesNumberService = achaemenid.Service{
-	ID:                2503912670,
-	IssueDate:         1587282740,
-	ExpiryDate:        0,
-	ExpireInFavorOf:   "", // English name of favor service just to show off!
-	ExpireInFavorOfID: 0,
-	Status:            achaemenid.ServiceStatePreAlpha,
+var HashGetValuesNumberService = service.Service{
+	URN:                "urn:giti:index.protocol:service:hash-get-values-number",
+	Domain:             DomainName,
+	ID:                 8061689463948451244,
+	IssueDate:          1587282740,
+	ExpiryDate:         0,
+	ExpireInFavorOfURN: "",
+	ExpireInFavorOfID:  0,
+	Status:             protocol.Software_PreAlpha,
 
 	Authorization: authorization.Service{
 		CRUD:     authorization.CRUDRead,
-		UserType: authorization.UserTypeApp,
+		UserType: protocol.UserType_App,
 	},
 
-	Name: map[lang.Language]string{
-		lang.LanguageEnglish: "Index Hash - Get Values Number",
-	},
-	Description: map[lang.Language]string{
-		lang.LanguageEnglish: "Get number of recordsID register for specific index hash key",
-	},
-	TAGS: []string{
-		"",
+	Detail: map[protocol.LanguageID]service.ServiceDetail{
+		protocol.LanguageEnglish: {
+			Name:        "Index Hash - Get Values Number",
+			Description: "Get number of recordsID register for specific index hash key",
+			TAGS:        []string{},
+		},
 	},
 
 	SRPCHandler: HashGetValuesNumberSRPC,
 }
 
+// HashGetValuesNumber get number of recordsID register for specific IndexHash
+func HashGetValuesNumber(req *HashGetValuesNumberReq) (res *HashGetValuesNumberRes, err protocol.Error) {
+	var node protocol.ApplicationNode
+	node, err = protocol.App.GetNodeByStorage(req.MediaTypeID, req.IndexKey)
+	if err != nil {
+		return
+	}
+
+	if node.Node.State == protocol.ApplicationState_LocalNode {
+		return HashGetValuesNumber(req)
+	}
+
+	var st protocol.Stream
+	st, err = node.Conn.MakeOutcomeStream(0)
+	if err != nil {
+		return
+	}
+
+	st.Service = &HashGetValuesNumberService
+	st.OutcomePayload = req.ToSyllab()
+
+	err = node.Conn.Send(st)
+	if err != nil {
+		return
+	}
+
+	res = &HashGetValuesNumberRes{}
+	res.FromSyllab(srpc.GetPayload(st.IncomePayload))
+	return
+}
+
 // HashGetValuesNumberSRPC is sRPC handler of HashGetValuesNumber service.
-func HashGetValuesNumberSRPC(st *achaemenid.Stream) {
-	if st.Connection.UserID != achaemenid.Server.AppID {
+func HashGetValuesNumberSRPC(st protocol.Stream) {
+	if st.Connection.UserID != protocol.OS.AppManifest().AppUUID() {
 		// TODO::: Attack??
-		st.Err = ganjine.ErrNotAuthorizeRequest
+		err = authorization.ErrUserNotAllow
 		return
 	}
 
 	var req = &HashGetValuesNumberReq{}
-	req.SyllabDecoder(srpc.GetPayload(st.IncomePayload))
+	req.FromSyllab(srpc.GetPayload(st.IncomePayload))
 
 	var res *HashGetValuesNumberRes
-	res, st.Err = HashGetValuesNumber(req)
-	if st.Err != nil {
+	res, err = HashGetValuesNumber(req)
+	if err != nil {
 		return
 	}
 
-	st.OutcomePayload = res.SyllabEncoder()
+	st.OutcomePayload = res.ToSyllab()
 }
 
 // HashGetValuesNumberReq is request structure of HashGetValuesNumber()
@@ -70,7 +98,7 @@ type HashGetValuesNumberRes struct {
 }
 
 // HashGetValuesNumber get number of IndexValues register for specific IndexKey
-func HashGetValuesNumber(req *HashGetValuesNumberReq) (res *HashGetValuesNumberRes, err *er.Error) {
+func HashGetValuesNumber(req *HashGetValuesNumberReq) (res *HashGetValuesNumberRes, err protocol.Error) {
 	var hashIndex = IndexHash{
 		RecordID: req.IndexKey,
 	}
@@ -85,54 +113,53 @@ func HashGetValuesNumber(req *HashGetValuesNumberReq) (res *HashGetValuesNumberR
 	-- Syllab Encoder & Decoder --
 */
 
-// SyllabDecoder decode from buf to req
+// FromSyllab decode from buf to req
 // Due to this service just use internally, It skip check buf size syllab rule! Panic occur if bad request received!
-func (req *HashGetValuesNumberReq) SyllabDecoder(buf []byte) {
+func (req *HashGetValuesNumberReq) FromSyllab(payload []byte, stackIndex uint32) {
 	copy(req.IndexKey[:], buf[:])
 	return
 }
 
-// SyllabEncoder encode req to buf
-func (req *HashGetValuesNumberReq) SyllabEncoder() (buf []byte) {
-	buf = make([]byte, req.syllabLen()+4) // +4 for sRPC ID instead get offset argument
+// ToSyllab encode req to buf
+func (req *HashGetValuesNumberReq) ToSyllab(payload []byte, stackIndex, heapIndex uint32) (freeHeapIndex uint32) {
+	buf = make([]byte, req.LenAsSyllab()+4) // +4 for sRPC ID instead get offset argument
 	copy(buf[4:], req.IndexKey[:])
 	return
 }
 
-func (req *HashGetValuesNumberReq) syllabStackLen() (ln uint32) {
+func (req *HashGetValuesNumberReq) LenOfSyllabStack() uint32 {
 	return 32
 }
 
-func (req *HashGetValuesNumberReq) syllabHeapLen() (ln uint32) {
+func (req *HashGetValuesNumberReq) LenOfSyllabHeap() (ln uint32) {
 	return
 }
 
-func (req *HashGetValuesNumberReq) syllabLen() (ln uint64) {
-	return uint64(req.syllabStackLen() + req.syllabHeapLen())
+func (req *HashGetValuesNumberReq) LenAsSyllab() uint64 {
+	return uint64(req.LenOfSyllabStack() + req.LenOfSyllabHeap())
 }
 
-// SyllabDecoder decode from buf to req
+// FromSyllab decode from buf to req
 // Due to this service just use internally, It skip check buf size syllab rule! Panic occur if bad request received!
-func (res *HashGetValuesNumberRes) SyllabDecoder(buf []byte) {
+func (res *HashGetValuesNumberRes) FromSyllab(payload []byte, stackIndex uint32) {
 	res.IndexValuesNumber = syllab.GetUInt64(buf, 0)
 	return
 }
 
-// SyllabEncoder encode req to buf
-func (res *HashGetValuesNumberRes) SyllabEncoder() (buf []byte) {
-	buf = make([]byte, res.syllabLen()+4) // +4 for sRPC ID instead get offset argument
+// ToSyllab encode req to buf
+func (res *HashGetValuesNumberRes) ToSyllab(payload []byte, stackIndex, heapIndex uint32) (freeHeapIndex uint32) {
 	syllab.SetUInt64(buf, 4, res.IndexValuesNumber)
 	return
 }
 
-func (res *HashGetValuesNumberRes) syllabStackLen() (ln uint32) {
+func (res *HashGetValuesNumberRes) LenOfSyllabStack() uint32 {
 	return 8
 }
 
-func (res *HashGetValuesNumberRes) syllabHeapLen() (ln uint32) {
+func (res *HashGetValuesNumberRes) LenOfSyllabHeap() (ln uint32) {
 	return
 }
 
-func (res *HashGetValuesNumberRes) syllabLen() (ln uint64) {
-	return uint64(res.syllabStackLen() + res.syllabHeapLen())
+func (res *HashGetValuesNumberRes) LenAsSyllab() uint64 {
+	return uint64(res.LenOfSyllabStack() + res.LenOfSyllabHeap())
 }
