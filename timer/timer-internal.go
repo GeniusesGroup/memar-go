@@ -9,32 +9,30 @@ import (
 	"../cpu"
 	"../protocol"
 	"../race"
-	"../time/monotonic"
 )
 
-// when is a helper function for setting the 'when' field of a Timer.
-// It returns what the time will be, in nanoseconds, Duration d in the future.
-// If d is negative, it is ignored. If the returned value would be less than
-// zero because of an overflow, MaxInt64 is returned.
-func when(d protocol.Duration) (t int64) {
-	t = monotonic.RuntimeNano()
-	if d <= 0 {
-		return
-	}
-	t += int64(d)
-	// check for overflow.
-	if t < 0 {
-		// N.B. monotonic.RuntimeNano() and d are always positive, so addition
-		// (including overflow) will never result in t == 0.
-		t = maxWhen
-	}
-	return
+type timer struct {
+	// Timer wakes up at when, and then at when+period, ... (period > 0 only)
+	// when must be positive on an active timer.
+	when         int64
+	period       int64
+	periodNumber int64 // -1 means no limit
+
+	// The status field holds one of the values in status file.
+	status status
+
+	// callback function that call when reach
+	// it is possible that callback will be called a little after the delay.
+	// **NOTE**: each time calling callback() in the timer goroutine, so callback must be
+	// a well-behaved function and not block.
+	callback protocol.TimerListener
+
+	timers *Timers
 }
 
 // use to prevent memory leak
-func (t *Timer) reset() {
+func (t *timer) reset() {
 	t.callback = nil
-	t.arg = nil
 	t.timers = nil
 }
 
@@ -42,7 +40,7 @@ func (t *Timer) reset() {
 // This should only be called with a newly created timer.
 // That avoids the risk of changing the when field of a timer in some P's heap,
 // which could cause the heap to become unsorted.
-func (t *Timer) add(d protocol.Duration) {
+func (t *timer) add(d protocol.Duration) {
 	if t.callback == nil {
 		panic("timer: Timer must initialized before start")
 	}
@@ -65,14 +63,14 @@ func (t *Timer) add(d protocol.Duration) {
 	t.when = when(d)
 	t.status = status_Waiting
 	t.timers = &poolByCores[cpu.ActiveCoreID()]
-	t.timers.addTimer(t)
+	t.timers.AddTimer(t)
 }
 
 // delete deletes the timer t. It may be on some other P, so we can't
 // actually remove it from the timers heap. We can only mark it as deleted.
 // It will be removed in due course by the P whose heap it is on.
 // Reports whether the timer was removed before it was run.
-func (t *Timer) delete() bool {
+func (t *timer) delete() bool {
 	if t.callback == nil {
 		panic("timer: Stop called on uninitialized Timer")
 	}
@@ -126,7 +124,7 @@ func (t *Timer) delete() bool {
 // modify modifies an existing timer.
 // It's OK to call modify() on a newly allocated Timer.
 // Reports whether the timer was modified before it was run.
-func (t *Timer) modify(d protocol.Duration) (pending bool) {
+func (t *timer) modify(d protocol.Duration) (pending bool) {
 	// when must be positive. A negative value will cause ts.runTimer to
 	// overflow during its delta calculation and never expire other runtime timers.
 	// Zero will cause checkTimers to fail to notice the timer.
@@ -153,7 +151,7 @@ loop:
 			}
 		case status_Unset, status_Removed:
 			// Timer was already run and t is no longer in a heap.
-			// Act like addTimer.
+			// Act like AddTimer.
 			if t.status.CompareAndSwap(status, status_Modifying) {
 				wasRemoved = true
 				pending = false // timer already run or stopped
@@ -186,7 +184,7 @@ loop:
 	}
 	if wasRemoved {
 		t.timers = poolByCores[cpu.ActiveCoreID()]
-		t.timers.addTimer(t)
+		t.timers.AddTimer(t)
 		if !t.status.CompareAndSwap(status_Modifying, status_Waiting) {
 			badTimer()
 		}
@@ -194,8 +192,6 @@ loop:
 		var newStatus = status_ModifiedLater
 		if timerNewWhen < timerOldWhen {
 			newStatus = status_ModifiedEarlier
-		}
-		if newStatus == status_ModifiedEarlier {
 			t.timers.updateTimerModifiedEarliest(timerNewWhen)
 		}
 

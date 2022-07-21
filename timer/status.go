@@ -101,6 +101,8 @@ const (
 // due to use atomic must use uint32
 type status uint32
 
+func (s status) Get() status       { return s }
+func (s status) Set(status status) { s = status }
 func (s *status) Load() status {
 	return status(atomic.LoadUint32((*uint32)(s)))
 }

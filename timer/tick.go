@@ -26,17 +26,18 @@ func (t *Timer) Tick(first, interval protocol.Duration, periodNumber int64) {
 // Ticker to recovered by the garbage collector; to prevent **"leaks"**.
 func Tick(first, interval protocol.Duration, periodNumber int64) *Timer {
 	var timer Timer
-	timer.Init(nil, nil)
+	timer.Init(nil)
 	timer.Tick(first, interval, periodNumber)
 	return &timer
 }
 
 // TickFunc or Schedule waits for the duration to elapse and then calls callback in each duration elapsed
-// in its own goroutine. It returns a Timer that can be used to cancel the call using its Stop method.
+// If callback need blocking operation it must do its logic in new thread(goroutine).
+// It returns a Timer that can be used to cancel the call using its Stop method.
 // Schedule an execution at a given time, then once per interval. A typical use case is to execute code once per day at 12am.
-func TickFunc(first, interval protocol.Duration, periodNumber int64, cb func(arg any), arg any) *Timer {
+func TickFunc(first, interval protocol.Duration, periodNumber int64, callback protocol.TimerListener) *Timer {
 	var timer Timer
-	timer.Init(callback(cb).concurrentRun, arg)
+	timer.Init(callback)
 	timer.Tick(first, interval, periodNumber)
 	return &timer
 }
