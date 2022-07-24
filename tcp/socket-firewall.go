@@ -3,7 +3,7 @@
 package tcp
 
 import (
-	"../protocol"
+	"github.com/GeniusesGroup/libgo/protocol"
 )
 
 func (s *Socket) checkPushFlag() (err protocol.Error) {

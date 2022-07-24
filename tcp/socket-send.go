@@ -2,7 +2,13 @@
 
 package tcp
 
-// Send Sequence Space
+import (
+	"github.com/GeniusesGroup/libgo/protocol"
+	"github.com/GeniusesGroup/libgo/timer"
+)
+
+// sens as Send Sequence Space
+// Rx means Receive, and Tx means Transmit
 //
 //                    1         2          3          4
 //               ----------|----------|----------|----------
@@ -13,7 +19,9 @@ package tcp
 //         2 - sequence numbers of unacknowledged data
 //         3 - sequence numbers allowed for new data transmission
 //         4 - future sequence numbers which are not yet allowed
-type sendSequenceSpace struct {
+type send struct {
+	writeTimer timer.Timer // write deadline timer
+
 	una  uint32 // send unacknowledged
 	next uint32
 	wnd  uint16 // send window
@@ -24,6 +32,9 @@ type sendSequenceSpace struct {
 	// buf    []byte Don't need it, because we don't need to copy buffer between kernel and userpspace
 }
 
-func (s *sendSequenceSpace) init() {
+func (s *send) init(timeout protocol.Duration) {
+	s.writeTimer.Init(nil)
+	s.writeTimer.Start(timeout)
+
 	// TODO:::
 }

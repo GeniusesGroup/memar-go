@@ -7,6 +7,6 @@ const (
 	tcpProtocolNumberOverIP byte = 0x06
 )
 
-// TODO::: impelemnet checksums over IPv4, IPv6, standalone
+// TODO::: impelemenet checksums over IPv4, IPv6, standalone
 // https://github.com/google/gopacket/blob/master/layers/tcpip.go
 // https://github.com/tass-belgium/picotcp/blob/master/modules/pico_tcp.c

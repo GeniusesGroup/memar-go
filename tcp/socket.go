@@ -3,92 +3,46 @@
 package tcp
 
 import (
-	"../protocol"
-	"../timer"
+	"github.com/GeniusesGroup/libgo/protocol"
 )
 
-/*
-Because each socket methods just call by a fixed worker on same CPU core in sync order, don't need to lock or changed atomic any field
-
-                              +---------+ ---------\      active OPEN
-                              |  CLOSED |            \    -----------
-                              +---------+<---------\   \   create TCB
-                                |     ^              \   \  snd SYN
-                   passive OPEN |     |   CLOSE        \   \
-                   ------------ |     | ----------       \   \
-                    create TCB  |     | delete TCB         \   \
-                                V     |                      \   \
-                              +---------+            CLOSE    |    \
-                              |  LISTEN |          ---------- |     |
-                              +---------+          delete TCB |     |
-                   rcv SYN      |     |     SEND              |     |
-                  -----------   |     |    -------            |     V
- +---------+      snd SYN,ACK  /       \   snd SYN          +---------+
- |         |<-----------------           ------------------>|         |
- |   SYN   |                    rcv SYN                     |   SYN   |
- |   RCVD  |<-----------------------------------------------|   SENT  |
- |         |                    snd ACK                     |         |
- |         |------------------           -------------------|         |
- +---------+   rcv ACK of SYN  \       /  rcv SYN,ACK       +---------+
-   |           --------------   |     |   -----------
-   |                  x         |     |     snd ACK
-   |                            V     V
-   |  CLOSE                   +---------+
-   | -------                  |  ESTAB  |
-   | snd FIN                  +---------+
-   |                   CLOSE    |     |    rcv FIN
-   V                  -------   |     |    -------
- +---------+          snd FIN  /       \   snd ACK          +---------+
- |  FIN    |<-----------------           ------------------>|  CLOSE  |
- | WAIT-1  |------------------                              |   WAIT  |
- +---------+          rcv FIN  \                            +---------+
-   | rcv ACK of FIN   -------   |                            CLOSE  |
-   | --------------   snd ACK   |                           ------- |
-   V        x                   V                           snd FIN V
- +---------+                  +---------+                   +---------+
- |FINWAIT-2|                  | CLOSING |                   | LAST-ACK|
- +---------+                  +---------+                   +---------+
-   |                rcv ACK of FIN |                 rcv ACK of FIN |
-   |  rcv FIN       -------------- |    Timeout=2MSL -------------- |
-   |  -------              x       V    ------------        x       V
-    \ snd ACK                 +---------+delete TCB         +---------+
-     ------------------------>|TIME WAIT|------------------>| CLOSED  |
-                              +---------+                   +---------+
-*/
+// Socket provide some fields to hold socket state.
+// Because each socket methods just call by a fixed worker on same CPU core in sync order, don't need to lock or changed atomic any field
 type Socket struct {
-	Connection      protocol.Connection
-	Stream          protocol.Stream
+	connection      protocol.Connection
+	stream          protocol.Stream
 	mtu             int
-	mss             int // Max Segment Length
-	sourcePort      uint16
-	destinationPort uint16
+	mss             int    // Max Segment Length
+	sourcePort      uint16 // local
+	destinationPort uint16 // remote
 	status          SocketState
 	state           chan SocketState
 
 	// TODO::: Cookie, save socket in nvm
 
-	socketTimer timer.Timer
-	readTimer   timer.Timer // read deadline timer
-	writeTimer  timer.Timer // write deadline timer
-
-	// Rx means Receive, and Tx means Transmit
-	send sendSequenceSpace
-	recv recvSequenceSpace
+	// Below struct must align in memory allocation in Socket struct.
+	gc
+	send
+	recv
 }
 
 // Init use to initialize the socket after allocation in both server or client
-func (s *Socket) Init() {
+func (s *Socket) Init(timeout protocol.Duration) {
 	// TODO:::
 	s.mss = OptionDefault_MSS
 	s.setState(SocketState_LISTEN)
-	// TODO::: set default timeout
-	s.readTimer.Init()
-	s.writeTimer.Init()
-	checkTimeout(s)
 
-	s.recv.init()
-	s.send.init()
+	if timeout == 0 {
+		timeout = KeepAlive_Idle
+	}
+
+	s.gc.init()
+	s.recv.init(timeout)
+	s.send.init(timeout)
 }
+
+func (s *Socket) Connection() protocol.Connection { return s.connection }
+func (s *Socket) Stream() protocol.Stream         { return s.stream }
 
 // Reset use to reset the socket to store in a sync.Pool to reuse in near future before 2 GC period to dealloc forever
 func (s *Socket) Reset() {
@@ -124,9 +78,11 @@ func (s *Socket) SetReadTimeout(d protocol.Duration) (err protocol.Error) {
 
 	if d < 0 {
 		// no timeout
+		// TODO::: is it ok??
+		s.recv.readTimer.Stop()
 		return
 	}
-	s.readTimer.Reset(d)
+	s.recv.readTimer.Reset(d)
 	return
 }
 func (s *Socket) SetWriteTimeout(d protocol.Duration) (err protocol.Error) {
@@ -137,9 +93,10 @@ func (s *Socket) SetWriteTimeout(d protocol.Duration) (err protocol.Error) {
 
 	if d < 0 {
 		// no timeout
+		s.send.writeTimer.Stop()
 		return
 	}
-	s.writeTimer.Reset(d)
+	s.send.writeTimer.Reset(d)
 	return
 }
 
@@ -179,6 +136,7 @@ func (s *Socket) Receive(segment Packet) (err protocol.Error) {
 	case SocketState_TIME_WAIT:
 		err = s.incomeSegmentOnTimeWaitState(segment)
 	}
-	checkTimeout(s)
+
+	s.checkTimeout()
 	return
 }

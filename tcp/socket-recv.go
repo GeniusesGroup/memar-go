@@ -3,10 +3,13 @@
 package tcp
 
 import (
-	"../buffer"
+	"github.com/GeniusesGroup/libgo/buffer"
+	"github.com/GeniusesGroup/libgo/protocol"
+	"github.com/GeniusesGroup/libgo/timer"
 )
 
 // Receive Sequence Space
+// Rx means Receive, and Tx means Transmit
 //
 // 1          2          3
 // ----------|----------|----------
@@ -16,7 +19,9 @@ import (
 // 1 - old sequence numbers which have been acknowledged
 // 2 - sequence numbers allowed for new reception
 // 3 - future sequence numbers which are not yet allowed
-type recvSequenceSpace struct {
+type recv struct {
+	readTimer timer.Timer // read deadline timer
+
 	next uint32 // receive next
 	wnd  uint16 // receive window
 	up   bool   // receive urgent pointer
@@ -28,13 +33,17 @@ type recvSequenceSpace struct {
 	flag chan flag
 }
 
-func (r *recvSequenceSpace) init() {
-	r.flag = make(chan flag, 1)
+func (r *recv) init(timeout protocol.Duration) {
+	r.flag = make(chan flag, 1) // 1 buffer slot??
+
+	r.readTimer.Init(nil)
+	r.readTimer.Start(timeout)
+
 	// TODO:::
 }
 
 // sendFlagSignal use to notify listener in the r.flag channel
-func (r *recvSequenceSpace) sendFlagSignal(f flag) {
+func (r *recv) sendFlagSignal(f flag) {
 	select {
 	case r.flag <- f:
 		// nothing to do

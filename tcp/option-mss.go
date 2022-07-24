@@ -3,8 +3,8 @@
 package tcp
 
 import (
-	"../binary"
-	"../protocol"
+	"github.com/GeniusesGroup/libgo/binary"
+	"github.com/GeniusesGroup/libgo/protocol"
 )
 
 /*

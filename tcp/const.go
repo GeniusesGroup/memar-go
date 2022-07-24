@@ -3,7 +3,7 @@
 package tcp
 
 import (
-	"../timer"
+	"github.com/GeniusesGroup/libgo/timer"
 )
 
 // ATTENTION:::: Don't changed below settings without any good reason
@@ -26,13 +26,13 @@ const (
 	KeepAlive_Message = true
 
 	// The number of seconds between TCP keep-alive probes.
-	KeepAlive_Interval = 75
+	KeepAlive_Interval = 75 * timer.Second
 	// The maximum number of TCP keep-alive probes to send before giving up and
 	// killing the connection if no response is obtained from the other end.
 	KeepAlive_Probes = 9
 	// The time (in seconds) the connection needs to remain idle before TCP starts sending keepalive probes.
 	// terminated after approximately an additional 11 minutes (9 probes an interval of 75 seconds apart)
-	KeepAlive_Idle = 7200 // seconds (2 hours)
+	KeepAlive_Idle = 7200 * timer.Second // (2 hours)
 
 	// Linger sets the behavior of Close on a connection which still
 	// has data waiting to be sent or to be acknowledged.

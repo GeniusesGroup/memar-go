@@ -2,7 +2,7 @@
 
 package tcp
 
-import "../binary"
+import "github.com/GeniusesGroup/libgo/binary"
 
 type optionAltChecksum []byte
 

@@ -3,7 +3,7 @@
 package tcp
 
 import (
-	"../protocol"
+	"github.com/GeniusesGroup/libgo/protocol"
 )
 
 /*
@@ -21,24 +21,52 @@ func (s *Socket) Encode(writer protocol.Writer) (err protocol.Error) {
 	}
 	return
 }
-func (s *Socket) Marshal() (data []byte) {
+func (s *Socket) Marshal() (data []byte, err protocol.Error) {
+	err = s.checkSocket()
+	if err != nil {
+		return
+	}
+
 	if !s.recv.buf.Full() {
-		select {
-		case <-s.readDeadline.C:
-			break
-		case <-s.recv.pushFlag:
-			break
-		}
+		err = s.blockInSelect()
 	}
 	return s.recv.buf.Marshal()
 }
-func (s *Socket) MarshalTo(data []byte) []byte {
-	// TODO::: check buffer and return
-	// TODO::: listen to state channel and return when data ready
-	return s.recv.buf.Marshal(data)
+func (s *Socket) MarshalTo(data []byte) (added []byte, err protocol.Error) {
+	err = s.checkSocket()
+	if err != nil {
+		return
+	}
+
+	if !s.recv.buf.Full() {
+		err = s.blockInSelect()
+	}
+	return s.recv.buf.MarshalTo(data)
 }
-func (s *Socket) Unmarshal(data []byte) (err protocol.Error) { return }
+func (s *Socket) Unmarshal(data []byte) (n int, err protocol.Error) {
+	err = s.checkSocket()
+	if err != nil {
+		return
+	}
+
+	for len(data) > 0 {
+		select {
+		case <-s.writeTimer.Signal():
+			// err =
+			return
+		default:
+			var sendNumber int
+			sendNumber, err = s.sendPayload(data)
+			if err != nil {
+				return
+			}
+			n += sendNumber
+			data = data[sendNumber:]
+		}
+	}
+	return
+}
 func (s *Socket) UnmarshalFrom(data []byte) (remaining []byte, err protocol.Error) {
 	return
 }
-func (s *Socket) Len() (ln int) { return }
+func (s *Socket) Len() (ln int) { return s.recv.buf.Len() }

@@ -7,7 +7,7 @@ import (
 )
 
 /*
-********** io package interfaces **********
+********** protocol.Buffer interface **********
  */
 
 func (s *Socket) ReadFrom(reader io.Reader) (n int64, err error) { return }

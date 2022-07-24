@@ -5,7 +5,7 @@ package tcp
 import (
 	"syscall"
 
-	"../protocol"
+	"github.com/GeniusesGroup/libgo/protocol"
 )
 
 func (s *Socket) checkSocket() (err protocol.Error) {
@@ -217,24 +217,27 @@ func (s *Socket) sendPayload(b []byte) (n int, err error) {
 
 // BlockInSelect waits for something to happen, which is one of the following conditions in the function body.
 func (s *Socket) blockInSelect() (err protocol.Error) {
-LOOP:
+loop:
 	for {
 		select {
 		case <-s.readTimer.Signal():
+			// TODO:::
 			// break
 		case flag := <-s.recv.flag:
 			switch flag {
 			case Flag_FIN:
+				s.readTimer.Stop()
 				// err = TODO:::
-				break LOOP
+				break loop
 			case Flag_RST:
+				s.readTimer.Stop()
 				// err = TODO:::
-				break LOOP
+				break loop
 			case Flag_PSH, Flag_URG:
-				break LOOP
+				break loop
 			default:
 				// TODO::: attack??
-				goto LOOP
+				goto loop
 			}
 		}
 	}

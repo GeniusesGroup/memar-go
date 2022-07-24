@@ -3,8 +3,8 @@
 package tcp
 
 import (
-	"../binary"
-	"../protocol"
+	"github.com/GeniusesGroup/libgo/binary"
+	"github.com/GeniusesGroup/libgo/protocol"
 )
 
 // Packet implement all methods to Get||Set data to a packet as a byte slice with 0-alloc

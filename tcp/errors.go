@@ -3,8 +3,8 @@
 package tcp
 
 import (
-	er "../error"
-	"../protocol"
+	er "github.com/GeniusesGroup/libgo/error"
+	"github.com/GeniusesGroup/libgo/protocol"
 )
 
 const domainEnglish = "TCP"
