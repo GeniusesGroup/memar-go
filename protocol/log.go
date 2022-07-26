@@ -8,9 +8,12 @@ type Logger interface {
 	// PanicHandler recover from panics in a goroutine if exist, to prevent the application unexpected stopping.
 	PanicHandler()
 
-	// Log save logs as log event in time chain for the node that create log.
-	// Suggest that RecordID time chain by sha3.256(LogMediatypeID, NodeID, TimeRoundToDay)
-	Log(event LogEvent)
+	// Log suggest to:
+	// - First Dispatch(event).
+	// - Cache log events in the node that create it.
+	// - Save all logs per day for a node in the record with LogMediatypeID as record type and NodeID as primary key.
+	Log(event LogEvent) Error
+
 	// Due to expect Fatal terminate app and it brake the app, Dev must design it in the app architecture with panic and log the event with LogEvent_Fatal
 	// LogFatal(event LogEvent)
 
@@ -24,19 +27,16 @@ type Logger interface {
 type LogEvent interface {
 	Event
 
-	Level() LogType
-	Time() Time
-	Domain() string
-	Message() string // save formated data e.g. fmt.Sprintf("Panic Exception: %s\nDebug Stack: %s", r, debug.Stack())
-	Stack() []byte   // if log need to trace, specially in panic situation
+	Level() LogType  // same as Event.SubType() just with LogType type
+	Message() string // save formatted data e.g. fmt.Sprintf("Panic Exception: %s\nDebug Stack: %s", r, debug.Stack())
+	Stack() []byte   // if log need to trace, specially in panic situation. Default fill by `debug.Stack()`
 }
 
 // LogType indicate log level that will also use as EventSubType too.
-type LogType uint8
+type LogType = EventSubType
 
 const (
-	LogEvent_Unset LogType = iota
-	LogEvent_Information
+	LogEvent_Information LogType = (1 << iota)
 	LogEvent_Notice
 	LogEvent_Debug // Detailed information on the flow through the system. Expect these to be written to logs only. Generally speaking, most lines logged by your application should be written as DEBUG.
 	LogEvent_DeepDebug
@@ -52,8 +52,8 @@ const (
 )
 
 // If any below mode disabled, logger must not save that log type.
+// But logger must Dispatch() it to any client requested any types even it is not enabled.
 const (
-	LogMode_Debug        = true
-	LogMode_DeepDebug    = true
-	LogMode_Confidential = false
+	LogMode LogType = LogEvent_Debug | LogEvent_DeepDebug | LogEvent_Warning | LogEvent_Error | LogEvent_Alert |
+		LogEvent_Panic | LogEvent_Critical | LogEvent_Emergency | LogEvent_Fatal | LogEvent_Security | LogEvent_Confidential
 )

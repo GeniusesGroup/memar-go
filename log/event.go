@@ -5,141 +5,44 @@ package log
 import (
 	"runtime/debug"
 
-	"../protocol"
-	"../time/unix"
+	"github.com/GeniusesGroup/libgo/event"
+	"github.com/GeniusesGroup/libgo/protocol"
+	// "github.com/GeniusesGroup/libgo/syllab"
+	"github.com/GeniusesGroup/libgo/time/unix"
 )
-
-func NewEvent(level protocol.LogType, domian, message string) (event *Event) {
-	return &Event{
-		level:   level,
-		time:    unix.Now(),
-		domain:  domian,
-		message: message,
-		stack:   nil,
-	}
-}
-
-func TraceEvent(level protocol.LogType, domian, message string) (event *Event) {
-	return &Event{
-		level:   level,
-		time:    unix.Now(),
-		domain:  domian,
-		message: message,
-		stack:   debug.Stack(),
-	}
-}
-
-func InfoEvent(domian, message string) (event *Event) {
-	return &Event{
-		level:   protocol.LogEvent_Information,
-		time:    unix.Now(),
-		domain:  domian,
-		message: message,
-		stack:   nil,
-	}
-}
-
-func NoticeEvent(domian, message string) (event *Event) {
-	return &Event{
-		level:   protocol.LogEvent_Notice,
-		time:    unix.Now(),
-		domain:  domian,
-		message: message,
-		stack:   nil,
-	}
-}
-
-func DebugEvent(domian, message string) (event *Event) {
-	return &Event{
-		level:   protocol.LogEvent_Debug,
-		time:    unix.Now(),
-		domain:  domian,
-		message: message,
-		stack:   nil,
-	}
-}
-
-func DeepDebugEvent(domian, message string) (event *Event) {
-	return &Event{
-		level:   protocol.LogEvent_DeepDebug,
-		time:    unix.Now(),
-		domain:  domian,
-		message: message,
-		stack:   nil,
-	}
-}
-
-func WarnEvent(domian, message string) (event *Event) {
-	return &Event{
-		level:   protocol.LogEvent_Warning,
-		time:    unix.Now(),
-		domain:  domian,
-		message: message,
-		stack:   nil,
-	}
-}
-
-// FatalEvent return new event with panic level and added stack trace.
-func PanicEvent(domian, message string) (event *Event) {
-	return &Event{
-		level:   protocol.LogEvent_Panic,
-		time:    unix.Now(),
-		domain:  domian,
-		message: message,
-		stack:   debug.Stack(),
-	}
-}
-
-// FatalEvent return new event with fatal level and added stack trace.
-func FatalEvent(domian, message string) (event *Event) {
-	return &Event{
-		level:   protocol.LogEvent_Fatal,
-		time:    unix.Now(),
-		domain:  domian,
-		message: message,
-		stack:   debug.Stack(),
-	}
-}
-
-// ConfEvent return new event with "Confidential" level
-func ConfEvent(domian, message string) (event *Event) {
-	return &Event{
-		level:   protocol.LogEvent_Confidential,
-		time:    unix.Now(),
-		domain:  domian,
-		message: message,
-		stack:   nil,
-	}
-}
 
 // Event implement protocol.LogEvent
 type Event struct {
-	level   protocol.LogType
-	time    unix.Time
-	domain  string
+	event.Event
+
 	message string
 	stack   []byte
 }
 
 func (e *Event) MainType() protocol.EventMainType { return protocol.EventMainType_Log }
-func (e *Event) SubType() protocol.EventSubType   { return protocol.EventSubType(e.level) }
-func (e *Event) Cancelable() bool                 { return false }
-func (e *Event) DefaultPrevented() bool           { return false }
-func (e *Event) Bubbles() bool                    { return false }
-func (e *Event) PreventDefault()                  {}
 
-func (e *Event) Level() protocol.LogType { return e.level }
-func (e *Event) Time() protocol.Time     { return &e.time }
-func (e *Event) Domain() string          { return e.domain }
+func (e *Event) Level() protocol.LogType { return e.Event.SubType() }
 func (e *Event) Message() string         { return e.message }
 func (e *Event) Stack() []byte           { return e.stack }
 
+func (e *Event) Init(level protocol.LogType, domain, message string, stack bool) {
+	e.message = message
+	if stack {
+		e.stack = debug.Stack()
+	}
+	// e.Event.SetSubType(level)
+	// e.Event.SetDomain(domain)
+	// e.Event.SetNodeID([16]byte{})
+	// e.Event.SetTime(unix.Now())
+	e.Event.Init(level, domain, [16]byte{}, unix.Now())
+}
+
 /*
-	-- protocol.Syllab interface Encoder & Decoder --
+	-- protocol.Syllab interface --
 */
 func (e *Event) CheckSyllab(payload []byte) (err protocol.Error) {
 	if len(payload) < int(e.LenOfSyllabStack()) {
-		// err = syllab.ErrShortArrayDecode
+		// err = &syllab.ErrShortArrayDecode
 	}
 	return
 }
@@ -149,7 +52,7 @@ func (e *Event) ToSyllab(payload []byte, stackIndex, heapIndex uint32) (freeHeap
 	return
 }
 func (e *Event) LenAsSyllab() uint64      { return uint64(e.LenOfSyllabStack() + e.LenOfSyllabHeap()) }
-func (e *Event) LenOfSyllabStack() uint32 { return 33 }
+func (e *Event) LenOfSyllabStack() uint32 { return 16 + e.Event.LenOfSyllabStack() }
 func (e *Event) LenOfSyllabHeap() (ln uint32) {
-	return uint32(len(e.domain) + len(e.stack) + len(e.message))
+	return uint32(len(e.stack)+len(e.message)) + e.Event.LenOfSyllabHeap()
 }

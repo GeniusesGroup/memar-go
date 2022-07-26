@@ -5,8 +5,8 @@ package log
 import (
 	"fmt"
 
-	"../event"
-	"../protocol"
+	"github.com/GeniusesGroup/libgo/event"
+	"github.com/GeniusesGroup/libgo/protocol"
 )
 
 type Logger struct {
@@ -25,7 +25,7 @@ func (l *Logger) PanicHandler() {
 		case protocol.Error:
 			logEvent = PanicEvent("Unknown protocol.Error Domain", message.ToString())
 		case error:
-			logEvent = PanicEvent("Unknown Error Domain", message.Error())
+			logEvent = PanicEvent("Unknown error Domain", message.Error())
 		case string:
 			logEvent = PanicEvent("Unknown string Domain", message)
 		case protocol.Stringer:
@@ -37,22 +37,22 @@ func (l *Logger) PanicHandler() {
 	}
 }
 
-func (l *Logger) Log(event protocol.LogEvent) {
-	// TODO::: it is a huge performance impact to check each logging, force caller to check before call log?
-	// This func can inline means constants check on compile time?
-	if (!protocol.AppMode_Dev && event.Level() == protocol.LogEvent_Unset) ||
-		(!protocol.LogMode_Debug && event.Level() == protocol.LogEvent_Debug) ||
-		(!protocol.LogMode_DeepDebug && event.Level() == protocol.LogEvent_DeepDebug) {
+func (l *Logger) Log(event protocol.LogEvent) (err protocol.Error) {
+	l.DispatchEvent(event)
+	// Due to LogEvent is not cancelable, we don't need to check event.DefaultPrevented() before save log.
+	// if event.DefaultPrevented() {}
+	err = l.saveEvent(event)
+	return
+}
+
+func (l *Logger) saveEvent(event protocol.LogEvent) (err protocol.Error) {
+	if !CheckLevelEnabled(event.Level()) {
 		return
 	}
 
-	l.DispatchEvent(event)
-	l.saveEvent(event)
-}
-
-func (l *Logger) saveEvent(event protocol.LogEvent) {
 	// TODO::: First save locally as cache to reduce network trip for non important data??
 
-	// TODO::: Each day, Save logs to storage in one object with this ID: sha3.256(mediatype.LOG.ID(), NodeID, TimeRoundToDay)
+	// TODO::: Each day, Save logs to storage(mediatype.LOG.ID()) with NodeID as object ID
 	// protocol.App.Objects().
+	return
 }

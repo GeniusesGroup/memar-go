@@ -5,8 +5,12 @@ package log
 import (
 	"runtime"
 
-	"../protocol"
+	"github.com/GeniusesGroup/libgo/protocol"
 )
+
+func CheckLevelEnabled(level protocol.LogType) bool {
+	return protocol.LogMode&level != 0 
+}
 
 func CallerInfo(calldepth int) (file string, line int) {
 	var ok bool
@@ -18,10 +22,10 @@ func CallerInfo(calldepth int) (file string, line int) {
 	return
 }
 
-// Fatal use as log.Fatal(function()) and not check return error from function.
+// FatalError use as log.FatalError(function()) and not check return error from function.
 // It will just panic error not exit app and return to OS, Because all goroutine without any notify will terminate and can't recover in any way.
 // So we just panic it and wait to some logic recover it or let app close in main function.
-func Fatal(err protocol.Error) {
+func FatalError(err protocol.Error) {
 	if err != nil {
 		// os.Exit(125)
 		panic(err)
