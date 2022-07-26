@@ -8,9 +8,12 @@ package protocol
 type Event interface {
 	MainType() EventMainType
 	SubType() EventSubType
-	Time() TimeUnixMilli
+	Domain() string // (codes) package name
+	NodeID() NodeID
+	Time() Time
 	// Returns true or false depending on how event was initialized. Its return value does not always carry meaning,
 	// but true can indicate that part of the operation during which event was dispatched, can be canceled by invoking the preventDefault() method.
+	// It also means subscribers receive events in asynchronous or synchronous manner. true means synchronous manner.
 	Cancelable() bool
 	// Returns true if preventDefault() was invoked successfully to indicate cancelation, and false otherwise.
 	DefaultPrevented() bool
@@ -42,10 +45,14 @@ type EventTarget interface {
 	// https://developer.mozilla.org/en-US/docs/Web/API/EventTarget/removeEventListener
 	RemoveEventListener(mainType EventMainType, subType EventSubType, callback EventListener, options EventListenerOptions)
 
-	// dispatchEvent() invokes event handlers synchronously. All applicable event handlers are called and return before dispatchEvent() returns.
+	// DispatchEvent() invokes event handlers synchronously. All applicable event handlers are called and return before DispatchEvent() returns.
 	// The terms "notify clients", "send notifications", "trigger notifications", and "fire notifications" are used interchangeably with DispatchEvent.
 	// Unlike web APIs, developers can check event.DefaultPrevented() after return, we don't return any data.
 	// https://developer.mozilla.org/en-US/docs/Web/API/EventTarget/dispatchEvent
+	// Raise domain events immediately when it is called
+	// type DomainEventTarget interface {
+	// Raise[T Event](event T)
+	// }
 	DispatchEvent(event Event)
 
 	// EventListeners() []EventListener // Due to security problem, can't expose listeners to others
@@ -87,7 +94,7 @@ type EventListener interface {
 }
 
 // EventMainType indicate main type of events
-type EventMainType uint8
+type EventMainType = MediaTypeID
 
 const (
 	EventMainType_Unset  EventMainType = iota
@@ -97,6 +104,9 @@ const (
 	EventMainType_System // Kernel, OS GUI app, Other apps,
 	EventMainType_Event  // notify when an event listener register. It can cause some security problems.
 	EventMainType_Navigation
+
+	EventMainType_Storage_Record
+	EventMainType_Text
 
 	// https://developer.mozilla.org/en-US/docs/Web/Events
 	EventMainType_Animation
@@ -147,7 +157,7 @@ const (
 )
 
 // EventSubType indicate sub type of events
-type EventSubType uint8
+type EventSubType uint64
 
 const (
 	EventSubType_Unset EventSubType = 0

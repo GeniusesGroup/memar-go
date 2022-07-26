@@ -5,7 +5,7 @@ package event
 import (
 	"sync"
 
-	"../protocol"
+	"github.com/GeniusesGroup/libgo/protocol"
 )
 
 // EventTarget must declare separately for each protocol.EventMainType types.
@@ -22,8 +22,9 @@ type customListener struct {
 	eventListener protocol.EventListener
 }
 
-func (et *EventTarget) DispatchEvent(event protocol.LogEvent) {
-	// TODO::: add atomic mechanism??
+//go:norace
+// TODO::: we know that race exist in line #44,#59 with #28,#40,#52, but it seems ok to have race there. Add atomic mechanism??
+func (et *EventTarget) DispatchEvent(event protocol.Event) {
 	var lls = *et.lls
 	var eventSubType = event.SubType()
 	for i := 0; i < len(lls); i++ {
