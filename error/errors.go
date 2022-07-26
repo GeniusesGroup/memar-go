@@ -3,17 +3,17 @@
 package error
 
 import (
-	"../protocol"
+	"github.com/GeniusesGroup/libgo/protocol"
 )
 
 // Errors store
 type Errors struct {
-	poolByID        map[uint64]protocol.Error
+	poolByID        map[protocol.MediaTypeID]protocol.Error
 	poolByMediaType map[string]protocol.Error
 }
 
 func (e *Errors) Init() {
-	e.poolByID = make(map[uint64]protocol.Error, 512)
+	e.poolByID = make(map[protocol.MediaTypeID]protocol.Error, 512)
 	e.poolByMediaType = make(map[string]protocol.Error, 512)
 }
 
@@ -42,7 +42,7 @@ func (e *Errors) UnRegisterError(err protocol.Error) {
 }
 
 // GetErrorByID returns desire error if exist or ErrNotFound!
-func (e *Errors) GetErrorByID(id uint64) (err protocol.Error) {
+func (e *Errors) GetErrorByID(id protocol.MediaTypeID) (err protocol.Error) {
 	if id == 0 {
 		return
 	}

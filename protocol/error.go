@@ -5,14 +5,16 @@ package protocol
 // Errors is the interface that must implement by any Application.
 type Errors interface {
 	RegisterError(err Error)
-	GetErrorByID(id uint64) (err Error)
+	GetErrorByID(id MediaTypeID) (err Error)
 	GetErrorByMediaType(mt string) (err Error)
 }
 
-// New() function in any package must call Application.RegisterError() to save the error in application
-// It is similar to opaque error model describe here: https://dave.cheney.net/paste/gocon-spring-2016.pdf
+// Error is similar to opaque error model describe here: https://dave.cheney.net/paste/gocon-spring-2016.pdf
 // or this RFC: https://tools.ietf.org/html/rfc7807
 type Error interface {
+	// Init() must call protocol.App.RegisterError() to register the error in application
+	// Init(mediatype string)
+
 	// Check both flat or chain situation.
 	Equal(Error) bool
 

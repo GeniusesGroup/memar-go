@@ -3,7 +3,7 @@
 package error
 
 import (
-	"../protocol"
+	"github.com/GeniusesGroup/libgo/protocol"
 )
 
 // NewChain wrap an error and additional information usually use in logging to save more details about error.
@@ -27,3 +27,8 @@ func (ce *ChainError) PastChain() protocol.Error { return ce.Error }
 func (ce *ChainError) ToString() string {
 	return "\n" + ce.Error.ToString() + "\n	Chain Info: " + ce.info
 }
+
+// Go compatibility methods. Unwrap provides compatibility for Go 1.13 error chains.
+// func (ce *ChainError) Error() string { return e.ToString() }
+// func (ce *ChainError) Cause() error  { return ce }
+// func (ce *ChainError) Unwrap() error { return ce }

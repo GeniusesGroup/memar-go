@@ -3,8 +3,8 @@
 package error
 
 import (
-	"../mediatype"
-	"../protocol"
+	"github.com/GeniusesGroup/libgo/mediatype"
+	"github.com/GeniusesGroup/libgo/protocol"
 )
 
 // Error implements protocol.Error
