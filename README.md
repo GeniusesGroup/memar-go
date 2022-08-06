@@ -8,7 +8,7 @@ In other word, `libgo` abbreviation of `Go language library` is a repository wra
 You can use all packages exported APIs, go generator mechanism or by [library CLI](#CLI) to access some useful APIs from command line easily.
 
 ## Goals
-- Provide complete framework to develope any purpose distributed application with low||no code.
+- Provide complete framework to develope any purpose distributed application with **low||no code**.
 - No(minimum) dependency on any other repositories.
 - Compile an application as **Unikernel** instead of regular OSs binaries.
 - Develope high available and distributed software without any admin in any infrastructure layers (DevOps culture goal).
@@ -17,6 +17,29 @@ You can use all packages exported APIs, go generator mechanism or by [library CL
 
 ## Not Goals
 - 
+
+## Installation
+- init go project
+- add `libgo` to your project dependency
+- install `libgo` with `lang_eng` or your desire language
+- initialize the project with desire domain e.g. `google.com`
+- build your organization app
+- run your desire version from /bin/ directory
+
+or easily run the following command under your project:
+```
+go mod init
+go get -u github.com/GeniusesGroup/libgo
+go install github.com/GeniusesGroup/libgo -tags "lang_eng"
+libgo app init -d=google.com
+libgo build
+```
+
+## Most common libgo commands
+From within a Go module or any where in your project directory:
+- run `libgo app init -d=[internet-domain]`
+- To add new domain run `libgo domain new -n=[domain-name]`
+
 
 ## Protocols
 You can find protocol descriptions in its directory as now [protocol](./protocol/), [society](./society/), [ISO](./iso/)    
@@ -59,15 +82,14 @@ Some functionality in files that have build tags `//go:build tag_name` or `// +b
 - go build -ldflags "-X version=0.1"
 
 ## CLI - Command-Line Interface
-lib-cli is the command-line client for the some generator APIs implement in [lib-services](./lib-services/). It provides simple access to all APIs functions to make a server, a GUI app & ....
+lib-cli is the command-line client for the some generator APIs implement in [services](./services/). It provides simple access to all APIs functions to make a server, a GUI app & ....
 
 ### Make new project - Use git as version control
 - Make project folder and suggest use your domain name for it.
 - Make project version control by `git init`
 - Instead aboves you can clone exiting repo by `git clone ${repository path}`.
-- Add libgo to project as submodule by `git submodule add -b master https://github.com/GeniusesGroup/libgo`
-- Build lib-cli by `go build ./libgo/lib-cli`
-- Run lib-cli in a terminal by `./lib-cli`
+- Install lib-cli by `go install github.com/GeniusesGroup/libgo/libgo/`
+- Run lib-cli in a terminal by `libgo --desire-command`
 - Choose desire services to make needed files or other actions.
 
 ### APIs
@@ -96,9 +118,14 @@ Contact us by [this](mailto:ict@geniuses.group) or [this](mailto:omidhekayati@gm
 ## Good Idea, Bad implementation!
 - [SQLc](sqlc.dev)
 - [EntGo](https://entgo.io/)
+- [go-zero](https://github.com/zeromicro/go-zero) e.g. (microservice system), (fully compatible with net/http), (middlewares are supported), ...
+or [really relativetime?? Why not monotonic time??](https://github.com/zeromicro/go-zero/blob/master/core/timex/relativetime.go)
 
 ## Related Projects
 - [Clive is an operating system designed to work in distributed and cloud computing environments.](https://github.com/fjballest/clive)
 
-# Abbreviations
+# Abbreviations & Definitions
 - UI >> any User Interface  --  GUI >> Graphic User Interface  --  VUI >> Voice User Interface  --  CLI >> Command Line Interface
+- **Modules**: a kind of collection of packages
+- **Packages**: a kind of collection of files
+- **dp**: domain protocol

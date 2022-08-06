@@ -1,7 +1,8 @@
 /* For license and copyright information please see LEGAL file in repository */
 
-package main
+package modules
 
 const (
-	version = "v0.1.0"
+	// it is better to update version in each release.
+	version = "v0.0.1"
 )
