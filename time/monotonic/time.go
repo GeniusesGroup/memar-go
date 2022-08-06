@@ -8,15 +8,16 @@ import (
 	"github.com/GeniusesGroup/libgo/protocol"
 )
 
-// RuntimeNano returns the current value of the runtime monotonic clock in nanoseconds.
-// It isn't not wall clock, Use in tasks like timeout, ...
-//go:linkname RuntimeNano runtime.nanotime
-func RuntimeNano() int64
-
 // Now returns runtime monotonic clock in nanoseconds.
 func Now() Time {
-	return Time(RuntimeNano())
+	return Time(now())
 }
+
+// now returns the current value of the runtime monotonic clock in nanoseconds.
+// It isn't not wall clock, Use in tasks like timeout, ...
+//
+//go:linkname now runtime.nanotime
+func now() int64
 
 // A Time monotonic clock is for measuring time.
 // time-measuring operations, specifically comparisons and subtractions, use the monotonic clock.
