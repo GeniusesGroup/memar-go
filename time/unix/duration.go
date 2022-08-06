@@ -3,7 +3,7 @@
 package unix
 
 import (
-	"../../protocol"
+	"github.com/GeniusesGroup/libgo/protocol"
 )
 
 // Common durations.

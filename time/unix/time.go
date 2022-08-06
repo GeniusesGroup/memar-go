@@ -6,7 +6,7 @@ import (
 	"sync/atomic"
 	_ "unsafe" // for go:linkname
 
-	"../../protocol"
+	"github.com/GeniusesGroup/libgo/protocol"
 )
 
 const Base = "00:00:00 UTC on 1 January 1970" // Thursday
@@ -22,10 +22,12 @@ type (
 	NanoElapsed  int64 // fast way: unix.Now().NanoElapsed()	|| Go way: time.Now().UnixNano()
 )
 
-// Provided by package runtime.
-//go:linkname HardwareNow time.now
-func HardwareNow() (sec int64, nsec int32, mono int64)
 func Now() (t Time) { t.Now(); return }
+
+// Provided by package runtime.
+//
+//go:linkname now time.now
+func now() (sec int64, nsec int32, mono int64)
 
 // A Time specifies second elapsed of January 1 of the absolute year.
 // January 1 of the absolute year(1970), like January 1 of 2001, was a Monday.
@@ -43,9 +45,9 @@ func (t *Time) ToString() string {
 }
 
 func (t *Time) ChangeTo(sec SecElapsed, nsecElapsed int32) { t.sec, t.nsec = int64(sec), nsecElapsed }
-func (t *Time) Now()                                       { t.sec, t.nsec, _ = HardwareNow() }
+func (t *Time) Now()                                       { t.sec, t.nsec, _ = now() }
 func (t *Time) NowAtomic() {
-	var sec, nsec, _ = HardwareNow()
+	var sec, nsec, _ = now()
 	atomic.AddInt64(&t.sec, sec)
 	atomic.AddInt32(&t.nsec, nsec)
 }
