@@ -6,11 +6,11 @@ import (
 	"sync/atomic"
 )
 
-// t.add:
+// timer.start:
 //   status_Unset   -> status_Waiting
-//   anything else   -> panic: invalid value
+//   anything else  -> panic: invalid value
 //
-// t.delete:
+// timer.stop:
 //   status_Waiting         -> status_Modifying -> status_Deleted
 //   status_ModifiedEarlier -> status_Modifying -> status_Deleted
 //   status_ModifiedLater   -> status_Modifying -> status_Deleted
@@ -22,7 +22,7 @@ import (
 //   status_Moving          -> wait until status changes
 //   status_Modifying       -> wait until status changes
 //
-// t.modify:
+// timer.modify:
 //   status_Waiting    -> status_Modifying -> timerModifiedXX
 //   timerModifiedXX   -> status_Modifying -> timerModifiedYY
 //   status_Unset      -> status_Modifying -> status_Waiting
@@ -33,15 +33,15 @@ import (
 //   status_Removing   -> wait until status changes
 //   status_Modifying  -> wait until status changes
 //
-// ts.cleanTimers (looks in timers heap):
+// timing.cleanTimers (looks in timers heap):
 //   status_Deleted    -> status_Removing -> status_Removed
 //   timerModifiedXX   -> status_Moving -> status_Waiting
 //
-// ts.adjustTimers (looks in timers heap):
+// timing.adjustTimers (looks in timers heap):
 //   status_Deleted    -> status_Removing -> status_Removed
 //   timerModifiedXX   -> status_Moving -> status_Waiting
 //
-// ts.runTimer (looks in timers heap):
+// timing.runTimer (looks in timers heap):
 //   status_Unset      -> panic: uninitialized timer
 //   status_Waiting    -> status_Waiting or
 //   status_Waiting    -> status_Running -> status_Unset or
@@ -102,7 +102,7 @@ const (
 type status uint32
 
 func (s status) Get() status       { return s }
-func (s status) Set(status status) { s = status }
+func (s *status) Set(status status) { *s = status }
 func (s *status) Load() status {
 	return status(atomic.LoadUint32((*uint32)(s)))
 }

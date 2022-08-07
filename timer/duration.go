@@ -3,7 +3,7 @@
 package timer
 
 import (
-	"../protocol"
+	"github.com/GeniusesGroup/libgo/protocol"
 )
 
 // Common durations.

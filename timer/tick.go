@@ -3,7 +3,7 @@
 package timer
 
 import (
-	"../protocol"
+	"github.com/GeniusesGroup/libgo/protocol"
 )
 
 // Tick will send a signal on the t.Signal() channel after each tick on initialized Timer.
@@ -15,7 +15,7 @@ func (t *Timer) Tick(first, interval protocol.Duration, periodNumber int64) {
 	if first < 1 || interval < 1 {
 		panic("timer: non-positive interval to tick. period must be non-negative,")
 	}
-	t.period = int64(interval)
+	t.period = interval
 	t.periodNumber = periodNumber
 	t.Start(first)
 }

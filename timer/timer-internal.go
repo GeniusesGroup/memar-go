@@ -3,19 +3,20 @@
 package timer
 
 import (
-	"sync/atomic"
 	"unsafe"
 
-	"../cpu"
-	"../protocol"
-	"../race"
+	"github.com/GeniusesGroup/libgo/cpu"
+	"github.com/GeniusesGroup/libgo/protocol"
+	"github.com/GeniusesGroup/libgo/race"
+	"github.com/GeniusesGroup/libgo/scheduler"
+	"github.com/GeniusesGroup/libgo/time/monotonic"
 )
 
 type timer struct {
 	// Timer wakes up at when, and then at when+period, ... (period > 0 only)
 	// when must be positive on an active timer.
-	when         int64
-	period       int64
+	when         monotonic.Time
+	period       protocol.Duration
 	periodNumber int64 // -1 means no limit
 
 	// The status field holds one of the values in status file.
@@ -27,7 +28,17 @@ type timer struct {
 	// a well-behaved function and not block.
 	callback protocol.TimerListener
 
-	timers *Timers
+	timers *TimingHeap
+}
+
+// Init initialize the Timer with given callback function or make the channel and send signal on it
+// Be aware that given function must not be closure and must not block the caller.
+func (t *timer) init(callback protocol.TimerListener) {
+	if t.callback != nil {
+		panic("timer: Don't initialize a timer twice. Use Reset() method to change the timer.")
+	}
+
+	t.callback = callback
 }
 
 // use to prevent memory leak
@@ -36,16 +47,16 @@ func (t *timer) reset() {
 	t.timers = nil
 }
 
-// add adds a timer to the running cpu core timers.
+// start adds the timer to the running cpu core timing.
 // This should only be called with a newly created timer.
 // That avoids the risk of changing the when field of a timer in some P's heap,
 // which could cause the heap to become unsorted.
-func (t *timer) add(d protocol.Duration) {
+func (t *timer) start(d protocol.Duration) {
 	if t.callback == nil {
 		panic("timer: Timer must initialized before start")
 	}
 	if t.status != status_Unset {
-		panic("timer: start called with initialized timer")
+		panic("timer: start called with started timer")
 	}
 	if t.timers != nil {
 		panic("timer: timers already set in timer")
@@ -66,11 +77,10 @@ func (t *timer) add(d protocol.Duration) {
 	t.timers.AddTimer(t)
 }
 
-// delete deletes the timer t. It may be on some other P, so we can't
-// actually remove it from the timers heap. We can only mark it as deleted.
-// It will be removed in due course by the P whose heap it is on.
+// stop deletes the timer t. We can't actually remove it from the timers heap.
+// We can only mark it as deleted. It will be removed in due course by the timing whose heap it is on.
 // Reports whether the timer was removed before it was run.
-func (t *timer) delete() bool {
+func (t *timer) stop() bool {
 	if t.callback == nil {
 		panic("timer: Stop called on uninitialized Timer")
 	}
@@ -86,7 +96,7 @@ func (t *timer) delete() bool {
 				if !t.status.CompareAndSwap(status_Modifying, status_Deleted) {
 					badTimer()
 				}
-				atomic.AddInt32(&timers.deletedTimers, 1)
+				timers.deletedTimers.Add(1)
 				// Timer was not yet run.
 				return true
 			}
@@ -96,7 +106,7 @@ func (t *timer) delete() bool {
 				if !t.status.CompareAndSwap(status_Modifying, status_Deleted) {
 					badTimer()
 				}
-				atomic.AddInt32(&timers.deletedTimers, 1)
+				timers.deletedTimers.Add(1)
 				// Timer was not yet run.
 				return true
 			}
@@ -106,7 +116,7 @@ func (t *timer) delete() bool {
 		case status_Running, status_Moving:
 			// The timer is being run or moved, by a different P.
 			// Wait for it to complete.
-			osyield()
+			scheduler.Yield(scheduler.Thread_WaitReason_Preempted)
 		case status_Unset:
 			// Removing timer that was never added or
 			// has already been run. Also see issue 21874.
@@ -114,7 +124,7 @@ func (t *timer) delete() bool {
 		case status_Modifying:
 			// Simultaneous calls to delete and modify.
 			// Wait for the other call to complete.
-			osyield()
+			scheduler.Yield(scheduler.Thread_WaitReason_Preempted)
 		default:
 			badTimer()
 		}
@@ -159,18 +169,18 @@ loop:
 			}
 		case status_Deleted:
 			if t.status.CompareAndSwap(status, status_Modifying) {
-				atomic.AddInt32(&t.timers.deletedTimers, -1)
+				t.timers.deletedTimers.Add(-1)
 				pending = false // timer already stopped
 				break loop
 			}
 		case status_Running, status_Removing, status_Moving:
 			// The timer is being run or moved, by a different P.
 			// Wait for it to complete.
-			osyield()
+			scheduler.Yield(scheduler.Thread_WaitReason_Preempted)
 		case status_Modifying:
 			// Multiple simultaneous calls to modify.
 			// Wait for the other call to complete.
-			osyield()
+			scheduler.Yield(scheduler.Thread_WaitReason_Preempted)
 		default:
 			badTimer()
 		}
@@ -180,10 +190,10 @@ loop:
 	var timerNewWhen = when(d)
 	t.when = timerNewWhen
 	if t.period != 0 {
-		t.period = int64(d)
+		t.period = d
 	}
 	if wasRemoved {
-		t.timers = poolByCores[cpu.ActiveCoreID()]
+		t.timers = &poolByCores[cpu.ActiveCoreID()]
 		t.timers.AddTimer(t)
 		if !t.status.CompareAndSwap(status_Modifying, status_Waiting) {
 			badTimer()

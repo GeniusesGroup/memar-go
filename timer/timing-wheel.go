@@ -3,9 +3,11 @@
 package timer
 
 import (
-	"../protocol"
+	"github.com/GeniusesGroup/libgo/protocol"
 )
 
+// TimingWheel is not concurrent safe and must call each instance by each CPU core separately,
+// or write upper layer to implement needed logic to prevent data race.
 type TimingWheel struct {
 	wheelSize int
 	wheel     [][]*Timer
@@ -54,6 +56,7 @@ loop:
 				tw.checkAndAddTimerAgain(timer)
 			}
 		case <-tw.stop:
+			close(tw.stop)
 			tw.stop = nil
 			break loop
 		}

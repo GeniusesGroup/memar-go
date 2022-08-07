@@ -3,23 +3,23 @@
 package timer
 
 import (
-	"../protocol"
-	"../time/monotonic"
+	"github.com/GeniusesGroup/libgo/protocol"
+	"github.com/GeniusesGroup/libgo/time/monotonic"
 )
 
 // when is a helper function for setting the 'when' field of a Timer.
 // It returns what the time will be, in nanoseconds, Duration d in the future.
 // If d is negative, it is ignored. If the returned value would be less than
 // zero because of an overflow, MaxInt64 is returned.
-func when(d protocol.Duration) (t int64) {
-	t = monotonic.RuntimeNano()
+func when(d protocol.Duration) (t monotonic.Time) {
+	t.Now()
 	if d <= 0 {
 		return
 	}
-	t += int64(d)
+	t.Add(d)
 	// check for overflow.
 	if t < 0 {
-		// N.B. monotonic.RuntimeNano() and d are always positive, so addition
+		// monotonic.Now() and d are always positive, so addition
 		// (including overflow) will never result in t == 0.
 		t = maxWhen
 	}
@@ -31,5 +31,5 @@ func when(d protocol.Duration) (t int64) {
 // panicing due to invalid slice access while holding locks.
 // See issue #25686.
 func badTimer() {
-	panic("timers: data corruption")
+	panic("timer: data corruption")
 }
