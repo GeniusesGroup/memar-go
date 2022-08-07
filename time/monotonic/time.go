@@ -32,8 +32,9 @@ func (t *Time) ToString() string {
 	return ""
 }
 
-func (t *Time) Now()                        { *t = Now() }
-func (t Time) Pass(baseTime Time) bool      { return baseTime > t }
-func (t Time) PassNow() bool                { return Now() > t }
-func (t *Time) Add(d protocol.Duration)     { *t += Time(d) }
-func (t Time) Since() (d protocol.Duration) { return protocol.Duration(Now() - t) }
+func (t *Time) Now()                                     { *t = Now() }
+func (t Time) Pass(baseTime Time) bool                   { return baseTime > t }
+func (t Time) PassNow() bool                             { return Now() > t }
+func (t *Time) Add(d protocol.Duration)                  { *t += Time(d) }
+func (t Time) Since(baseTime Time) (d protocol.Duration) { return protocol.Duration(baseTime - t) }
+func (t Time) SinceNow() (d protocol.Duration)           { return protocol.Duration(Now() - t) }
