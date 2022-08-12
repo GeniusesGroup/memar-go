@@ -1,4 +1,4 @@
-/* For license and copyright information please see LEGAL file in repository */
+/* For license and copyright information please see the LEGAL file in the code repository */
 
 package tcp
 
@@ -22,6 +22,7 @@ func (s *Socket) Read(b []byte) (n int, err error) {
 	if !s.recv.buf.Full() {
 		err = s.blockInSelect()
 	}
+	// TODO::: check above error
 	n, err = s.recv.buf.Read(b)
 	return
 }
@@ -45,7 +46,7 @@ func (s *Socket) LocalAddr() net.Addr {
 	}
 	return &net.TCPAddr{
 		IP:   net.IP(s.connection.LocalAddr()),
-		Port: s.sourcePort,
+		Port: int(s.sourcePort),
 	}
 }
 func (s *Socket) RemoteAddr() net.Addr {
@@ -55,7 +56,7 @@ func (s *Socket) RemoteAddr() net.Addr {
 	}
 	return &net.TCPAddr{
 		IP:   net.IP(s.connection.RemoteAddr()),
-		Port: s.destinationPort,
+		Port: int(s.destinationPort),
 	}
 }
 func (s *Socket) SetDeadline(t time.Time) (err error) {

@@ -1,4 +1,4 @@
-/* For license and copyright information please see LEGAL file in repository */
+/* For license and copyright information please see the LEGAL file in the code repository */
 
 package tcp
 
@@ -7,18 +7,7 @@ import (
 	"github.com/GeniusesGroup/libgo/timer"
 )
 
-// sens as Send Sequence Space
-// Rx means Receive, and Tx means Transmit
-//
-//                    1         2          3          4
-//               ----------|----------|----------|----------
-//                      SND.UNA    SND.NXT    SND.UNA
-//                                           +SND.WND
-//
-//         1 - old sequence numbers which have been acknowledged
-//         2 - sequence numbers of unacknowledged data
-//         3 - sequence numbers allowed for new data transmission
-//         4 - future sequence numbers which are not yet allowed
+// send as Send Sequence Space
 type send struct {
 	writeTimer timer.Timer // write deadline timer
 

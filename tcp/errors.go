@@ -1,4 +1,4 @@
-/* For license and copyright information please see LEGAL file in repository */
+/* For license and copyright information please see the LEGAL file in the code repository */
 
 package tcp
 
@@ -17,7 +17,7 @@ var (
 )
 
 func init() {
-	ErrPacketTooShort.Init("domain/tcp.protocol.error; name=packet-too-short")
+	ErrPacketTooShort.Init("domain/tcp.protocol; type=error; name=packet-too-short")
 	ErrPacketTooShort.SetDetail(protocol.LanguageEnglish, domainEnglish,
 		"Packet Too Short",
 		"TCP packet is empty or too short than standard header. It must include at least 20Byte header",
@@ -25,7 +25,7 @@ func init() {
 		"",
 		nil)
 
-	ErrPacketWrongLength.Init("domain/tcp.protocol.error; name=packet-wrong-length")
+	ErrPacketWrongLength.Init("domain/tcp.protocol; type=error; name=packet-wrong-length")
 	ErrPacketTooShort.SetDetail(protocol.LanguageEnglish, domainEnglish,
 		"Packet Wrong Length",
 		"Data offset set in TCP packet header is not set correctly",

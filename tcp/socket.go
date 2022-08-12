@@ -1,4 +1,4 @@
-/* For license and copyright information please see LEGAL file in repository */
+/* For license and copyright information please see the LEGAL file in the code repository */
 
 package tcp
 
@@ -20,8 +20,7 @@ type Socket struct {
 
 	// TODO::: Cookie, save socket in nvm
 
-	// Below struct must align in memory allocation in Socket struct.
-	gc
+	timing
 	send
 	recv
 }
@@ -36,7 +35,7 @@ func (s *Socket) Init(timeout protocol.Duration) {
 		timeout = KeepAlive_Idle
 	}
 
-	s.gc.init()
+	s.timing.init()
 	s.recv.init(timeout)
 	s.send.init(timeout)
 }
@@ -136,7 +135,5 @@ func (s *Socket) Receive(segment Packet) (err protocol.Error) {
 	case SocketState_TIME_WAIT:
 		err = s.incomeSegmentOnTimeWaitState(segment)
 	}
-
-	s.checkTimeout()
 	return
 }

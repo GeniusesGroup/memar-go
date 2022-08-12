@@ -1,4 +1,4 @@
-// For license and copyright information please see LEGAL file in repository
+// For license and copyright information please see the LEGAL file in the code repository
 
 package tcp
 
@@ -16,10 +16,10 @@ type Packet []byte
 func (p Packet) CheckPacket() protocol.Error {
 	var packetLen = len(p)
 	if packetLen < MinPacketLen {
-		return ErrPacketTooShort
+		return &ErrPacketTooShort
 	}
 	if packetLen < int(p.DataOffset()) {
-		return ErrPacketWrongLength
+		return &ErrPacketWrongLength
 	}
 	return nil
 }
