@@ -1,4 +1,4 @@
-/* For license and copyright information please see LEGAL file in repository */
+/* For license and copyright information please see the LEGAL file in the code repository */
 
 package monotonic
 
@@ -21,4 +21,4 @@ func (a *Atomic) Swap(new Time) (old Time) { return Time(a.Int64.Swap(int64(new)
 func (a *Atomic) CompareAndSwap(old, new Time) (swapped bool) {
 	return a.Int64.CompareAndSwap(int64(old), int64(new))
 }
-func (a *Atomic) Add(d protocol.Duration) (new Time) { return Time(a.Int64.Add(int64(d))) }
+func (a *Atomic) Add(d protocol.Duration) { a.Int64.Add(int64(d)) }
