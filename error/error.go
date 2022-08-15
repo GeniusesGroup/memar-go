@@ -1,23 +1,35 @@
-/* For license and copyright information please see LEGAL file in repository */
+/* For license and copyright information please see the LEGAL file in the code repository */
 
 package error
 
 import (
+	"github.com/GeniusesGroup/libgo/detail"
 	"github.com/GeniusesGroup/libgo/mediatype"
 	"github.com/GeniusesGroup/libgo/protocol"
 )
 
-// Error implements protocol.Error
+// New return new Error that implement protocol.Error
 // Never change MediaType due to it adds unnecessary complicated troubleshooting errors on SDK.
+// TODO::: escapes to heap problem of return value, How prevent it??
+// func New(mediatype string) (err Error) { err.Init(mediatype); return }
+
+// Err is the same as the Error.
+// Use this type when embed in other struct to solve field & method same name problem(Error struct and Error() method) to satisfy interfaces.
+type Err = Error
+
+// Error implements protocol.Error
 type Error struct {
 	internal  bool
 	temporary bool
 
-	mediatype.MediaType
+	detail.DS
+	mediatype.MT
 }
 
+// Init initialize Error that implement protocol.Error
+// Never change MediaType due to it adds unnecessary complicated troubleshooting errors on SDK.
 func (e *Error) Init(mediatype string) {
-	e.MediaType.Init(mediatype)
+	e.MT.Init(mediatype)
 
 	// RegisterError will register in the application.
 	// Force to check by runtime check, due to testing package not let us by any const!
@@ -34,6 +46,7 @@ func (e *Error) Equal(err protocol.Error) bool {
 	if e != nil && err != nil && e.ID() == err.ID() {
 		return true
 	}
+	// TODO::: check err as chain error
 	return false
 }
 
@@ -48,6 +61,8 @@ func (e *Error) Notify() {
 }
 
 // Go compatibility methods. Unwrap provides compatibility for Go 1.13 error chains.
-func (e *Error) Error() string { return e.ToString() }
-func (e *Error) Cause() error  { return e }
-func (e *Error) Unwrap() error { return e }
+func (e *Error) Error() string { return e.MT.MediaType() }
+func (e *Error) Cause() error  { return nil }
+func (e *Error) Unwrap() error { return nil }
+// func (e *Error) Is(error) bool
+// func (e *Error) As(any) bool 

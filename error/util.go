@@ -1,4 +1,4 @@
-/* For license and copyright information please see LEGAL file in repository */
+/* For license and copyright information please see the LEGAL file in the code repository */
 
 package error
 
@@ -7,10 +7,15 @@ import (
 )
 
 func ToGoError(err protocol.Error) error {
+	if err == nil {
+		return nil
+	}
+
 	var exErr = err.(*Error)
 	if exErr != nil {
 		return exErr
 	}
+
 	return &errorString{msg: err.ToString()}
 }
 
@@ -22,6 +27,14 @@ type errorString struct {
 func (e *errorString) Error() string { return e.msg }
 
 func ToError(err error) protocol.Error {
+	if err == nil {
+		return nil
+	}
+
+	var exErr = err.(*Error)
+	if exErr != nil {
+		return exErr
+	}
 	// TODO:::
 	return nil
 }

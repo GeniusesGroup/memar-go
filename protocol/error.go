@@ -1,4 +1,4 @@
-/* For license and copyright information please see LEGAL file in repository */
+/* For license and copyright information please see the LEGAL file in the code repository */
 
 package protocol
 
@@ -26,6 +26,11 @@ type Error interface {
 
 	// Notify error to user by graphic, sound and vibration (Haptic Feedback)
 	Notify()
+
+	// Add below method is not force by this interface but we must implement it to respect golang error interface as inner syntax
+	// **ATTENTION** assign Error in error typed variables cause serious problems.
+	// **ATTENTION** nil interface assign into other interface don't make nil value.
+	Error() string
 
 	MediaType
 	Stringer
