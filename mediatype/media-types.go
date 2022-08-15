@@ -1,10 +1,17 @@
-/* For license and copyright information please see LEGAL file in repository */
+/* For license and copyright information please see the LEGAL file in the code repository */
 
 package mediatype
 
 import (
-	"../protocol"
+	"github.com/GeniusesGroup/libgo/protocol"
 )
+
+func RegisterMediaType(mt protocol.MediaType) {
+	// Check due to os can be nil almost in tests and benchmarks build
+	if protocol.OS != nil {
+		protocol.OS.RegisterMediaType(mt)
+	}
+}
 
 // MediaTypes store all data structure details
 type MediaTypes struct{}
@@ -17,7 +24,7 @@ func (dss *MediaTypes) RegisterMediaType(mt protocol.MediaType) {
 	register(mt)
 }
 
-func (dss *MediaTypes) GetMediaTypeByID(id uint64) protocol.MediaType { return ByID(id) }
+func (dss *MediaTypes) GetMediaTypeByID(id protocol.MediaTypeID) protocol.MediaType { return ByID(id) }
 func (dss *MediaTypes) GetMediaTypeByFileExtension(ex string) protocol.MediaType {
 	return ByFileExtension(ex)
 }
@@ -27,12 +34,12 @@ func (dss *MediaTypes) GetMediaType(mediaType string) protocol.MediaType {
 
 var (
 	poolByMediaType     = map[string]protocol.MediaType{}
-	poolByID            = map[uint64]protocol.MediaType{}
+	poolByID            = map[protocol.MediaTypeID]protocol.MediaType{}
 	poolByFileExtension = map[string]protocol.MediaType{}
 )
 
 func ByMediaType(mediaType string) protocol.MediaType { return poolByMediaType[mediaType] }
-func ByID(id uint64) protocol.MediaType               { return poolByID[id] }
+func ByID(id protocol.MediaTypeID) protocol.MediaType { return poolByID[id] }
 func ByFileExtension(ex string) protocol.MediaType    { return poolByFileExtension[ex] }
 
 func register(mt protocol.MediaType) {
