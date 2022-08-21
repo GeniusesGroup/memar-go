@@ -72,6 +72,8 @@ func (s *Socket) incomeSegmentOnEstablishedState(segment Packet) (err protocol.E
 			if err != nil {
 				return
 			}
+
+			// TODO:::
 			s.recv.sendPushFlagSignal()
 			s.Stream.ScheduleProcessingStream()
 		}
@@ -227,9 +229,12 @@ func (s *Socket) sendPayload(b []byte) (n int, err error) {
 
 // BlockInSelect waits for something to happen, which is one of the following conditions in the function body.
 func (s *Socket) blockInSelect() (err protocol.Error) {
+	// TODO::: check auto scheduling or block??
+
 loop:
 	for {
 		select {
+		// TODO::: if buffer not full but before get push flag go to full state??
 		case <-s.readTimer.Signal():
 			// TODO:::
 			// break

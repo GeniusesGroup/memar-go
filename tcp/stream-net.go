@@ -60,17 +60,17 @@ func (s *Socket) RemoteAddr() net.Addr {
 	}
 }
 func (s *Socket) SetDeadline(t time.Time) (err error) {
-	var d = getDuration(t)
+	var d = untilTo(t)
 	s.SetTimeout(d)
 	return
 }
 func (s *Socket) SetReadDeadline(t time.Time) (err error) {
-	var d = getDuration(t)
+	var d = untilTo(t)
 	err = s.SetReadTimeout(d)
 	return
 }
 func (s *Socket) SetWriteDeadline(t time.Time) (err error) {
-	var d = getDuration(t)
+	var d = untilTo(t)
 	err = s.SetWriteTimeout(d)
 	return
 }
