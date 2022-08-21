@@ -1,46 +1,53 @@
-/* For license and copyright information please see LEGAL file in repository */
+/* For license and copyright information please see the LEGAL file in the code repository */
 
 package protocol
 
-// Stream is the interface that must implement by any struct to be Stream
-type Streams interface {
-	// OutcomeStream make the stream and returns it or return error if any problems occur
-	OutcomeStream(service Service) (stream Stream, err Error)
-	// IncomeStream make the stream and returns it or return error if any problems occur
-	IncomeStream(id uint64) (stream Stream, err Error)
-	// Stream returns Stream from pool if exists by given ID
-	Stream(id uint64) (stream Stream, err Error)
-}
-
-// Stream is the interface that must implement by any struct to be a stream!
+// Stream indicate a minimum networking stream functionality usually occur in layer 4.
+// It must also implement chunks managing like sRPC, QUIC, TCP, UDP, ...
 type Stream interface {
-	ID() uint64
 	Connection() Connection
-	Protocol() NetworkApplicationHandler // usage is like TCP||UDP ports that indicate payload protocol is GitiURN ID
-	Service() Service
-	Error() Error                // just indicate peer error that receive by response of the request.
-	Status() ConnectionState     // return last stream state
-	State() chan ConnectionState // return state channel to listen to new stream state
-	Weight() Weight              // sum of connection and service weight.
+	Handler() NetworkCommonHandler // usage is like TCP||UDP ports that indicate payload protocol like TLS, HTTPv1, HTTPv2, ...
+	Service() Service              //
+	Error() Error                  // just indicate peer error that receive by response of the request.
 
 	// Authorize request by data in related stream and connection by any data like service, time, ...
+	// Dev must extend this method in each service by it uses.
 	Authorize() (err Error)
 
-	SendRequest(req Codec) (err Error)  // Listen to stream state to check request successfully send, response ready to serve, ...
-	SendResponse(res Codec) (err Error) // Listen to stream state to check response successfully send, ...
+	Stream_ID
+	Network_Status
+	Timeout
+	OperationImportance // base on the connection and the service priority and weight
+	StreamOptions
+	StreamLowLevelAPIs
+}
 
-	// Below methods are low level APIs, don't use them in services layer, if you don't know how it can be effect the application.
-	Close() (err Error)                        // Just once, must deregister the stream from the connection and send close message to Socket in some types.
-	Socket() Codec                             // Chunks manager like sRPC, QUIC, TCP, UDP, ...
-	SetSocket(codec Codec)                     // Just once, use SendRequest||SendResponse methods
-	SetProtocol(nah NetworkApplicationHandler) // Just once, (But some protocol like http allow to change it after first set in a reusable stream like IP/TCP, Allow them??)
-	SetService(ser Service)                    // Just once, (But some protocol like http allow to change it after first set in a reusable stream like IP/TCP, Allow them??)
-	SetError(err Error)                        // Just once
-	SetState(state ConnectionState)            // change state of stream and send notification on stream StateChannel.
+// StreamLowLevelAPIs is low level APIs, don't use them in the services layer, if you don't know how it can be effect the application.
+// It will use in chunks managing packages e.g. sRPC, QUIC, TCP, UDP, ... or Application layer protocols e.g. HTTP, ...
+type StreamLowLevelAPIs interface {
+	Send(data Codec) (err Error) // Listen to stream state to check request successfully send, response ready to serve, ...
+	Close() (err Error)          // Just once, must deregister the stream from the connection and notify peer in some proper way.
 
-	// SetDeadline sets the read and write deadlines associated with the connection.
-	// It is equivalent to calling both SetReadDeadline and SetWriteDeadline.
-	SetDeadline(d Duration) Error
-	// SetReadDeadline(d Duration) Error
-	// SetWriteDeadline(d Duration) Error
+	// use to save state and release thread(goroutine) in waiting state
+	Request() any
+	Response() any
+	SetRequest(req any)
+	SetResponse(res any)
+
+	SetHandler(nch NetworkCommonHandler) // Just once, (But some protocol like http allow to change it after first set in a reusable stream like IP/TCP, Allow them??)
+	SetService(ser Service)              // Just once, (But some protocol like http allow to change it after first set in a reusable stream like IP/TCP, Allow them??)
+	SetError(err Error)                  // Just once
+	// Put in related queue to process income stream in non-blocking mode, means It must not block the caller in any ways.
+	// Stream must start with NetworkStatus_NeedMoreData if it doesn't need to call the service when the state changed for the first time
+	ScheduleProcessingStream()
+
+	Codec
+}
+
+type StreamOptions interface {
+	// release any underling data reference until call time without need to release socket itself
+	Discard(n int) (discarded int, err Error)
+	SetLinger(d Duration) error
+	SetKeepAlivePeriod(d Duration) error
+	SetNoDelay(noDelay bool) error
 }
