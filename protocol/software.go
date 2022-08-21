@@ -1,4 +1,4 @@
-/* For license and copyright information please see LEGAL file in repository */
+/* For license and copyright information please see the LEGAL file in the code repository */
 
 package protocol
 
@@ -7,8 +7,10 @@ type SoftwareStatus uint8
 // Software Status
 // https://en.wikipedia.org/wiki/Software_release_life_cycle
 const (
+	Software_Unset SoftwareStatus = iota
+
 	// Software_PreAlpha refers to all activities performed during the software project before formal testing.
-	Software_PreAlpha SoftwareStatus = iota
+	Software_PreAlpha
 	// Software_Alpha is the first phase to begin software testing
 	Software_Alpha
 	// Software_Beta generally begins when the software is feature complete but likely to contain a number of known or unknown bugs.
