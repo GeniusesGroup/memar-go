@@ -1,23 +1,26 @@
-/* For license and copyright information please see LEGAL file in repository */
+/* For license and copyright information please see the LEGAL file in the code repository */
 
 package service
 
 import (
-	"../protocol"
+	"github.com/GeniusesGroup/libgo/protocol"
 )
 
 // Services store all application service
 type Services struct {
-	poolByID        map[uint64]protocol.Service
+	poolByID        map[protocol.MediaTypeID]protocol.Service
 	poolByMediaType map[string]protocol.Service
 	poolByURIPath   map[string]protocol.Service
 }
 
 // Init use to initialize
 func (ss *Services) Init() {
-	ss.poolByID = make(map[uint64]protocol.Service, 512)
-	ss.poolByURIPath = make(map[string]protocol.Service, 512)
-	ss.poolByMediaType = make(map[string]protocol.Service, 512)
+	const poolSizes = 512
+	// TODO::: decide about poolSize by hardware
+
+	ss.poolByID = make(map[protocol.MediaTypeID]protocol.Service, poolSizes)
+	ss.poolByURIPath = make(map[string]protocol.Service, poolSizes)
+	ss.poolByMediaType = make(map[string]protocol.Service, poolSizes)
 }
 
 // RegisterService use to register application services.
@@ -69,7 +72,7 @@ func (ss *Services) registerServiceByURI(s protocol.Service) {
 }
 
 // GetServiceByID use to get specific service handler by service ID
-func (ss *Services) GetServiceByID(serviceID uint64) protocol.Service {
+func (ss *Services) GetServiceByID(serviceID protocol.MediaTypeID) protocol.Service {
 	return ss.poolByID[serviceID]
 }
 

@@ -1,43 +1,24 @@
-/* For license and copyright information please see LEGAL file in repository */
+/* For license and copyright information please see the LEGAL file in the code repository */
 
 package service
 
 import (
-	"../mediatype"
-	"../protocol"
+	"github.com/GeniusesGroup/libgo/protocol"
 )
 
-// Service store needed data for a service to implement protocol.Service when embed to other struct that implements other methods!
-type Service struct {
-	uri string // Fill just if any http like type handler needed! Simple URI not variable included! API services can set like "/m?{{.ServiceID}}" but it is not efficient, find services by ID.
+// Service implement protocol.Service when embed to other struct that implements other needed methods.
+type Service struct{}
 
-	priority protocol.Priority // Use to queue requests by its priority
-	weight   protocol.Weight   // Use to queue requests by its weights in the same priority
+//libgo:impl protocol.Service
+func (s *Service) URI() string                 { return "" }
+func (s *Service) Priority() protocol.Priority { return protocol.Priority_Unset }
+func (s *Service) Weight() protocol.Weight     { return protocol.Weight_Unset }
+func (s *Service) CRUDType() protocol.CRUD     { return protocol.CRUD_None }
+func (s *Service) UserType() protocol.UserType { return protocol.UserType_Unset }
 
-	// Authorization data to authorize incoming service
-	crud     protocol.CRUD // CRUD == Create, Read, Update, Delete
-	userType protocol.UserType
-
-	mediatype.MediaType
-}
-
-// func (s *Service) Init() {}
-
-func (s *Service) SetURIRoutePath(uri string) { s.uri = uri }
-func (s *Service) SetPriority(priority protocol.Priority, weight protocol.Weight) {
-	s.priority = priority
-	s.weight = weight
-}
-func (s *Service) SetAuthorization(crud protocol.CRUD, userType protocol.UserType) {
-	s.crud = crud
-	s.userType = userType
-}
-
-func (s *Service) URI() string                 { return s.uri }
-func (s *Service) Priority() protocol.Priority { return s.priority }
-func (s *Service) Weight() protocol.Weight     { return s.weight }
-func (s *Service) CRUDType() protocol.CRUD     { return s.crud }
-func (s *Service) UserType() protocol.UserType { return s.userType }
+//libgo:impl protocol.ServiceDetails
+func (s *Service) Request() []protocol.Field  { return nil }
+func (s *Service) Response() []protocol.Field { return nil }
 
 /*
 *********** Handlers ***********
