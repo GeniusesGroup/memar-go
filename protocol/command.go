@@ -4,7 +4,7 @@ package protocol
 
 // Command is the interface that must implement by any struct to be a command service
 type Command interface {
-	// Init(parent Command, subCommands ...protocol.Command)
+	// Init(parent Command, subCommands ...Command)
 
 	Name() string // e.g. init
 	// These are not suggested to the user in the shell completion,
@@ -46,4 +46,9 @@ type CommandHandler interface {
 
 	// read and write to os.Stdin, os.Stdout, and os.Stderr files
 	// ServeCLI() (err Error)
+}
+
+type CommandLineArguments interface {
+	FromCLA(arguments []string) (remaining []string, err Error)
+	ToCLA() (arguments []string, err Error)
 }
