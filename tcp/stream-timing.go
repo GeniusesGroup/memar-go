@@ -9,72 +9,81 @@ import (
 )
 
 type timing struct {
+	st *Stream
+	// TODO::: one timer or many per handler??
 	socketTimer timer.Timer
 
-	keepAlive_Interval_next    monotonic.Time
-	delayedAcknowledgment_next monotonic.Time
-
-	config
+	keepAlive
+	delayedAcknowledgment
 }
 
-func (t *timing) init() {
-	var next = t.config.init()
+func (t *timing) Init(st *Stream) {
+	var now = monotonic.Now()
+	var next protocol.Duration
+
+	t.st = st
 	t.socketTimer.Init(t)
-	t.socketTimer.Tick(next, next, -1)
-}
 
-func (t *timing) deinit() {
+	if KeepAlive {
+		var nxt = t.keepAlive.Init(now)
+		if nxt > 0 && nxt < next {
+			next = nxt
+		}
+	}
+
+	if DelayedAcknowledgment {
+		var nxt = t.delayedAcknowledgment.Init(now)
+		if nxt > 0 && nxt < next {
+			next = nxt
+		}
+	}
+
+	if next > 0 {
+		t.socketTimer.Tick(next, next, -1)
+	}
+}
+func (t *timing) Reinit() {
+	if KeepAlive {
+		t.keepAlive.Reinit()
+	}
+	if DelayedAcknowledgment {
+		t.delayedAcknowledgment.Reinit()
+	}
 	t.socketTimer.Stop()
 }
-
-type config struct {
-	keepAlive_Interval            protocol.Duration
-	delayedAcknowledgment_Timeout protocol.Duration
-}
-
-func (c *config) init() (next protocol.Duration) {
-	c.keepAlive_Interval = KeepAlive_Interval
-	// TODO::: next?
-	return
+func (t *timing) Deinit() {
+	if KeepAlive {
+		t.keepAlive.Deinit()
+	}
+	if DelayedAcknowledgment {
+		t.delayedAcknowledgment.Deinit()
+	}
+	t.socketTimer.Stop()
 }
 
 // Don't block the caller
 func (t *timing) TimerHandler() {
 	var next protocol.Duration
 	var now = monotonic.Now()
+	var st = t.st
 
-	// TODO:::
-
-	if t.keepAlive_Interval > 0 {
-		t.checkKeepAliveInterval(now)
-		var nxt = t.keepAlive_Interval
-		if nxt < next {
+	if KeepAlive {
+		var nxt = t.keepAlive.CheckInterval(st, now)
+		if nxt > 0 && nxt < next {
 			next = nxt
 		}
 	}
 
-	if t.delayedAcknowledgment_Timeout > 0 {
-		var nxt = t.checkDelayedAcknowledgmentInterval(now)
-		if nxt < next {
+	if DelayedAcknowledgment {
+		var nxt = t.delayedAcknowledgment.CheckInterval(st, now)
+		if nxt > 0 && nxt < next {
 			next = nxt
 		}
 	}
 
-	// TODO:::
+	// TODO::: add more handler
 
-	t.socketTimer.Reset(protocol.Duration(next))
-}
-
-func (t *timing) checkKeepAliveInterval(now monotonic.Time) {
-	if t.keepAlive_Interval_next.Pass(now) {
-		next = now + monotonic.Time(t.keepAlive_Interval)
-		t.keepAlive_Interval_next = next
-		// TODO::: send keepalive message
+	if next > 0 {
+		t.socketTimer.Reset(protocol.Duration(next))
 	}
-	return
-}
-
-func (t *timing) checkDelayedAcknowledgmentInterval(now monotonic.Time) (next monotonic.Time) {
-
-	return
 }
