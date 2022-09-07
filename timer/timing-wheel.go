@@ -1,4 +1,4 @@
-/* For license and copyright information please see LEGAL file in repository */
+/* For license and copyright information please see the LEGAL file in the code repository */
 
 package timer
 
@@ -10,10 +10,10 @@ import (
 // or write upper layer to implement needed logic to prevent data race.
 type TimingWheel struct {
 	wheelSize int
-	wheel     [][]*Timer
+	wheel     [][]*Async
 	interval  protocol.Duration // same as tw.ticker.period
 	pos       int
-	ticker    Timer
+	ticker    Sync
 	stop      chan struct{}
 }
 
@@ -21,12 +21,12 @@ type TimingWheel struct {
 func (tw *TimingWheel) Init(interval protocol.Duration, wheelSize int) {
 	tw.wheelSize = wheelSize
 	tw.stop = make(chan struct{})
-	tw.wheel = make([][]*Timer, wheelSize)
-	tw.ticker.Init(nil)
+	tw.wheel = make([][]*Async, wheelSize)
+	tw.ticker.Init()
 	tw.interval = interval
 }
 
-func (tw *TimingWheel) AddTimer(t *Timer) {
+func (tw *TimingWheel) AddTimer(t *Async) {
 	var addedPosition = tw.addedPosition(t)
 	if addedPosition > tw.wheelSize {
 		panic("timer - wheel: try to add a timer with bad timeout that overflow the current timing wheel")
@@ -41,7 +41,7 @@ func (tw *TimingWheel) AddTimer(t *Timer) {
 
 // call by go keyword if you don't want the current goroutine block.
 func (tw *TimingWheel) Start() {
-	tw.ticker.Tick(tw.interval, tw.interval, -1)
+	tw.ticker.Tick(tw.interval, tw.interval)
 loop:
 	for {
 		select {
@@ -88,18 +88,15 @@ func (tw *TimingWheel) incrementTickPosition() {
 	}
 }
 
-func (tw *TimingWheel) checkAndAddTimerAgain(t *Timer) {
-	if t.periodNumber == 0 {
-		t.reset()
+func (tw *TimingWheel) checkAndAddTimerAgain(t *Async) {
+	if t.period == 0 {
+		t.Reinit()
 	} else {
 		var addedPosition = tw.addedPosition(t)
 		tw.wheel[addedPosition] = append(tw.wheel[addedPosition], t)
-		if t.periodNumber > 0 {
-			t.periodNumber--
-		}
 	}
 }
 
-func (tw *TimingWheel) addedPosition(t *Timer) int {
+func (tw *TimingWheel) addedPosition(t *Async) int {
 	return int(t.period/tw.interval) + tw.pos
 }

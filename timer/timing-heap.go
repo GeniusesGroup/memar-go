@@ -1,4 +1,4 @@
-/* For license and copyright information please see LEGAL file in repository */
+/* For license and copyright information please see the LEGAL file in the code repository */
 
 package timer
 
@@ -51,7 +51,7 @@ type TimingHeap struct {
 }
 
 type timerBucketHeap struct {
-	timer *timer
+	timer *Async
 	// Two reason to have timer when here:
 	// - hot cache to prevent dereference timer to get when field
 	// - It can be difference with timer when filed in timerModifiedXX status.
@@ -65,10 +65,11 @@ func (th *TimingHeap) Init() {
 	th.coreID = cpu.ActiveCoreID()
 	// th.timerRaceCtx = racegostart(abi.FuncPCABIInternal(th.runTimer) + sys.PCQuantum)
 }
+func (th *TimingHeap) Reinit() {}
 
-// destroy releases all of the resources associated with timers in specific CPU core and
-// move them to other core that call destroy
-func (th *TimingHeap) destroy() {
+// Deinit releases all of the resources associated with timers in specific CPU core and
+// move them to other core that call deinit
+func (th *TimingHeap) Deinit() {
 	if len(th.timers) > 0 {
 		th.timersLock.Lock()
 
@@ -87,7 +88,7 @@ func (th *TimingHeap) destroy() {
 }
 
 // AddTimer adds t to the timers queue.
-func (th *TimingHeap) AddTimer(t *timer) {
+func (th *TimingHeap) AddTimer(t *Async) {
 	th.timersLock.Lock()
 
 	th.cleanTimers()
@@ -277,7 +278,7 @@ func (th *TimingHeap) adjustTimers(now monotonic.Time) {
 	// We are going to clear all status_ModifiedEarlier timers.
 	th.timerModifiedEarliest.Store(0)
 
-	var moved []*timer
+	var moved []*Async
 	var timers = th.timers
 	var timersLen = len(timers)
 	for i := 0; i < timersLen; i++ {
@@ -331,7 +332,7 @@ func (th *TimingHeap) adjustTimers(now monotonic.Time) {
 
 // addAdjustedTimers adds any timers we adjusted in th.adjustTimers
 // back to the timer heap.
-func (th *TimingHeap) addAdjustedTimers(moved []*timer) {
+func (th *TimingHeap) addAdjustedTimers(moved []*Async) {
 	for _, t := range moved {
 		th.AddTimer(t)
 		if !t.status.CompareAndSwap(status_Moving, status_Waiting) {
@@ -406,12 +407,12 @@ func (th *TimingHeap) runTimer(now monotonic.Time) monotonic.Time {
 // runOneTimer runs a single timer.
 // The caller must have locked the th.timersLock
 // This will temporarily unlock the timers while running the timer function.
-func (th *TimingHeap) runOneTimer(t *timer, now monotonic.Time) {
+func (th *TimingHeap) runOneTimer(t *Async, now monotonic.Time) {
 	if race.DetectorEnabled {
 		race.AcquireCTX(th.timerRaceCtx, unsafe.Pointer(t))
 	}
 
-	if t.period > 0 && t.periodNumber != 0 {
+	if t.period > 0 {
 		// Leave in heap but adjust next time to fire.
 		var delta = t.when.Since(now)
 		t.when.Add(t.period * (1 + -delta/t.period))
@@ -423,9 +424,6 @@ func (th *TimingHeap) runOneTimer(t *timer, now monotonic.Time) {
 			badTimer()
 		}
 		th.updateTimer0When()
-		if t.periodNumber > 0 {
-			t.periodNumber--
-		}
 	} else {
 		// Remove from heap.
 		th.deleteTimer0()
@@ -545,12 +543,9 @@ func (th *TimingHeap) verifyTimerHeap() {
 	var timersLen = len(timers)
 	// First timer has no parent, so i must be start from 1.
 	for i := 1; i < timersLen; i++ {
-		var timer = th.timers[0].timer
-
-		// The heap is 4-ary. See siftUpTimer and siftDownTimer.
-		var p = (i - 1) / 4
-		if timer.when < timers[p].when {
-			print("timer: bad timer heap at ", i, ": ", p, ": ", th.timers[p].when, ", ", i, ": ", timer.when, "\n")
+		var p = (i - 1) / heapAry
+		if timers[i].when < timers[p].when {
+			print("timer: bad timer heap at ", i, ": ", p, ": ", th.timers[p].when, ", ", i, ": ", timers[i].when, "\n")
 			panic("timer: bad timer heap")
 		}
 	}
@@ -702,7 +697,7 @@ func (th *TimingHeap) siftUpTimer(i int) int {
 
 	var tmp = timers[i]
 	for i > 0 {
-		var p = (i - 1) / 4 // parent
+		var p = (i - 1) / heapAry // parent
 		if timerWhen >= timers[p].when {
 			break
 		}
@@ -724,8 +719,8 @@ func (th *TimingHeap) siftDownTimer(i int) {
 
 	var tmp = timers[i]
 	for {
-		var c = i*4 + 1 // left child
-		var c3 = c + 2  // mid child
+		var c = i*heapAry + 1      // left child
+		var c3 = c + (heapAry / 2) // mid child
 		if c >= timersLen {
 			break
 		}

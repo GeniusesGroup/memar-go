@@ -1,4 +1,4 @@
-/* For license and copyright information please see LEGAL file in repository */
+/* For license and copyright information please see the LEGAL file in the code repository */
 
 // Package timer provides timer functionality that supports the following
 // features:
@@ -17,8 +17,8 @@
 // It's not OK to pass an inactive timer to addtimer.
 // Only newly allocated timer values may be passed to addtimer.
 //
-// We don't permit calling addtimer/deltimer/modtimer/resettimer simultaneously,
-// but adjusttimers and runtimer can be called at the same time as any of those.
+// We don't permit calling timer.start/timer.stop/timer.modify simultaneously,
+// but adjustTimers and runTimer can be called at the same time as any of those.
 // 
 // Init initialize the Timer with given callback function or make the channel and send signal on it
 // Be aware that given function must not be closure and must not block the caller.

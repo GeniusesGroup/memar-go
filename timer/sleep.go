@@ -1,4 +1,4 @@
-/* For license and copyright information please see LEGAL file in repository */
+/* For license and copyright information please see the LEGAL file in the code repository */
 
 package timer
 
@@ -15,9 +15,10 @@ func Sleep(d protocol.Duration) {
 	}
 
 	var thread = scheduler.ActiveThread()
-	thread.Yield(scheduler.Thread_WaitReason_Sleep)
+	var timer Async
+	timer.Init(thread)
+	timer.Start(d)
 
-	var timer timer
-	timer.init(thread)
-	timer.start(d)
+	// TODO::: if timer is fire before we yield its thread??
+	thread.Yield(scheduler.Thread_WaitReason_Sleep)
 }

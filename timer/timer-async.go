@@ -1,4 +1,4 @@
-/* For license and copyright information please see LEGAL file in repository */
+/* For license and copyright information please see the LEGAL file in the code repository */
 
 package timer
 
@@ -12,12 +12,22 @@ import (
 	"github.com/GeniusesGroup/libgo/time/monotonic"
 )
 
-type timer struct {
+// NewAsync waits for the duration to elapse and then calls callback.
+// If callback need blocking operation it must do its logic in new thread(goroutine).
+// It returns a Timer that can be used to cancel the call using its Stop method.
+func NewAsync(d protocol.Duration, callback protocol.TimerListener) (t *Async, err protocol.Error) {
+	var timer Async
+	timer.Init(callback)
+	err = timer.Start(d)
+	t = &timer
+	return
+}
+
+type Async struct {
 	// Timer wakes up at when, and then at when+period, ... (period > 0 only)
 	// when must be positive on an active timer.
-	when         monotonic.Time
-	period       protocol.Duration
-	periodNumber int64 // -1 means no limit
+	when   monotonic.Time
+	period protocol.Duration
 
 	// The status field holds one of the values in status file.
 	status status
@@ -31,27 +41,27 @@ type timer struct {
 	timers *TimingHeap
 }
 
-// Init initialize the Timer with given callback function or make the channel and send signal on it
+// Init initialize the timer with given callback function or make the channel and send signal on it
 // Be aware that given function must not be closure and must not block the caller.
-func (t *timer) init(callback protocol.TimerListener) {
+func (t *Async) Init(callback protocol.TimerListener) {
 	if t.callback != nil {
 		panic("timer: Don't initialize a timer twice. Use Reset() method to change the timer.")
 	}
 
 	t.callback = callback
 }
-
-// use to prevent memory leak
-func (t *timer) reset() {
+func (t *Async) Reinit() {
 	t.callback = nil
 	t.timers = nil
 }
+func (t *Async) Deinit() {
+}
 
-// start adds the timer to the running cpu core timing.
+// Start adds the timer to the running cpu core timing.
 // This should only be called with a newly created timer.
 // That avoids the risk of changing the when field of a timer in some P's heap,
 // which could cause the heap to become unsorted.
-func (t *timer) start(d protocol.Duration) {
+func (t *Async) Start(d protocol.Duration) (err protocol.Error) {
 	if t.callback == nil {
 		panic("timer: Timer must initialized before start")
 	}
@@ -75,12 +85,13 @@ func (t *timer) start(d protocol.Duration) {
 	t.status = status_Waiting
 	t.timers = &poolByCores[cpu.ActiveCoreID()]
 	t.timers.AddTimer(t)
+	return
 }
 
-// stop deletes the timer t. We can't actually remove it from the timers heap.
+// Stop deletes the timer t. We can't actually remove it from the timers heap.
 // We can only mark it as deleted. It will be removed in due course by the timing whose heap it is on.
 // Reports whether the timer was removed before it was run.
-func (t *timer) stop() bool {
+func (t *Async) Stop() bool {
 	if t.callback == nil {
 		panic("timer: Stop called on uninitialized Timer")
 	}
@@ -131,10 +142,10 @@ func (t *timer) stop() bool {
 	}
 }
 
-// modify modifies an existing timer.
+// Modify modifies an existing timer.
 // It's OK to call modify() on a newly allocated Timer.
 // Reports whether the timer was modified before it was run.
-func (t *timer) modify(d protocol.Duration) (pending bool) {
+func (t *Async) Modify(d protocol.Duration) (pending bool) {
 	// when must be positive. A negative value will cause ts.runTimer to
 	// overflow during its delta calculation and never expire other runtime timers.
 	// Zero will cause checkTimers to fail to notice the timer.
@@ -211,5 +222,19 @@ loop:
 		}
 	}
 
+	return
+}
+
+// Tick will send a signal on the t.Signal() channel after each tick on initialized Timer.
+// The period of the ticks is specified by the duration arguments.
+// The ticker will adjust the time interval or drop ticks to make up for slow receivers.
+// The durations must be greater than zero; if not, Tick() will panic.
+// Stop the ticker to release associated resources.
+func (t *Async) Tick(first, interval protocol.Duration) (err protocol.Error) {
+	if first < 1 || interval < 1 {
+		panic("timer: non-positive interval to tick. period must be non-negative,")
+	}
+	t.period = interval
+	t.Start(first)
 	return
 }
