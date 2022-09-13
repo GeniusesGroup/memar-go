@@ -1,4 +1,4 @@
-/* For license and copyright information please see LEGAL file in repository */
+/* For license and copyright information please see the LEGAL file in the code repository */
 
 package http
 
@@ -8,8 +8,8 @@ import (
 	"strings"
 	"time"
 
-	"../convert"
-	"../protocol"
+	"github.com/GeniusesGroup/libgo/convert"
+	"github.com/GeniusesGroup/libgo/protocol"
 )
 
 // GetSetCookies parses and returns the Set-Cookie headers.
@@ -28,10 +28,10 @@ func (h *header) SetCookies() (setCookies []SetCookie) {
 	return
 }
 
-// SetSetCookies parses and set given Set-Cookies to header.
+// MarshalSetCookies parses and set given Set-Cookies to the header.
 // By related RFC must exist just one Set-Cookie in each line of header.
 // https://tools.ietf.org/html/rfc6265#section-4.1.1
-func (h *header) MarshalSetSetCookies(setCookies []SetCookie) {
+func (h *header) MarshalSetCookies(setCookies []SetCookie) {
 	var ln = len(setCookies)
 	for i := 0; i < ln; i++ {
 		h.Add(HeaderKeySetCookie, setCookies[i].Marshal())
@@ -285,7 +285,7 @@ func sanitizeCookiePath(v string) (path string, err protocol.Error) {
 		if 0x20 <= b && b < 0x7f {
 			buf = append(buf, b)
 		} else {
-			err = ErrCookieBadPath
+			err = &ErrCookieBadPath
 		}
 	}
 	path = convert.UnsafeByteSliceToString(buf)
@@ -297,7 +297,7 @@ func sanitizeCookiePath(v string) (path string, err protocol.Error) {
 func sanitizeCookieDomain(d string) (domain string, err protocol.Error) {
 	var ln = len(d)
 	if ln == 0 || ln > 255 {
-		return domain, ErrCookieBadDomain
+		return domain, &ErrCookieBadDomain
 	}
 
 	// A cookie a domain attribute may start with a leading dot.
@@ -313,7 +313,7 @@ func sanitizeCookieDomain(d string) (domain string, err protocol.Error) {
 		b = d[i]
 		switch {
 		default:
-			return domain, ErrCookieBadDomain
+			return domain, &ErrCookieBadDomain
 		case 'a' <= b && b <= 'z' || 'A' <= b && b <= 'Z':
 			// No '_' allowed here (in contrast to package net).
 			partlen++
@@ -323,16 +323,16 @@ func sanitizeCookieDomain(d string) (domain string, err protocol.Error) {
 		case b == '-':
 			// Byte before dash cannot be dot.
 			if last == '.' {
-				return domain, ErrCookieBadDomain
+				return domain, &ErrCookieBadDomain
 			}
 			partlen++
 		case b == '.':
 			// Byte before dot cannot be dot or dash.
 			if last == '.' || last == '-' {
-				return domain, ErrCookieBadDomain
+				return domain, &ErrCookieBadDomain
 			}
 			if partlen > 63 || partlen == 0 {
-				return domain, ErrCookieBadDomain
+				return domain, &ErrCookieBadDomain
 			}
 			partlen = 0
 		}
@@ -347,5 +347,5 @@ func sanitizeCookieDomain(d string) (domain string, err protocol.Error) {
 		return d, err
 	}
 
-	return domain, ErrCookieBadDomain
+	return domain, &ErrCookieBadDomain
 }

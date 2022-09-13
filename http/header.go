@@ -1,4 +1,4 @@
-/* For license and copyright information please see LEGAL file in repository */
+/* For license and copyright information please see the LEGAL file in the code repository */
 
 package http
 
@@ -7,7 +7,8 @@ import (
 
 	"golang.org/x/exp/maps"
 
-	"../protocol"
+	"github.com/GeniusesGroup/libgo/convert"
+	"github.com/GeniusesGroup/libgo/protocol"
 )
 
 // header is represent HTTP header structure!
@@ -17,19 +18,21 @@ type header struct {
 }
 
 func (h *header) Init() {
-	h.headers = make(map[string][]string, 16)
-	h.valuesPool = make([]string, 16)
+	h.headers = make(map[string][]string, headerInitMapLen)
+	h.valuesPool = make([]string, headerValuesPoolLen)
 }
-func (h *header) Reset() {
+func (h *header) Reinit() {
 	maps.Clear(h.headers)
 	h.valuesPool = h.valuesPool[:0]
 }
+func (h *header) Deinit() {}
 
 // Get returns the first value associated with the given key.
 // Key must already be in CanonicalHeaderKey form.
 func (h *header) Get(key string) string {
-	if v := h.headers[key]; len(v) > 0 {
-		return v[0]
+	var values = h.headers[key]
+	if len(values) > 0 {
+		return values[0]
 	}
 	return ""
 }
@@ -37,8 +40,9 @@ func (h *header) Get(key string) string {
 // Gets returns all values associated with the given key.
 // Key must already be in CanonicalHeaderKey form.
 func (h *header) Gets(key string) []string {
-	if v := h.headers[key]; len(v) > 0 {
-		return v
+	var values = h.headers[key]
+	if len(values) > 0 {
+		return values
 	}
 	return nil
 }
@@ -55,7 +59,7 @@ func (h *header) Add(key, value string) {
 	}
 }
 
-// Adds append given values to end of given key exiting values!
+// Adds append given values to end of given key exiting values.
 // Key must already be in CanonicalHeaderKey form.
 func (h *header) Adds(key string, values []string) {
 	h.headers[key] = append(h.headers[key], values...)
@@ -65,7 +69,7 @@ func (h *header) Adds(key string, values []string) {
 // Key must already be in CanonicalHeaderKey form.
 func (h *header) Set(key string, value string) {
 	if len(h.valuesPool) == 0 {
-		h.valuesPool = make([]string, 16)
+		h.valuesPool = make([]string, headerValuesPoolLen)
 	}
 	// More than likely this will be a single-element key. Most headers aren't multi-valued.
 	// Set the capacity on valuesPool[0] to 1, so any future append won't extend the slice into the other strings.
@@ -101,32 +105,21 @@ func (h *header) Exclude(exclude map[string]bool) {
 	}
 }
 
-/*
-********** protocol.Codec interface **********
- */
-
-func (h *header) Decode(reader protocol.Reader) (err protocol.Error) {
+//libgo:impl protocol.Codec
+func (h *header) Decode(source protocol.Codec) (n int, err protocol.Error) {
 	// TODO:::
 	return
 }
-
-func (h *header) Encode(writer protocol.Writer) (err protocol.Error) {
+func (h *header) Encode(destination protocol.Codec) (n int, err protocol.Error) {
 	var encodedHeader = h.Marshal()
-	var _, goErr = writer.Write(encodedHeader)
-	if goErr != nil {
-		// err =
-	}
+	n, err = destination.Unmarshal(encodedHeader)
 	return
 }
-
-// Marshal enecodes whole h *header data and return httpHeader!
 func (h *header) Marshal() (httpHeader []byte) {
 	httpHeader = make([]byte, 0, h.Len())
 	httpHeader = h.MarshalTo(httpHeader)
 	return
 }
-
-// MarshalTo enecodes (h *header) data to given httpPacket.
 func (h *header) MarshalTo(httpPacket []byte) []byte {
 	for key, values := range h.headers {
 		// TODO::: some header key must not inline by coma like set-cookie. check if other need this exception.
@@ -151,11 +144,31 @@ func (h *header) MarshalTo(httpPacket []byte) []byte {
 	}
 	return httpPacket
 }
+func (h *header) Unmarshal(data []byte) (n int, err protocol.Error) {
+	var s = convert.UnsafeByteSliceToString(data)
+	n, err = h.unmarshal(s)
+	return
+}
+func (h *header) Len() (ln int) {
+	for key, values := range h.headers {
+		ln += len(key)
+		ln += 4 // 4=len(ColonSpace)+len(CRLF)
+		for _, value := range values {
+			ln += len(value)
+			ln++ // 1=len(Coma)
+		}
+	}
+	return
+}
 
-// Unmarshal parses and decodes data of given httpPacket(without first line) to (h *header).
+/*
+********** Other methods **********
+ */
+
+// unmarshal parses and decodes data of given httpPacket(without first line) to (h *header).
 // This method not respect to some RFCs like field-name in RFC7230, ... due to be more liberal in what it accept!
 // In some bad packet may occur panic, handle panic by recover otherwise app will crash and exit!
-func (h *header) Unmarshal(s string) (headerEnd int) {
+func (h *header) unmarshal(s string) (headerEnd int, err protocol.Error) {
 	var colonIndex, newLineIndex int
 	var key, value string
 	for {
@@ -164,7 +177,7 @@ func (h *header) Unmarshal(s string) (headerEnd int) {
 			// newLineIndex == -1 >> broken or malformed packet, panic may occur!
 			// newLineIndex == 0 >> End of headers part of packet, no panic
 			// 1 < newLineIndex > 3 >> bad header || broken || malformed packet, panic may occur!
-			return headerEnd
+			return
 		}
 
 		colonIndex = strings.IndexByte(s[:newLineIndex], ':')
@@ -181,20 +194,3 @@ func (h *header) Unmarshal(s string) (headerEnd int) {
 		headerEnd += newLineIndex
 	}
 }
-
-// Len returns length of encoded header!
-func (h *header) Len() (ln int) {
-	for key, values := range h.headers {
-		ln += len(key)
-		ln += 4 // 4=len(ColonSpace)+len(CRLF)
-		for _, value := range values {
-			ln += len(value)
-			ln++ // 1=len(Coma)
-		}
-	}
-	return
-}
-
-/*
-********** Other methods **********
- */

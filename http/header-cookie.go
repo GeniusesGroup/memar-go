@@ -1,12 +1,12 @@
-/* For license and copyright information please see LEGAL file in repository */
+/* For license and copyright information please see the LEGAL file in the code repository */
 
 package http
 
 import (
 	"strings"
 
-	"../convert"
-	"../protocol"
+	"github.com/GeniusesGroup/libgo/convert"
+	"github.com/GeniusesGroup/libgo/protocol"
 )
 
 type Cookies string
@@ -125,7 +125,7 @@ func sanitizeCookieName(n string) (name string, err protocol.Error) {
 		b = n[i]
 		if b == '\n' || b == '\r' {
 			buf = append(buf, '-')
-			err = ErrCookieBadName
+			err = &ErrCookieBadName
 		} else {
 			buf = append(buf, b)
 		}
@@ -150,7 +150,7 @@ func sanitizeCookieValue(v string) (value string, err protocol.Error) {
 		if 0x20 <= b && b < 0x7f && b != ' ' && b != '"' && b != ',' && b != '\\' {
 			buf = append(buf, b)
 		} else {
-			err = ErrCookieBadValue
+			err = &ErrCookieBadValue
 		}
 	}
 	value = convert.UnsafeByteSliceToString(buf)

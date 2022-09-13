@@ -1,11 +1,11 @@
-/* For license and copyright information please see LEGAL file in repository */
+/* For license and copyright information please see the LEGAL file in the code repository */
 
 package http
 
 /*
 				********************PAY ATTENTION:*******************
-	We believe HTTP version 2 and above are new protocol not new version of HTTP!!
-	So we don't support HTTP2 and HTTP3 specs in this package!!
+	We believe HTTP version 2 and above are new protocol not new version of HTTP.
+	So we don't support HTTP2 and HTTP3 specs in this package.
 */
 
 const (
@@ -20,6 +20,11 @@ const (
 	// zone. The time being formatted must be in UTC for Format to
 	// generate the correct format.
 	TimeFormat = "Mon, 02 Jan 2006 15:04:05 GMT"
+
+	versionMaxLength    = 9 // plus one for ' ' or '\r' character after method name.
+	methodMaxLength     = 8 // plus one for ' ' character after method name.
+	headerInitMapLen    = 16
+	headerValuesPoolLen = 16
 )
 
 // Some default values
@@ -44,8 +49,6 @@ const (
 
 // Standard HTTP versions
 const (
-	versionMaxLength = 9 // plus one for ' ' or '\r' character after method name.
-
 	VersionHTTP1  = "HTTP/1.0"
 	VersionHTTP11 = "HTTP/1.1"
 	VersionHTTP2  = "HTTP/2.0"
@@ -55,8 +58,6 @@ const (
 // Standard HTTP methods
 // https://tools.ietf.org/html/rfc7231#section-4
 const (
-	methodMaxLength = 8 // plus one for ' ' character after method name.
-
 	MethodGET     = "GET"
 	MethodPOST    = "POST"
 	MethodHEAD    = "HEAD"

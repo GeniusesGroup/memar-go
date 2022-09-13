@@ -1,4 +1,4 @@
-/* For license and copyright information please see LEGAL file in repository */
+/* For license and copyright information please see the LEGAL file in the code repository */
 
 package http
 
@@ -8,7 +8,7 @@ import (
 	"reflect"
 	"testing"
 
-	"../compress/raw"
+	"github.com/GeniusesGroup/libgo/compress/raw"
 )
 
 type RequestTest struct {
@@ -24,15 +24,15 @@ var requestTests = []RequestTest{
 		packet: []byte("GET / HTTP/1.1\r\n" + "\r\n"),
 		req: Request{
 			method: "GET",
-			uri: URI{
-				uri:       "/",
-				uriAsByte: []byte("/"),
-				scheme:    "",
-				authority: "",
-				path:      "/",
-				query:     "",
-				fragment:  "",
-			},
+			// uri: uri.URI{
+			// 	uri:       "/",
+			// 	uriAsByte: []byte("/"),
+			// 	scheme:    "",
+			// 	authority: "",
+			// 	path:      "/",
+			// 	query:     "",
+			// 	fragment:  "",
+			// },
 			version: "HTTP/1.1",
 			H:       header{},
 			body: body{
@@ -57,29 +57,29 @@ var requestTests = []RequestTest{
 			`{"Omid":"OMID"}`),
 		req: Request{
 			method: "POST",
-			uri: URI{
-				uri:       "/m?2586547852",
-				uriAsByte: []byte("/m?2586547852"),
-				scheme:    "",
-				authority: "",
-				path:      "/m",
-				query:     "2586547852",
-				fragment:  "",
-			},
+			// uri: uri.URI{
+			// 	uri:       "/m?2586547852",
+			// 	uriAsByte: []byte("/m?2586547852"),
+			// 	scheme:    "",
+			// 	authority: "",
+			// 	path:      "/m",
+			// 	query:     "2586547852",
+			// 	fragment:  "",
+			// },
 			version: "HTTP/1.1",
 			H: header{
 				headers: map[string][]string{
-					"Accept":                    []string{"text/html"},
-					"Accept-Encoding":           []string{"gzip, deflate"},
-					"Accept-Language":           []string{"en,fa;q=0.9"},
-					"Cache-Control":             []string{"max-age=0"},
-					"Connection":                []string{"keep-alive"},
-					"Content-Length":            []string{"15"},
-					"Content-Type":              []string{"application/json"},
-					"Host":                      []string{"www.sabz.city"},
-					"Set-Cookie":                []string{"test"},
-					"Upgrade-Insecure-Requests": []string{"1"},
-					"User-Agent":                []string{"Mozilla"},
+					"Accept":                    {"text/html"},
+					"Accept-Encoding":           {"gzip, deflate"},
+					"Accept-Language":           {"en,fa;q=0.9"},
+					"Cache-Control":             {"max-age=0"},
+					"Connection":                {"keep-alive"},
+					"Content-Length":            {"15"},
+					"Content-Type":              {"application/json"},
+					"Host":                      {"www.sabz.city"},
+					"Set-Cookie":                {"test"},
+					"Upgrade-Insecure-Requests": {"1"},
+					"User-Agent":                {"Mozilla"},
 				},
 			},
 			body: body{
@@ -105,29 +105,29 @@ var requestTests = []RequestTest{
 			"\r\n"),
 		req: Request{
 			method: "POST",
-			uri: URI{
-				uri:       "/m?2586547852",
-				uriAsByte: []byte("/m?2586547852"),
-				scheme:    "",
-				authority: "",
-				path:      "/m",
-				query:     "2586547852",
-				fragment:  "",
-			},
+			// uri: uri.URI{
+			// 	uri:       "/m?2586547852",
+			// 	uriAsByte: []byte("/m?2586547852"),
+			// 	scheme:    "",
+			// 	authority: "",
+			// 	path:      "/m",
+			// 	query:     "2586547852",
+			// 	fragment:  "",
+			// },
 			version: "HTTP/1.1",
 			H: header{
 				headers: map[string][]string{
-					"Accept":                    []string{"text/html"},
-					"Accept-Encoding":           []string{"gzip, deflate"},
-					"Accept-Language":           []string{"en,fa;q=0.9"},
-					"Cache-Control":             []string{"max-age=0"},
-					"Connection":                []string{"keep-alive"},
-					"Content-Length":            []string{"15"},
-					"Content-Type":              []string{"application/json"},
-					"Host":                      []string{"www.sabz.city"},
-					"Set-Cookie":                []string{"test"},
-					"Upgrade-Insecure-Requests": []string{"1"},
-					"User-Agent":                []string{"Mozilla"},
+					"Accept":                    {"text/html"},
+					"Accept-Encoding":           {"gzip, deflate"},
+					"Accept-Language":           {"en,fa;q=0.9"},
+					"Cache-Control":             {"max-age=0"},
+					"Connection":                {"keep-alive"},
+					"Content-Length":            {"15"},
+					"Content-Type":              {"application/json"},
+					"Host":                      {"www.sabz.city"},
+					"Set-Cookie":                {"test"},
+					"Upgrade-Insecure-Requests": {"1"},
+					"User-Agent":                {"Mozilla"},
 				},
 			},
 			body: body{
@@ -137,19 +137,25 @@ var requestTests = []RequestTest{
 	},
 }
 
+func init() {
+	requestTests[0].req.uri.Set("", "", "/", "", "")
+	requestTests[1].req.uri.Set("", "", "/m", "2586547852", "")
+	requestTests[2].req.uri.Set("", "", "/m", "2586547852", "")
+}
+
 func TestRequest_Unmarshal(t *testing.T) {
 	for _, tt := range requestTests {
 		t.Run(tt.name, func(t *testing.T) {
 			tt.out.Init()
-			var err = tt.out.Unmarshal(tt.packet)
+			var _, err = tt.out.Unmarshal(tt.packet)
 			if err != nil {
 				t.Errorf("Request.Unmarshal() error = %v", err)
 			}
 			if tt.out.method != tt.req.method {
 				t.Errorf("Request.Unmarshal(%q) - Method:\n\tgot  %v\n\twant %v\n", tt.packet, tt.out.method, tt.req.method)
 			}
-			if tt.out.uri.uri != tt.req.uri.uri {
-				t.Errorf("Request.Unmarshal(%q) - URI:\n\tgot  %v\n\twant %v\n", tt.packet, tt.out.uri.uri, tt.req.uri.uri)
+			if tt.out.uri.URI() != tt.req.uri.URI() {
+				t.Errorf("Request.Unmarshal(%q) - URI:\n\tgot  %v\n\twant %v\n", tt.packet, tt.out.uri.URI(), tt.req.uri.URI())
 			}
 			if tt.out.version != tt.req.version {
 				t.Errorf("Request.Unmarshal(%q) - Version:\n\tgot  %v\n\twant %v\n", tt.packet, tt.out.version, tt.req.version)
@@ -172,7 +178,7 @@ func TestRequest_Unmarshal(t *testing.T) {
 func TestRequest_Marshal(t *testing.T) {
 	for _, tt := range requestTests {
 		t.Run(tt.name, func(t *testing.T) {
-			var httpPacket []byte = tt.req.Marshal()
+			var httpPacket, _ = tt.req.Marshal()
 			fmt.Println("cap--len of httpPacket:", cap(httpPacket), "--", len(httpPacket))
 			fmt.Println("cap--len of tt.packet:", cap(tt.packet), "--", len(tt.packet))
 			if httpPacket == nil {

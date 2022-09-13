@@ -1,10 +1,12 @@
-/* For license and copyright information please see LEGAL file in repository */
+/* For license and copyright information please see the LEGAL file in the code repository */
 
 package http
 
 import (
-	"../compress/raw"
-	"../protocol"
+	"io"
+
+	"github.com/GeniusesGroup/libgo/compress/raw"
+	"github.com/GeniusesGroup/libgo/protocol"
 )
 
 // body is represent HTTP body.
@@ -14,14 +16,14 @@ type body struct {
 	protocol.Codec
 }
 
+func (b *body) Init()   {}
+func (b *body) Reinit() { b.Codec = nil }
+func (b *body) Deinit() {}
+
 func (b *body) Body() protocol.Codec         { return b }
 func (b *body) SetBody(codec protocol.Codec) { b.Codec = codec }
-func (b *body) Reset()                       { b.Codec = nil }
 
-/*
-********** protocol.Codec interface **********
- */
-
+//libgo:impl protocol.Codec
 func (b *body) Len() int {
 	if b.Codec != nil {
 		return b.Codec.Len()
@@ -40,33 +42,33 @@ func (b *body) CompressType() protocol.CompressType {
 	}
 	return nil
 }
-func (b *body) Decode(reader protocol.Reader) (err protocol.Error) {
+func (b *body) Decode(source protocol.Codec) (n int, err protocol.Error) {
 	if b.Codec != nil {
-		err = b.Codec.Decode(reader)
+		n, err = b.Codec.Decode(source)
 	}
 	return
 }
-func (b *body) Encode(writer protocol.Writer) (err protocol.Error) {
+func (b *body) Encode(destination protocol.Codec) (n int, err protocol.Error) {
 	if b.Codec != nil {
-		err = b.Codec.Encode(writer)
+		n, err = b.Codec.Encode(destination)
 	}
 	return
 }
-func (b *body) Marshal() (data []byte) {
+func (b *body) Marshal() (data []byte, err protocol.Error) {
 	if b.Codec != nil {
-		data = b.Codec.Marshal()
+		data, err = b.Codec.Marshal()
 	}
 	return
 }
-func (b *body) MarshalTo(data []byte) []byte {
+func (b *body) MarshalTo(data []byte) (added []byte, err protocol.Error) {
 	if b.Codec != nil {
 		return b.Codec.MarshalTo(data)
 	}
-	return data
+	return data, nil
 }
-func (b *body) Unmarshal(data []byte) (err protocol.Error) {
+func (b *body) Unmarshal(data []byte) (n int, err protocol.Error) {
 	if b.Codec != nil {
-		err = b.Codec.Unmarshal(data)
+		n, err = b.Codec.Unmarshal(data)
 	}
 	return
 }
@@ -74,6 +76,22 @@ func (b *body) UnmarshalFrom(data []byte) (remaining []byte, err protocol.Error)
 	if b.Codec != nil {
 		return b.Codec.UnmarshalFrom(data)
 	}
+	return
+}
+
+// ReadFrom decodes r *Request data by read from given io.Reader
+//
+//libgo:impl io.ReaderFrom
+func (b *body) ReadFrom(reader io.Reader) (n int64, goErr error) {
+
+	return
+}
+
+// WriteTo encodes r(*Request) data and write it to given io.Writer
+//
+//libgo:impl io.WriterTo
+func (b *body) WriteTo(writer io.Writer) (n int64, err error) {
+
 	return
 }
 
@@ -90,13 +108,14 @@ func (b *body) checkAndSetCodecAsIncomeBody(maybeBody []byte, c protocol.Codec, 
 		if maybeBodyLength == int(contentLength) {
 			b.setReadedIncomeBody(maybeBody, h)
 		} else {
+			// TODO::: allow this situation that peer send some part of body with header??
 			// Header length maybe other than stream income data length e.g. send body in multiple TCP.PSH flag set.
 			if maybeBodyLength > 0 {
 				var bodySlice = make([]byte, maybeBodyLength, contentLength)
 				copy(bodySlice, maybeBody)
 				for {
-					bodySlice = c.MarshalTo(bodySlice)
-					if len(bodySlice) == int(contentLength) {
+					bodySlice, err = c.MarshalTo(bodySlice)
+					if err != nil || len(bodySlice) == int(contentLength) {
 						break
 					}
 				}
