@@ -1,86 +1,84 @@
-/* For license and copyright information please see LEGAL file in repository */
+/* For license and copyright information please see the LEGAL file in the code repository */
 
-package http
+package hh
 
 import (
-	"../convert"
-	"../log"
-	"../protocol"
+	"github.com/GeniusesGroup/libgo/convert"
+	"github.com/GeniusesGroup/libgo/http"
+	hs "github.com/GeniusesGroup/libgo/http/services"
+	"github.com/GeniusesGroup/libgo/log"
+	"github.com/GeniusesGroup/libgo/protocol"
 )
 
-type Handler struct{}
+// Protocol Standard - HTTP/1 : https://en.wikipedia.org/wiki/Hypertext_Transfer_Protocol
+type V1 struct{}
 
 // HandleIncomeRequest handle incoming HTTP request streams.
 // It can use for architectures like restful, ...
-// Protocol Standard - HTTP/1 : https://en.wikipedia.org/wiki/Hypertext_Transfer_Protocol
-// Protocol Standard - HTTP/2 : https://httpwg.org/specs/rfc7540.html
-// Protocol Standard - HTTP/3 : https://quicwg.org/base-drafts/draft-ietf-quic-http.html
-func (handler *Handler) HandleIncomeRequest(stream protocol.Stream) (err protocol.Error) {
-	var httpReq Request
-	var httpRes Response
+func (h *V1) HandleIncomeRequest(st protocol.Stream) (err protocol.Error) {
+	var httpReq http.Request
+	var httpRes http.Response
 	httpReq.Init()
 	httpRes.Init()
-	var streamSocket = stream.Socket()
 
-	var maybeBody []byte
-	maybeBody, err = httpReq.UnmarshalFrom(streamSocket.Marshal())
+	_, err = httpReq.Decode(st)
 	if err != nil {
-		httpRes.SetStatus(StatusBadRequestCode, StatusBadRequestPhrase)
-		handler.HandleOutcomeResponse(stream, &httpReq, &httpRes)
+		httpRes.SetStatus(http.StatusBadRequestCode, http.StatusBadRequestPhrase)
+		h.HandleOutcomeResponse(st, &httpReq, &httpRes)
 		return
 	}
-	httpReq.body.checkAndSetCodecAsIncomeBody(maybeBody, streamSocket, &httpReq.H)
 
-	err = handler.ServeHTTP(stream, &httpReq, &httpRes)
+	err = h.ServeHTTP(st, &httpReq, &httpRes)
 	return
 }
 
 // ServeHTTP handle incoming HTTP request.
 // Developers can develope new one with its desire logic to more respect protocols like restful, ...
-func (handler *Handler) ServeHTTP(stream protocol.Stream, httpReq *Request, httpRes *Response) (err protocol.Error) {
-	if !protocol.AppMode_Dev && !HostSupportedService.ServeHTTP(stream, httpReq, httpRes) {
-		handler.HandleOutcomeResponse(stream, httpReq, httpRes)
+func (h *V1) ServeHTTP(st protocol.Stream, httpReq *http.Request, httpRes *http.Response) (err protocol.Error) {
+	if !protocol.AppMode_Dev && !hs.HostSupportedService.ServeHTTP(st, httpReq, httpRes) {
+		h.HandleOutcomeResponse(st, httpReq, httpRes)
 		return
 	}
 
-	switch httpReq.uri.path {
-	case serviceMuxPath:
-		err = MuxService.ServeHTTP(stream, httpReq, httpRes)
-	case landingPath:
+	var path = httpReq.URI().Path()
+	switch path {
+	case hs.MuxService_Path:
+		err = hs.MuxService.ServeHTTP(st, httpReq, httpRes)
+	case hs.LandingService_Path:
 		// TODO:::
 	default:
 		// serve by URL
 		var service protocol.Service
-		service, err = protocol.App.GetServiceByURI(httpReq.uri.path)
+		service, err = protocol.App.GetServiceByURI(path)
 		if service == nil {
 			// If project don't have any logic that support data on e.g. HTTP (restful, ...) we send platform GUI app for web
-			err = ServeWWWService.ServeHTTP(stream, httpReq, httpRes)
+			err = hs.ServeWWWService.ServeHTTP(st, httpReq, httpRes)
 		} else {
-			err = service.ServeHTTP(stream, httpReq, httpRes)
+			err = service.ServeHTTP(st, httpReq, httpRes)
 		}
 	}
-	handler.HandleOutcomeResponse(stream, httpReq, httpRes)
+	h.HandleOutcomeResponse(st, httpReq, httpRes)
 	return
 }
 
-// HandleOutcomeResponse use to handle outcoming HTTP response stream!
-func (handler *Handler) HandleOutcomeResponse(stream protocol.Stream, httpReq *Request, httpRes *Response) {
+// HandleOutcomeResponse use to handle outcome HTTP response stream.
+func (h *V1) HandleOutcomeResponse(st protocol.Stream, httpReq *http.Request, httpRes *http.Response) {
 	// Do some global assignment to response
-	httpRes.version = httpReq.version
+	httpRes.SetVersion(httpReq.Version())
 	if httpRes.Body() != nil {
-		var mediaType = httpRes.body.MediaType()
+		var mediaType = httpRes.Body().MediaType()
 		if mediaType != nil {
-			httpRes.H.Set(HeaderKeyContentType, mediaType.MediaType())
+			httpRes.H.Set(http.HeaderKeyContentType, mediaType.ToString())
 		}
-		var compressType = httpRes.body.CompressType()
+		var compressType = httpRes.Body().CompressType()
 		if compressType != nil {
-			httpRes.H.Set(HeaderKeyContentEncoding, compressType.ContentEncoding())
+			httpRes.H.Set(http.HeaderKeyContentEncoding, compressType.ContentEncoding())
 		}
 
-		if httpRes.body.Len() > 0 {
+		if httpRes.Body().Len() > 0 {
 			httpRes.SetContentLength()
 		} else {
-			httpRes.H.SetTransferEncoding(HeaderValueChunked)
+			httpRes.H.SetTransferEncoding(http.HeaderValueChunked)
 		}
 	} else {
 		httpRes.H.SetZeroContentLength()
@@ -88,38 +86,41 @@ func (handler *Handler) HandleOutcomeResponse(stream protocol.Stream, httpReq *R
 
 	// httpRes.H.Set(HeaderKeyAccessControlAllowOrigin, "*")
 
-	stream.SendResponse(httpRes)
+	st.Encode(httpRes)
 
-	if protocol.LogMode_DeepDebug {
-		// TODO::: req||res not serialized yet to log it!! any idea to have better performance below??
-		protocol.App.Log(log.ConfEvent(domainEnglish, convert.UnsafeByteSliceToString(httpReq.Marshal())))
-		protocol.App.Log(log.ConfEvent(domainEnglish, convert.UnsafeByteSliceToString(httpRes.Marshal())))
+	if protocol.AppMode_Dev {
+		// TODO::: req||res not serialized yet to log it! any idea to have better performance below??
+		var req, _ = httpReq.Marshal()
+		var res, _ = httpRes.Marshal()
+		protocol.App.Log(log.ConfEvent(domainEnglish, convert.UnsafeByteSliceToString(req)))
+		protocol.App.Log(log.ConfEvent(domainEnglish, convert.UnsafeByteSliceToString(res)))
 	}
 }
 
 // SendBidirectionalRequest use to handle outcoming HTTP request stream
 // It block caller until get response or error
-func SendBidirectionalRequest(conn protocol.Connection, service protocol.Service, httpReq *Request) (httpRes *Response, err protocol.Error) {
-	var stream protocol.Stream
-	stream, err = conn.OutcomeStream(service)
+func SendBidirectionalRequest(conn protocol.Connection, service protocol.Service, httpReq *http.Request) (httpRes *http.Response, err protocol.Error) {
+	var st protocol.Stream
+	st, err = conn.OutcomeStream(service)
 	if err != nil {
 		return
 	}
 
-	err = stream.SendRequest(httpReq)
+	_, err = st.Encode(httpReq)
 	if err != nil {
 		return
 	}
 
+	var streamStatus = st.State()
 	for {
-		var status = <-stream.State()
+		var status = <-streamStatus
 		switch status {
-		case protocol.ConnectionState_Timeout:
+		case protocol.NetworkStatus_Timeout:
 			// err =
-		case protocol.ConnectionState_ReceivedCompletely:
-			var res Response
+		case protocol.NetworkStatus_ReceivedCompletely:
+			var res http.Response
 			res.Init()
-			err = res.Unmarshal(stream.Socket().Marshal())
+			_, err = res.Decode(st)
 			if err == nil {
 				err = res.GetError()
 			}
@@ -127,37 +128,38 @@ func SendBidirectionalRequest(conn protocol.Connection, service protocol.Service
 		default:
 			continue
 		}
-		stream.Close()
+		st.Close()
 		break
 	}
 	return
 }
 
-// SendUnidirectionalRequest use to send outcoming HTTP request and don't expect any response.
+// SendUnidirectionalRequest use to send outcome HTTP request and don't expect any response.
 // It block caller until request send successfully or return error
-func SendUnidirectionalRequest(conn protocol.Connection, service protocol.Service, httpReq *Request) (err protocol.Error) {
-	var stream protocol.Stream
-	stream, err = conn.OutcomeStream(service)
+func SendUnidirectionalRequest(conn protocol.Connection, service protocol.Service, httpReq *http.Request) (err protocol.Error) {
+	var st protocol.Stream
+	st, err = conn.OutcomeStream(service)
 	if err != nil {
 		return
 	}
 
-	err = stream.SendRequest(httpReq)
+	_, err = st.Encode(httpReq)
 	if err != nil {
 		return
 	}
 
+	var streamStatus = st.State()
 	for {
-		var status = <-stream.State()
+		var status = <-streamStatus
 		switch status {
-		case protocol.ConnectionState_Timeout:
+		case protocol.NetworkStatus_Timeout:
 			// err =
-		case protocol.ConnectionState_SentCompletely:
-			// Nothing to do. Just let execution go to stream.Close() and break the loop
+		case protocol.NetworkStatus_SentCompletely:
+			// Nothing to do. Just let execution go to st.Close() and break the loop
 		default:
 			continue
 		}
-		stream.Close()
+		st.Close()
 		break
 	}
 	return
