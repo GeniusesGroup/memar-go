@@ -1,4 +1,4 @@
-/* For license and copyright information please see LEGAL file in repository */
+/* For license and copyright information please see the LEGAL file in the code repository */
 
 package parser
 
@@ -10,10 +10,13 @@ import (
 	"strings"
 )
 
+// https://github.com/golang/mock/blob/main/mockgen/parse.go
+// https://github.com/go-gad/sal/blob/master/looker/looker.go
+
 // Repository :
 type Repository struct {
 	Name         string
-	DependencyID [16]byte               // DependencyID in SabzCity version control
+	DependencyID [16]byte               //
 	FSPath       string                 // Folder location in FileSystems
 	Files        map[string]*File       // Name
 	Imports      map[string]*Import     // UsageName
@@ -38,7 +41,7 @@ type File struct {
 type Import struct {
 	UsageName    string
 	PackageName  string
-	DependencyID [16]byte // DependencyID in SabzCity version control
+	DependencyID [16]byte //
 	FSPath       string   // Folder location in FileSystems
 	File         *File
 	ImportSpec   *ast.ImportSpec
@@ -85,7 +88,7 @@ func (repo *Repository) Parse(FileName string, FileData []byte) (err error) {
 
 		file.Parsed, err = parser.ParseFile(fileSet, "", FileData, parser.ParseComments)
 		if err != nil {
-			return err
+			return
 		}
 
 		// Set package name
@@ -93,7 +96,7 @@ func (repo *Repository) Parse(FileName string, FileData []byte) (err error) {
 
 		err = repo.parseFile(&file)
 		if err != nil {
-			return err
+			return
 		}
 	}
 
