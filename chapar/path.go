@@ -1,28 +1,22 @@
-/* For license and copyright information please see LEGAL file in repository */
+/* For license and copyright information please see the LEGAL file in the code repository */
 
 package chapar
 
 import (
-	"io"
-
-	"../protocol"
+	"libgo/protocol"
 )
 
 // Path indicate Chapar switch route plan!
 type Path struct {
-	path [MaxHopCount]byte
+	path [maxHopCount]byte
 	len  byte
 }
 
 // Init sets path from the given frame
-func (p *Path) Init(frame []byte) {
-	if len(frame) == 0 {
-		p.len = MaxHopCount // broadcast frame
-	} else {
-		var hopCount = GetHopCount(frame)
-		copy(p.path[:], frame[FixedHeaderLength:FixedHeaderLength+hopCount])
-		p.len = hopCount
-	}
+func (p *Path) Init(frame Frame) {
+	var hopCount = frame.HopCount()
+	copy(p.path[:], frame[fixedHeaderLength:fixedHeaderLength+hopCount])
+	p.len = hopCount
 }
 
 func (p *Path) Set(path []byte) {
@@ -43,49 +37,46 @@ func (p *Path) LenAsByte() byte {
 	return p.len
 }
 
-// GetReverse return path in all hops just in reverse.
-func (p *Path) GetReverse() (reverse Path) {
-	reverse = Path{
-		path: ReversePath(p.path[:]),
-		len:  p.len,
+// CopyReverseTo will copy p in reverse hops to given path.
+func (p *Path) CopyReverseTo(reverse *Path) {
+	var ln = p.len
+	ln-- // Due to len & index mismatch
+	var j byte
+	for ln >= j {
+		reverse.path[ln], reverse.path[j] = p.path[j], p.path[ln]
+		ln--
+		j++
 	}
+
+	reverse.len = ln
 	return
 }
 
-/*
-********** protocol.Codec interface **********
- */
-
+//libgo:impl /libgo/protocol.Codec
 func (p *Path) MediaType() protocol.MediaType       { return nil }
 func (p *Path) CompressType() protocol.CompressType { return nil }
 func (p *Path) Len() int                            { return int(p.len) }
-
-// Marshal return the path in the given frame.
-func (p *Path) Decode(reader io.Reader) (err protocol.Error) {
+func (p *Path) Decode(source protocol.Codec) (n int, err protocol.Error) {
+	// TODO:::
 	return
 }
-
-// Marshal return the path in the given frame.
-func (p *Path) Encode(writer io.Writer) (err error) {
+func (p *Path) Encode(destination protocol.Codec) (n int, err protocol.Error) {
+	// TODO:::
 	return
 }
-
-// Unmarshal sets path from the given path
 func (p *Path) Unmarshal(path []byte) (err protocol.Error) {
 	if len(path) == 0 {
-		p.len = MaxHopCount // broadcast frame
-	} else {
-		copy(p.path[:], path)
-		p.len = byte(len(path))
+		// err = &
+		return
 	}
-}
 
-// Marshal return the path in the given frame.
+	copy(p.path[:], path)
+	p.len = byte(len(path))
+	return
+}
 func (p *Path) Marshal() (path []byte) {
 	return p.path[:p.len]
 }
-
-// MarshalTo sets the path in the given frame.
 func (p *Path) MarshalTo(frame []byte) {
-	copy(frame[FixedHeaderLength:], p.path[:p.len])
+	copy(frame[fixedHeaderLength:], p.path[:p.len])
 }
