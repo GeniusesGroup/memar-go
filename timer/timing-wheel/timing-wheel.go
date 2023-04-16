@@ -1,9 +1,9 @@
 /* For license and copyright information please see the LEGAL file in the code repository */
 
-package timer
+package timingwheel
 
 import (
-	"github.com/GeniusesGroup/libgo/protocol"
+	"libgo/protocol"
 )
 
 // TimingWheel is not concurrent safe and must call each instance by each CPU core separately,
@@ -26,7 +26,7 @@ func (tw *TimingWheel) Init(interval protocol.Duration, wheelSize int) {
 	tw.interval = interval
 }
 
-func (tw *TimingWheel) AddTimer(t *Async) {
+func (tw *TimingWheel) AddTimer(t *Async) (err protocol.Error) {
 	var addedPosition = tw.addedPosition(t)
 	if addedPosition > tw.wheelSize {
 		panic("timer - wheel: try to add a timer with bad timeout that overflow the current timing wheel")
@@ -37,6 +37,7 @@ func (tw *TimingWheel) AddTimer(t *Async) {
 		return
 	}
 	tw.wheel[addedPosition] = append(tw.wheel[addedPosition], t)
+	return
 }
 
 // call by go keyword if you don't want the current goroutine block.
@@ -89,9 +90,7 @@ func (tw *TimingWheel) incrementTickPosition() {
 }
 
 func (tw *TimingWheel) checkAndAddTimerAgain(t *Async) {
-	if t.period == 0 {
-		t.Reinit()
-	} else {
+	if t.period > 0 {
 		var addedPosition = tw.addedPosition(t)
 		tw.wheel[addedPosition] = append(tw.wheel[addedPosition], t)
 	}

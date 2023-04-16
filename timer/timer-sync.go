@@ -3,13 +3,12 @@
 package timer
 
 import (
-	"github.com/GeniusesGroup/libgo/protocol"
+	"libgo/protocol"
 )
 
 // After waits for the duration to elapse and then sends signal on the returned channel.
-// The underlying Timer is not recovered by the garbage collector
-// until the timer fires. If efficiency is a concern, copy the body
-// instead and call timer.Stop() if the timer is no longer needed.
+// The underlying Timer is not recovered by the garbage collector until the timer fires.
+// If efficiency is a concern, copy the body instead and call timer.Stop() if the timer is no longer needed.
 // It will **panic** if it can't start the timer due to any situation like not enough memory, ...
 func After(d protocol.Duration) <-chan struct{} {
 	var timer Sync
@@ -38,21 +37,29 @@ type Sync struct {
 	signal chan struct{}
 }
 
-func (t *Sync) Reinit() { t.Stop(); close(t.signal); t.Async.Reinit() }
-func (t *Sync) Deinit() { t.Stop(); close(t.signal) }
-
-//libgo:impl protocol.Timer
-func (t *Sync) Init() {
+//libgo:impl /libgo/protocol.Timer
+func (t *Sync) Init() (err protocol.Error) {
 	// Give the channel a 1-element buffer.
 	// If the client falls behind while reading, we drop ticks
 	// on the floor until the client catches up.
 	t.signal = make(chan struct{}, 1)
-	t.Async.Init(t)
+	err = t.Async.Init(t)
+	return
 }
-func (t *Sync) Signal() <-chan struct{}                           { return t.signal }
-func (t *Sync) Start(d protocol.Duration) (err protocol.Error)    { return t.Async.Start(d) }
-func (t *Sync) Stop() (alreadyStopped bool)                       { return t.Async.Stop() }
-func (t *Sync) Reset(d protocol.Duration) (alreadyActivated bool) { return t.Modify(d) }
+
+//libgo:impl /libgo/protocol.SoftwareLifeCycle
+func (t *Sync) Reinit() (err protocol.Error) { err = t.Async.Reinit(t); return }
+func (t *Sync) Deinit() (err protocol.Error) {
+	err = t.Async.Deinit()
+	if err != nil {
+		return
+	}
+	close(t.signal)
+	return
+}
+
+//libgo:impl /libgo/protocol.Timer_Sync
+func (t *Sync) Signal() <-chan struct{} { return t.signal }
 
 // TimerHandler or NotifyChannel does a non-blocking send the signal on t.signal
 func (t *Sync) TimerHandler() {

@@ -3,14 +3,18 @@
 package timer
 
 import (
+	"fmt"
 	"sync"
 	"sync/atomic"
 	"unsafe"
 
-	"github.com/GeniusesGroup/libgo/cpu"
-	"github.com/GeniusesGroup/libgo/race"
-	"github.com/GeniusesGroup/libgo/scheduler"
-	"github.com/GeniusesGroup/libgo/time/monotonic"
+	"libgo/cpu"
+	"libgo/protocol"
+	"libgo/race"
+	"libgo/scheduler"
+	"libgo/time/monotonic"
+
+	"github.com/GeniusesGroup/libgo/log"
 )
 
 // TimingHeap ...
@@ -58,33 +62,62 @@ type timerBucketHeap struct {
 	when monotonic.Time
 }
 
+// Init initialize timing mechanism for th core that call the Init().
+//
+//libgo:impl /libgo/protocol.SoftwareLifeCycle
 func (th *TimingHeap) Init() {
 	// TODO::: let application flow choose timers init cap or force it?
 	// th.timers = make([]timerBucketHeap, 1024)
 
 	th.coreID = cpu.ActiveCoreID()
 	// th.timerRaceCtx = racegostart(abi.FuncPCABIInternal(th.runTimer) + sys.PCQuantum)
+
+	// TODO::: change to libgo scheduler
+	go th.Start()
 }
-func (th *TimingHeap) Reinit() {}
 
-// Deinit releases all of the resources associated with timers in specific CPU core and
+// Reinit releases all of the resources associated with timers in specific CPU core and
 // move them to other core that call deinit
+//
+//libgo:impl /libgo/protocol.SoftwareLifeCycle
+func (th *TimingHeap) Reinit() {
+	var callerCoreID = cpu.ActiveCoreID()
+	var newCore = &poolByCores[callerCoreID]
+	th.moveTimersTo(newCore)
+
+	th.coreID = callerCoreID
+	th.timer0When.Store(0)
+	th.timerModifiedEarliest.Store(0)
+	th.numTimers.Store(0)
+	th.deletedTimers.Store(0)
+	th.timerRaceCtx = 0
+	th.timers = nil
+}
+
+// Deinit releases all of the resources associated with timers in specific CPU core
+//
+//libgo:impl /libgo/protocol.SoftwareLifeCycle
 func (th *TimingHeap) Deinit() {
-	if len(th.timers) > 0 {
-		th.timersLock.Lock()
+	// TODO::: call all timers TimerHandler or what??
+	// th.timers = nil
+}
 
-		var newCore = &poolByCores[cpu.ActiveCoreID()]
-		newCore.timersLock.Lock()
-		newCore.moveTimers(th.timers)
-		newCore.timersLock.Unlock()
-
-		th.timers = nil
-		th.numTimers.Store(0)
-		th.deletedTimers.Store(0)
-		th.timer0When.Store(0)
-
-		th.timersLock.Unlock()
+func (th *TimingHeap) Start() {
+	// TODO::: Stop mechanism, new timer added mechanism
+	for {
+		var now = monotonic.Now()
+		var nextWhen, _ = th.checkTimers(now)
+		var until = nextWhen.Until(nextWhen)
+		scheduler.Sleep(until)
 	}
+}
+
+// MoveToMe releases all of the resources associated with timers in specific CPU core and
+// move them to other core that call this method
+func (th *TimingHeap) MoveToMe() {
+	var callerCoreID = cpu.ActiveCoreID()
+	var newCore = &poolByCores[callerCoreID]
+	th.moveTimersTo(newCore)
 }
 
 // AddTimer adds t to the timers queue.
@@ -94,7 +127,7 @@ func (th *TimingHeap) AddTimer(t *Async) {
 	th.cleanTimers()
 
 	var timerWhen = t.when
-	t.timers = th
+	t.timing = th
 	var i = len(th.timers)
 	th.timers = append(th.timers, timerBucketHeap{t, timerWhen})
 
@@ -111,7 +144,7 @@ func (th *TimingHeap) AddTimer(t *Async) {
 // It returns the smallest changed index in th.timers
 // The caller must have locked the th.timersLock
 func (th *TimingHeap) deleteTimer(i int) int {
-	th.timers[i].timer.timers = nil
+	th.timers[i].timer.timing = nil
 
 	var last = len(th.timers) - 1
 	if i != last {
@@ -143,7 +176,7 @@ func (th *TimingHeap) deleteTimer(i int) int {
 // It reports whether it saw no problems due to races.
 // The caller must have locked the th.timersLock
 func (th *TimingHeap) deleteTimer0() {
-	th.timers[0].timer.timers = nil
+	th.timers[0].timer.timing = nil
 
 	var last = len(th.timers) - 1
 	if last > 0 {
@@ -184,17 +217,17 @@ func (th *TimingHeap) cleanTimers() {
 		var timer = th.timers[0].timer
 		var status = timer.status.Load()
 		switch status {
-		case status_Deleted:
-			if !timer.status.CompareAndSwap(status, status_Removing) {
+		case protocol.TimerStatus_Deleted:
+			if !timer.status.CompareAndSwap(status, protocol.TimerStatus_Removing) {
 				continue
 			}
 			th.deleteTimer0()
-			if !timer.status.CompareAndSwap(status_Removing, status_Removed) {
+			if !timer.status.CompareAndSwap(protocol.TimerStatus_Removing, protocol.TimerStatus_Removed) {
 				badTimer()
 			}
 			th.deletedTimers.Add(-1)
-		case status_ModifiedEarlier, status_ModifiedLater:
-			if !timer.status.CompareAndSwap(status, status_Moving) {
+		case protocol.TimerStatus_ModifiedEarlier, protocol.TimerStatus_ModifiedLater:
+			if !timer.status.CompareAndSwap(status, protocol.TimerStatus_Moving) {
 				continue
 			}
 			// Now we can change the when field of timerBucketHeap.
@@ -202,13 +235,25 @@ func (th *TimingHeap) cleanTimers() {
 			// Move timer to the right position.
 			th.deleteTimer0()
 			th.AddTimer(timer)
-			if !timer.status.CompareAndSwap(status_Moving, status_Waiting) {
+			if !timer.status.CompareAndSwap(protocol.TimerStatus_Moving, protocol.TimerStatus_Waiting) {
 				badTimer()
 			}
 		default:
 			// Head of timers does not need adjustment.
 			return
 		}
+	}
+}
+
+func (th *TimingHeap) moveTimersTo(to *TimingHeap) {
+	if len(th.timers) > 0 {
+		th.timersLock.Lock()
+
+		to.timersLock.Lock()
+		to.moveTimers(th.timers)
+		to.timersLock.Unlock()
+
+		th.timersLock.Unlock()
 	}
 }
 
@@ -223,30 +268,30 @@ func (th *TimingHeap) moveTimers(timers []timerBucketHeap) {
 		for {
 			var status = timer.status.Load()
 			switch status {
-			case status_Waiting, status_ModifiedEarlier, status_ModifiedLater:
-				if !timer.status.CompareAndSwap(status, status_Moving) {
+			case protocol.TimerStatus_Waiting, protocol.TimerStatus_ModifiedEarlier, protocol.TimerStatus_ModifiedLater:
+				if !timer.status.CompareAndSwap(status, protocol.TimerStatus_Moving) {
 					continue
 				}
-				timer.timers = nil
+				timer.timing = nil
 				th.AddTimer(timer)
-				if !timer.status.CompareAndSwap(status_Moving, status_Waiting) {
+				if !timer.status.CompareAndSwap(protocol.TimerStatus_Moving, protocol.TimerStatus_Waiting) {
 					badTimer()
 				}
 				break loop
-			case status_Deleted:
-				if !timer.status.CompareAndSwap(status, status_Removed) {
+			case protocol.TimerStatus_Deleted:
+				if !timer.status.CompareAndSwap(status, protocol.TimerStatus_Removed) {
 					continue
 				}
-				timer.timers = nil
+				timer.timing = nil
 				// We no longer need this timer in the heap.
 				break loop
-			case status_Modifying:
+			case protocol.TimerStatus_Modifying:
 				// Loop until the modification is complete.
 				scheduler.Yield(scheduler.Thread_WaitReason_Preempted)
-			case status_Unset, status_Removed:
+			case protocol.TimerStatus_Unset, protocol.TimerStatus_Removed:
 				// We should not see these status values in a timers heap.
 				badTimer()
-			case status_Running, status_Removing, status_Moving:
+			case protocol.TimerStatus_Running, protocol.TimerStatus_Removing, protocol.TimerStatus_Moving:
 				// Some other P thinks it owns this timer,
 				// which should not happen.
 				badTimer()
@@ -262,7 +307,7 @@ func (th *TimingHeap) moveTimers(timers []timerBucketHeap) {
 // it also moves timers that have been modified to run later, and removes deleted timers.
 // The caller must have locked the th.timersLock
 func (th *TimingHeap) adjustTimers(now monotonic.Time) {
-	// If we haven't yet reached the time of the first status_ModifiedEarlier
+	// If we haven't yet reached the time of the first protocol.TimerStatus_ModifiedEarlier
 	// timer, don't do anything. This speeds up programs that adjust
 	// a lot of timers back and forth if the timers rarely expire.
 	// We'll postpone looking through all the adjusted timers until
@@ -275,7 +320,7 @@ func (th *TimingHeap) adjustTimers(now monotonic.Time) {
 		return
 	}
 
-	// We are going to clear all status_ModifiedEarlier timers.
+	// We are going to clear all protocol.TimerStatus_ModifiedEarlier timers.
 	th.timerModifiedEarliest.Store(0)
 
 	var moved []*Async
@@ -285,10 +330,10 @@ func (th *TimingHeap) adjustTimers(now monotonic.Time) {
 		var timer = timers[i].timer
 		var status = timer.status.Load()
 		switch status {
-		case status_Deleted:
-			if timer.status.CompareAndSwap(status, status_Removing) {
+		case protocol.TimerStatus_Deleted:
+			if timer.status.CompareAndSwap(status, protocol.TimerStatus_Removing) {
 				var changed = th.deleteTimer(i)
-				if !timer.status.CompareAndSwap(status_Removing, status_Removed) {
+				if !timer.status.CompareAndSwap(protocol.TimerStatus_Removing, protocol.TimerStatus_Removed) {
 					badTimer()
 				}
 				th.deletedTimers.Add(-1)
@@ -296,8 +341,8 @@ func (th *TimingHeap) adjustTimers(now monotonic.Time) {
 				// "- 1" because the loop will add 1.
 				i = changed - 1
 			}
-		case status_ModifiedEarlier, status_ModifiedLater:
-			if timer.status.CompareAndSwap(status, status_Moving) {
+		case protocol.TimerStatus_ModifiedEarlier, protocol.TimerStatus_ModifiedLater:
+			if timer.status.CompareAndSwap(status, protocol.TimerStatus_Moving) {
 				// Take t off the heap, and hold onto it.
 				// We don't add it back yet because the
 				// heap manipulation could cause our
@@ -308,11 +353,11 @@ func (th *TimingHeap) adjustTimers(now monotonic.Time) {
 				// "- 1" because the loop will add 1.
 				i = changed - 1
 			}
-		case status_Unset, status_Running, status_Removing, status_Removed, status_Moving:
+		case protocol.TimerStatus_Unset, protocol.TimerStatus_Running, protocol.TimerStatus_Removing, protocol.TimerStatus_Removed, protocol.TimerStatus_Moving:
 			badTimer()
-		case status_Waiting:
+		case protocol.TimerStatus_Waiting:
 			// OK, nothing to do.
-		case status_Modifying:
+		case protocol.TimerStatus_Modifying:
 			// Check again after modification is complete.
 			scheduler.Yield(scheduler.Thread_WaitReason_Preempted)
 			i--
@@ -335,7 +380,7 @@ func (th *TimingHeap) adjustTimers(now monotonic.Time) {
 func (th *TimingHeap) addAdjustedTimers(moved []*Async) {
 	for _, t := range moved {
 		th.AddTimer(t)
-		if !t.status.CompareAndSwap(status_Moving, status_Waiting) {
+		if !t.status.CompareAndSwap(protocol.TimerStatus_Moving, protocol.TimerStatus_Waiting) {
 			badTimer()
 		}
 	}
@@ -352,25 +397,25 @@ func (th *TimingHeap) runTimer(now monotonic.Time) monotonic.Time {
 		var timer = th.timers[0].timer
 		var status = timer.status.Load()
 		switch status {
-		case status_Waiting:
+		case protocol.TimerStatus_Waiting:
 			if timer.when > now {
 				// Not ready to run.
 				return timer.when
 			}
 
-			if !timer.status.CompareAndSwap(status, status_Running) {
+			if !timer.status.CompareAndSwap(status, protocol.TimerStatus_Running) {
 				continue
 			}
 			// Note that runOneTimer may temporarily unlock th.timersLock
 			th.runOneTimer(timer, now)
 			return 0
 
-		case status_Deleted:
-			if !timer.status.CompareAndSwap(status, status_Removing) {
+		case protocol.TimerStatus_Deleted:
+			if !timer.status.CompareAndSwap(status, protocol.TimerStatus_Removing) {
 				continue
 			}
 			th.deleteTimer0()
-			if !timer.status.CompareAndSwap(status_Removing, status_Removed) {
+			if !timer.status.CompareAndSwap(protocol.TimerStatus_Removing, protocol.TimerStatus_Removed) {
 				badTimer()
 			}
 			th.deletedTimers.Add(-1)
@@ -378,23 +423,23 @@ func (th *TimingHeap) runTimer(now monotonic.Time) monotonic.Time {
 				return -1
 			}
 
-		case status_ModifiedEarlier, status_ModifiedLater:
-			if !timer.status.CompareAndSwap(status, status_Moving) {
+		case protocol.TimerStatus_ModifiedEarlier, protocol.TimerStatus_ModifiedLater:
+			if !timer.status.CompareAndSwap(status, protocol.TimerStatus_Moving) {
 				continue
 			}
 			th.deleteTimer0()
 			th.AddTimer(timer)
-			if !timer.status.CompareAndSwap(status_Moving, status_Waiting) {
+			if !timer.status.CompareAndSwap(protocol.TimerStatus_Moving, protocol.TimerStatus_Waiting) {
 				badTimer()
 			}
 
-		case status_Modifying:
+		case protocol.TimerStatus_Modifying:
 			// Wait for modification to complete.
 			scheduler.Yield(scheduler.Thread_WaitReason_Preempted)
-		case status_Unset, status_Removed:
+		case protocol.TimerStatus_Unset, protocol.TimerStatus_Removed:
 			// Should not see a new or inactive timer on the heap.
 			badTimer()
-		case status_Running, status_Removing, status_Moving:
+		case protocol.TimerStatus_Running, protocol.TimerStatus_Removing, protocol.TimerStatus_Moving:
 			// These should only be set when timers are locked,
 			// and we didn't do it.
 			badTimer()
@@ -420,14 +465,14 @@ func (th *TimingHeap) runOneTimer(t *Async, now monotonic.Time) {
 			t.when = maxWhen
 		}
 		th.siftDownTimer(0)
-		if !t.status.CompareAndSwap(status_Running, status_Waiting) {
+		if !t.status.CompareAndSwap(protocol.TimerStatus_Running, protocol.TimerStatus_Waiting) {
 			badTimer()
 		}
 		th.updateTimer0When()
 	} else {
 		// Remove from heap.
 		th.deleteTimer0()
-		if !t.status.CompareAndSwap(status_Running, status_Unset) {
+		if !t.status.CompareAndSwap(protocol.TimerStatus_Running, protocol.TimerStatus_Unset) {
 			badTimer()
 		}
 	}
@@ -457,7 +502,7 @@ func (th *TimingHeap) runOneTimer(t *Async, now monotonic.Time) {
 //
 // The caller must have locked the th.timersLock
 func (th *TimingHeap) clearDeletedTimers() {
-	// We are going to clear all status_ModifiedEarlier timers.
+	// We are going to clear all protocol.TimerStatus_ModifiedEarlier timers.
 	// Do this now in case new ones show up while we are looping.
 	th.timerModifiedEarliest.Store(0)
 
@@ -472,42 +517,42 @@ nextTimer:
 		for {
 			var status = timer.status.Load()
 			switch status {
-			case status_Waiting:
+			case protocol.TimerStatus_Waiting:
 				if changedHeap {
 					timers[to] = timers[i]
 					th.siftUpTimer(to)
 				}
 				to++
 				continue nextTimer
-			case status_ModifiedEarlier, status_ModifiedLater:
-				if timer.status.CompareAndSwap(status, status_Moving) {
+			case protocol.TimerStatus_ModifiedEarlier, protocol.TimerStatus_ModifiedLater:
+				if timer.status.CompareAndSwap(status, protocol.TimerStatus_Moving) {
 					timers[i].when = timer.when
 					timers[to] = timers[i]
 					th.siftUpTimer(to)
 					to++
 					changedHeap = true
-					if !timer.status.CompareAndSwap(status_Moving, status_Waiting) {
+					if !timer.status.CompareAndSwap(protocol.TimerStatus_Moving, protocol.TimerStatus_Waiting) {
 						badTimer()
 					}
 					continue nextTimer
 				}
-			case status_Deleted:
-				if timer.status.CompareAndSwap(status, status_Removing) {
-					timer.timers = nil
+			case protocol.TimerStatus_Deleted:
+				if timer.status.CompareAndSwap(status, protocol.TimerStatus_Removing) {
+					timer.timing = nil
 					cdel++
-					if !timer.status.CompareAndSwap(status_Removing, status_Removed) {
+					if !timer.status.CompareAndSwap(protocol.TimerStatus_Removing, protocol.TimerStatus_Removed) {
 						badTimer()
 					}
 					changedHeap = true
 					continue nextTimer
 				}
-			case status_Modifying:
+			case protocol.TimerStatus_Modifying:
 				// Loop until modification complete.
 				scheduler.Yield(scheduler.Thread_WaitReason_Preempted)
-			case status_Unset, status_Removed:
+			case protocol.TimerStatus_Unset, protocol.TimerStatus_Removed:
 				// We should not see these status values in a timer heap.
 				badTimer()
-			case status_Running, status_Removing, status_Moving:
+			case protocol.TimerStatus_Running, protocol.TimerStatus_Removing, protocol.TimerStatus_Moving:
 				// Some other P thinks it owns this timer,
 				// which should not happen.
 				badTimer()
@@ -545,14 +590,14 @@ func (th *TimingHeap) verifyTimerHeap() {
 	for i := 1; i < timersLen; i++ {
 		var p = (i - 1) / heapAry
 		if timers[i].when < timers[p].when {
-			print("timer: bad timer heap at ", i, ": ", p, ": ", th.timers[p].when, ", ", i, ": ", timers[i].when, "\n")
-			panic("timer: bad timer heap")
+			var logMsg = fmt.Sprint("bad timer heap at ", i, ": ", p, ": ", th.timers[p].when, ", ", i, ": ", timers[i].when, "\n")
+			protocol.App.Log(log.FatalEvent("libgo/timer", logMsg))
 		}
 	}
 	var numTimers = int(th.numTimers.Load())
 	if timersLen != numTimers {
-		println("timer: heap len", len(th.timers), "!= numTimers", numTimers)
-		panic("timer: bad timer heap len")
+		var logMsg = fmt.Sprint("timer: bad timer heap len ", len(th.timers), "!= numTimers", numTimers)
+		protocol.App.Log(log.FatalEvent("libgo/timer", logMsg))
 	}
 }
 
@@ -611,7 +656,7 @@ func (th *TimingHeap) noBarrierWakeTime() (until monotonic.Time) {
 // checkTimers runs any timers that are ready.
 // returns the time when the next timer should run (always larger than the now) or 0 if there is no next timer,
 // and reports whether it ran any timers.
-// We pass now in and out to avoid extra calls of monotonic.Now().
+// We pass now in to avoid extra calls of monotonic.Now().
 func (th *TimingHeap) checkTimers(now monotonic.Time) (nextWhen monotonic.Time, ran bool) {
 	// If it's not yet time for the first timer, or the first adjusted
 	// timer, then there is nothing to do.

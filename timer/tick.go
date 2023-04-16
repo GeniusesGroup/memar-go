@@ -3,12 +3,12 @@
 package timer
 
 import (
-	"github.com/GeniusesGroup/libgo/protocol"
+	"libgo/protocol"
 )
 
 // NewSyncTick is a convenience wrapper for SyncTimer.Tick() providing access to the ticking.
 // Unlike After() that providing access to (<-chan struct{}),
-// due to client need a way to shut it down the underlying
+// due to client need a way to Deinit the underlying
 // Ticker to recovered by the garbage collector; to prevent **"leaks"**.
 func NewSyncTick(first, interval protocol.Duration) (t *Sync, err protocol.Error) {
 	var timer Sync
