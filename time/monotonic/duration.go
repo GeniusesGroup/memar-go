@@ -3,7 +3,7 @@
 package monotonic
 
 import (
-	"github.com/GeniusesGroup/libgo/protocol"
+	"libgo/protocol"
 )
 
 // Common durations.

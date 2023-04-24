@@ -3,7 +3,7 @@
 package monotonic
 
 import (
-	"github.com/GeniusesGroup/libgo/protocol"
+	"libgo/protocol"
 )
 
 // Now returns runtime monotonic clock in nanoseconds.
@@ -15,13 +15,20 @@ func Now() Time {
 // time-measuring operations, specifically comparisons and subtractions, use the monotonic clock.
 type Time int64
 
-//libgo:impl protocol.Time
+//libgo:impl /libgo/protocol.Time
 func (t *Time) Epoch() protocol.TimeEpoch { return protocol.TimeEpoch_Monotonic }
 func (t *Time) SecondElapsed() int64      { return int64(*t) / int64(Second) }
 func (t *Time) NanoSecondElapsed() int32  { return int32(int64(*t) % t.SecondElapsed()) }
+
+//libgo:impl /libgo/protocol.Stringer
 func (t *Time) ToString() string {
+	return "TODO:::"
+}
+
+//libgo:impl /libgo/protocol.Stringer
+func (t *Time) FromString(s string) (err protocol.Error) {
 	// TODO:::
-	return ""
+	return
 }
 
 func (t *Time) Now()                    { *t = Now() }
