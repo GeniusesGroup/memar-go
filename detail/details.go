@@ -1,26 +1,30 @@
-/* For license and copyright information please see LEGAL file in repository */
+/* For license and copyright information please see the LEGAL file in the code repository */
 
 package detail
 
 import (
-	"github.com/GeniusesGroup/libgo/protocol"
+	"libgo/protocol"
 )
 
-type DetailsContainer struct {
+// DS is the same as the Details.
+// Use this type when embed in other struct to solve field & method same name problem(Details struct and Details() method) to satisfy interfaces.
+type DS = Details
+
+type Details struct {
 	detail  map[protocol.LanguageID]protocol.Detail
 	details []protocol.Detail
 }
 
-func (d *DetailsContainer) Details() []protocol.Detail { return d.details }
-func (d *DetailsContainer) Detail(lang protocol.LanguageID) protocol.Detail {
+func (d *Details) Details() []protocol.Detail { return d.details }
+func (d *Details) Detail(lang protocol.LanguageID) protocol.Detail {
 	return d.detail[lang]
 }
 
 // SetDetail add error text details to existing error and return it.
-func (d *DetailsContainer) SetDetail(lang protocol.LanguageID, domain, summary, overview, userNote, devNote string, tags []string) {
+func (d *Details) SetDetail(lang protocol.LanguageID, domain, summary, overview, userNote, devNote string, tags []string) {
 	var _, ok = d.detail[lang]
 	if ok {
-		panic("detail - Can't change detail after first set! Ask the holder to change details.")
+		panic("/libgo/detail - Can't change detail after first set! Ask the holder to change details.")
 	}
 
 	var detail = Detail{
