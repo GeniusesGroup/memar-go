@@ -5,7 +5,7 @@ package main
 import (
 	"os"
 
-	"github.com/GeniusesGroup/libgo/modules"
+	"libgo/modules"
 )
 
 func init() {
