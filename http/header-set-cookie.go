@@ -8,8 +8,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GeniusesGroup/libgo/convert"
-	"github.com/GeniusesGroup/libgo/protocol"
+	"libgo/convert"
+	"libgo/protocol"
 )
 
 // GetSetCookies parses and returns the Set-Cookie headers.
@@ -125,7 +125,6 @@ func (sc *SetCookie) SetMaxAge(maxAge int) {
 // See https://tools.ietf.org/html/draft-ietf-httpbis-cookie-same-site-00 for details.
 type SetCookieSameSite int
 
-//
 const (
 	SetCookieSameSiteDefaultMode SetCookieSameSite = iota + 1
 	// Cookies are allowed to be sent with top-level navigations and will be sent along with GET request

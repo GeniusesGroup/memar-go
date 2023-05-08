@@ -7,9 +7,9 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/GeniusesGroup/libgo/codec"
-	"github.com/GeniusesGroup/libgo/convert"
-	"github.com/GeniusesGroup/libgo/protocol"
+	"libgo/codec"
+	"libgo/convert"
+	"libgo/protocol"
 )
 
 // Response is represent response protocol structure!
@@ -23,7 +23,8 @@ type Response struct {
 	body
 }
 
-func (r *Response) Init() { 
+//libgo:impl libgo/protocol.ObjectLifeCycle
+func (r *Response) Init() {
 	r.H.Init()
 	r.body.Init()
 }
@@ -39,6 +40,7 @@ func (r *Response) Deinit() {
 	r.body.Deinit()
 }
 
+//libgo:impl libgo/protocol.HTTPResponse
 func (r *Response) Version() string               { return r.version }
 func (r *Response) StatusCode() string            { return r.statusCode }
 func (r *Response) ReasonPhrase() string          { return r.reasonPhrase }
@@ -79,7 +81,7 @@ func (r *Response) Redirect(code, phrase string, target string) {
 	r.H.Set(HeaderKeyLocation, target)
 }
 
-//libgo:impl protocol.Codec
+//libgo:impl libgo/protocol.Codec
 func (r *Response) MediaType() protocol.MediaType       { return &MediaTypeResponse }
 func (r *Response) CompressType() protocol.CompressType { return nil }
 func (r *Response) Len() (ln int) {
@@ -180,39 +182,13 @@ func (r *Response) UnmarshalFrom(httpPacket []byte) (maybeBody []byte, err proto
 	// si hold s index and i hold s index in new sliced state.
 	var si, i int
 
-	// First line: HTTP/1.0 200 OK
-	i = strings.IndexByte(s[:versionMaxLength], SP)
-	if i == -1 {
+	si, err = r.parseFirstLine(s)
+	if err != nil {
 		maybeBody = httpPacket[si:]
-		err = &ErrParseVersion
 		return
 	}
-	r.version = s[:i]
-	i++ // +1 due to have ' '
-	si = i
-	s = s[i:]
-
-	i = strings.IndexByte(s[:statusCodeMaxLength], SP)
-	if i == -1 {
-		maybeBody = httpPacket[si:]
-		err = &ErrParseStatusCode
-		return
-	}
-	r.statusCode = s[:i]
-	i++ // +1 due to have ' '
-	si += i
-	s = s[i:]
-
-	i = strings.IndexByte(s, '\r')
-	if i == -1 {
-		maybeBody = httpPacket[si:]
-		err = &ErrParseReasonPhrase
-		return
-	}
-	r.reasonPhrase = s[:i]
-	i += 2 // +2 due to have "\r\n"
-	si += i
-	s = s[i:]
+	si += 2 // +2 due to have "\r\n"
+	s = s[si:]
 
 	i, err = r.H.unmarshal(s)
 	if err != nil {
@@ -285,6 +261,67 @@ func (r *Response) WriteTo(writer io.Writer) (n int64, err error) {
 /*
 ********** local methods **********
  */
+
+// Unmarshal parses and decodes data of given httpPacket to r *Request until body start.
+// First line: HTTP/1.0 200 OK
+func (r *Response) parseFirstLine(s string) (si int, err protocol.Error) {
+	// si hold s index and i hold s index in new sliced state.
+	var i int
+
+	i, err = r.parseVersion(s)
+	if err != nil {
+		return
+	}
+	i++ // +1 due to have ' '
+	si = i
+	s = s[i:]
+
+	i, err = r.parseStatusCode(s)
+	if err != nil {
+		return
+	}
+	i++ // +1 due to have ' '
+	si += i
+	s = s[i:]
+
+	i, err = r.parseReasonPhrase(s)
+	if err != nil {
+		return
+	}
+	si += i
+	return
+}
+
+func (r *Response) parseVersion(s string) (i int, err protocol.Error) {
+	i = strings.IndexByte(s[:versionMaxLength], SP)
+	if i == -1 {
+		err = &ErrParseVersion
+		return
+	}
+	r.version = s[:i]
+	return
+}
+
+func (r *Response) parseStatusCode(s string) (i int, err protocol.Error) {
+	// First line: GET /index.html HTTP/1.0
+	i = strings.IndexByte(s[:statusCodeMaxLength], SP)
+	if i == -1 {
+		err = &ErrParseStatusCode
+		return
+	}
+	r.statusCode = s[:i]
+	return
+}
+
+func (r *Response) parseReasonPhrase(s string) (i int, err protocol.Error) {
+	i = strings.IndexByte(s, '\r')
+	if i == -1 {
+		err = &ErrParseReasonPhrase
+		return
+	}
+	r.reasonPhrase = s[:i]
+	return
+}
 
 // MarshalWithoutBody encodes r *Response data and return httpPacket without body part!
 func (r *Response) MarshalWithoutBody() (httpPacket []byte) {

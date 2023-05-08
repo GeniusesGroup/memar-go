@@ -7,8 +7,8 @@ import (
 
 	"golang.org/x/exp/maps"
 
-	"github.com/GeniusesGroup/libgo/convert"
-	"github.com/GeniusesGroup/libgo/protocol"
+	"libgo/convert"
+	"libgo/protocol"
 )
 
 // header is represent HTTP header structure!
@@ -105,7 +105,7 @@ func (h *header) Exclude(exclude map[string]bool) {
 	}
 }
 
-//libgo:impl protocol.Codec
+//libgo:impl libgo/protocol.Codec
 func (h *header) Decode(source protocol.Codec) (n int, err protocol.Error) {
 	// TODO:::
 	return

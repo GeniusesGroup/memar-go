@@ -5,8 +5,8 @@ package http
 import (
 	"strings"
 
-	"github.com/GeniusesGroup/libgo/convert"
-	"github.com/GeniusesGroup/libgo/protocol"
+	"libgo/convert"
+	"libgo/protocol"
 )
 
 type Cookies string
@@ -137,9 +137,11 @@ func sanitizeCookieName(n string) (name string, err protocol.Error) {
 // https://tools.ietf.org/html/rfc6265#section-4.1.1
 // cookie-value      = *cookie-octet / ( DQUOTE *cookie-octet DQUOTE )
 // cookie-octet      = %x21 / %x23-2B / %x2D-3A / %x3C-5B / %x5D-7E
-//           ; US-ASCII characters excluding CTLs,
-//           ; whitespace, DQUOTE, comma, semicolon,
-//           ; and backslash
+//
+//	; US-ASCII characters excluding CTLs,
+//	; whitespace, DQUOTE, comma, semicolon,
+//	; and backslash
+//
 // Don't check for ; due to Unmarshal will panic for bad cookie!!
 func sanitizeCookieValue(v string) (value string, err protocol.Error) {
 	var ln = len(v)

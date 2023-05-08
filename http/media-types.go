@@ -3,9 +3,9 @@
 package http
 
 import (
-	"github.com/GeniusesGroup/libgo/detail"
-	"github.com/GeniusesGroup/libgo/mediatype"
-	"github.com/GeniusesGroup/libgo/protocol"
+	"libgo/detail"
+	"libgo/mediatype"
+	"libgo/protocol"
 )
 
 var (
@@ -16,18 +16,8 @@ var (
 
 func init() {
 	MediaType.Init("application/http")
-	MediaType.SetDetail(protocol.LanguageEnglish, domainEnglish,
-		"Hypertext Transfer Protocol",
-		"An application layer protocol in the Internet protocol suite model for distributed, collaborative, hypermedia information",
-		"",
-		"",
-		[]string{})
-
 	MediaTypeRequest.Init("application/http; request")
-	MediaTypeRequest.SetDetail(protocol.LanguageEnglish, domainEnglish, "Hypertext Transfer Protocol Request", "", "", "", []string{})
-
 	MediaTypeResponse.Init("application/http; response")
-	MediaTypeResponse.SetDetail(protocol.LanguageEnglish, domainEnglish, "Hypertext Transfer Protocol Response", "", "", "", []string{})
 }
 
 type mediaType struct {
@@ -35,7 +25,7 @@ type mediaType struct {
 	mediatype.MT
 }
 
-//libgo:impl protocol.MediaType
+//libgo:impl libgo/protocol.MediaType
 func (m *mediaType) FileExtension() string           { return "http" }
 func (m *mediaType) Status() protocol.SoftwareStatus { return protocol.Software_PreAlpha }
 func (m *mediaType) ReferenceURI() string {
@@ -44,14 +34,14 @@ func (m *mediaType) ReferenceURI() string {
 func (m *mediaType) IssueDate() protocol.Time            { return nil }
 func (m *mediaType) ExpiryDate() protocol.Time           { return nil }
 func (m *mediaType) ExpireInFavorOf() protocol.MediaType { return nil }
-func (m *mediaType) Fields() []protocol.Field            { return nil }
+func (m *mediaType) Members() []protocol.Object_Member   { return nil }
 
 type mediaTypeRequest struct {
 	detail.DS
 	mediatype.MT
 }
 
-//libgo:impl protocol.MediaType
+//libgo:impl /libgolibgo/protocol.MediaType
 func (m *mediaTypeRequest) FileExtension() string           { return "req.http" }
 func (m *mediaTypeRequest) Status() protocol.SoftwareStatus { return protocol.Software_PreAlpha }
 func (m *mediaTypeRequest) ReferenceURI() string {
@@ -60,14 +50,14 @@ func (m *mediaTypeRequest) ReferenceURI() string {
 func (m *mediaTypeRequest) IssueDate() protocol.Time            { return nil }
 func (m *mediaTypeRequest) ExpiryDate() protocol.Time           { return nil }
 func (m *mediaTypeRequest) ExpireInFavorOf() protocol.MediaType { return nil }
-func (m *mediaTypeRequest) Fields() []protocol.Field            { return nil }
+func (m *mediaTypeRequest) Members() []protocol.Object_Member   { return nil }
 
 type mediaTypeResponse struct {
 	detail.DS
 	mediatype.MT
 }
 
-//libgo:impl protocol.MediaType
+//libgo:impl libgo/protocol.MediaType
 func (m *mediaTypeResponse) FileExtension() string           { return "res.http" }
 func (m *mediaTypeResponse) Status() protocol.SoftwareStatus { return protocol.Software_PreAlpha }
 func (m *mediaTypeResponse) ReferenceURI() string {
@@ -76,4 +66,4 @@ func (m *mediaTypeResponse) ReferenceURI() string {
 func (m *mediaTypeResponse) IssueDate() protocol.Time            { return nil }
 func (m *mediaTypeResponse) ExpiryDate() protocol.Time           { return nil }
 func (m *mediaTypeResponse) ExpireInFavorOf() protocol.MediaType { return nil }
-func (m *mediaTypeResponse) Fields() []protocol.Field            { return nil }
+func (m *mediaTypeResponse) Members() []protocol.Object_Member   { return nil }

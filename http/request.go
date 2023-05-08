@@ -6,10 +6,10 @@ import (
 	"io"
 	"strings"
 
-	"github.com/GeniusesGroup/libgo/codec"
-	"github.com/GeniusesGroup/libgo/convert"
-	"github.com/GeniusesGroup/libgo/protocol"
-	"github.com/GeniusesGroup/libgo/uri"
+	"libgo/codec"
+	"libgo/convert"
+	"libgo/protocol"
+	"libgo/uri"
 )
 
 // Request is represent HTTP request protocol structure.
@@ -23,6 +23,7 @@ type Request struct {
 	body
 }
 
+//libgo:impl libgo/protocol.ObjectLifeCycle
 func (r *Request) Init() {
 	r.H.Init()
 	r.body.Init()
@@ -39,6 +40,7 @@ func (r *Request) Deinit() {
 	r.body.Deinit()
 }
 
+//libgo:impl libgo/protocol.HTTPRequest
 func (r *Request) Method() string              { return r.method }
 func (r *Request) URI() protocol.URI           { return &r.uri }
 func (r *Request) Version() string             { return r.version }
@@ -46,7 +48,7 @@ func (r *Request) SetMethod(method string)     { r.method = method }
 func (r *Request) SetVersion(version string)   { r.version = version }
 func (r *Request) Header() protocol.HTTPHeader { return &r.H }
 
-//libgo:impl protocol.Codec
+//libgo:impl libgo/protocol.Codec
 func (r *Request) MediaType() protocol.MediaType       { return &MediaTypeRequest }
 func (r *Request) CompressType() protocol.CompressType { return nil }
 func (r *Request) Len() (ln int) {
@@ -61,7 +63,7 @@ func (r *Request) Decode(source protocol.Codec) (n int, err protocol.Error) {
 	}
 
 	// Make a buffer to hold incoming data.
-	// TODO::: change to get from buffer pool??
+	// TODO::: change to get from buffer pool?? force to be on the thread(goroutine) stack??
 	var data = make([]byte, 0, MaxHTTPHeaderSize)
 	data, err = source.MarshalTo(data)
 	if err != nil {
@@ -123,7 +125,7 @@ func (r *Request) MarshalTo(httpPacket []byte) (added []byte, err protocol.Error
 }
 
 // Unmarshal parses and decodes data of given httpPacket to r *Request.
-// In some bad packet may occur panic, handle panic by recover otherwise app will crash and exit!
+// In some bad packet may occur panic, handle panic by recover otherwise app will crash and exit.
 func (r *Request) Unmarshal(httpPacket []byte) (n int, err protocol.Error) {
 	var maybeBody []byte
 	maybeBody, err = r.UnmarshalFrom(httpPacket)
@@ -135,43 +137,23 @@ func (r *Request) Unmarshal(httpPacket []byte) (n int, err protocol.Error) {
 	return
 }
 
-// Unmarshal parses and decodes data of given httpPacket to r *Request.
-// In some bad packet may occur panic, handle panic by recover otherwise app will crash and exit!
+// Unmarshal parses and decodes data of given httpPacket to r *Request until body start.
+// In some bad packet may occur panic, handle panic by recover otherwise app will crash and exit.
 func (r *Request) UnmarshalFrom(httpPacket []byte) (maybeBody []byte, err protocol.Error) {
 	// By use unsafe pointer here all strings assign in Request will just point to httpPacket slice
-	// and no need to alloc lot of new memory locations and copy request line and headers keys & values!
+	// and no need to alloc lot of new memory locations and copy request line and headers keys & values.
 	var s = convert.UnsafeByteSliceToString(httpPacket)
 
 	// si hold s index and i hold s index in new sliced state.
 	var si, i int
 
-	// First line: GET /index.html HTTP/1.0
-	i = strings.IndexByte(s[:methodMaxLength], SP)
-	if i == -1 {
+	si, err = r.parseFirstLine(s)
+	if err != nil {
 		maybeBody = httpPacket[si:]
-		err = &ErrParseMethod
 		return
 	}
-	r.method = s[:i]
-	i++ // +1 due to have ' '
-	si = i
-	s = s[i:]
-
-	i = r.uri.UnmarshalFromString(s)
-	i++ // +1 due to have ' '
-	si += i
-	s = s[i:]
-
-	i = strings.IndexByte(s[:versionMaxLength], '\r')
-	if i == -1 {
-		maybeBody = httpPacket[si:]
-		err = &ErrParseVersion
-		return
-	}
-	r.version = s[:i]
-	i += 2 // +2 due to have "\r\n"
-	si += i
-	s = s[i:]
+	si += 2 // +2 due to have "\r\n"
+	s = s[si:]
 
 	i, err = r.H.unmarshal(s)
 	if err != nil {
@@ -188,12 +170,9 @@ func (r *Request) UnmarshalFrom(httpPacket []byte) (maybeBody []byte, err protoc
 	return httpPacket[si:], nil
 }
 
-/*
-********** protocol.Buffer interface **********
- */
-
 // ReadFrom decodes r *Request data by read from given io.Reader
-// Declare to respect io.ReaderFrom interface.
+//
+//libgo:impl go/io.ReaderFrom
 func (r *Request) ReadFrom(reader io.Reader) (n int64, goErr error) {
 	// Make a buffer to hold incoming data.
 	var buf = make([]byte, MaxHTTPHeaderSize)
@@ -217,7 +196,8 @@ func (r *Request) ReadFrom(reader io.Reader) (n int64, goErr error) {
 }
 
 // WriteTo encodes r(*Request) data and write it to given io.Writer
-// Declare to respect io.WriterTo interface.
+//
+//libgo:impl go/io.WriterTo
 func (r *Request) WriteTo(writer io.Writer) (n int64, err error) {
 	var lenWithoutBody = r.LenWithoutBody()
 	var bodyLen = r.body.Len()
@@ -246,6 +226,58 @@ func (r *Request) WriteTo(writer io.Writer) (n int64, err error) {
 /*
 ********** Other methods **********
  */
+
+// Unmarshal parses and decodes data of given httpPacket to r *Request until body start.
+// First line: GET /index.html HTTP/1.0
+func (r *Request) parseFirstLine(s string) (si int, err protocol.Error) {
+	// si hold s index and i hold s index in new sliced state.
+	var i int
+
+	i, err = r.parseMethod(s)
+	if err != nil {
+		return
+	}
+	i++ // +1 due to have ' '
+	si = i
+	s = s[i:]
+
+	i, err = r.uri.UnmarshalFromString(s)
+	if err != nil {
+		return
+	}
+	i++ // +1 due to have ' '
+	si += i
+	s = s[i:]
+
+	i, err = r.parseVersion(s)
+	if err != nil {
+		return
+	}
+	si += i
+	return
+}
+
+func (r *Request) parseMethod(s string) (i int, err protocol.Error) {
+	// First line: GET /index.html HTTP/1.0
+	i = strings.IndexByte(s[:methodMaxLength], SP)
+	if i == -1 {
+		err = &ErrParseMethod
+		return
+	}
+	r.method = s[:i]
+	return
+}
+
+func (r *Request) parseVersion(s string) (i int, err protocol.Error) {
+	// First line: GET /index.html HTTP/1.0
+	i = strings.IndexByte(s[:versionMaxLength], '\r')
+	if i == -1 {
+		err = &ErrParseVersion
+		return
+	}
+	r.version = s[:i]
+	return
+}
 
 // MarshalWithoutBody encodes r *Request data and return httpPacket without body part!
 func (r *Request) MarshalWithoutBody() (httpPacket []byte) {
@@ -285,12 +317,12 @@ func (r *Request) LenWithoutBody() (ln int) {
 // checkHost check host of request by RFC 7230, section 5.3 rules: Must treat
 //
 //	GET / HTTP/1.1
-//	Host: www.sabz.city
+//	Host: geniuses.group
 //
 // and
 //
-//	GET https://www.sabz.city/ HTTP/1.1
-//	Host: apis.sabz.city
+//	GET https://geniuses.group/ HTTP/1.1
+//	Host: apis.geniuses.group
 //
 // the same. In the second case, any Host line is ignored.
 func (r *Request) checkHost() {

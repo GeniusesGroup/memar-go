@@ -5,12 +5,13 @@ package http
 import (
 	"io"
 
-	"github.com/GeniusesGroup/libgo/compress/raw"
-	"github.com/GeniusesGroup/libgo/protocol"
+	"libgo/compress/raw"
+	"libgo/protocol"
 )
 
 // body is represent HTTP body.
-// Due to many performance impact, MediaType() method of body not return any true data. use header ContentType() method instead. This can be change if ...
+// Due to many performance impact, MediaType() method of body not return any true data.
+// use header ContentType() method instead. This can be change if ...
 // https://datatracker.ietf.org/doc/html/rfc2616#section-4.3
 type body struct {
 	protocol.Codec
@@ -23,7 +24,7 @@ func (b *body) Deinit() {}
 func (b *body) Body() protocol.Codec         { return b }
 func (b *body) SetBody(codec protocol.Codec) { b.Codec = codec }
 
-//libgo:impl protocol.Codec
+//libgo:impl libgo/protocol.Codec
 func (b *body) Len() int {
 	if b.Codec != nil {
 		return b.Codec.Len()
@@ -174,14 +175,14 @@ func (b *body) checkAndSetReaderAsIncomeBody(maybeBody []byte, reader protocol.R
 }
 
 // Call this method just if body marshaled with first line and headers.
-func (b *body) checkAndSetIncomeBody(maybeBody []byte, h *header) (err protocol.Error) {
-	var maybeBodyLength = len(maybeBody)
-	if maybeBodyLength > 0 {
+func (b *body) checkAndSetIncomeBody(body []byte, h *header) (err protocol.Error) {
+	var bodyLength = len(body)
+	if bodyLength > 0 {
 		var contentLength = h.ContentLength()
-		if maybeBodyLength == int(contentLength) {
-			b.setReadedIncomeBody(maybeBody, h)
+		if bodyLength == int(contentLength) {
+			b.setReadedIncomeBody(body, h)
 		} else {
-			// err =
+			err = &ErrBodySizeMismatch
 		}
 	}
 	return

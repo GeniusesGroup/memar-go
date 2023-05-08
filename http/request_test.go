@@ -8,7 +8,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/GeniusesGroup/libgo/compress/raw"
+	"libgo/compress/raw"
 )
 
 type RequestTest struct {
@@ -49,7 +49,7 @@ var requestTests = []RequestTest{
 			"Connection: keep-alive\r\n" +
 			"Content-Length: 15\r\n" +
 			"Content-Type: application/json\r\n" +
-			"Host: www.sabz.city\r\n" +
+			"Host: geniuses.group\r\n" +
 			"Set-Cookie: test\r\n" +
 			"Upgrade-Insecure-Requests: 1\r\n" +
 			"User-Agent: Mozilla\r\n" +
@@ -76,7 +76,7 @@ var requestTests = []RequestTest{
 					"Connection":                {"keep-alive"},
 					"Content-Length":            {"15"},
 					"Content-Type":              {"application/json"},
-					"Host":                      {"www.sabz.city"},
+					"Host":                      {"geniuses.group"},
 					"Set-Cookie":                {"test"},
 					"Upgrade-Insecure-Requests": {"1"},
 					"User-Agent":                {"Mozilla"},
@@ -98,7 +98,7 @@ var requestTests = []RequestTest{
 			"Connection: keep-alive\r\n" +
 			"Content-Length: 15\r\n" +
 			"Content-Type: application/json\r\n" +
-			"Host: www.sabz.city\r\n" +
+			"Host: geniuses.group\r\n" +
 			"Set-Cookie: test\r\n" +
 			"Upgrade-Insecure-Requests: 1\r\n" +
 			"User-Agent: Mozilla\r\n" +
@@ -124,7 +124,7 @@ var requestTests = []RequestTest{
 					"Connection":                {"keep-alive"},
 					"Content-Length":            {"15"},
 					"Content-Type":              {"application/json"},
-					"Host":                      {"www.sabz.city"},
+					"Host":                      {"geniuses.group"},
 					"Set-Cookie":                {"test"},
 					"Upgrade-Insecure-Requests": {"1"},
 					"User-Agent":                {"Mozilla"},
