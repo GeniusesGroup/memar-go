@@ -5,8 +5,8 @@ package mediatype
 import (
 	"strings"
 
-	"github.com/GeniusesGroup/libgo/protocol"
-	uuid "github.com/GeniusesGroup/libgo/uuid/32byte"
+	"libgo/protocol"
+	uuid "libgo/uuid/32byte"
 )
 
 // MT is the same as the MediaType.
@@ -27,14 +27,15 @@ type MediaType struct {
 	parameters []string
 }
 
-func (mt *MediaType) Init(mediatype string) {
+func (mt *MediaType) Init(mediatype string) (err protocol.Error) {
 	mt.mediaType = mediatype
-	mt.parse()
+	err = mt.parse()
 
 	mt.Generated.NewHashString(mediatype)
+	return
 }
 
-//libgo:impl protocol.MediaType
+//libgo:impl libgo/protocol.MediaType
 func (mt *MediaType) MediaType() string                   { return mt.mediaType }
 func (mt *MediaType) MainType() string                    { return mt.mainType }
 func (mt *MediaType) Tree() string                        { return mt.tree }
@@ -47,11 +48,17 @@ func (mt *MediaType) ReferenceURI() string                { return "" }
 func (mt *MediaType) IssueDate() protocol.Time            { return nil }
 func (mt *MediaType) ExpiryDate() protocol.Time           { return nil }
 func (mt *MediaType) ExpireInFavorOf() protocol.MediaType { return nil }
-func (mt *MediaType) Fields() []protocol.Field            { return nil }
-func (mt *MediaType) ToString() string                    { return mt.mediaType }
+
+//libgo:impl libgo/protocol.Object
+func (mt *MediaType) Fields() []protocol.Object_Member_Field   { return nil }
+func (mt *MediaType) Methods() []protocol.Object_Member_Method { return nil }
+
+//libgo:impl libgo/protocol.Stringer
+func (mt *MediaType) ToString() string                         { return mt.mediaType }
+func (mt *MediaType) FromString(s string) (err protocol.Error) { return mt.Init(s) }
 
 // TODO::: complete extraction
-func (mt *MediaType) parse() {
+func (mt *MediaType) parse() (err protocol.Error) {
 	var mediatype = mt.mediaType
 
 	var i = strings.IndexByte(mediatype, '/')
@@ -61,4 +68,5 @@ func (mt *MediaType) parse() {
 	mt.mainType = mediatype[:i]
 	// TODO:::
 	mt.subType = mediatype[i+1:]
+	return
 }

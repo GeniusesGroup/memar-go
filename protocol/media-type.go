@@ -30,9 +30,8 @@ type MediaType interface {
 	ExpiryDate() Time
 	ExpireInFavorOf() MediaType
 
-	Fields() []Field // In explicit mediatype like domain maintype not like "application/json"
-
-	UUIDHash // Hash of MediaType()
+	Object    // In explicit mediatype like domain maintype not like "application/json"
+	UUID_Hash // Hash of MediaType()
 	Details
 	Stringer
 }

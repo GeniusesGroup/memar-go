@@ -3,7 +3,7 @@
 package mediatype
 
 import (
-	"github.com/GeniusesGroup/libgo/protocol"
+	"libgo/protocol"
 )
 
 func RegisterMediaType(mt protocol.MediaType) {
