@@ -6,22 +6,6 @@ package protocol
 type Command interface {
 	// Init(parent Command, subCommands ...Command)
 
-	Name() string // e.g. init
-	// These are not suggested to the user in the shell completion,
-	// but accepted if entered manually.
-	Aliases() []string // e.g. []string{"initialize", "initialise", "create"}
-
-	// UsageLine is the one-line usage message.
-	// Recommended syntax is as follow:
-	//   [ ] identifies an optional argument. Arguments that are not enclosed in brackets are required.
-	//   ... indicates that you can specify multiple values for the previous argument.
-	//   |   indicates mutually exclusive information. You can use the argument to the left of the separator or the
-	//       argument to the right of the separator. You cannot use both arguments in a single use of the command.
-	//   { } delimits a set of mutually exclusive arguments when one of the arguments is required. If the arguments are
-	//       optional, they are enclosed in brackets ([ ]).
-	// Example: '<app> add [-F file | -D dir]... [-f format] profile'
-	UsageLine() string
-
 	// Runnable reports whether the command can be run; otherwise it is a documentation pseudo-command
 	Runnable() bool
 
@@ -34,6 +18,7 @@ type Command interface {
 	// Note that subcommands are in general best avoided.
 	SubCommands() []Command
 
+	Quiddity
 	CommandHandler
 	ServiceDetails
 }
@@ -44,7 +29,7 @@ type CommandHandler interface {
 	// Arguments list not include the command name.
 	ServeCLA(arguments []string) (err Error)
 
-	// read and write to os.Stdin, os.Stdout, and os.Stderr files
+	// read and write to e.g. os.Stdin, os.Stdout, and os.Stderr files
 	// ServeCLI() (err Error)
 }
 

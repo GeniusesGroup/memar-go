@@ -5,25 +5,27 @@ package cmd
 import (
 	"strings"
 
-	"github.com/GeniusesGroup/libgo/protocol"
+	"libgo/protocol"
 )
 
 // A FlagSet represents a set of defined fields
-//
-// field names must be unique within a FlagSet. An attempt to define a flag whose
-// name is already in use will cause a panic.
 type FlagSet struct {
-	fields []protocol.Field
-	parsed []protocol.Field
+	object protocol.Object
+	fields []protocol.Object_Member_Field
+	parsed []protocol.Object_Member_Field
 	args   []string // arguments after flags
 }
 
 // argument list should not include the commands name.
-func (f *FlagSet) Init(fields []protocol.Field, arguments []string) {
-	f.fields = fields
+//
+// field names must be unique within a FlagSet. An attempt to define a flag whose
+// name is already in use will cause panic.
+func (f *FlagSet) Init(ob protocol.Object, arguments []string) {
+	f.object = ob
+	f.fields = ob.Fields()
 	f.checkFields()
 	if f.parsed == nil {
-		f.parsed = make([]protocol.Field, 0, len(f.fields))
+		f.parsed = make([]protocol.Object_Member_Field, 0, len(f.fields))
 	}
 	f.args = arguments
 }
@@ -32,7 +34,7 @@ func (f *FlagSet) Reinit() {
 	f.parsed = f.parsed[:0]
 	f.args = nil
 }
-func (f *FlagSet) Deinit() { f.Reinit() }
+func (f *FlagSet) Deinit() {}
 
 // Parse parses flag definitions from f.args.
 // It Must be called after Init called and before flags are accessed by the program.
@@ -67,7 +69,7 @@ func (f *FlagSet) Arg(i int) string {
 
 // VisitAll visits the flags in given order, calling fn for each.
 // It visits all flags, even those not set.
-func (f *FlagSet) VisitAll(fn func(protocol.Field)) {
+func (f *FlagSet) VisitAll(fn func(protocol.Object_Member_Field)) {
 	for _, flag := range f.fields {
 		fn(flag)
 	}
@@ -75,14 +77,14 @@ func (f *FlagSet) VisitAll(fn func(protocol.Field)) {
 
 // Visit visits the flags in given order, calling fn for each.
 // It visits only those flags that have been set.
-func (f *FlagSet) Visit(fn func(protocol.Field)) {
+func (f *FlagSet) Visit(fn func(protocol.Object_Member_Field)) {
 	for _, field := range f.parsed {
 		fn(field)
 	}
 }
 
 // Lookup returns the Field of the named flag, returning nil if none exists.
-func (f *FlagSet) Lookup(name string) protocol.Field {
+func (f *FlagSet) Lookup(name string) protocol.Object_Member_Field {
 	for _, field := range f.fields {
 		if field.Name() == name || field.Abbreviation() == name {
 			return field
@@ -100,7 +102,7 @@ func (f *FlagSet) Set(name, value string) (err protocol.Error) {
 
 	var hasValue = len(value) > 0
 
-	if flag.Type() == protocol.FieldType_Boolean && !hasValue { // special case: doesn't need an arg
+	if flag.Type() == protocol.Object_Type_Boolean && !hasValue { // special case: doesn't need an arg
 		value = "true"
 	} else {
 		// It must have a value, which might be the next argument.

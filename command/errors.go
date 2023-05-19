@@ -3,7 +3,7 @@
 package cmd
 
 import (
-	er "github.com/GeniusesGroup/libgo/error"
+	er "libgo/error"
 )
 
 // Errors
@@ -17,9 +17,10 @@ var (
 )
 
 func init() {
-	ErrServiceNotAcceptCLI.Init("domain/geniuses.group; type=error; package=command; name=service-not-accept-cli")
+	ErrServiceNotFound.Init("domain/libgo.scm.geniuses.group; type=error; package=command; name=service-not-found")
+	ErrServiceNotAcceptCLI.Init("domain/libgo.scm.geniuses.group; type=error; package=command; name=service-not-accept-cli")
 
-	ErrFlagNotFound.Init("domain/geniuses.group; type=error; package=command; name=flag-not_found")
-	ErrFlagBadSyntax.Init("domain/geniuses.group; type=error; package=command; name=flag-bad_syntax")
-	ErrFlagNeedsAnArgument.Init("domain/geniuses.group; type=error; package=command; name=flag-needs_an_arguments")
+	ErrFlagNotFound.Init("domain/libgo.scm.geniuses.group; type=error; package=command; name=flag-not_found")
+	ErrFlagBadSyntax.Init("domain/libgo.scm.geniuses.group; type=error; package=command; name=flag-bad_syntax")
+	ErrFlagNeedsAnArgument.Init("domain/libgo.scm.geniuses.group; type=error; package=command; name=flag-needs_an_arguments")
 }

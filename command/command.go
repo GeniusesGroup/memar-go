@@ -3,7 +3,7 @@
 package cmd
 
 import (
-	"github.com/GeniusesGroup/libgo/protocol"
+	"libgo/protocol"
 )
 
 type Command struct {
@@ -21,10 +21,12 @@ func (c *Command) Init(parent protocol.Command, cmd ...protocol.Command) {
 	c.subCommands = append(c.subCommands, cmd...)
 }
 
-//libgo:impl protocol.Command
-func (c *Command) Name() string                    { panic("Dev must implement Name() method to overwrite this method") }
-func (c *Command) Aliases() []string               { return nil }
-func (c *Command) UsageLine() string               { return "" }
+//libgo:impl libgo/protocol.Quiddity
+func (c *Command) Name() string         { panic("Dev must implement Name() method to overwrite this method") }
+func (c *Command) Abbreviation() string { return "" }
+func (c *Command) Aliases() []string    { return nil }
+
+//libgo:impl libgo/protocol.Command
 func (c *Command) Runnable() bool                  { return false }
 func (c *Command) Parent() protocol.Command        { return c.parent }
 func (c *Command) SubCommands() []protocol.Command { return c.subCommands }
@@ -32,6 +34,9 @@ func (c *Command) SubCommand(name string) protocol.Command {
 	// TODO::: intelligent suggestion or correction
 	for _, cmd := range c.subCommands {
 		if cmd.Name() == name {
+			return cmd
+		}
+		if cmd.Abbreviation() == name {
 			return cmd
 		}
 		for _, alias := range cmd.Aliases() {
