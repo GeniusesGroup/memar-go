@@ -3,22 +3,22 @@
 package service
 
 import (
-	"github.com/GeniusesGroup/libgo/protocol"
+	"libgo/protocol"
 )
 
 // Service implement protocol.Service when embed to other struct that implements other needed methods.
 type Service struct{}
 
-//libgo:impl protocol.Service
+//libgo:impl libgo/protocol.Service
 func (s *Service) URI() string                 { return "" }
 func (s *Service) Priority() protocol.Priority { return protocol.Priority_Unset }
 func (s *Service) Weight() protocol.Weight     { return protocol.Weight_Unset }
 func (s *Service) CRUDType() protocol.CRUD     { return protocol.CRUD_None }
 func (s *Service) UserType() protocol.UserType { return protocol.UserType_Unset }
 
-//libgo:impl protocol.ServiceDetails
-func (s *Service) Request() []protocol.Field  { return nil }
-func (s *Service) Response() []protocol.Field { return nil }
+//libgo:impl libgo/protocol.ServiceDetails
+func (s *Service) Request() protocol.Object  { return nil }
+func (s *Service) Response() protocol.Object { return nil }
 
 /*
 *********** Handlers ***********
