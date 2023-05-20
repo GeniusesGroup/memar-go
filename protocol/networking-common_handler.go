@@ -8,5 +8,6 @@ type NetworkCommonHandler interface {
 	// HandleIncomeRequest must check stream status
 	HandleIncomeRequest(st Stream) (err Error)
 
+	ObjectLifeCycle
 	Stringer // e.g. "tls", ...
 }

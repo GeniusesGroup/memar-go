@@ -29,3 +29,20 @@ type ConnectionMetrics interface {
 
 	// Rate() uint // Byte/Second
 }
+
+// ConnectionMetrics
+type ConnectionsMetrics interface {
+	LastUsage() Time   // Last use of the connection
+	OpenCount() int64  // number of opened and pending open connections
+	InUseCount() int64 // The number of connections currently in use.
+	IdleCount() int64  // The number of idle connections.
+
+	GuestConnectionCount() int64
+	ClosedCount() int64         // ClosedCount is an atomic counter which represents a total number of closed connections.
+	WaitCount() int64           // Total number of connections waited for.
+	IdleClosedCount() int64     // Total number of connections closed due to idle count.
+	IdleTimeClosedCount() int64 // Total number of connections closed due to idle time.
+	LifetimeClosedCount() int64 // Total number of connections closed due to max connection lifetime limit.
+
+	// Rate() uint // Byte/Second
+}
