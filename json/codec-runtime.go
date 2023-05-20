@@ -1,17 +1,17 @@
-/* For license and copyright information please see LEGAL file in repository */
+/* For license and copyright information please see the LEGAL file in the code repository */
 
 package json
 
 import (
 	"encoding/json"
 
-	"../protocol"
+	"libgo/protocol"
 )
 
 /*
 	********************PAY ATTENTION:*******************
 	We don't suggest use these codec instead use Codec and autogenerate needed code before compile time
-	and reduce runtime proccess to improve performance of the app and gain better performance from this protocol!
+	and reduce runtime process to improve performance of the app and gain better performance from this protocol!
 */
 
 /*
@@ -32,35 +32,35 @@ Field int `json:"-,"`               // Field appears in JSON as key "-".
 */
 
 // Marshal encodes the value of s to the payload buffer in runtime.
-func Marshal(s interface{}) (p []byte, err protocol.Error) {
+func Marshal(s any) (p []byte, err protocol.Error) {
 	// TODO::: make better algorithm instead of below
 	var goErr error
 	p, goErr = json.Marshal(s)
 	if goErr != nil {
-		return nil, ErrEncodedCorrupted
+		return nil, &ErrEncodedCorrupted
 	}
 	return
 }
 
 // Unmarshal decode payload and stores the result in the value pointed to by s in runtime.
-func Unmarshal(p []byte, s interface{}) (err protocol.Error) {
+func Unmarshal(p []byte, s any) (err protocol.Error) {
 	// TODO::: make better algorithm instead of below
 	var goErr error = json.Unmarshal(p, s)
 	if goErr != nil {
-		return ErrEncodedCorrupted
+		return &ErrEncodedCorrupted
 	}
 	return
 }
 
 // RunTimeCodec is a wrapper to use anywhere need protocol.Codec interface instead of protocol.JSON interface
 type RunTimeCodec struct {
-	t       interface{}
-	decoder interface{}
-	encoder interface{}
+	t       any
+	decoder any
+	encoder any
 	len     int
 }
 
-func NewRunTimeCodec(t interface{}) (codec *RunTimeCodec) {
+func NewRunTimeCodec(t any) (codec *RunTimeCodec) {
 	codec = &RunTimeCodec{
 		t: t,
 		// len: json.LenAsJSON(),

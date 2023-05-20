@@ -1,45 +1,62 @@
-/* For license and copyright information please see LEGAL file in repository */
+/* For license and copyright information please see the LEGAL file in the code repository */
 
 package json
 
 import (
-	er "../error"
-	"../protocol"
+	er "libgo/error"
 )
 
-const domainEnglish = "JSON"
-const domainPersian = "جیسون"
-
-// Declare Errors Details
-// TODO::: use json.ietf.org or ??
+// Declare package errors
 var (
-	ErrEncodedIncludeNotDeffiendKey = er.New("urn:giti:json.ecma-international.org:error:encoded-include-not-deffiend-key").SetDetail(protocol.LanguageEnglish, domainEnglish, "Encoded Include Not Deffiend Key",
-		"Given encoded json string include a key that must not be in the encoded string",
-		"",
-		"").Save()
+	ErrEncodedIncludeNotDefinedKey er.Error
+	ErrEncodedCorrupted            er.Error
+	ErrEncodedIntegerCorrupted     er.Error
+	ErrEncodedStringCorrupted      er.Error
+	ErrEncodedArrayCorrupted       er.Error
+	ErrEncodedSliceCorrupted       er.Error
 
-	ErrEncodedCorrupted = er.New("urn:giti:json.ecma-international.org:error:encoded-corrupted").SetDetail(protocol.LanguageEnglish, domainEnglish, "Encoded Corrupted",
-		"Given encoded json string corruputed and not encode in the way that can decode",
-		"",
-		"").Save()
+// https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Errors/JSON_bad_parse
 
-	ErrEncodedIntegerCorrupted = er.New("urn:giti:json.ecma-international.org:error:encoded-integer-corrupted").SetDetail(protocol.LanguageEnglish, domainEnglish, "Encoded Integer Corrupted",
-		"Given encoded json in Integer part corruputed and not encode in the way that can decode",
-		"",
-		"").Save()
-
-	ErrEncodedStringCorrupted = er.New("urn:giti:json.ecma-international.org:error:encoded-string-corrupted").SetDetail(protocol.LanguageEnglish, domainEnglish, "Encoded String Corrupted",
-		"Given encoded json in string part corruputed and not encode in the way that can decode",
-		"",
-		"").Save()
-
-	ErrEncodedArrayCorrupted = er.New("urn:giti:json.ecma-international.org:error:encoded-array-corrupted").SetDetail(protocol.LanguageEnglish, domainEnglish, "Encoded Array Corrupted",
-		"Given encoded json in array part corruputed and not encode in the way that can decode",
-		"",
-		"").Save()
-
-	ErrEncodedSliceCorrupted = er.New("urn:giti:json.ecma-international.org:error:encoded-slice-corrupted").SetDetail(protocol.LanguageEnglish, domainEnglish, "Encoded Slice Corrupted",
-		"Given encoded json in slice part corruputed and not encode in the way that can decode",
-		"",
-		"").Save()
+// Decoding
+// SyntaxError: JSON.parse: unterminated string literal
+// SyntaxError: JSON.parse: bad control character in string literal
+// SyntaxError: JSON.parse: bad character in string literal
+// SyntaxError: JSON.parse: bad Unicode escape
+// SyntaxError: JSON.parse: bad escape character
+// SyntaxError: JSON.parse: unterminated string
+// SyntaxError: JSON.parse: no number after minus sign
+// SyntaxError: JSON.parse: unexpected non-digit
+// SyntaxError: JSON.parse: missing digits after decimal point
+// SyntaxError: JSON.parse: unterminated fractional number
+// SyntaxError: JSON.parse: missing digits after exponent indicator
+// SyntaxError: JSON.parse: missing digits after exponent sign
+// SyntaxError: JSON.parse: exponent part is missing a number
+// SyntaxError: JSON.parse: unexpected end of data
+// SyntaxError: JSON.parse: unexpected keyword
+// SyntaxError: JSON.parse: unexpected character
+// SyntaxError: JSON.parse: end of data while reading object contents
+// SyntaxError: JSON.parse: expected property name or '}'
+// SyntaxError: JSON.parse: end of data when ',' or ']' was expected
+// SyntaxError: JSON.parse: expected ',' or ']' after array element
+// SyntaxError: JSON.parse: end of data when property name was expected
+// SyntaxError: JSON.parse: expected double-quoted property name
+// SyntaxError: JSON.parse: end of data after property name when ':' was expected
+// SyntaxError: JSON.parse: expected ':' after property name in object
+// SyntaxError: JSON.parse: end of data after property value in object
+// SyntaxError: JSON.parse: expected ',' or '}' after property value in object
+// SyntaxError: JSON.parse: expected ',' or '}' after property-value pair in object literal
+// SyntaxError: JSON.parse: property names must be double-quoted strings
+// SyntaxError: JSON.parse: expected property name or '}'
+// SyntaxError: JSON.parse: unexpected character
+// SyntaxError: JSON.parse: unexpected non-whitespace character after JSON data
 )
+
+// TODO::: use json.ietf.org or ??
+func init() {
+	ErrEncodedIncludeNotDefinedKey.Init("domain/json.ecma-international.org; type=error; name=encoded-include-not-defined-key")
+	ErrEncodedCorrupted.Init("domain/json.ecma-international.org; type=error; name=encoded-corrupted")
+	ErrEncodedIntegerCorrupted.Init("domain/json.ecma-international.org; type=error; name=encoded-integer-corrupted")
+	ErrEncodedStringCorrupted.Init("domain/json.ecma-international.org; type=error; name=encoded-string-corrupted")
+	ErrEncodedArrayCorrupted.Init("domain/json.ecma-international.org; type=error; name=encoded-array-corrupted")
+	ErrEncodedSliceCorrupted.Init("domain/json.ecma-international.org; type=error; name=encoded-slice-corrupted")
+}
