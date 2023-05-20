@@ -14,6 +14,7 @@ var (
 	ErrPortNotExist     er.Error
 	ErrPathAlreadyUse   er.Error
 	ErrPathAlreadyExist er.Error
+	ErrNotAcceptLastHop er.Error
 )
 
 func init() {
@@ -23,4 +24,5 @@ func init() {
 	ErrPortNotExist.Init("domain/chapar.protocol; type=error; name=port-not-exist")
 	ErrPathAlreadyUse.Init("domain/chapar.protocol; type=error; name=path-already-use")
 	ErrPathAlreadyExist.Init("domain/chapar.protocol; type=error; name=path-already-exist")
+	ErrNotAcceptLastHop.Init("domain/chapar.protocol; type=error; name=not-accept-last-hop")
 }

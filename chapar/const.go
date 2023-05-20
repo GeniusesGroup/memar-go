@@ -9,6 +9,9 @@ const (
 	// MaxFrameLen is maximum Chapar frame length
 	MaxFrameLen = 8192
 
+	// AcceptLastHop indicate that package must accept frames in last hop or not.
+	AcceptLastHop = true
+
 	// 256 is max ports that Chapar protocol support directly in one hop.
 	defaultPortNumber = 256
 

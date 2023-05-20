@@ -9,7 +9,7 @@ import (
 	"libgo/protocol"
 )
 
-// Connection keep some data and provide some methods to use as /libgo/protocol.NetworkLink_Connection
+// Connection keep some data and provide some methods to use as libgo/protocol.NetworkLink_Connection
 type Connection struct {
 	/* Connection data */
 	state      protocol.NetworkStatus
@@ -41,11 +41,22 @@ func (c *Connection) Init(frame Frame, port *port) (err protocol.Error) {
 	return
 }
 
-func (c *Connection) MTU() int                 { return c.mtu }
+//libgo:impl libgo/protocol.NetworkMTU
+func (c *Connection) MTU() int { return c.mtu }
+
+//libgo:impl libgo/protocol.NetworkAddress
+func (c *Connection) ProtocolID() protocol.ProtocolID {
+	return protocol.ProtocolID(protocol.NetworkPhysical_Chapar)
+}
+func (c *Connection) LocalAddr() protocol.Stringer  { return &c.pathFromPeer }
+func (c *Connection) RemoteAddr() protocol.Stringer { return &c.pathToPeer }
+
 func (c *Connection) ActivePaths() Path        { return c.pathToPeer }
 func (c *Connection) AlternativePaths() []Path { return c.alternativePaths }
 
 // NewFrame makes new unicast||broadcast frame.
+//
+//libgo:impl libgo/protocol.NetworkLink_Connection
 func (c *Connection) NewFrame(nexHeaderID protocol.NetworkLink_NextHeaderID, payloadLen int) (frame []byte, payload []byte, err protocol.Error) {
 	if payloadLen > c.mtu {
 		err = &ErrMTU
@@ -63,6 +74,8 @@ func (c *Connection) NewFrame(nexHeaderID protocol.NetworkLink_NextHeaderID, pay
 }
 
 // Send use to send complete frame that get from c.NewFrame
+//
+//libgo:impl libgo/protocol.NetworkLink_Connection
 func (c *Connection) Send(frame []byte) (err protocol.Error) {
 	// send frame by connection port
 	err = c.port.Send(frame)

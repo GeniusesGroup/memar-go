@@ -28,11 +28,6 @@ func (p *Path) Get() []byte {
 	return p.path[:p.len]
 }
 
-func (p *Path) GetAsString() string {
-	// TODO::: ??
-	return string(p.path[:p.len])
-}
-
 func (p *Path) LenAsByte() byte {
 	return p.len
 }
@@ -52,7 +47,17 @@ func (p *Path) CopyReverseTo(reverse *Path) {
 	return
 }
 
-//libgo:impl /libgo/protocol.Codec
+//libgo:impl libgo/protocol.Stringer
+func (p *Path) ToString() string {
+	// TODO::: ??
+	return string(p.path[:p.len])
+}
+func (p *Path) FromString(s string) (err protocol.Error) {
+	// TODO:::
+	return
+}
+
+//libgo:impl libgo/protocol.Codec
 func (p *Path) MediaType() protocol.MediaType       { return nil }
 func (p *Path) CompressType() protocol.CompressType { return nil }
 func (p *Path) Len() int                            { return int(p.len) }

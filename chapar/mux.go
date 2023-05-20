@@ -48,9 +48,10 @@ func (mux *Multiplexer) Init(portNumber byte, pConnection protocol.NetworkPhysic
 	}
 }
 
-// Deinit ready the connection pools to shutdown.
-func (mux *Multiplexer) Deinit() {
-	mux.connections.Deinit()
+// Deinit ready the connection pools to de-allocated.
+func (mux *Multiplexer) Deinit() (err protocol.Error) {
+	err = mux.connections.Deinit()
+	return
 }
 
 // RegisterNetworkMux registers new port on given ports pool.
@@ -137,22 +138,26 @@ func (mux *Multiplexer) Receive(pConn protocol.NetworkPhysical_Connection, frame
 
 	var lastHop = f.IncrementNextHop(mux.portNumber)
 	if lastHop {
-		var path = f.Path()
+		if !AcceptLastHop {
+			err = &ErrNotAcceptLastHop
+		} else {
+			var path = f.Path()
 
-		var conn *Connection
-		conn, _ = mux.connections.GetConnectionByPath(path)
-		if conn == nil {
-			var newConn Connection
-			newConn.Init(f, &mux.ports[mux.portNumber])
-			conn = &newConn
-			_ = mux.connections.RegisterConnection(conn)
-		} else if !bytes.Equal(conn.pathFromPeer.Get(), path) {
-			// TODO::: receive frame on alternative path, Any action needed??
+			var conn *Connection
+			conn, _ = mux.connections.GetConnectionByPath(path)
+			if conn == nil {
+				var newConn Connection
+				newConn.Init(f, &mux.ports[mux.portNumber])
+				conn = &newConn
+				_ = mux.connections.RegisterConnection(conn)
+			} else if !bytes.Equal(conn.pathFromPeer.Get(), path) {
+				// TODO::: receive frame on alternative path, Any action needed??
+			}
+
+			var nextHeader = f.NextHeader()
+			var payload = f.Payload()
+			mux.getTransportHandler(nextHeader).Receive(conn, payload)
 		}
-
-		var nextHeader = f.NextHeader()
-		var payload = f.Payload()
-		mux.getTransportHandler(nextHeader).Receive(conn, payload)
 		return
 	}
 
