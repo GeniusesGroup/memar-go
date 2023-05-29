@@ -19,21 +19,26 @@ type Codec interface {
 }
 
 // Decoder is the interface that wraps the Decode method.
+// Just one side need to implement Decode and can call other-side Encode().
+// Usually the side own data in non serialized shape must implement this interface.
 type Decoder interface {
 	// Decode read and decode data until end of needed data or occur error.
 	// Unlike Buffer.ReadFrom() it isn't read until EOF and just read needed data.
-	Decode(reader Codec) (n int, err Error)
+	Decode(source Codec) (n int, err Error)
 }
 
 // Encoder is the interface that wraps the Encode & Len methods.
+// Just one side need to implement Encode and can call other-side Decode().
+// Usually the side own data in non serialized shape must implement this interface.
 type Encoder interface {
 	// Encode writes serialized(encoded) data to writer until there's no more data to write.
 	// It like Buffer.WriteTo() with a very tiny difference that this method know about the serialized data but WriteTo just know marshaled data is a binary data.
 	// It use in old OSs fashion or stream writing in large data length. Old OSs do some logic in kernel e.g. IP/TCP packeting, ... that need heavy context switching logic.
 	// It will care about how to write data to respect performance. Usually by make temp fixed size buffer like bufio package.
-	Encode(writer Codec) (n int, err Error)
+	Encode(destination Codec) (n int, err Error)
+
 	// Len return value n is the number of bytes that will written as encode data. 0 means no data and -1 means can't tell until full write.
-	Len() (ln int)
+	Len
 }
 
 // Unmarshaler is the interface that wraps the Unmarshal method.
@@ -51,11 +56,13 @@ type Marshaler interface {
 	// MarshalTo serialized(encoded) data to given slice from len to max cap and save marshal state for future call.
 	// It is very similar to Read() in Reader interface but with one difference behavior that this method don't need temporary buffer
 	MarshalTo(data []byte) (added []byte, err Error)
+
 	// Len return value n that is the number of bytes that will written by Marshal()||MarshalTo()
-	Len() (ln int)
+	Len
 }
 
 type SerializeLen interface {
 	ComputeLen() (ln int)
-	Len() (ln int)
+
+	Len
 }

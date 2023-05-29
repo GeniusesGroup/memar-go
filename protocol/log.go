@@ -1,4 +1,4 @@
-/* For license and copyright information please see LEGAL file in repository */
+/* For license and copyright information please see the LEGAL file in the code repository */
 
 package protocol
 
@@ -12,7 +12,7 @@ type Logger interface {
 	// - First Dispatch(event).
 	// - Cache log events in the node that create it.
 	// - Save all logs per day for a node in the record with LogMediatypeID as record type and NodeID as primary key.
-	Log(event LogEvent) Error
+	Log(event LogEvent) (err Error)
 
 	// Due to expect Fatal terminate app and it brake the app, Dev must design it in the app architecture with panic and log the event with LogEvent_Fatal
 	// LogFatal(event LogEvent)
@@ -33,22 +33,22 @@ type LogEvent interface {
 }
 
 // LogType indicate log level that will also use as EventSubType too.
-type LogType = EventSubType
+type LogType uint32
 
 const (
-	LogEvent_Information LogType = (1 << iota)
-	LogEvent_Notice
-	LogEvent_Debug // Detailed information on the flow through the system. Expect these to be written to logs only. Generally speaking, most lines logged by your application should be written as DEBUG.
-	LogEvent_DeepDebug
-	LogEvent_Warning // Use of deprecated APIs, poor use of API, 'almost' errors, other runtime situations that are undesirable or unexpected, but not necessarily "wrong". Expect these to be immediately visible on a status console.
-	LogEvent_Error   // Other runtime errors or unexpected conditions
-	LogEvent_Alert
-	LogEvent_Panic // in panic() it will add debug stack to trace more easily panic errors
-	LogEvent_Critical
-	LogEvent_Emergency
-	LogEvent_Fatal // Severe errors that cause premature termination
-	LogEvent_Security
-	LogEvent_Confidential
+	LogEvent_Information  LogType = (1 << iota)
+	LogEvent_Notice               // for normal, but significant messages
+	LogEvent_Debug                // Detailed information on the flow through the system. Expect these to be written to logs only. Generally speaking, most lines logged by your application should be written as DEBUG.
+	LogEvent_DeepDebug            //
+	LogEvent_Warning              // Use of deprecated APIs, poor use of API, 'almost' errors, other runtime situations that are undesirable or unexpected, but not necessarily "wrong". Expect these to be immediately visible on a status console.
+	LogEvent_Error                // Other runtime errors or unexpected conditions
+	LogEvent_Alert                // for alerts, actions that must be taken immediately, ex. corrupted database
+	LogEvent_Panic                // in panic() it will add debug stack to trace more easily panic errors
+	LogEvent_Critical             // for critical conditions
+	LogEvent_Emergency            // when system is unusable, panics
+	LogEvent_Fatal                // Severe errors that cause premature termination
+	LogEvent_Security             //
+	LogEvent_Confidential         //
 )
 
 // If any below mode disabled, logger must not save that log type.

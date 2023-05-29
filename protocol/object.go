@@ -3,8 +3,10 @@
 package protocol
 
 type Object interface {
-	Members() []Object_Member
+	Fields() []Object_Member_Field
+	Methods() []Object_Member_Method
 
+	// ObjectLifeCycle
 	// Object_Member_Len
 	// Details
 }

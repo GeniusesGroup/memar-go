@@ -1,6 +1,11 @@
-/* For license and copyright information please see LEGAL file in repository */
+/* For license and copyright information please see the LEGAL file in the code repository */
 
 package protocol
+
+// GUI is default global protocol.GUIApplication like window global variable in browsers.
+// You must assign to it by any object implement protocol.GUIApplication on your main.go file. Suggestion:
+// - GUI App	>> protocol.GUI = &gui.Application
+var GUI GUIApplication
 
 // GUIApplication is UI (GUI, VUI, ...) specific protocols that include in Application interface
 // All below projects have many problems.

@@ -1,9 +1,14 @@
-/* For license and copyright information please see LEGAL file in repository */
+/* For license and copyright information please see the LEGAL file in the code repository */
 
 package protocol
 
-// GUIPageState is like window in browsers and each page state has its own window
-type GUIPageState interface {
+// GUI_PageState is like window in browsers and each page state has its own window
+type GUI_PageState interface {
+	GUI_PageState_Fields
+	GUI_PageState_Methods
+}
+
+type GUI_PageState_Fields interface {
 	Page() GUIPage
 	Title() string
 	Description() string
@@ -14,7 +19,7 @@ type GUIPageState interface {
 
 	// DOM as Document-Object-Model will render to user screen
 	// Same as Document interface of the Web declare in browsers in many ways but split not related concern to other interfaces
-	// like Document.URI that not belong to this interface and relate to GUIPageState because we develope multi page app not web page
+	// like Document.URI that not belong to this interface and relate to GUI_PageState because we develope multi page app not web page
 	DOM() DOM // GUIElement
 	SOM() SOM
 	Thumbnail() Image // The picture of the page in current state, use in social linking and SwitcherPage()
@@ -22,7 +27,9 @@ type GUIPageState interface {
 	ActiveDates() []Time // first is CreateDate and last is EndDate(When Close() called)
 	State() ScreenMode
 	Type() WindowType
+}
 
+type GUI_PageState_Methods interface {
 	// Activate() or Show() Called call to render page in this state (brings to front).
 	// Also can call to move the page state to other screen
 	Activate(options PageStateActivateOptions)

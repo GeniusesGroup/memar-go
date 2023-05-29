@@ -1,4 +1,4 @@
-/* For license and copyright information please see LEGAL file in repository */
+/* For license and copyright information please see the LEGAL file in the code repository */
 
 package protocol
 
@@ -7,7 +7,12 @@ type Details interface {
 	Detail(lang LanguageID) Detail
 }
 
-// Detail is some piece of information that write for humans to understand some thing
+// Detail is some piece of information that write for humans to understand some thing.
+// 
+// When defining a new detail, the information included must be carefully vetted. 
+// Likewise, when actually generating a problem (however it is serialized) the details given must also be scrutinized.
+// Risks include leaking information that can be exploited to compromise the system,
+// access to the system, or the privacy of users of the system.
 type Detail interface {
 	Language() LanguageID
 	// Domain return locale domain name that MediaType belongs to it.

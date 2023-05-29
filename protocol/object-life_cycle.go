@@ -12,6 +12,8 @@ type ObjectLifeCycle interface {
 	// ?? IncrementReference()
 	// ?? DecrementReference()
 
+	// Constructors should instantiate the fields of an object and do any other initialization necessary to make the object ready to use.
+	// This is generally means constructors are small, but there are scenarios where this would be a substantial amount of work.
 	// TODO::: how let custom initialize and get some args??
 	// Init() (err Error)
 
@@ -21,4 +23,8 @@ type ObjectLifeCycle interface {
 	Deinit() (err Error)
 
 	// Deallocate()
+
+	// Opposite of New()
+	// Release(), Destroy(), Delete(), Drop()
+	// remove, dispose, clear, close
 }

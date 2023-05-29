@@ -1,4 +1,4 @@
-/* For license and copyright information please see LEGAL file in repository */
+/* For license and copyright information please see the LEGAL file in the code repository */
 
 package protocol
 
@@ -15,44 +15,47 @@ package protocol
 type StorageRecords interface {
 	MediatypeNumbers() (num uint64, err Error)
 	ListMediatypeIDs(offset, limit uint64) (ids []uint64, err Error)
-	RecordNumbers(mediaTypeID uint64) (num uint64, err Error)
-	ListRecords(mediaTypeID uint64, offset, limit uint64) (ids [][16]byte, err Error)
+	RecordNumbers(mt MediaTypeID) (num uint64, err Error)
+	ListRecords(mt MediaTypeID, offset, limit uint64) (ids [][16]byte, err Error)
 
 	// Lock works only in versioned manner. use to reach strict consistency
-	Lock(mediaTypeID uint64, id [16]byte) (lastVersion []byte, versionOffset uint64, err Error)
-	Unlock(mediaTypeID uint64, id [16]byte, newVersion []byte) (err Error)
+	Lock(mt MediaTypeID, id [16]byte) (lastVersion []byte, vo VersionOffset, err Error)
+	Unlock(mt MediaTypeID, id [16]byte, newVersion []byte) (err Error)
 
 	// Count has eventual consistency behavior
-	Count(mediaTypeID uint64, id [16]byte, offset, limit uint64) (numbers uint64, err Error)
-	Length(mediaTypeID uint64, id [16]byte, versionOffset uint64) (ln int, err Error)
+	Count(mt MediaTypeID, id [16]byte, offset, limit uint64) (numbers NumberOfVersion, err Error)
+	Length(mt MediaTypeID, id [16]byte, vo VersionOffset) (ln int, err Error)
 
-	Get(mediaTypeID uint64, id [16]byte, versionOffset uint64) (record []byte, numbers uint64, err Error)
+	Get(mt MediaTypeID, id [16]byte, vo VersionOffset) (record []byte, numbers NumberOfVersion, err Error)
 	// GetLast has eventual consistency behavior
-	// GetLast(mediaTypeID uint64, id [16]byte) (record []byte, versionOffset uint64, err Error)
+	// GetLast(mt MediaTypeID, id [16]byte) (record []byte, vo VersionOffset, err Error)
 
-	Save(mediaTypeID uint64, id [16]byte, record []byte, options StorageRecord_SaveOptions) (err Error)
-	Update(mediaTypeID uint64, id [16]byte, record []byte, versionOffset uint64) (err Error)
+	Save(mt MediaTypeID, id [16]byte, record []byte, options StorageRecord_SaveOptions) (err Error)
+	Update(mt MediaTypeID, id [16]byte, record []byte, vo VersionOffset) (err Error)
 	// make invisible just by remove from primary index for all version of record.
-	Delete(mediaTypeID uint64, id [16]byte) (err Error)
+	Delete(mt MediaTypeID, id [16]byte) (err Error)
 	// make invisible just by remove from primary index. next Get() can know that a version exist, but data gone and no access to data anymore.
-	DeleteVersion(mediaTypeID uint64, id [16]byte, versionOffset uint64) (err Error)
+	DeleteVersion(mt MediaTypeID, id [16]byte, vo VersionOffset) (err Error)
 
 	EventTarget
 }
 
 type StorageRecord_SaveOptions struct {
-	// MaxVersion == StorageRecord_NoVersion means this record don't need versioning.
+	// MaxVersion == StorageRecord_NoVersion means this record don't need versioning or just one version.
 	// MaxVersion > 0 indicate max version. e.g. 6 means just 6 version must store for the record.
 	// MaxVersion == StorageRecord_LastSourceVersion indicate no version limit but logically it has limit up to uint64.
-	MaxVersion uint64
+	MaxVersion VersionOffset
 
 	// By none, hour, day, week, ...
 	PrimaryIndexSplitting uint8
 }
 
+type NumberOfVersion uint64
+type VersionOffset uint64
+
 const (
-	StorageRecord_NoVersion         uint64 = 0
-	StorageRecord_LastLocalVersion  uint64 = 18446744073709551613
-	StorageRecord_LastEdgeVersion   uint64 = 18446744073709551614
-	StorageRecord_LastSourceVersion uint64 = 18446744073709551615
+	StorageRecord_NoVersion         VersionOffset = 0 // also as first version in Get logic
+	StorageRecord_LastLocalVersion  VersionOffset = 18446744073709551613
+	StorageRecord_LastEdgeVersion   VersionOffset = 18446744073709551614
+	StorageRecord_LastSourceVersion VersionOffset = 18446744073709551615
 )

@@ -23,6 +23,7 @@ type Error interface {
 	// Caller	: Opposite of internal that indicate caller give some data that cause the error like HTTP client error status codes ( 400 – 499 )
 	Internal() bool
 	Temporary() bool // opposite is permanent situation
+	Timeout() bool
 
 	// Notify error to user by graphic, sound and vibration (Haptic Feedback)
 	Notify()
@@ -32,6 +33,7 @@ type Error interface {
 	// **ATTENTION** nil interface assign into other interface don't make nil value.
 	Error() string
 
+	Details
 	MediaType
 	Stringer
 }

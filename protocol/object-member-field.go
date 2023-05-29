@@ -2,15 +2,45 @@
 
 package protocol
 
+// Object_Member can use for any data like CLA flags or json fields or any other data structures
+// even in compilers or runtime packages
+type Object_Member_Field /*[T any]*/ interface {
+	// Get() T
+	// Set(value T)
+	// Default() T
+
+	Type() Object_Type
+	Optional() bool
+
+	// TODO::: add more
+
+	Validate() Error
+
+	SetDefault() // default value
+
+	Object_Member
+	Object_Member_Len
+	Details
+	Stringer
+}
+
+type Object_Member_Len interface {
+	// Expected length
+	MinLen() int // in byte or 8bit
+	MaxLen() int // in byte or 8bit
+
+	// existence length
+	Len
+}
+
 type Object_Type uint8
 
 const (
 	Object_Type_Unset Object_Type = iota
-	Object_Type_Type              // other type
+	// Object_Type_Object             // or Structure that can be indicate by Type
+	Object_Type_Type // other type
 	Object_Type_Pointer
 	Object_Type_Boolean
-	Object_Type_Function
-	Object_Type_Structure
 	Object_Type_Array
 	// Object_Type_String UTF8, ...??
 	Object_Type_Natural  // Any number > 0	- https://en.wikipedia.org/wiki/Natural_number
