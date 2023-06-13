@@ -1,70 +1,70 @@
-/* For license and copyright information please see LEGAL file in repository */
+/* For license and copyright information please see the LEGAL file in the code repository */
 
 package log
 
 import (
-	"github.com/GeniusesGroup/libgo/protocol"
+	"libgo/protocol"
 )
 
-func NewEvent(level protocol.LogType, domain, message string) (event *Event) {
+func NewEvent(mediaType protocol.MediaType, level protocol.LogLevel, message string) (event *Event) {
+	//go:gc stack
 	var e Event
-	e.Init(level, domain, message, false)
+	e.Init(mediaType, level, message, false)
 	return &e
 }
 
-func TraceEvent(level protocol.LogType, domain, message string) (event *Event) {
+func TraceEvent(mediaType protocol.MediaType, level protocol.LogLevel, message string) (event *Event) {
 	var e Event
-	e.Init(level, domain, message, true)
+	e.Init(mediaType, level, message, true)
 	return &e
 }
 
-func InfoEvent(domain, message string) (event *Event) {
+func NoticeEvent(mediaType protocol.MediaType, message string) (event *Event) {
 	var e Event
-	e.Init(protocol.LogEvent_Information, domain, message, false)
+	e.Init(mediaType, protocol.LogLevel_Notice, message, false)
 	return &e
 }
 
-func NoticeEvent(domain, message string) (event *Event) {
+func ErrorEvent(mediaType protocol.MediaType, message string) (event *Event) {
 	var e Event
-	e.Init(protocol.LogEvent_Notice, domain, message, false)
+	e.Init(mediaType, protocol.LogLevel_Error, message, true)
 	return &e
 }
 
-func DebugEvent(domain, message string) (event *Event) {
+func DebugEvent(mediaType protocol.MediaType, message string) (event *Event) {
 	var e Event
-	e.Init(protocol.LogEvent_Debug, domain, message, false)
+	e.Init(mediaType, protocol.LogLevel_Debug, message, false)
 	return &e
 }
 
-func DeepDebugEvent(domain, message string) (event *Event) {
+func DeepDebugEvent(mediaType protocol.MediaType, message string) (event *Event) {
 	var e Event
-	e.Init(protocol.LogEvent_DeepDebug, domain, message, false)
+	e.Init(mediaType, protocol.LogLevel_DeepDebug, message, true)
 	return &e
 }
 
-func WarnEvent(domain, message string) (event *Event) {
+func InfoEvent(mediaType protocol.MediaType, message string) (event *Event) {
 	var e Event
-	e.Init(protocol.LogEvent_Warning, domain, message, false)
+	e.Init(mediaType, protocol.LogLevel_Information, message, false)
 	return &e
 }
 
-// FatalEvent return new event with panic level and added stack trace.
-func PanicEvent(domain, message string) (event *Event) {
+func WarnEvent(mediaType protocol.MediaType, message string) (event *Event) {
 	var e Event
-	e.Init(protocol.LogEvent_Panic, domain, message, true)
+	e.Init(mediaType, protocol.LogLevel_Warning, message, false)
 	return &e
 }
 
 // FatalEvent return new event with fatal level and added stack trace.
-func FatalEvent(domain, message string) (event *Event) {
+func FatalEvent(mediaType protocol.MediaType, message string) (event *Event) {
 	var e Event
-	e.Init(protocol.LogEvent_Fatal, domain, message, true)
+	e.Init(mediaType, protocol.LogLevel_Fatal, message, true)
 	return &e
 }
 
 // ConfEvent return new event with "Confidential" level
-func ConfEvent(domain, message string) (event *Event) {
+func ConfEvent(mediaType protocol.MediaType, message string) (event *Event) {
 	var e Event
-	e.Init(protocol.LogEvent_Confidential, domain, message, false)
+	e.Init(mediaType, protocol.LogLevel_Confidential, message, false)
 	return &e
 }

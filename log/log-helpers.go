@@ -1,73 +1,66 @@
-/* For license and copyright information please see LEGAL file in repository */
+/* For license and copyright information please see the LEGAL file in the code repository */
 
 package log
 
 import (
-	"github.com/GeniusesGroup/libgo/protocol"
+	"libgo/protocol"
 )
 
 // TODO::: Can't force compiler to inline below functions, Delete file to force developers use this way:
-// protocol.App.Log(log.ConfEvent(domainEnglish, "???"))
+// Logger.Log(log.ConfEvent(domainEnglish, "???"))
 
-// Trace make new event with given level and add stack trace and log it to protocol.App
-func Trace(level protocol.LogType, domain, message string) (err protocol.Error) {
+// Trace make new event with given level and add stack trace and log it to Logger
+func Trace(mediaType protocol.MediaType, level protocol.LogLevel, message string) (err protocol.Error) {
 	// var e Event
-	// e.Init(level, domain, message, true)
-	return protocol.App.Log(TraceEvent(level, domain, message))
+	// e.Init(level, message, true)
+	return Logger.Log(TraceEvent(mediaType, level, message))
 }
 
-// Info make new event with "Information" level and log it to protocol.App
-func Info(domain, message string) (err protocol.Error) {
+// Info make new event with "Information" level and log it to Logger
+func Info(mediaType protocol.MediaType, message string) (err protocol.Error) {
 	var e Event
-	e.Init(protocol.LogEvent_Information, domain, message, false)
-	return protocol.App.Log(&e)
+	e.Init(mediaType, protocol.LogLevel_Information, message, false)
+	return Logger.Log(&e)
 }
 
-// Notice make new event with "Notice" level and log it to protocol.App
-func Notice(domain, message string) (err protocol.Error) {
+// Notice make new event with "Notice" level and log it to Logger
+func Notice(mediaType protocol.MediaType, message string) (err protocol.Error) {
 	var e Event
-	e.Init(protocol.LogEvent_Notice, domain, message, false)
-	return protocol.App.Log(&e)
+	e.Init(mediaType, protocol.LogLevel_Notice, message, false)
+	return Logger.Log(&e)
 }
 
-// Debug make new event with "Debug" level and log it to protocol.App
-func Debug(domain, message string) (err protocol.Error) {
+// Debug make new event with "Debug" level and log it to Logger
+func Debug(mediaType protocol.MediaType, message string) (err protocol.Error) {
 	var e Event
-	e.Init(protocol.LogEvent_Debug, domain, message, false)
-	return protocol.App.Log(&e)
+	e.Init(mediaType, protocol.LogLevel_Debug, message, false)
+	return Logger.Log(&e)
 }
 
-// DeepDebug make new event with "DeepDebug" level and log it to protocol.App
-func DeepDebug(domain, message string) (err protocol.Error) {
+// DeepDebug make new event with "DeepDebug" level and log it to Logger
+func DeepDebug(mediaType protocol.MediaType, message string) (err protocol.Error) {
 	var e Event
-	e.Init(protocol.LogEvent_DeepDebug, domain, message, false)
-	return protocol.App.Log(&e)
+	e.Init(mediaType, protocol.LogLevel_DeepDebug, message, true)
+	return Logger.Log(&e)
 }
 
-// Warn make new event with "Warning" level and log it to protocol.App
-func Warn(domain, message string) (err protocol.Error) {
+// Warn make new event with "Warning" level and log it to Logger
+func Warn(mediaType protocol.MediaType, message string) (err protocol.Error) {
 	var e Event
-	e.Init(protocol.LogEvent_Warning, domain, message, false)
-	return protocol.App.Log(&e)
+	e.Init(mediaType, protocol.LogLevel_Warning, message, false)
+	return Logger.Log(&e)
 }
 
-// Panic make new event with "Panic" level and log it to protocol.App
-func Panic(domain, message string) (err protocol.Error) {
+// Fatal make new event with "Fatal" level and log it to Logger
+func Fatal(mediaType protocol.MediaType, message string) (err protocol.Error) {
 	var e Event
-	e.Init(protocol.LogEvent_Panic, domain, message, true)
-	return protocol.App.Log(&e)
+	e.Init(mediaType, protocol.LogLevel_Fatal, message, true)
+	return Logger.Log(&e)
 }
 
-// Fatal make new event with "Fatal" level and log it to protocol.App
-func Fatal(domain, message string) (err protocol.Error) {
+// Conf make new event with "Confidential" level and log it to Logger
+func Conf(mediaType protocol.MediaType, message string) (err protocol.Error) {
 	var e Event
-	e.Init(protocol.LogEvent_Fatal, domain, message, true)
-	return protocol.App.Log(&e)
-}
-
-// Conf make new event with "Confidential" level and log it to protocol.App
-func Conf(domain, message string) (err protocol.Error) {
-	var e Event
-	e.Init(protocol.LogEvent_Confidential, domain, message, false)
-	return protocol.App.Log(&e)
+	e.Init(mediaType, protocol.LogLevel_Confidential, message, false)
+	return Logger.Log(&e)
 }

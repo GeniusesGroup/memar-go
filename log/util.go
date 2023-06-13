@@ -1,15 +1,15 @@
-/* For license and copyright information please see LEGAL file in repository */
+/* For license and copyright information please see the LEGAL file in the code repository */
 
 package log
 
 import (
 	"runtime"
 
-	"github.com/GeniusesGroup/libgo/protocol"
+	"libgo/protocol"
 )
 
-func CheckLevelEnabled(level protocol.LogType) bool {
-	return protocol.LogMode&level != 0 
+func CheckLevelEnabled(level protocol.LogLevel) bool {
+	return protocol.LogMode&level != 0
 }
 
 func CallerInfo(calldepth int) (file string, line int) {
