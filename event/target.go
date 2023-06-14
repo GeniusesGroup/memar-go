@@ -1,65 +1,65 @@
-/* For license and copyright information please see LEGAL file in repository */
+/* For license and copyright information please see the LEGAL file in the code repository */
 
 package event
 
 import (
 	"sync"
 
-	"github.com/GeniusesGroup/libgo/protocol"
+	"libgo/protocol"
 )
 
-// EventTarget must declare separately for each protocol.EventMainType types.
-// otherwise need this struct that use 2KB for each instance.
-// 		cl   [256]*[]customListener // 256 is max protocol.EventMainType
-// Or use map but need some benchmarks to check performance.
+// TODO::: Can implement a parallel hash table here instead use of map and sync?
+
+// EventTarget dispatch events to listeners on desire protocol.EventMainType types.
 type EventTarget struct {
 	sync sync.Mutex
-	lls  *[]customListener
+	ls   map[protocol.MediaTypeID][]listener
 }
 
-type customListener struct {
-	eventSubType  protocol.EventSubType
+type listener struct {
 	eventListener protocol.EventListener
+	options       protocol.AddEventListenerOptions
 }
 
-//go:norace
-// TODO::: we know that race exist in line #44,#59 with #28,#40,#52, but it seems ok to have race there. Add atomic mechanism??
-func (et *EventTarget) DispatchEvent(event protocol.Event) {
-	var lls = *et.lls
-	var eventSubType = event.SubType()
-	for i := 0; i < len(lls); i++ {
-		var cl = lls[i]
-		if cl.eventSubType == protocol.EventSubType_Unset || cl.eventSubType == eventSubType {
-			cl.eventListener.EventHandler(event)
-		}
+//libgo:impl libgo/protocol.ObjectLifeCycle
+func (et *EventTarget) Init() (err protocol.Error) {
+	et.ls = make(map[protocol.ID][]listener)
+	return
+}
+
+//libgo:impl libgo/protocol.EventTarget
+func (et *EventTarget) DispatchEvent(event protocol.Event) (err protocol.Error) {
+	et.sync.Lock()
+	var eventDomain = event.Domain()
+	var ls = et.ls[eventDomain]
+	for i := 0; i < len(ls); i++ {
+		// TODO::: handle options here or caller layer must handle it?
+		ls[i].eventListener.EventHandler(event)
 	}
-}
-
-func (et *EventTarget) AddEventListener(mainType protocol.EventMainType, subType protocol.EventSubType, callback protocol.EventListener, options protocol.AddEventListenerOptions) {
-	et.sync.Lock()
-	var lls = *et.lls
-	var ln = len(lls)
-	var newLLS = make([]customListener, ln+1)
-	copy(newLLS, lls)
-	newLLS[ln-1] = customListener{subType, callback}
-	et.lls = &newLLS
-	// TODO::: handle options here or caller layer must handle it?
 	et.sync.Unlock()
+	return
 }
-
-func (et *EventTarget) RemoveEventListener(mainType protocol.EventMainType, subType protocol.EventSubType, callback protocol.EventListener, options protocol.EventListenerOptions) {
+func (et *EventTarget) AddEventListener(domain protocol.MediaTypeID, callback protocol.EventListener, options protocol.AddEventListenerOptions) (err protocol.Error) {
 	et.sync.Lock()
-	var lls = *et.lls
-	var ln = len(lls)
+	var dls = et.ls[domain]
+	dls = append(dls, listener{callback, options})
+	et.ls[domain] = dls
+	et.sync.Unlock()
+	return
+}
+func (et *EventTarget) RemoveEventListener(domain protocol.MediaTypeID, callback protocol.EventListener, options protocol.EventListenerOptions) (err protocol.Error) {
+	et.sync.Lock()
+	var dls = et.ls[domain]
+	var ln = len(dls)
 	for i := 0; i < ln; i++ {
-		var cl = lls[i]
-		if cl.eventSubType == subType && cl.eventListener == callback {
-			var newLLS = make([]customListener, ln-1)
-			copy(newLLS, lls[:i])
-			copy(newLLS[i:], lls[i+1:])
-			et.lls = &newLLS
+		// TODO::: handle options here or caller layer must handle it?
+		if dls[i].eventListener == callback {
+			copy(dls[i:], dls[i+1:])
+			dls = dls[:ln-1]
+			et.ls[domain] = dls
 			break
 		}
 	}
 	et.sync.Unlock()
+	return
 }
