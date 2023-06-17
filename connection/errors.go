@@ -1,43 +1,23 @@
-/* For license and copyright information please see LEGAL file in repository */
+/* For license and copyright information please see the LEGAL file in the code repository */
 
 package connection
 
 import (
-	er "../error"
-	"../protocol"
+	er "libgo/error"
 )
 
-const domainEnglish = "connection"
-const domainPersian = "ارتباط"
-
-// Errors
 var (
-	ErrNoConnection = er.New("urn:giti:connection.protocol:error:no-connection").SetDetail(protocol.LanguageEnglish, domainEnglish, "No Connection",
-		"No connection exist to complete request due to temporary or long term problem",
-		"",
-		"").
-		SetDetail(protocol.LanguagePersian, domainPersian, "ارتباط قطع",
-			"ارتباطی جهت انجام رخواست مورد نظر بدلیل وجود مشکل موقت یا دایم وجود ندارد",
-			"",
-			"").Save()
-
-	ErrSendRequest = er.New("urn:giti:connection.protocol:error:send-request").SetDetail(protocol.LanguageEnglish, domainEnglish, "Send Request",
-		"Send request encounter problem due to temporary or long term problem!",
-		"",
-		"").Save()
-
-	ErrProtocolHandler = er.New("urn:giti:connection.protocol:error:protocol-handler").SetDetail(protocol.LanguageEnglish, domainEnglish, "Protocol Handler",
-		"Protocol handler not exist to complete the request",
-		"",
-		"").Save()
-
-	ErrGuestNotAllow = er.New("urn:giti:connection.protocol:error:guest-not-allow").SetDetail(protocol.LanguageEnglish, domainEnglish, "Guest Not Allow",
-		"Guest users don't allow to make new connection",
-		"",
-		"").Save()
-
-	ErrGuestMaxReached = er.New("urn:giti:connection.protocol:error:guest-max-reached").SetDetail(protocol.LanguageEnglish, domainEnglish, "Guest Max Reached",
-		"Server not have enough resource to make new guest connection, try few minutes later or try other server",
-		"",
-		"").Save()
+	ErrNoConnection    er.Error
+	ErrSendRequest     er.Error
+	ErrProtocolHandler er.Error
+	ErrGuestNotAllow   er.Error
+	ErrGuestMaxReached er.Error
 )
+
+func init() {
+	ErrNoConnection.Init("domain/connection.protocol; type=error; name=no-connection")
+	ErrSendRequest.Init("domain/connection.protocol; type=error; name=send-request")
+	ErrProtocolHandler.Init("domain/connection.protocol; type=error; name=protocol-handler")
+	ErrGuestNotAllow.Init("domain/connection.protocol; type=error; name=guest-not-allow")
+	ErrGuestMaxReached.Init("domain/connection.protocol; type=error; name=guest-max-reached")
+}
