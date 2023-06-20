@@ -3,13 +3,13 @@
 package tcp
 
 import (
-	"github.com/GeniusesGroup/libgo/protocol"
-	"github.com/GeniusesGroup/libgo/timer"
+	"libgo/protocol"
+	"libgo/timer"
 )
 
 // send as Send Sequence Space
 type send struct {
-	writeTimer timer.Timer // write deadline timer
+	writeTimer timer.Sync // write deadline timer
 
 	una  uint32 // send unacknowledged
 	next uint32
@@ -18,12 +18,23 @@ type send struct {
 	wl1  uint32 // segment sequence number used for last window update
 	wl2  uint32 // segment acknowledgment number used for last window update
 	iss  uint32 // initial send sequence number
-	// buf    []byte Don't need it, because we don't need to copy buffer between kernel and userpspace
+	// buf    []byte Don't need it, because we don't need to copy buffer between kernel and user-space
 }
 
-func (s *send) init(timeout protocol.Duration) {
-	s.writeTimer.Init(nil)
-	s.writeTimer.Start(timeout)
+//libgo:impl libgo/protocol.ObjectLifeCycle
+func (s *send) Init(timeout protocol.Duration) (err protocol.Error) {
+	err = s.writeTimer.Init()
+	err = s.writeTimer.Start(timeout)
 
 	// TODO:::
+	return
+}
+func (s *send) Reinit() (err protocol.Error) {
+	// TODO:::
+	return
+}
+func (s *send) Deinit() (err protocol.Error) {
+	// TODO:::
+	err = s.writeTimer.Deinit()
+	return
 }

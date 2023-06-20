@@ -3,14 +3,14 @@
 package tcp
 
 import (
-	"github.com/GeniusesGroup/libgo/buffer"
-	"github.com/GeniusesGroup/libgo/protocol"
-	"github.com/GeniusesGroup/libgo/timer"
+	"libgo/buffer"
+	"libgo/protocol"
+	"libgo/timer"
 )
 
 // recv is receive sequence space
 type recv struct {
-	readTimer timer.Timer // read deadline timer
+	readTimer timer.Sync // read deadline timer
 
 	next uint32 // receive next
 	wnd  uint16 // receive window
@@ -20,16 +20,28 @@ type recv struct {
 	buf buffer.Queue
 
 	// TODO::: Send more than these flags: push, reset, finish, urgent
+	// TODO::: byte is not enough here to distinguish between flags in first byte or second one
 	flag chan flag
 }
 
-func (r *recv) init(timeout protocol.Duration) {
+//libgo:impl libgo/protocol.ObjectLifeCycle
+func (r *recv) Init(timeout protocol.Duration) (err protocol.Error) {
 	r.flag = make(chan flag, 1) // 1 buffer slot??
 
-	r.readTimer.Init(nil)
-	r.readTimer.Start(timeout)
+	err = r.readTimer.Init()
+	err = r.readTimer.Start(timeout)
 
 	// TODO:::
+	return
+}
+func (r *recv) Reinit() (err protocol.Error) {
+	// TODO:::
+	return
+}
+func (r *recv) Deinit() (err protocol.Error) {
+	// TODO:::
+	err = r.readTimer.Deinit()
+	return
 }
 
 // sendFlagSignal use to notify listener in the r.flag channel

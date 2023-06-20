@@ -34,25 +34,33 @@ Some suggestion such as [change net package](https://github.com/golang/go/issues
 
 ## RFCs
 - https://www.iana.org/assignments/tcp-parameters/tcp-parameters.xhtml
-- https://datatracker.ietf.org/doc/html/rfc7805
-- https://datatracker.ietf.org/doc/html/rfc7414
 - https://datatracker.ietf.org/doc/html/rfc675
 - https://datatracker.ietf.org/doc/html/rfc791
 - https://datatracker.ietf.org/doc/html/rfc793
 - https://datatracker.ietf.org/doc/html/rfc1122
-- https://datatracker.ietf.org/doc/html/rfc6298
+- https://datatracker.ietf.org/doc/html/rfc1337
 - https://datatracker.ietf.org/doc/html/rfc1948
+- https://datatracker.ietf.org/doc/html/rfc2525
 - https://datatracker.ietf.org/doc/html/rfc4413
+- https://datatracker.ietf.org/doc/html/rfc6298
+- https://datatracker.ietf.org/doc/html/rfc7414
+- https://datatracker.ietf.org/doc/html/rfc7805
 
 ## Similar Projects
 - https://github.com/search?l=Go&q=tcp+userspace&type=Repositories
 - https://github.com/Xilinx-CNS/onload
 - https://github.com/mtcp-stack/mtcp
 - https://github.com/tass-belgium/picotcp/blob/master/modules/pico_tcp.c
+    - Pico use many timer for each tcp stream functionality
 - https://github.com/saminiir/level-ip
 - https://github.com/google/gopacket/blob/master/layers/tcp.go
 - https://github.com/Samangan/go-tcp
 - https://github.com/mit-pdos/biscuit/blob/master/biscuit/src/inet/
+
+## Idea to improve TCP performance in kernel space
+- https://github.com/golang/go/issues/15735
+- https://github.com/xtaci/gaio
+- https://github.com/lesismal/nbio
 
 ## Resources
 - https://en.wikipedia.org/wiki/OSI_model
@@ -74,6 +82,11 @@ Some suggestion such as [change net package](https://github.com/golang/go/issues
 - https://www.fastly.com/blog/measuring-quic-vs-tcp-computational-efficiency
 - https://stackoverflow.com/questions/8509152/max-number-of-goroutines
 - https://developpaper.com/deep-analysis-of-source-code-for-building-native-network-model-with-go-netpol-i-o-multiplexing/
+- [Cambridge User-Level TCP (CULT) timers](https://www.cl.cam.ac.uk/research/dtg/www/files/publications/public/kjm25/CUED_F-INFENG_TR487.pdf)
+- [TCP time wait state](http://vincent.bernat.im/en/blog/2014-tcp-time-wait-state-linux.html)
+- [Why TCP Connect Termination Need 4-Way-Handshake?](https://www.geeksforgeeks.org/why-tcp-connect-termination-need-4-way-handshake/)
+- [When the CRC and TCP checksum disagree](https://dl.acm.org/doi/pdf/10.1145/347059.347561)
+- https://blog.cloudflare.com/unbounded-memory-usage-by-tcp-for-receive-buffers-and-how-we-fixed-it/
 
 # Abbreviations
 - L3    >> layer 3 OSI

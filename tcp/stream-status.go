@@ -2,51 +2,81 @@
 
 package tcp
 
-import "sync/atomic"
+import (
+	"libgo/protocol"
+	"sync/atomic"
+)
+
+// streamStatus use to indicate stream state.
+type streamStatus uint32
 
 const (
-	SocketState_Unset SocketState = iota
+	StreamStatus_Unset streamStatus = iota
 	// represents waiting for a connection request from any remote TCP and port
-	SocketState_LISTEN
+	StreamStatus_Listen
 	// represents waiting for a matching connection request after having sent a connection request.
-	SocketState_SYN_SENT
+	StreamStatus_SynSent
 	// represents waiting for a confirming connection request acknowledgment
 	// after having both received and sent a connection request.
-	SocketState_SYN_RECEIVED
+	StreamStatus_SynReceived
 	/* represents an open connection, data received can be
 	delivered to the user.  The normal state for the data transfer phase
 	of the connection. */
-	SocketState_ESTABLISHED
-	// represents waiting for a connection termination request from the remote TCP,
-	// or an acknowledgment of the connection termination request previously sent.
-	SocketState_FIN_WAIT_1
-	// represents waiting for a connection termination request from the remote TCP.
-	SocketState_FIN_WAIT_2
+	StreamStatus_Established
 	// represents no connection state at all.
-	SocketState_CLOSE
+	StreamStatus_Close
 	// represents waiting for a connection termination request from the local user.
-	SocketState_CLOSE_WAIT
+	StreamStatus_CloseWait
 	// represents waiting for a connection termination request acknowledgment from the remote TCP.
-	SocketState_CLOSING
+	StreamStatus_Closing
 	// represents waiting for an acknowledgment of the connection termination request previously sent to the remote TCP
 	// which includes an acknowledgment of its connection termination request
-	SocketState_LAST_ACK
+	StreamStatus_LastAck
 	// represents waiting for enough time to pass to be sure the remote TCP received the acknowledgment
 	// of its connection termination request.
-	SocketState_TIME_WAIT
+	StreamStatus_TimeWait
+	// represents waiting for a connection termination request from the remote TCP,
+	// or an acknowledgment of the connection termination request previously sent.
+	StreamStatus_FinWait1
+	// represents waiting for a connection termination request from the remote TCP.
+	StreamStatus_FinWait2
 
-	// SocketState_NEW_SYN_RECV
+	// StreamStatus_NEW_SYN_RECV
 )
 
-// SocketState use to indicate socket state.
-type SocketState uint32
+type status struct {
+	ss     atomic.Uint32
+	ssChan chan streamStatus
+}
 
-func (s *SocketState) Load() SocketState {
-	return SocketState(atomic.LoadUint32((*uint32)(s)))
+//libgo:impl libgo/protocol.ObjectLifeCycle
+func (s *status) Init(is streamStatus) (err protocol.Error) {
+	s.ssChan = make(chan streamStatus)
+	s.ss.Store(uint32(is))
+	// s.stateChan <- is
+	return
 }
-func (s *SocketState) Store(SocketState SocketState) {
-	atomic.StoreUint32((*uint32)(s), uint32(SocketState))
+
+func (s *status) Load() streamStatus {
+	return streamStatus(s.ss.Load())
 }
-func (s *SocketState) CompareAndSwap(old, new SocketState) (swapped bool) {
-	return atomic.CompareAndSwapUint32((*uint32)(s), uint32(old), uint32(new))
+func (s *status) Store(ss streamStatus) {
+	s.ss.Store(uint32(ss))
+	s.notify(ss)
+}
+func (s *status) CompareAndSwap(old, new streamStatus) (swapped bool) {
+	swapped = s.ss.CompareAndSwap(uint32(old), uint32(new))
+	if swapped {
+		s.notify(new)
+	}
+	return
+}
+
+func (s *status) notify(ss streamStatus) {
+	select {
+	case s.ssChan <- ss:
+		// state can be delivered by
+	default:
+		// nothing to do just drop state because channel is block from other
+	}
 }

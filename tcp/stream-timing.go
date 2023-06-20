@@ -3,62 +3,83 @@
 package tcp
 
 import (
-	"github.com/GeniusesGroup/libgo/protocol"
-	"github.com/GeniusesGroup/libgo/time/monotonic"
-	"github.com/GeniusesGroup/libgo/timer"
+	"libgo/protocol"
+	"libgo/time/monotonic"
+	"libgo/timer"
 )
 
 type timing struct {
 	st *Stream
-	// TODO::: one timer or many per handler??
-	socketTimer timer.Timer
+	// TODO::: one timer or many per handler or two timer for high accurate and low one??
+	streamTimer timer.Async
 
-	keepAlive
-	delayedAcknowledgment
+	ka timingKeepAlive
+	de delayedAcknowledgment
 }
 
-func (t *timing) Init(st *Stream) {
+//libgo:impl libgo/protocol.ObjectLifeCycle
+func (t *timing) Init(st *Stream) (err protocol.Error) {
 	var now = monotonic.Now()
 	var next protocol.Duration
 
 	t.st = st
-	t.socketTimer.Init(t)
 
-	if KeepAlive {
-		var nxt = t.keepAlive.Init(now)
+	if CNF_KeepAlive {
+		var nxt protocol.Duration
+		nxt, err = t.ka.Init(now)
 		if nxt > 0 && nxt < next {
 			next = nxt
 		}
 	}
 
-	if DelayedAcknowledgment {
-		var nxt = t.delayedAcknowledgment.Init(now)
+	if CNF_DelayedAcknowledgment {
+		var nxt protocol.Duration
+		nxt, err = t.de.Init(now)
+		if err != nil {
+			return
+		}
 		if nxt > 0 && nxt < next {
 			next = nxt
 		}
 	}
 
 	if next > 0 {
-		t.socketTimer.Tick(next, next, -1)
+		err = t.streamTimer.Init(t)
+		err = t.streamTimer.Tick(next, next)
 	}
+	return
 }
-func (t *timing) Reinit() {
-	if KeepAlive {
-		t.keepAlive.Reinit()
+func (t *timing) Reinit() (err protocol.Error) {
+	if CNF_KeepAlive {
+		err = t.ka.Reinit()
+		if err != nil {
+			return
+		}
 	}
-	if DelayedAcknowledgment {
-		t.delayedAcknowledgment.Reinit()
+	if CNF_DelayedAcknowledgment {
+		err = t.de.Reinit()
+		if err != nil {
+			return
+		}
 	}
-	t.socketTimer.Stop()
+	err = t.streamTimer.Stop()
+	return
 }
-func (t *timing) Deinit() {
-	if KeepAlive {
-		t.keepAlive.Deinit()
+func (t *timing) Deinit() (err protocol.Error) {
+	if CNF_KeepAlive {
+		err = t.ka.Deinit()
+		if err != nil {
+			return
+		}
 	}
-	if DelayedAcknowledgment {
-		t.delayedAcknowledgment.Deinit()
+	if CNF_DelayedAcknowledgment {
+		err = t.de.Deinit()
+		if err != nil {
+			return
+		}
 	}
-	t.socketTimer.Stop()
+	err = t.streamTimer.Stop()
+	return
 }
 
 // Don't block the caller
@@ -67,15 +88,15 @@ func (t *timing) TimerHandler() {
 	var now = monotonic.Now()
 	var st = t.st
 
-	if KeepAlive {
-		var nxt = t.keepAlive.CheckInterval(st, now)
+	if CNF_KeepAlive {
+		var nxt = t.ka.CheckInterval(st, now)
 		if nxt > 0 && nxt < next {
 			next = nxt
 		}
 	}
 
-	if DelayedAcknowledgment {
-		var nxt = t.delayedAcknowledgment.CheckInterval(st, now)
+	if CNF_DelayedAcknowledgment {
+		var nxt = t.de.CheckInterval(st, now)
 		if nxt > 0 && nxt < next {
 			next = nxt
 		}
@@ -84,6 +105,6 @@ func (t *timing) TimerHandler() {
 	// TODO::: add more handler
 
 	if next > 0 {
-		t.socketTimer.Reset(protocol.Duration(next))
+		t.streamTimer.Reset(protocol.Duration(next))
 	}
 }

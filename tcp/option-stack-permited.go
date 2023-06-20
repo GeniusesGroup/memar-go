@@ -2,6 +2,10 @@
 
 package tcp
 
+import (
+	"libgo/protocol"
+)
+
 type optionSACKPermitted []byte
 
 func (o optionSACKPermitted) Length() byte { return o[0] }
@@ -9,6 +13,6 @@ func (o optionSACKPermitted) Length() byte { return o[0] }
 // func (o optionSACKPermitted) SACKPermitted() uint16 { return binary.BigEndian.Uint16(o[1:]) }
 func (o optionSACKPermitted) NextOption() []byte { return o[1:] }
 
-func (o optionSACKPermitted) Process(s *Socket) error {
-	return nil
+func (o optionSACKPermitted) Process(s *Stream) (err protocol.Error) {
+	return
 }

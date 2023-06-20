@@ -3,11 +3,11 @@
 package tcp
 
 import (
-	"github.com/GeniusesGroup/libgo/protocol"
-	"github.com/GeniusesGroup/libgo/time/monotonic"
+	"libgo/protocol"
+	"libgo/time/monotonic"
 )
 
-type keepAlive struct {
+type timingKeepAlive struct {
 	enable     bool
 	idle       protocol.Duration
 	interval   protocol.Duration
@@ -16,29 +16,68 @@ type keepAlive struct {
 	retryCount int
 }
 
-func (ka *keepAlive) Init(now monotonic.Time) (next protocol.Duration) {
-	ka.enable = true
-	ka.idle = KeepAlive_Idle
-	ka.interval = KeepAlive_Interval
-	now.Add(KeepAlive_Interval)
+//libgo:impl libgo/protocol.ObjectLifeCycle
+func (ka *timingKeepAlive) Init(now monotonic.Time) (next protocol.Duration, err protocol.Error) {
+	ka.enable = CNF_KeepAlive_PerStream
+	ka.idle = CNF_KeepAlive_Idle
+	ka.interval = CNF_KeepAlive_Interval
+	now.Add(CNF_KeepAlive_Idle)
 	ka.nextCheck = now
-	return KeepAlive_Interval
+
+	next = CNF_KeepAlive_Idle
+	return
 }
-func (ka *keepAlive) Reinit() {
-	ka.enable = false
+func (ka *timingKeepAlive) Reinit() (err protocol.Error) {
+	ka.enable = CNF_KeepAlive_PerStream
 	ka.interval = 0
 	ka.nextCheck = 0
 	ka.retryCount = 0
+	return
 }
-func (ka *keepAlive) Deinit() {}
+func (ka *timingKeepAlive) Deinit() (err protocol.Error) {
+	return
+}
+
+func (ka *timingKeepAlive) Enable() bool                { return ka.enable }
+func (ka *timingKeepAlive) Idle() protocol.Duration     { return ka.idle }
+func (ka *timingKeepAlive) Interval() protocol.Duration { return ka.interval }
+
+func (ka *timingKeepAlive) SetEnable(keepalive bool) {
+	// TODO::: rfc: uncomment below??
+	// var now = monotonic.Now()
+	// now.Add(CNF_KeepAlive_Idle)
+	// ka.nextCheck = now
+	ka.enable = keepalive
+}
+func (ka *timingKeepAlive) SetIdle(d protocol.Duration) {
+	// TODO::: atomic or normal access??
+}
+func (ka *timingKeepAlive) SetInterval(d protocol.Duration) {
+	// TODO::: atomic or normal access??
+}
 
 // Don't block the caller
-func (ka *keepAlive) CheckInterval(st *Stream, now monotonic.Time) (next protocol.Duration) {
+func (ka *timingKeepAlive) CheckInterval(st *Stream, now monotonic.Time) (next protocol.Duration) {
 	if !ka.enable {
 		return -1
 	}
 
-	// TODO::: check stream state
+	next = ka.nextCheck.Until(now)
+	if next > 0 {
+		return
+	}
+
+	var streamStatus = st.status.Load()
+	// TODO::: check other stream status??
+	switch streamStatus {
+	case StreamStatus_SynSent, StreamStatus_Close:
+		// TODO::: check rfc.
+		return -1
+	case StreamStatus_Established:
+		// Nothing to do, just continue.
+	default:
+		return -1
+	}
 
 	// check last use of stream and compare with our state
 	if ka.lastUse != st.lastUse {
@@ -50,34 +89,29 @@ func (ka *keepAlive) CheckInterval(st *Stream, now monotonic.Time) (next protoco
 		return
 	}
 
-	next = ka.next(now)
-	if next > 0 {
-		return
-	}
+	// next can be negative that show ka.CheckInterval called with some delay
 	if next < 0 {
 		// calculate timer delta because timer start after nextCheck.
-		if ka.retryCount == 0 {
-			next = ka.idle + next // + because we have negative next
-		} else {
-			next = ka.interval + next // + because we have negative next
-		}
+		// TODO::: why need add delta??
+		next = ka.interval + next // + because we have negative next
 	}
 	ka.nextCheck.Add(next)
 
 	// if (tp->packets_out || !tcp_write_queue_empty(sk))
 
-	if ka.retryCount <= KeepAlive_Probes {
+	if ka.retryCount <= CNF_KeepAlive_Probes {
 		// TODO::: send ack segment (keepalive message)
+		var err = st.sendQuickACK()
+		if err != nil {
+			// TODO:::
+		}
 		ka.retryCount++
 	} else {
-		// TODO::: kill the stream
-		// return
+		var err = st.close()
+		if err != nil {
+			// TODO:::
+		}
+		return
 	}
-	return
-}
-
-// d can be negative that show ka.CheckInterval called with some delay
-func (ka *keepAlive) next(now monotonic.Time) (d protocol.Duration) {
-	d = ka.nextCheck.Until(now)
 	return
 }

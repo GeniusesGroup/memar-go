@@ -3,26 +3,20 @@
 package tcp
 
 import (
-	"github.com/GeniusesGroup/libgo/protocol"
+	"libgo/protocol"
 )
 
-/*
-********** protocol.Codec interface **********
- */
-
-func (s *Socket) MediaType() protocol.MediaType       { return nil }
-func (s *Socket) CompressType() protocol.CompressType { return nil }
-
-func (s *Socket) Decode(reader protocol.Reader) (err protocol.Error) { return }
-func (s *Socket) Encode(writer protocol.Writer) (err protocol.Error) {
-	var _, goErr = s.WriteTo(writer)
-	if goErr != nil {
-		// err =
-	}
-	return
+//libgo:impl libgo/protocol.Codec
+func (s *Stream) MediaType() protocol.MediaType       { return nil }
+func (s *Stream) CompressType() protocol.CompressType { return nil }
+func (s *Stream) Decode(source protocol.Codec) (n int, err protocol.Error) {
+	return source.Encode(s)
 }
-func (s *Socket) Marshal() (data []byte, err protocol.Error) {
-	err = s.checkSocket()
+func (s *Stream) Encode(destination protocol.Codec) (n int, err protocol.Error) {
+	return destination.Decode(s)
+}
+func (s *Stream) Marshal() (data []byte, err protocol.Error) {
+	err = s.checkStream()
 	if err != nil {
 		return
 	}
@@ -30,10 +24,11 @@ func (s *Socket) Marshal() (data []byte, err protocol.Error) {
 	if !s.recv.buf.Full() {
 		err = s.blockInSelect()
 	}
+	// TODO::: check and wrap above error?
 	return s.recv.buf.Marshal()
 }
-func (s *Socket) MarshalTo(data []byte) (added []byte, err protocol.Error) {
-	err = s.checkSocket()
+func (s *Stream) MarshalTo(data []byte) (added []byte, err protocol.Error) {
+	err = s.checkStream()
 	if err != nil {
 		return
 	}
@@ -41,10 +36,11 @@ func (s *Socket) MarshalTo(data []byte) (added []byte, err protocol.Error) {
 	if !s.recv.buf.Full() {
 		err = s.blockInSelect()
 	}
+	// TODO::: check and wrap above error?
 	return s.recv.buf.MarshalTo(data)
 }
-func (s *Socket) Unmarshal(data []byte) (n int, err protocol.Error) {
-	err = s.checkSocket()
+func (s *Stream) Unmarshal(data []byte) (n int, err protocol.Error) {
+	err = s.checkStream()
 	if err != nil {
 		return
 	}
@@ -66,7 +62,7 @@ func (s *Socket) Unmarshal(data []byte) (n int, err protocol.Error) {
 	}
 	return
 }
-func (s *Socket) UnmarshalFrom(data []byte) (remaining []byte, err protocol.Error) {
+func (s *Stream) UnmarshalFrom(data []byte) (remaining []byte, err protocol.Error) {
 	return
 }
-func (s *Socket) Len() (ln int) { return s.recv.buf.Len() }
+func (s *Stream) Len() (ln int) { return s.recv.buf.Len() }

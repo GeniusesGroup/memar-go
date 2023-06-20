@@ -3,10 +3,10 @@
 package tcp
 
 import (
-	"github.com/GeniusesGroup/libgo/protocol"
+	"libgo/protocol"
 )
 
-func (s *Socket) checkPushFlag() (err protocol.Error) {
+func (s *Stream) checkPushFlag() (err protocol.Error) {
 	// TODO:::
 	return
 }

@@ -3,25 +3,32 @@
 package tcp
 
 import (
-	"github.com/GeniusesGroup/libgo/protocol"
-	"github.com/GeniusesGroup/libgo/time/monotonic"
+	"libgo/protocol"
+	"libgo/time/monotonic"
 )
 
 type delayedAcknowledgment struct {
-	enable    bool
+	enable bool
+	// The duration of the delayed-acknowledgement (and persist timers) depends
+	// on the measured round trip time of the connection
 	interval  protocol.Duration
 	nextCheck monotonic.Time
 }
 
-func (da *delayedAcknowledgment) Init(now monotonic.Time) (next protocol.Duration) {
+//libgo:impl libgo/protocol.ObjectLifeCycle
+func (da *delayedAcknowledgment) Init(now monotonic.Time) (next protocol.Duration, err protocol.Error) {
 	da.enable = true
-	now.Add(DelayedAcknowledgment_Timeout)
+	da.interval = CNF_DelayedAcknowledgment_Timeout
+	now.Add(CNF_DelayedAcknowledgment_Timeout)
 	da.nextCheck = now
 	return
 }
-func (da *delayedAcknowledgment) Reinit() {
+func (da *delayedAcknowledgment) Reinit() (err protocol.Error) {
+	return
 }
-func (da *delayedAcknowledgment) Deinit() {}
+func (da *delayedAcknowledgment) Deinit() (err protocol.Error) {
+	return
+}
 
 // Don't block the caller
 func (da *delayedAcknowledgment) CheckInterval(s *Stream, now monotonic.Time) (next protocol.Duration) {

@@ -10,10 +10,11 @@ import (
 ********** protocol.Buffer interface **********
  */
 
-func (s *Socket) ReadFrom(reader io.Reader) (n int64, err error) { return }
-func (s *Socket) WriteTo(w io.Writer) (totalWrite int64, err error) {
+func (s *Stream) ReadFrom(reader io.Reader) (n int64, err error) { return }
+func (s *Stream) WriteTo(w io.Writer) (totalWrite int64, err error) {
 	var writeLen int
-	writeLen, err = w.Write(s.recv.buf)
+	var data, _ = s.recv.buf.Marshal()
+	writeLen, err = w.Write(data)
 	totalWrite = int64(writeLen)
 	return
 }
