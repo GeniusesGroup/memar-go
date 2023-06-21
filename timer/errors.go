@@ -19,12 +19,12 @@ var (
 )
 
 func init() {
-	ErrTimerNotInit.Init("domain/timer.protocol; type=error; name=timer-not-initialize")
-	ErrTimerAlreadyInit.Init("domain/timer.protocol; type=error; name=timer-already-initialized")
-	ErrTimerAlreadyStarted.Init("domain/timer.protocol; type=error; name=timer-already-started")
-	ErrNegativeDuration.Init("domain/timer.protocol; type=error; name=negative-duration")
-	ErrNegativePeriodNumber.Init("domain/timer.protocol; type=error; name=negative-period-number")
+	ErrTimerNotInit.Init("domain/libgo.scm.geniuses.group; package=timer; type=error; name=timer-not-initialize")
+	ErrTimerAlreadyInit.Init("domain/libgo.scm.geniuses.group; package=timer; type=error; name=timer-already-initialized")
+	ErrTimerAlreadyStarted.Init("domain/libgo.scm.geniuses.group; package=timer; type=error; name=timer-already-started")
+	ErrNegativeDuration.Init("domain/libgo.scm.geniuses.group; package=timer; type=error; name=negative-duration")
+	ErrNegativePeriodNumber.Init("domain/libgo.scm.geniuses.group; package=timer; type=error; name=negative-period-number")
 
-	ErrTimerBadStatus.Init("domain/timer.protocol; type=error; name=timer-bad-status")
-	ErrTimerRacyAccess.Init("domain/timer.protocol; type=error; name=timer-racy-access")
+	ErrTimerBadStatus.Init("domain/libgo.scm.geniuses.group; package=timer; type=error; name=timer-bad-status")
+	ErrTimerRacyAccess.Init("domain/libgo.scm.geniuses.group; package=timer; type=error; name=timer-racy-access")
 }

@@ -3,7 +3,6 @@
 package timer
 
 import (
-	"libgo/log"
 	"libgo/protocol"
 	"libgo/time/monotonic"
 )
@@ -25,13 +24,4 @@ func when(d protocol.Duration) (t monotonic.Time) {
 		t = maxWhen
 	}
 	return
-}
-
-// badTimer is called if the timer data structures have been corrupted,
-// presumably due to racy use by the program. We log here rather than
-// panicing due to invalid slice access while holding locks.
-// See issue https://github.com/golang/go/issues/25686
-func badTimer() {
-	protocol.App.Log(log.FatalEvent("libgo/timer", "data corruption, maybe racy use of timers"))
-	// panic("timer: data corruption")
 }

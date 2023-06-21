@@ -9,12 +9,11 @@ import (
 	"unsafe"
 
 	"libgo/cpu"
+	"libgo/log"
 	"libgo/protocol"
 	"libgo/race"
 	"libgo/scheduler"
 	"libgo/time/monotonic"
-
-	"github.com/GeniusesGroup/libgo/log"
 )
 
 // TimingHeap ...
@@ -25,6 +24,7 @@ import (
 // https://github.com/RussellLuo/timingwheel/blob/master/delayqueue/delayqueue.go
 type TimingHeap struct {
 	coreID uint64 // CPU core number this timing run on it
+	thread *scheduler.Thread
 
 	// The when field of the first entry on the timer heap.
 	// This is 0 if the timer heap is empty.
@@ -54,33 +54,27 @@ type TimingHeap struct {
 	timers []timerBucketHeap
 }
 
-type timerBucketHeap struct {
-	timer *Async
-	// Two reason to have timer when here:
-	// - hot cache to prevent dereference timer to get when field
-	// - It can be difference with timer when filed in timerModifiedXX status.
-	when monotonic.Time
-}
-
 // Init initialize timing mechanism for th core that call the Init().
 //
-//libgo:impl /libgo/protocol.SoftwareLifeCycle
-func (th *TimingHeap) Init() {
+//libgo:impl libgo/protocol.SoftwareLifeCycle
+func (th *TimingHeap) Init() (err protocol.Error) {
 	// TODO::: let application flow choose timers init cap or force it?
 	// th.timers = make([]timerBucketHeap, 1024)
 
 	th.coreID = cpu.ActiveCoreID()
+	// th.thread = scheduler.NewThread()
 	// th.timerRaceCtx = racegostart(abi.FuncPCABIInternal(th.runTimer) + sys.PCQuantum)
 
 	// TODO::: change to libgo scheduler
 	go th.Start()
+	return
 }
 
 // Reinit releases all of the resources associated with timers in specific CPU core and
 // move them to other core that call deinit
 //
-//libgo:impl /libgo/protocol.SoftwareLifeCycle
-func (th *TimingHeap) Reinit() {
+//libgo:impl libgo/protocol.SoftwareLifeCycle
+func (th *TimingHeap) Reinit() (err protocol.Error) {
 	var callerCoreID = cpu.ActiveCoreID()
 	var newCore = &poolByCores[callerCoreID]
 	th.moveTimersTo(newCore)
@@ -92,14 +86,16 @@ func (th *TimingHeap) Reinit() {
 	th.deletedTimers.Store(0)
 	th.timerRaceCtx = 0
 	th.timers = nil
+	return
 }
 
 // Deinit releases all of the resources associated with timers in specific CPU core
 //
-//libgo:impl /libgo/protocol.SoftwareLifeCycle
-func (th *TimingHeap) Deinit() {
+//libgo:impl libgo/protocol.SoftwareLifeCycle
+func (th *TimingHeap) Deinit() (err protocol.Error) {
 	// TODO::: call all timers TimerHandler or what??
 	// th.timers = nil
+	return
 }
 
 func (th *TimingHeap) Start() {
@@ -107,8 +103,8 @@ func (th *TimingHeap) Start() {
 	for {
 		var now = monotonic.Now()
 		var nextWhen, _ = th.checkTimers(now)
-		var until = nextWhen.Until(nextWhen)
-		scheduler.Sleep(until)
+		var until = nextWhen.Until(now)
+		th.thread.Sleep(until)
 	}
 }
 
@@ -223,7 +219,7 @@ func (th *TimingHeap) cleanTimers() {
 			}
 			th.deleteTimer0()
 			if !timer.status.CompareAndSwap(protocol.TimerStatus_Removing, protocol.TimerStatus_Removed) {
-				badTimer()
+				log.Fatal(&ErrTimerRacyAccess, "cleanTimers: Racy timer access: Removing to Removed")
 			}
 			th.deletedTimers.Add(-1)
 		case protocol.TimerStatus_ModifiedEarlier, protocol.TimerStatus_ModifiedLater:
@@ -236,7 +232,7 @@ func (th *TimingHeap) cleanTimers() {
 			th.deleteTimer0()
 			th.AddTimer(timer)
 			if !timer.status.CompareAndSwap(protocol.TimerStatus_Moving, protocol.TimerStatus_Waiting) {
-				badTimer()
+				log.Fatal(&ErrTimerRacyAccess, "cleanTimers: Racy timer access: Moving to Waiting")
 			}
 		default:
 			// Head of timers does not need adjustment.
@@ -275,7 +271,7 @@ func (th *TimingHeap) moveTimers(timers []timerBucketHeap) {
 				timer.timing = nil
 				th.AddTimer(timer)
 				if !timer.status.CompareAndSwap(protocol.TimerStatus_Moving, protocol.TimerStatus_Waiting) {
-					badTimer()
+					log.Fatal(&ErrTimerRacyAccess, "moveTimers: Racy timer access: Moving to Waiting")
 				}
 				break loop
 			case protocol.TimerStatus_Deleted:
@@ -290,13 +286,12 @@ func (th *TimingHeap) moveTimers(timers []timerBucketHeap) {
 				scheduler.Yield(scheduler.Thread_WaitReason_Preempted)
 			case protocol.TimerStatus_Unset, protocol.TimerStatus_Removed:
 				// We should not see these status values in a timers heap.
-				badTimer()
+				log.Fatal(&ErrTimerRacyAccess, "moveTimers: Bad timer status: Unset||Removed")
 			case protocol.TimerStatus_Running, protocol.TimerStatus_Removing, protocol.TimerStatus_Moving:
-				// Some other P thinks it owns this timer,
-				// which should not happen.
-				badTimer()
+				// Some other P thinks it owns this timer, which should not happen.
+				log.Fatal(&ErrTimerRacyAccess, "moveTimers: Bad timer status: Running||Removing||Moving")
 			default:
-				badTimer()
+				log.Fatal(&ErrTimerRacyAccess, "moveTimers: Unknown timer status")
 			}
 		}
 	}
@@ -334,7 +329,7 @@ func (th *TimingHeap) adjustTimers(now monotonic.Time) {
 			if timer.status.CompareAndSwap(status, protocol.TimerStatus_Removing) {
 				var changed = th.deleteTimer(i)
 				if !timer.status.CompareAndSwap(protocol.TimerStatus_Removing, protocol.TimerStatus_Removed) {
-					badTimer()
+					log.Fatal(&ErrTimerRacyAccess, "adjustTimers: Racy timer access: Removing to Removed")
 				}
 				th.deletedTimers.Add(-1)
 				// Go back to the earliest changed heap entry.
@@ -354,7 +349,7 @@ func (th *TimingHeap) adjustTimers(now monotonic.Time) {
 				i = changed - 1
 			}
 		case protocol.TimerStatus_Unset, protocol.TimerStatus_Running, protocol.TimerStatus_Removing, protocol.TimerStatus_Removed, protocol.TimerStatus_Moving:
-			badTimer()
+			log.Fatal(&ErrTimerRacyAccess, "adjustTimers: Bad timer status: Unset||Running||Removing||Removed||Moving")
 		case protocol.TimerStatus_Waiting:
 			// OK, nothing to do.
 		case protocol.TimerStatus_Modifying:
@@ -362,7 +357,7 @@ func (th *TimingHeap) adjustTimers(now monotonic.Time) {
 			scheduler.Yield(scheduler.Thread_WaitReason_Preempted)
 			i--
 		default:
-			badTimer()
+			log.Fatal(&ErrTimerRacyAccess, "adjustTimers: Unknown timer status")
 		}
 	}
 
@@ -381,7 +376,7 @@ func (th *TimingHeap) addAdjustedTimers(moved []*Async) {
 	for _, t := range moved {
 		th.AddTimer(t)
 		if !t.status.CompareAndSwap(protocol.TimerStatus_Moving, protocol.TimerStatus_Waiting) {
-			badTimer()
+			log.Fatal(&ErrTimerRacyAccess, "addAdjustedTimers: Racy timer access: Moving to Waiting")
 		}
 	}
 }
@@ -416,7 +411,8 @@ func (th *TimingHeap) runTimer(now monotonic.Time) monotonic.Time {
 			}
 			th.deleteTimer0()
 			if !timer.status.CompareAndSwap(protocol.TimerStatus_Removing, protocol.TimerStatus_Removed) {
-				badTimer()
+
+				log.Fatal(&ErrTimerRacyAccess, "runTimer: Racy timer access: Removing to Removed")
 			}
 			th.deletedTimers.Add(-1)
 			if len(th.timers) == 0 {
@@ -430,7 +426,7 @@ func (th *TimingHeap) runTimer(now monotonic.Time) monotonic.Time {
 			th.deleteTimer0()
 			th.AddTimer(timer)
 			if !timer.status.CompareAndSwap(protocol.TimerStatus_Moving, protocol.TimerStatus_Waiting) {
-				badTimer()
+				log.Fatal(&ErrTimerRacyAccess, "runTimer: Racy timer access: Moving to Waiting")
 			}
 
 		case protocol.TimerStatus_Modifying:
@@ -438,13 +434,13 @@ func (th *TimingHeap) runTimer(now monotonic.Time) monotonic.Time {
 			scheduler.Yield(scheduler.Thread_WaitReason_Preempted)
 		case protocol.TimerStatus_Unset, protocol.TimerStatus_Removed:
 			// Should not see a new or inactive timer on the heap.
-			badTimer()
+			log.Fatal(&ErrTimerRacyAccess, "runTimer: Bad timer status: Unset||Removed")
 		case protocol.TimerStatus_Running, protocol.TimerStatus_Removing, protocol.TimerStatus_Moving:
 			// These should only be set when timers are locked,
 			// and we didn't do it.
-			badTimer()
+			log.Fatal(&ErrTimerRacyAccess, "runTimer: Bad timer status: Running||Removing||Moving")
 		default:
-			badTimer()
+			log.Fatal(&ErrTimerRacyAccess, "runTimer: Unknown timer status")
 		}
 	}
 }
@@ -466,14 +462,14 @@ func (th *TimingHeap) runOneTimer(t *Async, now monotonic.Time) {
 		}
 		th.siftDownTimer(0)
 		if !t.status.CompareAndSwap(protocol.TimerStatus_Running, protocol.TimerStatus_Waiting) {
-			badTimer()
+			log.Fatal(&ErrTimerRacyAccess, "runOneTimer: Racy timer access: Running to Waiting")
 		}
 		th.updateTimer0When()
 	} else {
 		// Remove from heap.
 		th.deleteTimer0()
 		if !t.status.CompareAndSwap(protocol.TimerStatus_Running, protocol.TimerStatus_Unset) {
-			badTimer()
+			log.Fatal(&ErrTimerRacyAccess, "runOneTimer: Racy timer access: Running to Unset")
 		}
 	}
 
@@ -532,7 +528,7 @@ nextTimer:
 					to++
 					changedHeap = true
 					if !timer.status.CompareAndSwap(protocol.TimerStatus_Moving, protocol.TimerStatus_Waiting) {
-						badTimer()
+						log.Fatal(&ErrTimerRacyAccess, "clearDeletedTimers: Racy timer access: Moving to Waiting")
 					}
 					continue nextTimer
 				}
@@ -541,7 +537,7 @@ nextTimer:
 					timer.timing = nil
 					cdel++
 					if !timer.status.CompareAndSwap(protocol.TimerStatus_Removing, protocol.TimerStatus_Removed) {
-						badTimer()
+						log.Fatal(&ErrTimerRacyAccess, "clearDeletedTimers: Racy timer access: Removing to Removed")
 					}
 					changedHeap = true
 					continue nextTimer
@@ -551,21 +547,20 @@ nextTimer:
 				scheduler.Yield(scheduler.Thread_WaitReason_Preempted)
 			case protocol.TimerStatus_Unset, protocol.TimerStatus_Removed:
 				// We should not see these status values in a timer heap.
-				badTimer()
+				log.Fatal(&ErrTimerRacyAccess, "clearDeletedTimers: Bad timer status: Unset||Removed")
 			case protocol.TimerStatus_Running, protocol.TimerStatus_Removing, protocol.TimerStatus_Moving:
-				// Some other P thinks it owns this timer,
-				// which should not happen.
-				badTimer()
+				// Some other P thinks it owns this timer, which should not happen.
+				log.Fatal(&ErrTimerRacyAccess, "clearDeletedTimers: Bad timer status: Running||Removing||Moving")
 			default:
-				badTimer()
+				log.Fatal(&ErrTimerRacyAccess, "clearDeletedTimers: Unknown timer status")
 			}
 		}
 	}
 
-	// Set remaining slots in timers slice to nil,
+	// Deinit remaining slots in timers slice,
 	// so that the timer values can be garbage collected.
 	for i := to; i < len(timers); i++ {
-		timers[i].timer = nil
+		timers[i].Deinit()
 	}
 
 	th.deletedTimers.Add(-cdel)
@@ -591,13 +586,13 @@ func (th *TimingHeap) verifyTimerHeap() {
 		var p = (i - 1) / heapAry
 		if timers[i].when < timers[p].when {
 			var logMsg = fmt.Sprint("bad timer heap at ", i, ": ", p, ": ", th.timers[p].when, ", ", i, ": ", timers[i].when, "\n")
-			protocol.App.Log(log.FatalEvent("libgo/timer", logMsg))
+			log.Fatal(&ErrTimerRacyAccess, logMsg)
 		}
 	}
 	var numTimers = int(th.numTimers.Load())
 	if timersLen != numTimers {
 		var logMsg = fmt.Sprint("timer: bad timer heap len ", len(th.timers), "!= numTimers", numTimers)
-		protocol.App.Log(log.FatalEvent("libgo/timer", logMsg))
+		log.Fatal(&ErrTimerRacyAccess, logMsg)
 	}
 }
 

@@ -23,7 +23,9 @@ func NewAsync(d protocol.Duration, callback protocol.TimerListener) (t *Async, e
 	return
 }
 
-// Async is not safe to call its method concurrently.
+// Async is a async timer object.
+// - It is not safe to call its method concurrently.
+// - It can be cause memory leak if you embed it directly, Due to Timing can't remove reference to it quickly.
 type Async struct {
 	// Timer wakes up at when, and then at when+period, ... (period > 0 only)
 	// when must be positive on an active timer.
@@ -45,7 +47,7 @@ type Async struct {
 // Init initialize the timer with given callback function or make the channel and send signal on it
 // Be aware that given function must not be closure and must not block the caller.
 //
-//libgo:impl /libgo/protocol.Timer
+//libgo:impl libgo/protocol.Timer
 func (t *Async) Init(callback protocol.TimerListener) (err protocol.Error) {
 	if t.callback != nil {
 		err = &ErrTimerAlreadyInit
@@ -56,7 +58,7 @@ func (t *Async) Init(callback protocol.TimerListener) (err protocol.Error) {
 	return
 }
 
-//libgo:impl /libgo/protocol.SoftwareLifeCycle
+//libgo:impl libgo/protocol.SoftwareLifeCycle
 func (t *Async) Reinit(callback protocol.TimerListener) (err protocol.Error) {
 	// var status = t.status.Load()
 	// if !(status == protocol.TimerStatus_Unset || status == protocol.TimerStatus_Deleted) {
@@ -72,10 +74,11 @@ func (t *Async) Reinit(callback protocol.TimerListener) (err protocol.Error) {
 }
 func (t *Async) Deinit() (err protocol.Error) {
 	err = t.Stop()
+	// TODO::: Can we remove t from related timing heap?
 	return
 }
 
-//libgo:impl /libgo/protocol.Timer
+//libgo:impl libgo/protocol.Timer
 func (t *Async) Status() (activeStatus protocol.TimerStatus) { return t.status.Load() }
 
 // Start adds the timer to the running cpu core timing.
@@ -83,7 +86,7 @@ func (t *Async) Status() (activeStatus protocol.TimerStatus) { return t.status.L
 // That avoids the risk of changing the when field of a timer in some P's heap,
 // which could cause the heap to become unsorted.
 //
-//libgo:impl /libgo/protocol.Timer
+//libgo:impl libgo/protocol.Timer
 func (t *Async) Start(d protocol.Duration) (err protocol.Error) {
 	if t.callback == nil {
 		err = &ErrTimerNotInit
@@ -121,16 +124,12 @@ func (t *Async) Start(d protocol.Duration) (err protocol.Error) {
 // We can only mark it as deleted. It will be removed in due course by the timing whose heap it is on.
 // Reports whether the timer was removed before it was run.
 //
-//libgo:impl /libgo/protocol.Timer
+//libgo:impl libgo/protocol.Timer
 func (t *Async) Stop() (err protocol.Error) {
 	if t.callback == nil {
 		err = &ErrTimerNotInit
 		return
 	}
-
-	// Must fetch t.timing before changing status,
-	// due to ts.cleanTimers in another goroutine can clear t.timing of timing in protocol.TimerStatus_Deleted status.
-	var timing = t.timing
 
 	var activeStatus protocol.TimerStatus
 	for {
@@ -140,6 +139,10 @@ func (t *Async) Stop() (err protocol.Error) {
 			err = &ErrTimerNotInit
 			return
 		case protocol.TimerStatus_Waiting, protocol.TimerStatus_ModifiedLater, protocol.TimerStatus_ModifiedEarlier:
+			// Must fetch t.timing before changing status,
+			// due to ts.cleanTimers in another goroutine can clear t.timing of timing in protocol.TimerStatus_Deleted status.
+			var timing = t.timing
+
 			// Timer was not yet run.
 			if t.status.CompareAndSwap(activeStatus, protocol.TimerStatus_Deleted) {
 				timing.deletedTimers.Add(1)
@@ -152,7 +155,7 @@ func (t *Async) Stop() (err protocol.Error) {
 			// The timer is being run or moved, by a different P Wait for it to complete.
 			scheduler.Yield(scheduler.Thread_WaitReason_Preempted)
 		case protocol.TimerStatus_Modifying:
-			// Simultaneous calls to Delete() and Reset(). Wait for the other call to complete.
+			// Simultaneous calls to Reset(). Wait for the other call to complete.
 			scheduler.Yield(scheduler.Thread_WaitReason_Preempted)
 		default:
 			err = &ErrTimerBadStatus
@@ -165,7 +168,7 @@ func (t *Async) Stop() (err protocol.Error) {
 // It's OK to call Reset() on a newly allocated Timer.
 // Reports whether the timer was modified before it was run.
 //
-//libgo:impl /libgo/protocol.Timer
+//libgo:impl libgo/protocol.Timer
 func (t *Async) Reset(d protocol.Duration) (err protocol.Error) {
 	// when must be positive. A negative value will cause ts.runTimer to
 	// overflow during its delta calculation and never expire other runtime timing.
@@ -183,7 +186,7 @@ func (t *Async) Reset(d protocol.Duration) (err protocol.Error) {
 		race.Release(unsafe.Pointer(t))
 	}
 
-	var wasRemoved = false
+	var wasRemovedFromTiming = false
 	var activeStatus protocol.TimerStatus
 loop:
 	for {
@@ -194,10 +197,10 @@ loop:
 				break loop
 			}
 		case protocol.TimerStatus_Unset, protocol.TimerStatus_Removed:
-			// Timer was already run and t is no longer in a heap.
+			// Timer was already run and t is no longer in a timing.
 			// Act like AddTimer.
 			if t.status.CompareAndSwap(activeStatus, protocol.TimerStatus_Modifying) {
-				wasRemoved = true
+				wasRemovedFromTiming = true
 				break loop
 			}
 		case protocol.TimerStatus_Deleted:
@@ -225,7 +228,7 @@ loop:
 	if t.period != 0 {
 		t.period = d
 	}
-	if wasRemoved {
+	if wasRemovedFromTiming {
 		t.timing = getActiveTiming()
 		t.timing.AddTimer(t)
 		if !t.status.CompareAndSwap(protocol.TimerStatus_Modifying, protocol.TimerStatus_Waiting) {
@@ -234,6 +237,9 @@ loop:
 			return
 		}
 	} else {
+		// TODO::: as describe here: https://github.com/golang/go/issues/53953#issuecomment-1189769955
+		// we need to access to timerBucket.when to decide correctly about new timer status,
+		// updateTimerModifiedEarliest() may call wrongly and waste resource. Any idea to fix?
 		var newStatus = protocol.TimerStatus_ModifiedLater
 		if timerNewWhen < timerOldWhen {
 			newStatus = protocol.TimerStatus_ModifiedEarlier
@@ -257,7 +263,7 @@ loop:
 // The durations must be greater than zero; if not, Tick() will panic.
 // Stop the ticker to release associated resources.
 //
-//libgo:impl /libgo/protocol.Ticker
+//libgo:impl libgo/protocol.Ticker
 func (t *Async) Tick(first, interval protocol.Duration) (err protocol.Error) {
 	if first < 1 || interval < 1 {
 		err = &ErrNegativeDuration
@@ -268,7 +274,7 @@ func (t *Async) Tick(first, interval protocol.Duration) (err protocol.Error) {
 	return
 }
 
-//libgo:impl /libgo/protocol.Stringer
+//libgo:impl libgo/protocol.Stringer
 func (t *Async) ToString() string {
 	var until = t.when.UntilNow()
 	var untilSecond = until / monotonic.Second

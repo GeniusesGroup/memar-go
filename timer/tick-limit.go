@@ -28,7 +28,7 @@ type LimitTicker struct {
 	Sync
 }
 
-//libgo:impl /libgo/protocol.Timer
+//libgo:impl libgo/protocol.Timer
 func (t *LimitTicker) Init() (err protocol.Error) {
 	// Give the channel a 1-element buffer.
 	// If the client falls behind while reading, we drop ticks

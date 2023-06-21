@@ -37,7 +37,7 @@ type Sync struct {
 	signal chan struct{}
 }
 
-//libgo:impl /libgo/protocol.Timer
+//libgo:impl libgo/protocol.Timer
 func (t *Sync) Init() (err protocol.Error) {
 	// Give the channel a 1-element buffer.
 	// If the client falls behind while reading, we drop ticks
@@ -47,7 +47,7 @@ func (t *Sync) Init() (err protocol.Error) {
 	return
 }
 
-//libgo:impl /libgo/protocol.SoftwareLifeCycle
+//libgo:impl libgo/protocol.SoftwareLifeCycle
 func (t *Sync) Reinit() (err protocol.Error) { err = t.Async.Reinit(t); return }
 func (t *Sync) Deinit() (err protocol.Error) {
 	err = t.Async.Deinit()
@@ -58,7 +58,7 @@ func (t *Sync) Deinit() (err protocol.Error) {
 	return
 }
 
-//libgo:impl /libgo/protocol.Timer_Sync
+//libgo:impl libgo/protocol.Timer_Sync
 func (t *Sync) Signal() <-chan struct{} { return t.signal }
 
 // TimerHandler or NotifyChannel does a non-blocking send the signal on t.signal

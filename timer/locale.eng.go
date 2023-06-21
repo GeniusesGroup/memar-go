@@ -44,7 +44,9 @@ func init() {
 		nil)
 	ErrTimerRacyAccess.SetDetail(protocol.LanguageEnglish, domainEnglish, "Racy Access",
 		"Timer fields must not change illegally or called it's method concurrently.",
-		"",
-		"",
+		"data corruption, maybe racy use of timers",
+		"The timer data structures have been corrupted, presumably due to racy use by the program.
+	dispatch log event here rather than panicing due to invalid slice access while holding locks.
+	See issue https://github.com/golang/go/issues/25686",
 		nil)
 }
