@@ -3,48 +3,22 @@
 package hs
 
 import (
-	er "github.com/GeniusesGroup/libgo/error"
-	"github.com/GeniusesGroup/libgo/protocol"
+	er "libgo/error"
 )
-
-const domainEnglish = "HTTP"
-const domainPersian = "HTTP"
 
 // Declare package errors
 var (
 	ErrNoConnection         er.Error
 	ErrNotFound             er.Error
 	ErrUnsupportedMediaType er.Error
+
+	ErrBadHost er.Error
 )
 
 func init() {
-	ErrNoConnection.Init("domain/http.protocol; type=error; name=no-connection")
-	ErrNoConnection.SetDetail(protocol.LanguageEnglish, domainEnglish,
-		"No Connection",
-		"There is no connection to peer(server or client) to process request",
-		"",
-		"",
-		nil)
-	ErrNoConnection.SetDetail(protocol.LanguagePersian, domainPersian,
-		"عدم وجود ارتباط",
-		"هیچ راه ارتباطی با رایانه مقصد برای پردازش درخواست مورد نظر وجود ندارد",
-		"",
-		"",
-		nil)
+	ErrNoConnection.Init("domain/httpwg.org; type=error; name=no-connection")
+	ErrNotFound.Init("domain/httpwg.org; type=error; name=not-found")
+	ErrUnsupportedMediaType.Init("domain/httpwg.org; type=error; name=unsupported-media-type")
 
-	ErrNotFound.Init("domain/http.protocol; type=error; name=not-found")
-	ErrNotFound.SetDetail(protocol.LanguageEnglish, domainEnglish,
-		"Not Found",
-		"Requested HTTP URI Service is not found in this instance of app",
-		"",
-		"",
-		nil)
-
-	ErrUnsupportedMediaType.Init("domain/http.protocol; type=error; name=unsupported-media-type")
-	ErrUnsupportedMediaType.SetDetail(protocol.LanguageEnglish, domainEnglish,
-		"Unsupported Media Type",
-		"Refuse to accept the request or response because the payload format or encoding is in an unsupported format",
-		"",
-		"",
-		nil)
+	ErrBadHost.Init("domain/httpwg.org; type=error; name=unsupported-media-type")
 }

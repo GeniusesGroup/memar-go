@@ -3,27 +3,17 @@
 package hs
 
 import (
-	"github.com/GeniusesGroup/libgo/detail"
-	"github.com/GeniusesGroup/libgo/http"
-	"github.com/GeniusesGroup/libgo/mediatype"
-	"github.com/GeniusesGroup/libgo/protocol"
-	"github.com/GeniusesGroup/libgo/service"
-	uuid "github.com/GeniusesGroup/libgo/uuid/32byte"
+	"libgo/detail"
+	"libgo/http"
+	"libgo/mediatype"
+	"libgo/protocol"
+	"libgo/service"
+	uuid "libgo/uuid/32byte"
 )
 
-const MuxService_Path = "/m"
+const MuxService_Path = "/s"
 
-var MuxService = muxService{}
-
-func init() {
-	MuxService.MT.Init("domain/http.protocol.service; name=service-multiplexer")
-	MuxService.DS.SetDetail(protocol.LanguageEnglish, domainEnglish,
-		"Service Multiplexer",
-		"Multiplex services by its ID with impressive performance",
-		"",
-		"",
-		nil)
-}
+var MuxService muxService
 
 type muxService struct {
 	detail.DS
@@ -31,23 +21,33 @@ type muxService struct {
 	service.Service
 }
 
-//libgo:impl protocol.MediaType
+//libgo:impl libgo/protocol.ObjectLifeCycle
+func (s *muxService) Init() (err protocol.Error) {
+	err = s.MT.Init("domain/httpwg.org; type=service; name=multiplexer")
+
+	return
+}
+
+//libgo:impl libgo/protocol.MediaType
 func (s *muxService) FileExtension() string               { return "" }
 func (s *muxService) Status() protocol.SoftwareStatus     { return protocol.Software_PreAlpha }
 func (s *muxService) ReferenceURI() string                { return "" }
 func (s *muxService) IssueDate() protocol.Time            { return nil } // 1587282740
 func (s *muxService) ExpiryDate() protocol.Time           { return nil }
 func (s *muxService) ExpireInFavorOf() protocol.MediaType { return nil }
-func (s *muxService) Fields() []protocol.Field            { return nil }
 
-//libgo:impl protocol.Service
+//libgo:impl libgo/protocol.Object
+func (s *muxService) Fields() []protocol.Object_Member_Field   { return nil }
+func (s *muxService) Methods() []protocol.Object_Member_Method { return nil }
+
+//libgo:impl libgo/protocol.Service
 func (s *muxService) URI() string                 { return MuxService_Path }
 func (s *muxService) Priority() protocol.Priority { return protocol.Priority_Unset }
 func (s *muxService) Weight() protocol.Weight     { return protocol.Weight_Unset }
 func (s *muxService) CRUDType() protocol.CRUD     { return protocol.CRUD_All }
 func (s *muxService) UserType() protocol.UserType { return protocol.UserType_All }
 
-func (ser *muxService) ServeHTTP(st protocol.Stream, httpReq *http.Request, httpRes *http.Response) (err protocol.Error) {
+func (s *muxService) ServeHTTP(st protocol.Stream, httpReq *http.Request, httpRes *http.Response) (err protocol.Error) {
 	if httpReq.Method() != http.MethodPOST {
 		// err =
 		httpRes.SetStatus(http.StatusMethodNotAllowedCode, http.StatusMethodNotAllowedPhrase)
@@ -84,6 +84,6 @@ func (ser *muxService) ServeHTTP(st protocol.Stream, httpReq *http.Request, http
 	return
 }
 
-func (ser *muxService) doHTTP(httpReq *http.Request, httpRes *http.Response) (err protocol.Error) {
+func (s *muxService) doHTTP(httpReq *http.Request, httpRes *http.Response) (err protocol.Error) {
 	return
 }
