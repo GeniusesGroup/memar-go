@@ -3,7 +3,7 @@
 package error
 
 import (
-	"github.com/GeniusesGroup/libgo/protocol"
+	"libgo/protocol"
 )
 
 // Errors store
@@ -12,9 +12,17 @@ type Errors struct {
 	poolByMediaType map[string]protocol.Error
 }
 
-func (e *Errors) Init() {
+//libgo:impl libgo/protocol.ObjectLifeCycle
+func (e *Errors) Init() (err protocol.Error) {
 	e.poolByID = make(map[protocol.MediaTypeID]protocol.Error, 512)
 	e.poolByMediaType = make(map[string]protocol.Error, 512)
+	return
+}
+func (e *Errors) Reinit() (err protocol.Error) {
+	return
+}
+func (e *Errors) Deinit() (err protocol.Error) {
+	return
 }
 
 func (e *Errors) RegisterError(err protocol.Error) {

@@ -5,7 +5,7 @@
 package error
 
 import (
-	"github.com/GeniusesGroup/libgo/protocol"
+	"libgo/protocol"
 )
 
 const domainEnglish = "Error"

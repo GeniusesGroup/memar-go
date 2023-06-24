@@ -3,7 +3,7 @@
 package error
 
 import (
-	"github.com/GeniusesGroup/libgo/protocol"
+	"libgo/protocol"
 )
 
 func ToGoError(err protocol.Error) error {

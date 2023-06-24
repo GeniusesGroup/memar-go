@@ -9,6 +9,6 @@ var (
 )
 
 func init() {
-	ErrNotFound.Init("domain/geniuses.group; type=error; package=error; name=not_found")
-	ErrNotExist.Init("domain/geniuses.group; type=error; package=error; name=not_exist")
+	ErrNotFound.Init("domain/libgo.scm.geniuses.group; package=error; type=error; name=not_found")
+	ErrNotExist.Init("domain/libgo.scm.geniuses.group; package=error; type=error; name=not_exist")
 }
