@@ -9,7 +9,7 @@ type GUI_PageState interface {
 }
 
 type GUI_PageState_Fields interface {
-	Page() GUIPage
+	Page() GUI_Page
 	Title() string
 	Description() string
 
@@ -20,22 +20,29 @@ type GUI_PageState_Fields interface {
 	// DOM as Document-Object-Model will render to user screen
 	// Same as Document interface of the Web declare in browsers in many ways but split not related concern to other interfaces
 	// like Document.URI that not belong to this interface and relate to GUI_PageState because we develope multi page app not web page
-	DOM() DOM // GUIElement
+	DOM() DOM // GUI_Element
 	SOM() SOM
 	Thumbnail() Image // The picture of the page in current state, use in social linking and SwitcherPage()
 
 	ActiveDates() []Time // first is CreateDate and last is EndDate(When Close() called)
 	State() ScreenMode
-	Type() WindowType
+	Type() GUI_WindowType
 }
 
 type GUI_PageState_Methods interface {
 	// Activate() or Show() Called call to render page in this state (brings to front).
 	// Also can call to move the page state to other screen
-	Activate(options PageStateActivateOptions)
+	Activate(options GUI_PageState_ActivateOptions) (err Error)
+
 	// Deactivate() or Minimize() Called before this state wants to remove from the render tree (brings to back)
-	Deactivate() (res PageStateDeactivateResult)
-	Refresh() Error // force to refresh
+	// Errors:
+	// - NotApproveToLeave: let the caller know user of the GUI app let page in this state bring to back.
+	// - HadActiveDialog: or hadActiveOverlay help navigator works in better way.
+	// 		e.g. for some keyboard event like back button in android OS to close dialog not pop previous page state to front
+	Deactivate() (err Error)
+
+	// force to refresh
+	Refresh() (err Error)
 
 	SafeToSilentClose() bool
 	// Remove render tree from screen and close DOM and SOM and archive it.
@@ -45,27 +52,19 @@ type GUI_PageState_Methods interface {
 	// DynamicElements struct {}
 }
 
-type PageStateActivateOptions struct {
+type GUI_PageState_ActivateOptions struct {
 	Screen GUIScreen
 	// It will effect just on this app and this page state only, not OS level.
 	Orientation ScreenOrientation
-	WindowType  WindowType
+	WindowType  GUI_WindowType
 	PopUp       bool // force to bring to front immediately
 }
 
-type PageStateDeactivateResult struct {
-	// let the caller know user of the GUI app let page in this state bring to back.
-	ApproveLeave bool
-	// or hadActiveOverlay help navigator works in better way.
-	// e.g. for some keyboard event like back button in android OS to close dialog not pop previous page state to front
-	HadActiveDialog bool
-}
-
-type WindowType uint8
+type GUI_WindowType uint8
 
 const (
-	WindowType_Unset      WindowType = 0
-	WindowType_Resizeable WindowType = (1 << iota) // has resizeable frame
-	WindowType_GLASSY                              // glassy window
-	WindowType_ALPHA                               // transparent window
+	GUI_WindowType_Unset      GUI_WindowType = 0
+	GUI_WindowType_Resizeable GUI_WindowType = (1 << iota) // has resizeable frame
+	GUI_WindowType_GLASSY                                  // glassy window
+	GUI_WindowType_ALPHA                                   // transparent window
 )

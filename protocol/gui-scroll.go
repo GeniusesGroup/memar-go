@@ -1,13 +1,13 @@
-/* For license and copyright information please see LEGAL file in repository */
+/* For license and copyright information please see the LEGAL file in the code repository */
 
 package protocol
 
-// GUIScroll indicate scroll behavior in any elements.
+// GUI_Scroll indicate scroll behavior in any elements.
 // If the element's direction is rtl (right-to-left), then scrollLeft is 0 when the scrollbar is at its rightmost position
 // (at the start of the scrolled content), and then increasingly negative as you scroll towards the end of the content.
-type GUIScroll interface {
+type GUI_Scroll interface {
 	// https://developer.mozilla.org/en-US/docs/Web/API/Window/scroll
-	Scroll(x, y int, options GUIScrollOptions)
+	Scroll(x, y int, options GUI_Scroll_Options)
 	// Scrolls to the HTML element with the given id.
 	ScrollToID(id string)
 
@@ -20,10 +20,10 @@ type GUIScroll interface {
 	// https://developer.mozilla.org/en-US/docs/Web/API/Element/scrollLeft
 	ScrollLeft() int
 
-    // Returns true if the scrollbars are visible; otherwise, returns false.
+	// Returns true if the scrollbars are visible; otherwise, returns false.
 	// To hide/diasable/force-show scrollbars use CSS >>
-	// 		::-webkit-scrollbar { display: none; }	/* Hide - Chrome/Safari/Webkit */	
-	// 		scrollbar-width: none;	/* Hide - W3C Candidate Recommendation (Just FireFox) */	
+	// 		::-webkit-scrollbar { display: none; }	/* Hide - Chrome/Safari/Webkit */
+	// 		scrollbar-width: none;	/* Hide - W3C Candidate Recommendation (Just FireFox) */
 	// 		overflow: hidden;		/* Hide and disable scrollbars */
 	//		overflow-y: hidden; 	/* Hide and disable vertical scrollbar */
 	//		overflow-x: hidden; 	/* Hide and disable horizontal scrollbar */
@@ -35,31 +35,15 @@ type GUIScroll interface {
 	EventTarget
 }
 
-type GUIScrollOptions struct {
-	Behavior GUIScrollBehavior
+type GUI_Scroll_Options struct {
+	Behavior GUI_Scroll_Behavior
 }
 
 // Specifies the scrolling animate behavior
-type GUIScrollBehavior uint8
+type GUI_Scroll_Behavior uint8
 
 const (
-	GUIScrollBehavior_Auto GUIScrollBehavior = iota
-	GUIScrollBehavior_Smoothly
-	GUIScrollBehavior_Instantly // instantly in a single jump
-)
-
-type ScrollEvent uint8
-
-const (
-	ScrollEvent_Unset ScrollEvent = iota
-	ScrollEvent_HOME
-	ScrollEvent_END
-	ScrollEvent_STEP_PLUS
-	ScrollEvent_STEP_MINUS
-	ScrollEvent_PAGE_PLUS
-	ScrollEvent_PAGE_MINUS
-	ScrollEvent_POS
-	ScrollEvent_SLIDER_RELEASED
-	ScrollEvent_CORNER_PRESSED
-	ScrollEvent_CORNER_RELEASED
+	GUI_Scroll_Behavior_Auto GUI_Scroll_Behavior = iota
+	GUI_Scroll_Behavior_Smoothly
+	GUI_Scroll_Behavior_Instantly // instantly in a single jump
 )

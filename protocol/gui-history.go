@@ -2,7 +2,7 @@
 
 package protocol
 
-type GUIHistory interface {
+type GUI_History interface {
 	PreviousPageState() GUI_PageState
 	FollowingPageState() GUI_PageState
 

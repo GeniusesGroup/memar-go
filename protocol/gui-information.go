@@ -1,10 +1,10 @@
-/* For license and copyright information please see LEGAL file in repository */
+/* For license and copyright information please see the LEGAL file in the code repository */
 
 package protocol
 
-// GUIInformation store application, page, widget locale details
+// GUI_Information store application, page, widget locale details
 // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl
-type GUIInformation interface {
+type GUI_Information interface {
 	Language() string
 	Name() string
 	ShortName() string

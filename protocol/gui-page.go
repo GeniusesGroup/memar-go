@@ -2,23 +2,23 @@
 
 package protocol
 
-type GUIPages interface {
-	RegisterPage(page GUIPage)
-	GetPageByPath(path string) (page GUIPage)
-	Pages() (pages []GUIPage)
+type GUI_Pages interface {
+	RegisterPage(page GUI_Page)
+	GetPageByPath(path string) (page GUI_Page)
+	Pages() (pages []GUI_Page)
 }
 
-// GUIPage indicate what is a GUI page.
-type GUIPage interface {
+// GUI_Page indicate what is a GUI page.
+type GUI_Page interface {
 	// "all", "noindex", "nofollow", "none", "noarchive", "nosnippet", "notranslate", "noimageindex", "unavailable_after: [RFC-850 date/time]"
 	Robots() string
 	Icon() Image
-	Info() GUIInformation // It is locale info
+	Info() GUI_Information // It is locale info
 	// think about a page that show a user medical records, doctor need to know user birthday, so /user page must ready to reach by doctor
 	// or doctor need to know other doctors visits to know any advice from them for this user.
-	RelatedPages() []GUIPage
+	RelatedPages() []GUI_Page
 
-	Path() string                                    // To route page by path of HTTP-URI
+	Path() string // To route page by path of HTTP-URI
 	// /product?id=1&title=book
 	AcceptedCondition(key string) (defaultValue any) // HTTP-URI queries
 
@@ -39,4 +39,9 @@ type GUIPage interface {
 	// template(name string) DOM
 
 	MediaType
+}
+
+type GUI_Page_DefaultConditions interface {
+	Editable() bool
+	MarketingUTM
 }
