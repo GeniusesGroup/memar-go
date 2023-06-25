@@ -3,6 +3,8 @@
 package protocol
 
 type String interface {
+	CharacterEncoding() CharacterEncoding
+
 	Slice
 }
 
