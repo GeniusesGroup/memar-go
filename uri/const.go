@@ -2,14 +2,17 @@
 
 package uri
 
-// Some default values
+// Some default signs
 const (
-	SP         byte = ' ' // <US-ASCII SP, space (32)>
-	Colon      byte = ':'
-	AtSign     byte = '@'
-	NumberSign byte = '#'
-	Comma      byte = ','
-	Question   byte = '?'
-	Slash      byte = '/'
-	Asterisk   byte = '*'
+	sign_SP         byte = ' ' // <US-ASCII SP, space (32)>
+	sign_Equal      byte = '='
+	sign_Colon      byte = ':'
+	sign_Semicolon  byte = ':'
+	sign_AtSign     byte = '@'
+	sign_NumberSign byte = '#'
+	sign_Comma      byte = ','
+	sign_Question   byte = '?'
+	sign_And        byte = '&'
+	sign_Slash      byte = '/'
+	sign_Asterisk   byte = '*'
 )

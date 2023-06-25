@@ -3,6 +3,7 @@
 package uri
 
 import (
+	"libgo/protocol"
 	"testing"
 )
 
@@ -13,6 +14,7 @@ type uriTest struct {
 	uri        URI // expected parse
 	out        URI // parsed one
 	wantURIEnd int
+	wantError  protocol.Error
 }
 
 var uriTests = []uriTest{
@@ -187,7 +189,10 @@ var uriTests = []uriTest{
 func TestURI_Unmarshal(t *testing.T) {
 	for _, tt := range uriTests {
 		t.Run(tt.name, func(t *testing.T) {
-			var gotURIEnd = tt.out.UnmarshalFromString(tt.raw)
+			var gotURIEnd, err = tt.out.UnmarshalFromString(tt.raw)
+			if err != tt.wantError {
+				t.Errorf("URI.Unmarshal(%q) = %v, want %v", tt.name, err, tt.wantError)
+			}
 			if gotURIEnd != tt.wantURIEnd {
 				t.Errorf("URI.Unmarshal(%q) = %v, want %v", tt.name, gotURIEnd, tt.wantURIEnd)
 			}

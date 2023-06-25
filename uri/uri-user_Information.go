@@ -3,7 +3,8 @@
 package uri
 
 import (
-	"strings"
+	"libgo/protocol"
+	"libgo/utf8"
 )
 
 // UserInformation store user information part of an URI.
@@ -14,22 +15,21 @@ type UserInformation struct {
 	password string //
 }
 
-func (u *UserInformation) Init(ui string) {
+//libgo:impl libgo/protocol.ObjectLifeCycle
+func (u *UserInformation) Init(ui string) (err protocol.Error) {
 	u.userinfo = ui
-	var i = strings.IndexByte(ui, Colon)
-	if i >= 0 {
-		u.username = ui[:i]
-		u.password = ui[i+1:]
-	} else {
-		u.userinfo = ui
-	}
+	u.username, u.password, _ = utf8.CutByte(ui, sign_Colon)
+	return
 }
-func (u *UserInformation) Reinit() {
+func (u *UserInformation) Reinit() (err protocol.Error) {
 	u.userinfo = ""
 	u.username = ""
 	u.password = ""
+	return
 }
-func (u *UserInformation) Deinit() {}
+func (u *UserInformation) Deinit() (err protocol.Error) {
+	return
+}
 
 func (u *UserInformation) Userinfo() string { return u.userinfo }
 func (u *UserInformation) Username() string { return u.username }

@@ -3,9 +3,9 @@
 package uri
 
 import (
-	"github.com/GeniusesGroup/libgo/detail"
-	"github.com/GeniusesGroup/libgo/mediatype"
-	"github.com/GeniusesGroup/libgo/protocol"
+	"libgo/detail"
+	"libgo/mediatype"
+	"libgo/protocol"
 )
 
 var (
@@ -22,7 +22,7 @@ type mediaType struct {
 	mediatype.MT
 }
 
-//libgo:impl protocol.MediaType
+//libgo:impl libgo/protocol.MediaType
 func (m *mediaType) FileExtension() string           { return "uri" }
 func (m *mediaType) Status() protocol.SoftwareStatus { return protocol.Software_PreAlpha }
 func (m *mediaType) ReferenceURI() string {
@@ -31,4 +31,7 @@ func (m *mediaType) ReferenceURI() string {
 func (m *mediaType) IssueDate() protocol.Time            { return nil }
 func (m *mediaType) ExpiryDate() protocol.Time           { return nil }
 func (m *mediaType) ExpireInFavorOf() protocol.MediaType { return nil }
-func (m *mediaType) Fields() []protocol.Field            { return nil }
+
+//libgo:impl libgo/protocol.Object
+func (m *mediaType) Fields() []protocol.Object_Member_Field   { return nil }
+func (m *mediaType) Methods() []protocol.Object_Member_Method { return nil }

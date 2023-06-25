@@ -2,7 +2,12 @@
 
 package uri
 
-import "strings"
+import (
+	"strings"
+
+	"libgo/protocol"
+	"libgo/utf8"
+)
 
 type AU = Authority
 
@@ -14,34 +19,33 @@ type Authority struct {
 	port            string //
 }
 
-func (a *Authority) Init(au string) {
+//libgo:impl libgo/protocol.ObjectLifeCycle
+func (a *Authority) Init(au string) (err protocol.Error) {
 	if au == "" {
 		return
 	}
 
 	a.authority = au
 
-	var i = strings.IndexByte(au, AtSign)
+	var i = strings.IndexByte(au, sign_AtSign)
 	if i > 0 {
 		a.UserInformation.Init(au[:i])
 		au = au[:i+1]
 	}
-	// TODO::: change below to respect RFC
-	i = strings.IndexByte(au, Colon)
-	if i > 0 {
-		a.host = au[:i]
-		a.port = au[i+1:]
-	} else {
-		a.host = au
-	}
+	// TODO::: change below to respect RFC to respect IPv6 address
+	a.host, a.port, _ = utf8.CutByte(au, sign_Colon)
+	return
 }
-func (a *Authority) Reinit() {
+func (a *Authority) Reinit() (err protocol.Error) {
 	a.authority = ""
 	a.UserInformation.Reinit()
 	a.host = ""
 	a.port = ""
+	return
 }
-func (a *Authority) Deinit() {}
+func (a *Authority) Deinit() (err protocol.Error) {
+	return
+}
 
 func (a *Authority) Authority() string { return a.authority }
 func (a *Authority) Host() string      { return a.host }

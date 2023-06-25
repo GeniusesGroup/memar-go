@@ -17,7 +17,6 @@ package protocol
 // / \ /                        \
 // urn:example:animal:ferret:nose
 type URI interface {
-	Init(uri string)
 	Set(scheme, authority, path, query, fragment string)
 
 	URI() string // always return full URI e.g. HTTP-URL
@@ -27,6 +26,10 @@ type URI interface {
 	Path() string
 	Query() string
 	Fragment() string
+
+	// ObjectLifeCycle
+	// TODO::: Init() is part of ObjectLifeCycle interface, but here for now to find a way to fix it
+	Init(uri string) (err Error)
 
 	// Codec
 }

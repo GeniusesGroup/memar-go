@@ -5,8 +5,8 @@ package uri
 import (
 	"io"
 
-	"github.com/GeniusesGroup/libgo/convert"
-	"github.com/GeniusesGroup/libgo/protocol"
+	"libgo/convert"
+	"libgo/protocol"
 )
 
 // URI store http URI parts.
@@ -26,17 +26,27 @@ type URI struct {
 	fragment string // fragment for references, without '#'
 }
 
-func (u *URI) Init(uri string) { u.UnmarshalFromString(uri) }
-func (u *URI) Reinit() {
+//libgo:impl libgo/protocol.ObjectLifeCycle
+func (u *URI) Init(uri string) (err protocol.Error) {
+	u.UnmarshalFromString(uri)
+	return
+}
+func (u *URI) Reinit() (err protocol.Error) {
 	u.uri = ""
 	u.uriAsByte = []byte{}
 	u.scheme = ""
-	u.AU.Reinit()
+	err = u.AU.Reinit()
+	if err != nil {
+		return
+	}
 	u.path = ""
 	u.query = ""
 	u.fragment = ""
+	return
 }
-func (u *URI) Deinit() {}
+func (u *URI) Deinit() (err protocol.Error) {
+	return
+}
 
 func (u *URI) Set(scheme, authority, path, query, fragment string) {
 	u.scheme, u.authority, u.path, u.query, u.fragment = scheme, authority, path, query, fragment
@@ -54,7 +64,13 @@ func (u *URI) SetPath(p string)     { u.path = p }
 func (u *URI) SetQuery(q string)    { u.query = q }
 func (u *URI) SetFragment(f string) { u.fragment = f }
 
-//libgo:impl protocol.Codec
+func (u *URI) ParseQuery() (q Query) { q.Init(u.query); return }
+
+// IsAbs reports whether the URL is absolute.
+// Absolute means that it has a non-empty scheme.
+func (u *URI) IsAbs() bool { return u.scheme != "" }
+
+//libgo:impl libgo/protocol.Codec
 func (u *URI) MediaType() protocol.MediaType       { return &MediaType } // application/x-www-form-urlencoded
 func (u *URI) CompressType() protocol.CompressType { return nil }
 func (u *URI) Len() (ln int) {
@@ -103,7 +119,8 @@ func (u *URI) Unmarshal(uri []byte) (err protocol.Error) {
 
 // UnmarshalFrom use to parse and decode given URI to u
 func (u *URI) UnmarshalFrom(data []byte) (remaining []byte, err protocol.Error) {
-	var uriEnd = u.UnmarshalFromString(convert.UnsafeByteSliceToString(data))
+	var uriEnd int
+	uriEnd, err = u.UnmarshalFromString(convert.UnsafeByteSliceToString(data))
 	remaining = data[uriEnd:]
 	return
 }
@@ -132,12 +149,12 @@ func (u *URI) marshalTo(httpPacket []byte) []byte {
 	}
 	httpPacket = append(httpPacket, u.authority...)
 	if u.path == "" {
-		httpPacket = append(httpPacket, Slash)
+		httpPacket = append(httpPacket, sign_Slash)
 	} else {
 		httpPacket = append(httpPacket, u.path...)
 	}
 	if u.query != "" {
-		httpPacket = append(httpPacket, Question)
+		httpPacket = append(httpPacket, sign_Question)
 		httpPacket = append(httpPacket, u.query...)
 	}
 
@@ -148,8 +165,8 @@ func (u *URI) marshalTo(httpPacket []byte) []byte {
 }
 
 // UnmarshalFromString use to parse and decode given URI to u
-func (u *URI) UnmarshalFromString(s string) (uriEnd int) {
-	if s[0] == Asterisk {
+func (u *URI) UnmarshalFromString(s string) (uriEnd int, err protocol.Error) {
+	if s[0] == sign_Asterisk {
 		uriEnd = 1
 	} else {
 		var originForm bool
@@ -163,14 +180,14 @@ func (u *URI) UnmarshalFromString(s string) (uriEnd int) {
 	Loop:
 		for i = 0; i < ln; i++ {
 			switch s[i] {
-			case Colon:
+			case sign_Colon:
 				// Check : mark is first appear before any start||end sign or it is part of others!
 				if authorityStartIndex == 0 {
 					u.scheme = s[:i]
 					i += 2                      // next loop will i+=1 so we just add i+=2
 					authorityStartIndex = i + 1 // +3 due to have ://
 				}
-			case Slash:
+			case sign_Slash:
 				// Just check slash in middle of URI! If URI in origin form pathStartIndex always be 0!
 				if authorityStartIndex != 0 && pathStartIndex == 0 {
 					pathStartIndex = i
@@ -179,13 +196,13 @@ func (u *URI) UnmarshalFromString(s string) (uriEnd int) {
 					pathStartIndex = i
 					u.authority = s[:i]
 				}
-			case Question:
+			case sign_Question:
 				// Check ? mark is first appear or it is part of some query key||value!
 				if questionIndex == 0 {
 					questionIndex = i
 					u.path = s[pathStartIndex:questionIndex]
 				}
-			case NumberSign:
+			case sign_NumberSign:
 				if numberSignIndex == 0 {
 					numberSignIndex = i
 					if questionIndex == 0 {
@@ -194,7 +211,7 @@ func (u *URI) UnmarshalFromString(s string) (uriEnd int) {
 						u.query = s[questionIndex+1 : numberSignIndex] // +1 due to we don't need '?'
 					}
 				}
-			case SP:
+			case sign_SP:
 				// Don't need to continue loop anymore
 				break Loop
 			}
