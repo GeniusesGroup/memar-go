@@ -1,15 +1,9 @@
-/* For license and copyright information please see LEGAL file in repository */
+/* For license and copyright information please see the LEGAL file in the code repository */
 
 package ipv4
 
-import "../protocol"
-
-// An Addr is an IP address version 4.
-type Addr [Addrlen]byte
-
-const (
-	// Addrlen address lengths 32 bit equal 4 byte.
-	Addrlen = 4
+import (
+	"libgo/protocol"
 )
 
 // Well-known IPv4 addresses
@@ -18,19 +12,15 @@ var (
 	AddrAllRouters = Addr{224, 0, 0, 2}       // all routers
 	AddrAllSystems = Addr{224, 0, 0, 1}       // all systems
 	AddrBroadcast  = Addr{255, 255, 255, 255} // limited broadcast
-
-	v4InV6Prefix = [12]byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0xff, 0xff}
 )
 
-// ToIPv6 returns the IPv4 address in 16-byte form
-func (addr Addr) ToIPv6() (v6 [16]byte) {
-	copy(v6[:], v4InV6Prefix)
-	copy(v6[12:], addr[:])
-	return
-}
+// An Addr is an IP address version 4.
+type Addr [AddrLen]byte
 
+//libgo:impl libgo/protocol.Stringer
 func (addr Addr) ToString() string {
 	const maxIPv4StringLen = len("255.255.255.255")
+
 	var b = make([]byte, maxIPv4StringLen)
 
 	var n = ubtoa(b, 0, addr[0])
@@ -48,9 +38,8 @@ func (addr Addr) ToString() string {
 	n += ubtoa(b, n, addr[3])
 	return string(b[:n])
 }
-
 func (addr *Addr) FromString(ipv4 string) (err protocol.Error) {
-	for i := 0; i < Addrlen; i++ {
+	for i := 0; i < AddrLen; i++ {
 		if len(ipv4) == 0 {
 			// err = Missing octets
 			return
@@ -72,7 +61,7 @@ func (addr *Addr) FromString(ipv4 string) (err protocol.Error) {
 			return
 		}
 		ipv4 = ipv4[c:]
-		*addr[i] = byte(n)
+		addr[i] = byte(n)
 	}
 	if len(ipv4) != 0 {
 		// Mask??
@@ -103,6 +92,9 @@ func ubtoa(dst []byte, start int, v byte) int {
 // Decimal to integer.
 // Returns number, characters consumed, success.
 func dtoi(s string) (n int, i int, ok bool) {
+	// Bigger than we need, not too big to worry about overflow
+	const big = 0xFFFFFF
+
 	n = 0
 	for i = 0; i < len(s) && '0' <= s[i] && s[i] <= '9'; i++ {
 		n = n*10 + int(s[i]-'0')

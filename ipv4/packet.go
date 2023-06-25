@@ -1,10 +1,10 @@
-/* For license and copyright information please see LEGAL file in repository */
+/* For license and copyright information please see the LEGAL file in the code repository */
 
 package ipv4
 
 import (
-	"../binary"
-	"../protocol"
+	"libgo/binary"
+	"libgo/protocol"
 )
 
 // Packet implement all methods to Get||Set data to a packet as a byte slice with 0-alloc
@@ -14,11 +14,11 @@ type Packet []byte
 // Always check packet before use any other packet methods otherwise panic may occur
 func (p Packet) CheckPacket() protocol.Error {
 	var packetLen = len(p)
-	if packetLen < HeaderLen {
-		return ErrPacketTooShort
+	if packetLen < MinHeaderLen {
+		return &ErrPacketTooShort
 	}
 	if packetLen < int(p.IHL()) {
-		return ErrPacketWrongLength
+		return &ErrPacketWrongLength
 	}
 	return nil
 }
@@ -46,9 +46,9 @@ func (p Packet) Payload() []byte                 { return p[p.IHL():] }
 func (p Packet) SetVersion(v uint8)              { p[0] = (v << 4) }
 func (p Packet) SetIHL(ln uint8)                 { p[0] |= (ln / 4) }
 func (p Packet) SetDSCP(dscp uint8)              { p[1] |= (dscp >> 2) }
-func (p Packet) SetTotalLength(tl uint16)        { binary.BigEndian.SetUint16(p[2:], tl) }
+func (p Packet) SetTotalLength(tl uint16)        { binary.BigEndian.PutUint16(p[2:], tl) }
 func (p Packet) SetIdentification(id [2]byte)    { copy(p[4:], id[:]) }
-func (p Packet) SetFragmentOffset(fo uint16)     { binary.BigEndian.SetUint16(p[6:], fo) }
+func (p Packet) SetFragmentOffset(fo uint16)     { binary.BigEndian.PutUint16(p[6:], fo) }
 func (p Packet) SetTimeToLive(ttl uint8)         { p[8] = ttl }
 func (p Packet) SetProtocol(proto uint8)         { p[9] = proto }
 func (p Packet) SetHeaderChecksum(check [2]byte) { copy(p[10:], check[:]); return }
@@ -61,25 +61,25 @@ func (p Packet) SetPayload(payload []byte)       { copy(p[p.IHL():], payload) }
 ********** Flags **********
  */
 func (p Packet) FlagECT() bool      { return p.FlagECT0() || p.FlagECT1() }
-func (p Packet) FlagECT0() bool     { return p[1]&Flag_ECT0 != 0 }
-func (p Packet) FlagECT1() bool     { return p[1]&Flag_ECT1 != 0 }
-func (p Packet) FlagCE() bool       { return p[1]&Flag_CE != 0 }
-func (p Packet) FlagReserved() bool { return p[6]&Flag_Reserved != 0 }
-func (p Packet) FlagDF() bool       { return p[6]&Flag_DF != 0 }
-func (p Packet) FlagMF() bool       { return p[6]&Flag_MF != 0 }
+func (p Packet) FlagECT0() bool     { return p[1]&flag_ECT0 != 0 }
+func (p Packet) FlagECT1() bool     { return p[1]&flag_ECT1 != 0 }
+func (p Packet) FlagCE() bool       { return p[1]&flag_CE != 0 }
+func (p Packet) FlagReserved() bool { return p[6]&flag_Reserved != 0 }
+func (p Packet) FlagDF() bool       { return p[6]&flag_DF != 0 }
+func (p Packet) FlagMF() bool       { return p[6]&flag_MF != 0 }
 
 func (p Packet) SetFlagECT()      { p.SetFlagECT0() }
-func (p Packet) SetFlagECT0()     { p[1] |= Flag_ECT0 }
-func (p Packet) SetFlagECT1()     { p[1] |= Flag_ECT1 }
-func (p Packet) SetFlagCE()       { p[1] |= Flag_CE }
-func (p Packet) SetFlagReserved() { p[6] |= Flag_Reserved }
-func (p Packet) SetFlagDF()       { p[6] |= Flag_DF }
-func (p Packet) SetFlagMF()       { p[6] |= Flag_MF }
+func (p Packet) SetFlagECT0()     { p[1] |= flag_ECT0 }
+func (p Packet) SetFlagECT1()     { p[1] |= flag_ECT1 }
+func (p Packet) SetFlagCE()       { p[1] |= flag_CE }
+func (p Packet) SetFlagReserved() { p[6] |= flag_Reserved }
+func (p Packet) SetFlagDF()       { p[6] |= flag_DF }
+func (p Packet) SetFlagMF()       { p[6] |= flag_MF }
 
-func (p Packet) UnsetFlagECT()      { p[1] &= ^Flag_CE }
-func (p Packet) UnsetFlagECT0()     { p[1] &= ^Flag_ECT0 }
-func (p Packet) UnsetFlagECT1()     { p[1] &= ^Flag_ECT1 }
-func (p Packet) UnsetFlagCE()       { p[1] &= ^Flag_CE }
-func (p Packet) UnsetFlagReserved() { p[6] &= ^Flag_Reserved }
-func (p Packet) UnsetFlagDF()       { p[6] &= ^Flag_DF }
-func (p Packet) UnsetFlagMF()       { p[6] &= ^Flag_MF }
+func (p Packet) UnsetFlagECT()      { p[1] &= ^flag_CE }
+func (p Packet) UnsetFlagECT0()     { p[1] &= ^flag_ECT0 }
+func (p Packet) UnsetFlagECT1()     { p[1] &= ^flag_ECT1 }
+func (p Packet) UnsetFlagCE()       { p[1] &= ^flag_CE }
+func (p Packet) UnsetFlagReserved() { p[6] &= ^flag_Reserved }
+func (p Packet) UnsetFlagDF()       { p[6] &= ^flag_DF }
+func (p Packet) UnsetFlagMF()       { p[6] &= ^flag_MF }
