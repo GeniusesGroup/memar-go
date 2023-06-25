@@ -1,17 +1,9 @@
-/* For license and copyright information please see LEGAL file in repository */
+/* For license and copyright information please see the LEGAL file in the code repository */
 
 package ipv6
 
-import "../protocol"
-
-// An Addr is an IP address version 6.
-type Addr [Addrlen]byte
-
-const (
-	// Addrlen address lengths 128 bit || 16 byte.
-	Addrlen = 16
-
-	hextable = "0123456789abcdef"
+import (
+	"libgo/protocol"
 )
 
 // Well-known IPv6 addresses
@@ -23,6 +15,9 @@ var (
 	AddrLinkLocalAllnodes      = Addr{0xff, 0x02, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x01}
 	AddrLinkLocalAllRouters    = Addr{0xff, 0x02, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x02}
 )
+
+// An Addr is an IP address version 6.
+type Addr [AddrLen]byte
 
 func (addr Addr) IsUnspecified() bool             { return addr == AddrUnspecified }
 func (addr Addr) IsLoopback() bool                { return addr == AddrLoopback }
@@ -43,14 +38,25 @@ func (addr *Addr) IsGlobalUnicast() bool {
 		!addr.IsLinkLocalUnicast()
 }
 
+// FromIPv4 set given the IPv4 address in 16-byte form
+func (addr *Addr) FromIPv4(v4 [4]byte) {
+	var v4InV6Prefix = [12]byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0xff, 0xff}
+
+	copy(addr[:], v4InV6Prefix[:])
+	copy(addr[12:], v4[:])
+	return
+}
+
 // ToString returns canonical string representation of IPv6.
+//
+//libgo:impl libgo/protocol.Stringer
 func (addr Addr) ToString() string {
 	// Find longest run of zeros.
 	var e0 = -1
 	var e1 = -1
-	for i := 0; i < Addrlen; i += 2 {
+	for i := 0; i < AddrLen; i += 2 {
 		j := i
-		for j < Addrlen && addr[j] == 0 && addr[j+1] == 0 {
+		for j < AddrLen && addr[j] == 0 && addr[j+1] == 0 {
 			j += 2
 		}
 		if j > i && j-i > e1-e0 {
@@ -65,27 +71,33 @@ func (addr Addr) ToString() string {
 		e1 = -1
 	}
 
-	const maxStringLen = len("ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff")
+	const (
+		hexTable     = "0123456789abcdef"
+		maxStringLen = len("ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff")
+	)
+
 	var b = make([]byte, 0, maxStringLen)
 
 	// Print with possible :: in place of run of zeros
-	for i := 0; i < Addrlen; i += 2 {
+	for i := 0; i < AddrLen; i += 2 {
 		if i == e0 {
 			b = append(b, ':', ':')
 			i = e1
-			if i >= Addrlen {
+			if i >= AddrLen {
 				break
 			}
 		} else if i > 0 {
 			b = append(b, ':')
 		}
-		b[i*2] = hextable[addr[i]>>4]
-		b[i*2+1] = hextable[addr[i+1]&0x0f]
+		b[i*2] = hexTable[addr[i]>>4]
+		b[i*2+1] = hexTable[addr[i+1]&0x0f]
 	}
 	return string(b)
 }
 
 // FromString parses ip as a literal IPv6 address described in RFC 4291 and RFC 5952.
+//
+//libgo:impl libgo/protocol.Stringer
 func (addr *Addr) FromString(ip string) (err protocol.Error) {
 	var ellipsis = -1 // position of ellipsis in ip
 
@@ -101,7 +113,7 @@ func (addr *Addr) FromString(ip string) (err protocol.Error) {
 
 	// Loop, parsing hex numbers followed by colon.
 	var i = 0
-	for i < Addrlen {
+	for i < AddrLen {
 		// Hex number.
 		n, c, ok := xtoi(ip)
 		if !ok || n > 0xFFFF {
@@ -144,11 +156,11 @@ func (addr *Addr) FromString(ip string) (err protocol.Error) {
 	}
 
 	// If didn't parse enough, expand ellipsis.
-	if i < Addrlen {
+	if i < AddrLen {
 		if ellipsis < 0 {
 			return
 		}
-		var n = Addrlen - i
+		var n = AddrLen - i
 		for j := i - 1; j >= ellipsis; j-- {
 			addr[j+n] = addr[j]
 		}
@@ -159,14 +171,18 @@ func (addr *Addr) FromString(ip string) (err protocol.Error) {
 		// Ellipsis must represent at least one 0 group.
 		return
 	}
-}
 
-// Bigger than we need, not too big to worry about overflow
-const big = 0xFFFFFF
+	return
+}
 
 // Hexadecimal to integer.
 // Returns number, characters consumed, success.
 func xtoi(s string) (n int, i int, ok bool) {
+	const (
+		// Bigger than we need, not too big to worry about overflow
+		big = 0xFFFFFF
+	)
+
 	n = 0
 	for i = 0; i < len(s); i++ {
 		if '0' <= s[i] && s[i] <= '9' {

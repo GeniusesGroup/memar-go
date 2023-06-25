@@ -1,10 +1,10 @@
-/* For license and copyright information please see LEGAL file in repository */
+/* For license and copyright information please see the LEGAL file in the code repository */
 
 package ipv6
 
 import (
-	"../binary"
-	"../protocol"
+	"libgo/binary"
+	"libgo/protocol"
 )
 
 // Packet implement all methods to Get||Set data to a packet as a byte slice with 0-alloc
@@ -14,7 +14,7 @@ type Packet []byte
 // Always check packet before use any other packet methods otherwise panic may occur
 func (p Packet) CheckPacket() protocol.Error {
 	if len(p) < HeaderLen {
-		return ErrPacketTooShort
+		return &ErrPacketTooShort
 	}
 	return nil
 }
@@ -38,7 +38,7 @@ func (p Packet) Payload() []byte                 { return p[40:] }
 func (p Packet) SetVersion(v uint8)              { p[0] = (v << 4) }
 func (p Packet) SetTrafficClass(tc uint8)        { p[0] |= (tc >> 4); p[1] = (tc << 4) }
 func (p Packet) SetFlowLabel(fl [3]byte)         { p[1] |= fl[0]; p[2] = fl[1]; p[3] = fl[2] }
-func (p Packet) SetPayloadLength(ln uint16)      { binary.BigEndian.SetUint16(p[4:], ln) }
+func (p Packet) SetPayloadLength(ln uint16)      { binary.BigEndian.PutUint16(p[4:], ln) }
 func (p Packet) SetNextHeader(nh uint8)          { p[6] = nh }
 func (p Packet) SetHopLimit(hl uint8)            { p[7] = hl }
 func (p Packet) SetSourceAddr(srcAddr Addr)      { copy(p[8:], srcAddr[:]) }
