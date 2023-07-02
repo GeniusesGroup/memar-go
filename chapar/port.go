@@ -8,11 +8,11 @@ import (
 
 type port struct {
 	portNumber         byte
-	mux                protocol.NetworkLink_Multiplexer
-	physicalConnection protocol.NetworkPhysical_Connection
+	mux                *Multiplexer
+	physicalConnection protocol.NetworkInterface
 }
 
-func (p *port) Init(portNumber byte, mux protocol.NetworkLink_Multiplexer, physicalConnection protocol.NetworkPhysical_Connection) {
+func (p *port) Init(portNumber byte, mux *Multiplexer, physicalConnection protocol.NetworkInterface) {
 	p.portNumber = portNumber
 	p.mux = mux
 	p.physicalConnection = physicalConnection
@@ -20,14 +20,14 @@ func (p *port) Init(portNumber byte, mux protocol.NetworkLink_Multiplexer, physi
 
 func (p *port) PortNumber() byte { return p.portNumber }
 
-// Send send frame sync that block sender until frame send and sure received successfully.
-func (p *port) Send(frame []byte) (err protocol.Error) {
-	err = p.physicalConnection.Send(frame)
+// Send send packet sync that block sender until packet send and sure received successfully.
+func (p *port) Send(packet []byte) (err protocol.Error) {
+	err = p.physicalConnection.Send(packet)
 	return
 }
 
 // Receive read the frame and call upper layer handler.
-func (p *port) Receive(frame []byte) (err protocol.Error) {
-	err = p.mux.Receive(p.physicalConnection, frame)
+func (p *port) Receive(packet []byte) (err protocol.Error) {
+	err = p.mux.Receive(nil, packet)
 	return
 }

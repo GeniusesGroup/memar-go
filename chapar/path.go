@@ -15,7 +15,7 @@ type Path struct {
 // Init sets path from the given frame
 func (p *Path) Init(frame Frame) {
 	var hopCount = frame.HopCount()
-	copy(p.path[:], frame[fixedHeaderLength:fixedHeaderLength+hopCount])
+	copy(p.path[:], frame[frameFixedLength:frameFixedLength+hopCount])
 	p.len = hopCount
 }
 
@@ -83,5 +83,5 @@ func (p *Path) Marshal() (path []byte) {
 	return p.path[:p.len]
 }
 func (p *Path) MarshalTo(frame []byte) {
-	copy(frame[fixedHeaderLength:], p.path[:p.len])
+	copy(frame[frameFixedLength:], p.path[:p.len])
 }

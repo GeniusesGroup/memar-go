@@ -4,10 +4,9 @@ package chapar
 
 const (
 	// MinFrameLen is minimum Chapar frame length
-	// 4 Byte Chapar header + 8 Byte min payload
-	MinFrameLen = 12
+	MinFrameLen = int(frameFixedLength + minHopCount)
 	// MaxFrameLen is maximum Chapar frame length
-	MaxFrameLen = 8192
+	MaxFrameLen = int(frameFixedLength) + int(maxHopCount)
 
 	// AcceptLastHop indicate that package must accept frames in last hop or not.
 	AcceptLastHop = true
@@ -15,11 +14,8 @@ const (
 	// 256 is max ports that Chapar protocol support directly in one hop.
 	defaultPortNumber = 256
 
-	// 256 is max next header ID that Chapar protocol support.
-	maxHeaderID = 256
-
-	fixedHeaderLength      byte = 3 // without path part
-	maxHopCount            byte = 255
-	broadcastHopCount      byte = 0
-	maxBroadcastPayloadLen int  = MaxFrameLen - (int(fixedHeaderLength) + int(maxHopCount))
+	frameFixedLength  byte = 3 // without path part
+	minHopCount       byte = 1
+	maxHopCount       byte = 255
+	broadcastHopCount byte = 0
 )

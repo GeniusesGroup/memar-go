@@ -7,8 +7,7 @@ import (
 	"libgo/protocol"
 )
 
-// Multiplexer implement protocol.NetworkLink_Multiplexer interface
-// Hardware implementation has some difference from Software(this) implementation:
+// Multiplexer Hardware implementation has some difference from Software(this) implementation:
 // - multiplexers send frames on the connection to other mux not call other functionality
 // - they must provide some congestion mechanism like cache to prevent sender frame.
 // - mux must have some mechanism to drop frames on destination port unavailability (congestion, ...)
@@ -17,20 +16,16 @@ type Multiplexer struct {
 
 	// Ports store all available link port to other physical or logical devices.
 	ports [defaultPortNumber]port
-	// UpperHandlers store all upper layer handlers
-	upperHandlers [maxHeaderID]protocol.NetworkNetwork_Multiplexer
 
 	connections Connections
 }
 
-func (mux *Multiplexer) HeaderID() (headerID protocol.NetworkPhysical_NextHeaderID) {
-	return protocol.NetworkPhysical_Chapar
+func (mux *Multiplexer) FrameID() (fID protocol.Network_FrameID) {
+	return protocol.Network_FrameID_Chapar
 }
 
 // Init initializes new Multiplexer object otherwise panic will occur on un-registered port or handler call.
-func (mux *Multiplexer) Init(portNumber byte, pConnection protocol.NetworkPhysical_Connection, connections Connections) {
-	// mux.physicalConnection = pConnection
-	pConnection.RegisterLinkMultiplexer(mux)
+func (mux *Multiplexer) Init(portNumber byte, pConnection protocol.NetworkInterface, connections Connections) {
 	mux.portNumber = portNumber
 	mux.connections = connections
 
@@ -42,9 +37,6 @@ func (mux *Multiplexer) Init(portNumber byte, pConnection protocol.NetworkPhysic
 			// TODO::: get port info
 			// mux.ports[i].Init(i, ?, ?)
 		}
-
-		var nonUH = UpperHandlerNonExist{headerID: protocol.NetworkLink_NextHeaderID(i)}
-		mux.upperHandlers[i] = &nonUH
 	}
 }
 
@@ -54,32 +46,9 @@ func (mux *Multiplexer) Deinit() (err protocol.Error) {
 	return
 }
 
-// RegisterNetworkMux registers new port on given ports pool.
-func (mux *Multiplexer) RegisterNetworkMux(tm protocol.NetworkNetwork_Multiplexer) {
-	// TODO::: check handler exist already and warn user??
-	mux.upperHandlers[tm.HeaderID()] = tm
-}
-
-// UnRegisterNetworkMux delete the port by given port number on given ports pool.
-func (mux *Multiplexer) UnRegisterNetworkMux(tm protocol.NetworkNetwork_Multiplexer) {
-	var headerID = tm.HeaderID()
-	var nonUH = UpperHandlerNonExist{headerID: headerID}
-	mux.upperHandlers[headerID] = &nonUH
-}
-
-// removeTransportHandler delete the port by given port number on given ports pool.
-func (mux *Multiplexer) removeTransportHandler(headerID protocol.NetworkLink_NextHeaderID) {
-	var nonUH = UpperHandlerNonExist{headerID: headerID}
-	mux.upperHandlers[headerID] = &nonUH
-}
-
-func (mux *Multiplexer) getTransportHandler(id protocol.NetworkTransport_HeaderID) protocol.NetworkNetwork_Multiplexer {
-	return mux.upperHandlers[id]
-}
-
 // Send send the payload to all ports async.
-func (mux *Multiplexer) Send(frame []byte) (err protocol.Error) {
-	var f = Frame(frame)
+func (mux *Multiplexer) Send(packet []byte) (err protocol.Error) {
+	var f = Frame(packet)
 
 	// err = f.CheckFrame()
 	// if err != nil {
@@ -88,47 +57,28 @@ func (mux *Multiplexer) Send(frame []byte) (err protocol.Error) {
 	// }
 
 	if f.IsBroadcastFrame() {
-		err = mux.sendBroadcast(frame)
+		err = mux.sendBroadcast(packet)
 	} else {
 		var portNum byte = f.NextPortNum()
 		var port = mux.getPort(portNum)
-		err = port.Send(frame)
+		err = port.Send(packet)
 	}
 	return
 }
 
-// SendBroadcast send the payload to all ports async.
-func (mux *Multiplexer) SendBroadcast(nexHeaderID NextHeaderID, payload protocol.Codec) (err protocol.Error) {
-	var payloadLen int = payload.Len()
-	if payloadLen > maxBroadcastPayloadLen {
-		return &ErrMTU
-	}
-
-	var f Frame
-	f.Init(nexHeaderID, nil, payloadLen)
-	var framePayload = f.Payload()
-	framePayload = framePayload[:0]
-	_, err = payload.MarshalTo(framePayload)
-	if err != nil {
-		return
-	}
-	err = mux.sendBroadcast(f)
-	return
-}
-
-// send the frame to all ports as BroadcastFrame!
-func (mux *Multiplexer) sendBroadcast(frame []byte) (err protocol.Error) {
+// send the packet to all ports as BroadcastFrame!
+func (mux *Multiplexer) sendBroadcast(packet []byte) (err protocol.Error) {
 	// send the frame to all ports as BroadcastFrame!
 	var portNum byte
 	for portNum = 0; portNum <= 255; portNum++ {
-		err = mux.getPort(portNum).Send(frame)
+		err = mux.getPort(portNum).Send(packet)
 	}
 	return
 }
 
 // Receive handles income frame to ports.
-func (mux *Multiplexer) Receive(pConn protocol.NetworkPhysical_Connection, frame []byte) (err protocol.Error) {
-	var f = Frame(frame)
+func (mux *Multiplexer) Receive(soc protocol.Socket, packet []byte) (err protocol.Error) {
+	var f = Frame(packet)
 
 	err = f.CheckFrame()
 	if err != nil {
@@ -154,18 +104,16 @@ func (mux *Multiplexer) Receive(pConn protocol.NetworkPhysical_Connection, frame
 				// TODO::: receive frame on alternative path, Any action needed??
 			}
 
-			var nextHeader = f.NextHeader()
-			var payload = f.Payload()
-			mux.getTransportHandler(nextHeader).Receive(conn, payload)
+			// TODO::: Set conn to given soc(protocol.Socket) for others and response logic
 		}
 		return
 	}
 
 	if f.IsBroadcastFrame() {
-		err = mux.sendBroadcast(frame)
+		err = mux.sendBroadcast(packet)
 	} else {
 		var portNum byte = f.NextPortNum()
-		err = mux.getPort(portNum).Receive(frame)
+		err = mux.getPort(portNum).Receive(packet)
 	}
 	return
 }
