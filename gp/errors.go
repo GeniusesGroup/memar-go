@@ -1,29 +1,22 @@
-/* For license and copyright information please see LEGAL file in repository */
+/* For license and copyright information please see the LEGAL file in the code repository */
 
 package gp
 
 import (
-	er "../error"
-	"../protocol"
+	er "libgo/error"
 )
-
-const errorEnglishDomain = "Giti Network"
-const errorPersianDomain = "شبکه گیتی"
 
 // Errors
 var (
-	ErrPacketTooShort = er.New("urn:giti:gp.protocol:error:packet-too-short").SetDetail(protocol.LanguageEnglish, errorEnglishDomain, "Packet Too Short",
-		"Giti packet is empty or too short than standard header. It must include 44Byte header plus 16Byte min Payload",
-		"",
-		"").Save()
-
-	ErrPacketArrivedAnterior = er.New("urn:giti:gp.protocol:error:packet-arrived-anterior").SetDetail(protocol.LanguageEnglish, errorEnglishDomain, "Packet Arrived Anterior",
-		"New packet arrive before some expected packet arrived. Usually cause of drop packet detection or high latency occur for some packet",
-		"",
-		"").Save()
-
-	ErrPacketArrivedPosterior = er.New("urn:giti:gp.protocol:error:packet-arrived-posterior").SetDetail(protocol.LanguageEnglish, errorEnglishDomain, "Packet Arrived Posterior",
-		"New packet arrive after some expected packet arrived. Usually cause of drop packet detection or high latency occur for some packet",
-		"",
-		"").Save()
+	ErrFrameLength           er.Error
+	ErrBadFrameID            er.Error
+	ErrFrameArrivedAnterior  er.Error
+	ErrFrameArrivedPosterior er.Error
 )
+
+func init() {
+	ErrFrameLength.Init("domain/gp.scm.geniuses.group; type=error; name=frame-length")
+	ErrBadFrameID.Init("domain/gp.scm.geniuses.group; type=error; name=bad-frame-id")
+	ErrFrameArrivedAnterior.Init("domain/gp.scm.geniuses.group; type=error; name=frame-arrived-anterior")
+	ErrFrameArrivedPosterior.Init("domain/gp.scm.geniuses.group; type=error; name=frame-arrived-posterior")
+}
