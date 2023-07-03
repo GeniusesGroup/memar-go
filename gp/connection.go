@@ -27,6 +27,9 @@ func (conn *Connection) Deinit() (err protocol.Error) {
 	return
 }
 
+//libgo:impl libgo/protocol.Network_Framer
+func (conn *Connection) FrameID() protocol.Network_FrameID { return protocol.Network_FrameID_GP }
+
 //libgo:impl libgo/protocol.NetworkAddress
 func (conn *Connection) LocalAddr() protocol.Stringer  { return &conn.localAddr }
 func (conn *Connection) RemoteAddr() protocol.Stringer { return &conn.remoteAddr }

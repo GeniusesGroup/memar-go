@@ -11,12 +11,12 @@ import (
 var conns Connections
 
 //libgo:impl libgo/protocol.ObjectLifeCycle
-func Init(conns Connections) (err protocol.Error) {
+func Init(cs Connections) (err protocol.Error) {
 	if conns != nil {
 		// err =
 		return
 	}
 	log.Info(&Package_MediaType, "GP network begin listening...")
-	conns = conns
+	conns = cs
 	return
 }
