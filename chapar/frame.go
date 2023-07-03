@@ -9,6 +9,8 @@ import (
 type Frame []byte
 
 // Init initialize new unicast||broadcast frame.
+//
+//libgo:impl libgo/protocol.ObjectLifeCycle
 func (f *Frame) Init(path []byte) (err protocol.Error) {
 	var pathLen byte = byte(len(path))
 	if pathLen == 0 {
@@ -29,13 +31,6 @@ func (f *Frame) Deinit() (err protocol.Error) {
 	// TODO::: ??
 	return
 }
-
-//libgo:impl libgo/protocol.Network_Frame
-func (f Frame) StaticFrameLen(pathLen byte) (frameLength int) {
-	return int(frameFixedLength + pathLen)
-}
-func (f Frame) FrameLen() (frameLength int) { return int(frameFixedLength + f.HopCount()) }
-func (f Frame) NextFrame() []byte           { return f[frameFixedLength+f.HopCount():] }
 
 // Getter methods to get frame fields.
 func (f Frame) FrameID() protocol.Network_FrameID { return protocol.Network_FrameID(f[0]) }
@@ -73,18 +68,29 @@ func (f Frame) CheckFrame() (err protocol.Error) {
 }
 
 // IsBroadcastFrame checks frame is broadcast frame or not.
-// spec: https://github.com/GeniusesGroup/RFCs/blob/master/Chapar.md#frame-types
+// spec: https://github.com/GeniusesGroup/RFCs/blob/master/networking-osi_2-Chapar.md#frame-types
 func (f Frame) IsBroadcastFrame() bool { return f[1] == broadcastHopCount }
 
 // IncrementNextHop sets received port number and increment NextHop number in frame.
 func (f Frame) IncrementNextHop(receivedPortNumber byte) (lastHop bool) {
 	var nextHop = f.NextHop()
 	var hopCount = f.HopCount()
-	// spec: https://github.com/GeniusesGroup/RFCs/blob/master/Chapar.md#rules
+	// spec: https://github.com/GeniusesGroup/RFCs/blob/master/networking-osi_2-Chapar.md#rules
 	f.SetPortNum(nextHop, receivedPortNumber)
 	if nextHop == hopCount-1 { // -1 due to hop count start from 1 not 0
 		return true
 	}
 	f[2]++
 	return false
+}
+
+//libgo:impl libgo/protocol.Network_Frame
+func (f Frame) StaticFrameLen(pathLen byte) (frameLength int) { return int(frameFixedLength + pathLen) }
+func (f Frame) FrameLen() (frameLength int)                   { return int(frameFixedLength + f.HopCount()) }
+func (f Frame) NextFrame() []byte                             { return f[frameFixedLength+f.HopCount():] }
+func (f Frame) Process(soc protocol.Socket) (err protocol.Error) {
+	return
+}
+func (f Frame) Do(soc protocol.Socket) (err protocol.Error) {
+	return
 }

@@ -25,6 +25,8 @@ func (mux *Multiplexer) FrameID() (fID protocol.Network_FrameID) {
 }
 
 // Init initializes new Multiplexer object otherwise panic will occur on un-registered port or handler call.
+//
+//libgo:impl libgo/protocol.ObjectLifeCycle
 func (mux *Multiplexer) Init(portNumber byte, pConnection protocol.NetworkInterface, connections Connections) {
 	mux.portNumber = portNumber
 	mux.connections = connections

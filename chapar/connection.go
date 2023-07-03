@@ -5,7 +5,7 @@ package chapar
 import (
 	"bytes"
 
-	"libgo/connection"
+	"libgo/net"
 	"libgo/protocol"
 )
 
@@ -20,9 +20,9 @@ type Connection struct {
 	/* Peer data */
 	pathFromPeer     Path // Chapar switch spec
 	alternativePaths []Path
-	thingID          [32]byte
+	thingID          protocol.UserUUID
 
-	connection.Metric
+	net.Metric
 }
 
 // Init set some data from given frame as connection initialize.

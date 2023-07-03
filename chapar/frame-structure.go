@@ -4,7 +4,7 @@ package chapar
 
 // frameFormat represents Chapar frame structure.
 // It is just to show protocol in better way, we never use this type.
-// Read more about this protocol : https://github.com/GeniusesGroup/RFCs/blob/master/Chapar.md
+// Read more about this protocol : https://github.com/GeniusesGroup/RFCs/blob/master/networking-osi_2-Chapar.md
 // It is just to show protocol in better way, we never use this type.
 // up-to 255 switch port number can be in a frame header.
 // First hopNum is hopNum==1 not hopNum==0. Don't read hopNum==0 due to it is use for broadcast frame.
