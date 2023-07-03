@@ -1,6 +1,6 @@
 /* For license and copyright information please see the LEGAL file in the code repository */
 
-package connection
+package net
 
 import (
 	"sync/atomic"
@@ -18,6 +18,7 @@ type ConnectionsMetric struct {
 	idleCount           atomic.Int64
 	waitCount           atomic.Int64
 	closedCount         atomic.Int64
+	guestClosedCount    atomic.Int64
 	idleClosedCount     atomic.Int64
 	waitClosedCount     atomic.Int64
 	lifetimeClosedCount atomic.Int64
@@ -31,6 +32,7 @@ func (cm *ConnectionsMetric) InUseCount() int64          { return cm.inUseCount.
 func (cm *ConnectionsMetric) IdleCount() int64           { return cm.idleCount.Load() }
 func (cm *ConnectionsMetric) WaitCount() int64           { return cm.waitCount.Load() }
 func (cm *ConnectionsMetric) ClosedCount() int64         { return cm.closedCount.Load() }
+func (cm *ConnectionsMetric) GuestClosedCount() int64    { return cm.guestClosedCount.Load() }
 func (cm *ConnectionsMetric) IdleClosedCount() int64     { return cm.idleClosedCount.Load() }
 func (cm *ConnectionsMetric) WaitClosedCount() int64     { return cm.waitClosedCount.Load() }
 func (cm *ConnectionsMetric) LifetimeClosedCount() int64 { return cm.lifetimeClosedCount.Load() }
@@ -54,6 +56,10 @@ func (cm *ConnectionsMetric) ConnWaited() {
 func (cm *ConnectionsMetric) ConnClosed() {
 	cm.inUseCount.Add(-1)
 	cm.closedCount.Add(1)
+}
+func (cm *ConnectionsMetric) GuestConnClosed() {
+	cm.ConnClosed()
+	cm.guestClosedCount.Add(1)
 }
 func (cm *ConnectionsMetric) IdleConnClosed() {
 	cm.closedCount.Add(1)
