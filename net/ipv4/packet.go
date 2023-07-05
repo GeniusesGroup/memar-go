@@ -29,9 +29,9 @@ func (p Packet) CheckPacket() protocol.Error {
 func (p Packet) Version() uint8                  { return p[0] >> 4 }
 func (p Packet) IHL() uint8                      { return (p[0] & 0x0f) * 4 }
 func (p Packet) DSCP() uint8                     { return p[1] >> 2 }
-func (p Packet) TotalLength() uint16             { return binary.BigEndian.Uint16(p[2:]) }
+func (p Packet) TotalLength() uint16             { return binary.BigEndian(p[2:]).Uint16() }
 func (p Packet) Identification() (id [2]byte)    { copy(id[:], p[4:]); return }
-func (p Packet) FragmentOffset() uint16          { return binary.BigEndian.Uint16(p[6:]) & 0b1110000000000000 }
+func (p Packet) FragmentOffset() uint16          { return binary.BigEndian(p[6:]).Uint16() & 0b1110000000000000 }
 func (p Packet) TimeToLive() uint8               { return p[8] }
 func (p Packet) Protocol() uint8                 { return p[9] }
 func (p Packet) HeaderChecksum() (check [2]byte) { copy(check[:], p[10:]); return }
@@ -46,9 +46,9 @@ func (p Packet) Payload() []byte                 { return p[p.IHL():] }
 func (p Packet) SetVersion(v uint8)              { p[0] = (v << 4) }
 func (p Packet) SetIHL(ln uint8)                 { p[0] |= (ln / 4) }
 func (p Packet) SetDSCP(dscp uint8)              { p[1] |= (dscp >> 2) }
-func (p Packet) SetTotalLength(tl uint16)        { binary.BigEndian.PutUint16(p[2:], tl) }
+func (p Packet) SetTotalLength(tl uint16)        { binary.BigEndian(p[2:]).PutUint16(tl) }
 func (p Packet) SetIdentification(id [2]byte)    { copy(p[4:], id[:]) }
-func (p Packet) SetFragmentOffset(fo uint16)     { binary.BigEndian.PutUint16(p[6:], fo) }
+func (p Packet) SetFragmentOffset(fo uint16)     { binary.BigEndian(p[6:]).PutUint16(fo) }
 func (p Packet) SetTimeToLive(ttl uint8)         { p[8] = ttl }
 func (p Packet) SetProtocol(proto uint8)         { p[9] = proto }
 func (p Packet) SetHeaderChecksum(check [2]byte) { copy(p[10:], check[:]); return }

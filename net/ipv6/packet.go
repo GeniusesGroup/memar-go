@@ -25,7 +25,7 @@ func (p Packet) CheckPacket() protocol.Error {
 func (p Packet) Version() uint8                  { return p[0] >> 4 }
 func (p Packet) TrafficClass() uint8             { return p[0]<<4 | p[1]>>4 }
 func (p Packet) FlowLabel() (fl [3]byte)         { copy(fl[:], p[1:]); fl[0] &= 0x0f; return }
-func (p Packet) PayloadLength() uint16           { return binary.BigEndian.Uint16(p[4:]) }
+func (p Packet) PayloadLength() uint16           { return binary.BigEndian(p[4:]).Uint16() }
 func (p Packet) NextHeader() uint8               { return p[6] }
 func (p Packet) HopLimit() uint8                 { return p[7] }
 func (p Packet) SourceAddr() (srcAddr Addr)      { copy(srcAddr[:], p[8:]); return }
@@ -38,7 +38,7 @@ func (p Packet) Payload() []byte                 { return p[40:] }
 func (p Packet) SetVersion(v uint8)              { p[0] = (v << 4) }
 func (p Packet) SetTrafficClass(tc uint8)        { p[0] |= (tc >> 4); p[1] = (tc << 4) }
 func (p Packet) SetFlowLabel(fl [3]byte)         { p[1] |= fl[0]; p[2] = fl[1]; p[3] = fl[2] }
-func (p Packet) SetPayloadLength(ln uint16)      { binary.BigEndian.PutUint16(p[4:], ln) }
+func (p Packet) SetPayloadLength(ln uint16)      { binary.BigEndian(p[4:]).PutUint16(ln) }
 func (p Packet) SetNextHeader(nh uint8)          { p[6] = nh }
 func (p Packet) SetHopLimit(hl uint8)            { p[7] = hl }
 func (p Packet) SetSourceAddr(srcAddr Addr)      { copy(p[8:], srcAddr[:]) }
