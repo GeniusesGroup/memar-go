@@ -43,15 +43,6 @@ func (mt *MediaType) SubType() string                     { return mt.subType }
 func (mt *MediaType) Suffix() string                      { return mt.suffix }
 func (mt *MediaType) Parameters() []string                { return mt.parameters }
 func (mt *MediaType) FileExtension() string               { return "" }
-func (mt *MediaType) Status() protocol.SoftwareStatus     { return protocol.Software_Unset }
-func (mt *MediaType) ReferenceURI() string                { return "" }
-func (mt *MediaType) IssueDate() protocol.Time            { return nil }
-func (mt *MediaType) ExpiryDate() protocol.Time           { return nil }
-func (mt *MediaType) ExpireInFavorOf() protocol.MediaType { return nil }
-
-//libgo:impl libgo/protocol.Object
-func (mt *MediaType) Fields() []protocol.Object_Member_Field   { return nil }
-func (mt *MediaType) Methods() []protocol.Object_Member_Method { return nil }
 
 //libgo:impl libgo/protocol.Stringer
 func (mt *MediaType) ToString() string                         { return mt.mediaType }

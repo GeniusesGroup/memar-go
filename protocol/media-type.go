@@ -12,6 +12,8 @@ type MediaTypes interface {
 type MediaTypeID = ID
 
 // MediaType or MimeType protocol is the shape of any coding media-type.
+// It is a special way to naming a DataType. So all MediaType implementors MUST be a DataType too, But not reverse.
+// Means not all DataType need to implements MediaType
 // It also implement our RFC details on https://github.com/GeniusesGroup/RFCs/blob/master/media-type.md
 type MediaType interface {
 	// Below names are case-insensitive.
@@ -24,14 +26,6 @@ type MediaType interface {
 
 	FileExtension() string // if any
 
-	Status() SoftwareStatus
-	ReferenceURI() string
-	IssueDate() Time
-	ExpiryDate() Time
-	ExpireInFavorOf() MediaType
-
-	Object    // In explicit mediatype like domain maintype not like "application/json"
 	UUID_Hash // Hash of MediaType()
-	Details
 	Stringer
 }
