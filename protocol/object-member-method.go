@@ -2,14 +2,9 @@
 
 package protocol
 
-// Object_Member_Method
-type Object_Member_Method interface {
-	// We believe fields MUST always access from inside the object,
-	// So we MUST have this method just in methods not fields.
-	Access() Object_Access
+// DataType_Method
+type DataType_Method interface {
+	DataType_Function
 
-	Blocking() bool // TODO::: be method or as type??
-	// TODO::: add more
-
-	Object_Member
+	Receiver() DataType // std/go/ast.FuncType.TypeParams
 }
