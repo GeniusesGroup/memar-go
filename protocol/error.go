@@ -26,7 +26,7 @@ type Error interface {
 	// **ATTENTION** nil interface assign into other interface don't make nil value.
 	Error() string
 
-	Details
+	DataType
 	MediaType
 	Stringer
 }

@@ -3,7 +3,7 @@
 package error
 
 import (
-	"libgo/detail"
+	"libgo/datatype"
 	"libgo/mediatype"
 	"libgo/protocol"
 )
@@ -21,8 +21,8 @@ type Err = Error
 type Error struct {
 	ErrorType
 
-	detail.DS
 	mediatype.MT
+	datatype.DataType
 }
 
 // Init initialize Error that implement protocol.Error
