@@ -5,37 +5,54 @@
 package service
 
 import (
-	"github.com/GeniusesGroup/libgo/protocol"
+	"libgo/detail"
+	"libgo/protocol"
 )
 
 const domainPersian = "سرویس"
 
 func init() {
-	ErrNotFound.SetDetail(protocol.LanguageEnglish, domainPersian,
-		"یافت نشد",
-		"سرویس درخواست شده برای پردازش یافت نشد",
-		"سرور دیگر را امتحان کنید یا با پشتیبانی پلتفرم تماس بگیرید",
-		"",
-		nil)
+	ErrNotFound.SetDetail(detail.New(protocol.LanguagePersian, domainPersian).
+		SetName("").
+		SetAbbreviation("").
+		SetAliases([]string{}).
+		SetSummary("یافت نشد").
+		SetOverview("سرویس درخواست شده برای پردازش یافت نشد").
+		SetUserNote("سرور دیگر را امتحان کنید یا با پشتیبانی نرم افزار تماس بگیرید").
+		SetDevNote("").
+		SetTAGS([]string{})
+	)
 
-	ErrServiceNotAcceptSRPC.SetDetail(protocol.LanguagePersian, domainPersian,
-		"سرویس پروتکل sRPC را پشتیبانی نمی کند",
-		"درخواست برای سرویس با شماره داده شده بدلیل عدم پشتیبانی پروتکل مدنظر قابلیت انجام روی سرور فعلی را ندارد",
-		"سرور دیگر را امتحان کنید یا با پشتیبانی پلتفرم تماس بگیرید",
-		"پیاده سازی این پروتکل برای پاسخ گویی به سرویس ها به شدت ساده است، وقتی برای پیاده سازی اختصاص دهید",
-		nil)
+	ErrServiceNotAcceptSRPC.SetDetail(detail.New(protocol.LanguagePersian, domainPersian).
+		SetName("").
+		SetAbbreviation("").
+		SetAliases([]string{}).
+		SetSummary("سرویس پروتکل sRPC را پشتیبانی نمی کند").
+		SetOverview("درخواست برای سرویس با شماره داده شده بدلیل عدم پشتیبانی پروتکل مدنظر قابلیت انجام روی سرور فعلی را ندارد").
+		SetUserNote("سرور دیگر را امتحان کنید یا با پشتیبانی پلتفرم تماس بگیرید").
+		SetDevNote("پیاده سازی این پروتکل برای پاسخ گویی به سرویس ها به شدت ساده است، وقتی برای پیاده سازی اختصاص دهید").
+		SetTAGS([]string{})
+	)
 
-	ErrServiceNotAcceptSRPCDirect.SetDetail(protocol.LanguagePersian, domainPersian,
-		"پرسش مستقیم پشتیبانی نمی شود",
-		"درخواست برای سرویس با شماره داده شده بدلیل عدم پشتیبانی پروتکل مدنظر قابلیت انجام روی سرور فعلی را ندارد",
-		"سرور دیگر را امتحان کنید یا با پشتیبانی پلتفرم تماس بگیرید",
-		"پیاده سازی این پروتکل برای پاسخ گویی به سرویس ها به شدت ساده است، در صورت تمایل به پشتیبانی، وقتی برای پیاده سازی اختصاص دهید",
-		nil)
+	ErrServiceNotAcceptSRPCDirect.SetDetail(detail.New(protocol.LanguagePersian, domainPersian).
+		SetName("").
+		SetAbbreviation("").
+		SetAliases([]string{}).
+		SetSummary("پرسش مستقیم پشتیبانی نمی شود").
+		SetOverview("درخواست برای سرویس با شماره داده شده بدلیل عدم پشتیبانی پروتکل مدنظر قابلیت انجام روی سرور فعلی را ندارد").
+		SetUserNote("سرور دیگر را امتحان کنید یا با پشتیبانی پلتفرم تماس بگیرید").
+		SetDevNote("پیاده سازی این پروتکل برای پاسخ گویی به سرویس ها به شدت ساده است، در صورت تمایل به پشتیبانی، وقتی برای پیاده سازی اختصاص دهید").
+		SetTAGS([]string{})
+	)
 
-	ErrServiceNotAcceptHTTP.SetDetail(protocol.LanguagePersian, domainPersian,
-		"پروتکل HTTP پشتیبانی نمی شود",
-		"درخواست برای سرویس با شماره داده شده بدلیل عدم پشتیبانی پروتکل مدنظر قابلیت انجام روی سرور فعلی را ندارد",
-		"سرور دیگر را امتحان کنید یا با پشتیبانی پلتفرم تماس بگیرید",
-		"پیاده سازی این پروتکل برای پاسخ گویی به سرویس ها به شدت ساده است، وقتی برای پیاده سازی اختصاص دهید",
-		nil)
+	ErrServiceNotAcceptHTTP.SetDetail(detail.New(protocol.LanguagePersian, domainPersian).
+		SetName("").
+		SetAbbreviation("").
+		SetAliases([]string{}).
+		SetSummary("پروتکل HTTP پشتیبانی نمی شود").
+		SetOverview("درخواست برای سرویس با شماره داده شده بدلیل عدم پشتیبانی پروتکل مدنظر قابلیت انجام روی سرور فعلی را ندارد").
+		SetUserNote("سرور دیگر را امتحان کنید یا با پشتیبانی پلتفرم تماس بگیرید").
+		SetDevNote("پیاده سازی این پروتکل برای پاسخ گویی به سرویس ها به شدت ساده است، وقتی برای پیاده سازی اختصاص دهید").
+		SetTAGS([]string{})
+	)
 }

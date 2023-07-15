@@ -17,23 +17,23 @@ func (s *Service) CRUDType() protocol.CRUD     { return protocol.CRUD_None }
 func (s *Service) UserType() protocol.UserType { return protocol.UserType_Unset }
 
 //libgo:impl libgo/protocol.ServiceDetails
-func (s *Service) Request() protocol.Object  { return nil }
-func (s *Service) Response() protocol.Object { return nil }
+func (s *Service) Request() protocol.DataType { return nil }
+func (s *Service) Response() protocol.DataType  { return nil }
 
 /*
 *********** Handlers ***********
 not-implemented handlers of the service.
 */
 
-func (s *Service) ServeSRPC(st protocol.Stream) (err protocol.Error) {
+func (s *Service) ServeSRPC(sk protocol.Socket) (err protocol.Error) {
 	err = &ErrServiceNotAcceptSRPC
 	return
 }
-func (s *Service) ServeSRPCDirect(conn protocol.Connection, request []byte) (response []byte, err protocol.Error) {
+func (s *Service) ServeSRPCDirect(sk protocol.Socket, request []byte) (response []byte, err protocol.Error) {
 	err = &ErrServiceNotAcceptSRPCDirect
 	return
 }
-func (s *Service) ServeHTTP(st protocol.Stream, httpReq protocol.HTTPRequest, httpRes protocol.HTTPResponse) (err protocol.Error) {
+func (s *Service) ServeHTTP(sk protocol.Socket, httpReq protocol.HTTPRequest, httpRes protocol.HTTPResponse) (err protocol.Error) {
 	err = &ErrServiceNotAcceptHTTP
 	return
 }

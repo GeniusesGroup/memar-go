@@ -7,7 +7,7 @@ type Services interface {
 	// RegisterService use to register application services.
 	// Due to minimize performance impact, This method isn't safe to use concurrently and
 	// must register all service before use GetService methods.
-	RegisterService(s Service)
+	RegisterService(s Service) (err Error)
 
 	Services() []Service
 	GetServiceByID(id MediaTypeID) (ser Service, err Error)
@@ -16,35 +16,34 @@ type Services interface {
 }
 
 // Service is the interface that must implement by any struct to be a service.
-type Service /*[ReqT, ResT any]*/ interface {
+type Service interface {
 	// Fill just if any http like type handler needed. Suggest use simple immutable path,
 	// not variable data included in path describe here:https://www.rfc-editor.org/rfc/rfc6570 e.g. "/product?id=1" instead of "/product/1/"
-	// API services can set like "/m?{{.ServiceID}}" but it is not efficient, instead find services by ID as base64
+	// API services can set like "/s?{{.ServiceID}}" but it is not efficient, instead find services by ID as base64
 	URI() string // suggest use just URI.Path
 
 	// Service authorization to authorize incoming service request
 	CRUDType() CRUD
 	UserType() UserType
 
-	// Handlers
-	//
-	// Call service locally by import service package to other one
-	// Process(st Stream, req ReqT) (res ResT, err Error)
-	//
-	// Call service remotely by preferred protocol.
-	// Do(req ReqT) (res ResT, err Error)
-
 	SRPCHandler
-	HTTPHandler // Some other protocol like gRPC, SOAP, ... must implement inside HTTP, If they are use HTTP as a transfer protocol.
 
 	OperationImportance
 	ServiceDetails
 	ObjectLifeCycle
 }
 
+type ServiceHandlers[ReqT, ResT any] interface {
+	// Call service locally by import service package to other one
+	Process(sk Socket, req ReqT) (res ResT, err Error)
+	//
+	// Call service remotely by preferred protocol.
+	Do(req ReqT) (res ResT, err Error)
+}
+
 type ServiceDetails interface {
-	Request() Object
-	Response() Object
+	Request() DataType
+	Response() DataType
 
 	Details
 	MediaType
