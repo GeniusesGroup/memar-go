@@ -3,18 +3,20 @@
 package protocol
 
 type Details interface {
-	Details() []Detail
 	Detail(lang LanguageID) Detail
 }
 
 // Detail is some piece of information that write for humans to understand some thing.
-// 
-// When defining a new detail, the information included must be carefully vetted. 
+//
+// When defining a new detail, the information included must be carefully vetted.
 // Likewise, when actually generating a problem (however it is serialized) the details given must also be scrutinized.
 // Risks include leaking information that can be exploited to compromise the system,
 // access to the system, or the privacy of users of the system.
 type Detail interface {
 	Language() LanguageID
+
+	Quiddity
+
 	// Domain return locale domain name that MediaType belongs to it.
 	// More user friendly domain name to show to users on screens.
 	Domain() string
@@ -32,4 +34,13 @@ type Detail interface {
 	DevNote() string
 	// TAGS return locale MediaType tags to sort MediaType in groups for any purpose e.g. in GUI to help org manager to give service delegate authorization to staffs.
 	TAGS() []string
+}
+
+// Quiddity is the essence that makes something the kind of thing it is and makes it different from any other
+type Quiddity interface {
+	Name() string         // e.g. initialize
+	Abbreviation() string // e.g. init
+	// These are not suggested to the user in the shell completion,
+	// but accepted if entered manually.
+	Aliases() []string // e.g. []string{"initialise", "create"}
 }

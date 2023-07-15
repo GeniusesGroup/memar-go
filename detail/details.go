@@ -6,39 +6,32 @@ import (
 	"libgo/protocol"
 )
 
-// DS is the same as the Details.
-// Use this type when embed in other struct to solve field & method same name problem(Details struct and Details() method) to satisfy interfaces.
-type DS = Details
-
 type Details struct {
-	detail  map[protocol.LanguageID]protocol.Detail
-	details []protocol.Detail
+	// remove detail map and find by iterate details.
+	details map[protocol.LanguageID]Detail
 }
 
-func (d *Details) Details() []protocol.Detail { return d.details }
 func (d *Details) Detail(lang protocol.LanguageID) protocol.Detail {
-	return d.detail[lang]
+	// TODO::: if not exist??
+	var dt = d.details[lang]
+	// TODO::: below return style cause dt escape to heap! replace map with other hash table to prevent this heap alloc.
+	return &dt
 }
 
 // SetDetail add error text details to existing error and return it.
-func (d *Details) SetDetail(lang protocol.LanguageID, domain, summary, overview, userNote, devNote string, tags []string) {
-	var _, ok = d.detail[lang]
+func (d *Details) SetDetail(dt Detail) (err protocol.Error) {
+	var lang = dt.Language()
+	var _, ok = d.details[lang]
 	if ok {
 		panic("/libgo/detail - Can't change detail after first set! Ask the holder to change details.")
+		// TODO::: error package need this package! we can't import it(import cycle problem) but it isn't our best practice to use panic any where.
+		// err = &
+		// return
 	}
 
-	var detail = Detail{
-		languageID: lang,
-		domain:     domain,
-		summary:    summary,
-		overview:   overview,
-		userNote:   userNote,
-		devNote:    devNote,
-		tags:       tags,
+	if d.details == nil {
+		d.details = make(map[protocol.LanguageID]Detail)
 	}
-	if d.detail == nil {
-		d.detail = make(map[protocol.LanguageID]protocol.Detail)
-	}
-	d.detail[lang] = &detail
-	d.details = append(d.details, &detail)
+	d.details[lang] = dt
+	return
 }
