@@ -16,7 +16,7 @@ func FromCLA(object protocol.Object, arguments []string) (remaining []string, er
 
 }
 func ToCLA(object protocol.Object) (arguments []string, err protocol.Error) {
-	var fields []protocol.Object_Member_Field = object.Fields()
+	var fields []protocol.DataType = object.Fields()
 	var ln = len(fields)
 	if ln < 1 {
 		// err =
@@ -30,7 +30,7 @@ func ToCLA(object protocol.Object) (arguments []string, err protocol.Error) {
 		if fieldValue == "" {
 			continue
 		}
-		var fieldName = field.Name()
+		var fieldName = field.Detail(protocol.AppLanguage).Name()
 		arguments = append(arguments, fieldName)
 		arguments = append(arguments, fieldValue)
 	}

@@ -9,6 +9,7 @@ import (
 // Errors
 var (
 	ErrServiceNotFound     er.Error
+	ErrServiceCallByAlias  er.Error
 	ErrServiceNotAcceptCLI er.Error
 
 	ErrFlagNotFound        er.Error
@@ -18,6 +19,7 @@ var (
 
 func init() {
 	ErrServiceNotFound.Init("domain/libgo.scm.geniuses.group; type=error; package=command; name=service-not-found")
+	ErrServiceCallByAlias.Init("domain/libgo.scm.geniuses.group; type=error; package=command; name=service-call-by-alias")
 	ErrServiceNotAcceptCLI.Init("domain/libgo.scm.geniuses.group; type=error; package=command; name=service-not-accept-cli")
 
 	ErrFlagNotFound.Init("domain/libgo.scm.geniuses.group; type=error; package=command; name=flag-not_found")

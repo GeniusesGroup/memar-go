@@ -9,7 +9,8 @@ type Command interface {
 	// Runnable reports whether the command can be run; otherwise it is a documentation pseudo-command
 	Runnable() bool
 
-	// parent is a parent command for this command.
+	// parent is the parent command for this command.
+	// It can be nill for the root command.
 	Parent() Command
 	// SubCommand return a sub command by its name or alias that must use intelligent suggestion
 	SubCommand(name string) Command
@@ -18,12 +19,11 @@ type Command interface {
 	// Note that subcommands are in general best avoided.
 	SubCommands() []Command
 
-	Quiddity
 	CommandHandler
 	ServiceDetails
 }
 
-// CommandHandler is any object to be CLI (command-line interface) service handler.
+// CommandHandler introduce CLI (command-line interface) service handler.
 type CommandHandler interface {
 	// ServeCLA or serve by command-line arguments might block the caller
 	// Arguments list not include the command name.

@@ -10,8 +10,8 @@ type InitReq struct {
 func (req *InitReq) Name() string { return req.name }
 
 //libgo:impl libgo/protocol.Object
-func (req *InitReq) Fields() []protocol.Object_Member_Field   { return ... }
-func (req *InitReq) Methods() []protocol.Object_Member_Method { return ... }
+func (req *InitReq) Fields() []protocol.DataType   { return ... }
+func (req *InitReq) Methods() []protocol.DataType_Method { return ... }
 
 //libgo:impl libgo/protocol.CommandLineArguments
 func (req *InitReq) FromCLA(arguments []string) (remaining []string, err protocol.Error) {

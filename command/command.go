@@ -15,16 +15,13 @@ type Command struct {
 	subCommands []protocol.Command
 }
 
-func (c *Command) Init(parent protocol.Command, cmd ...protocol.Command) {
+//libgo:impl libgo/protocol.ObjectLifeCycle
+func (c *Command) Init(parent protocol.Command, cmd ...protocol.Command) (err protocol.Error) {
 	c.parent = parent
 	// TODO::: check duplicate name usage
 	c.subCommands = append(c.subCommands, cmd...)
+	return
 }
-
-//libgo:impl libgo/protocol.Quiddity
-func (c *Command) Name() string         { panic("Dev must implement Name() method to overwrite this method") }
-func (c *Command) Abbreviation() string { return "" }
-func (c *Command) Aliases() []string    { return nil }
 
 //libgo:impl libgo/protocol.Command
 func (c *Command) Runnable() bool                  { return false }
@@ -33,13 +30,17 @@ func (c *Command) SubCommands() []protocol.Command { return c.subCommands }
 func (c *Command) SubCommand(name string) protocol.Command {
 	// TODO::: intelligent suggestion or correction
 	for _, cmd := range c.subCommands {
-		if cmd.Name() == name {
+		var cmdDetail = cmd.Detail(protocol.AppLanguage)
+		var cmdName = cmdDetail.Name()
+		var cmdAbbr = cmdDetail.Abbreviation()
+
+		if cmdName == name {
 			return cmd
 		}
-		if cmd.Abbreviation() == name {
+		if cmdAbbr == name {
 			return cmd
 		}
-		for _, alias := range cmd.Aliases() {
+		for _, alias := range cmdDetail.Aliases() {
 			if alias == name {
 				return cmd
 			}

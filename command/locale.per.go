@@ -5,16 +5,21 @@
 package cmd
 
 import (
-	er "github.com/GeniusesGroup/libgo/error"
-	"github.com/GeniusesGroup/libgo/protocol"
+	"libgo/detail"
+	"libgo/protocol"
 )
 
 const domainPersian = "فرمان"
 
 func init() {
-	ErrServiceNotAcceptCLI.SetDetail(protocol.LanguagePersian, domainPersian, "پروتکل CLI پشتیبانی نمی شود",
-		"درخواست برای سرویس مدنظر بدلیل عدم پشتیبانی پروتکل مورد نیاز قابلیت انجام روی سرور فعلی را ندارد",
-		"سرور دیگر را امتحان کنید یا با پشتیبانی پلتفرم تماس بگیرید",
-		"پیاده سازی این پروتکل برای پاسخ گویی به سرویس ها به شدت ساده است، وقتی برای پیاده سازی اختصاص دهید",
-		nil)
+	ErrServiceNotAcceptCLI.SetDetail(detail.New(protocol.LanguagePersian, domainPersian).
+		SetName("").
+		SetAbbreviation("").
+		SetAliases([]string{}).
+		SetSummary("پروتکل CLI پشتیبانی نمی شود").
+		SetOverview("درخواست برای سرویس مدنظر بدلیل عدم پشتیبانی پروتکل مورد نیاز قابلیت انجام روی سرور فعلی را ندارد").
+		SetUserNote("سرور دیگر را امتحان کنید یا با پشتیبانی پلتفرم تماس بگیرید").
+		SetDevNote("پیاده سازی این پروتکل برای پاسخ گویی به سرویس ها به شدت ساده است، وقتی برای پیاده سازی اختصاص دهید").
+		SetTAGS([]string{})
+	)
 }

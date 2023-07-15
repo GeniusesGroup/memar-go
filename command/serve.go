@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/GeniusesGroup/libgo/protocol"
+	"libgo/protocol"
 )
 
 func ServeCLA(c protocol.Command, arguments []string) (err protocol.Error) {
@@ -22,6 +22,9 @@ func ServeCLA(c protocol.Command, arguments []string) (err protocol.Error) {
 	if command == nil {
 		// We don't find any related command even custom help, so print auto generated help.
 		if serviceName == "help" || serviceName == "-h" || serviceName == "--help" {
+			// TODO:::
+			fmt.Fprintf(os.Stdout, "We must print help for You, But it is not implement yet. Sorry!\n")
+			err = &ErrServiceNotFound
 			// helpMessage()
 			// Accept 'go mod help' and 'go mod help foo' for 'go help mod' and 'go help mod foo'.
 			// help.Help(os.Stdout, append(strings.Split(cfg.CmdName, " "), args[1:]...))
@@ -30,9 +33,14 @@ func ServeCLA(c protocol.Command, arguments []string) (err protocol.Error) {
 			err = &ErrServiceNotFound
 		}
 		return
-	} else if command.Name() != serviceName {
-		fmt.Fprintf(os.Stderr, "Do you mean '%s %s'?\n", CommandPath(c), command.Name())
-		// TODO:::
+	}
+
+	var cmdDetail = command.Detail(protocol.AppLanguage)
+	var cmdName = cmdDetail.Name()
+	var cmdAbbr = cmdDetail.Abbreviation()
+	if serviceName != cmdName && serviceName != cmdAbbr {
+		fmt.Fprintf(os.Stderr, "	Do you mean '%s %s'?\n", CommandPath(c), cmdName)
+		err = &ErrServiceCallByAlias
 		return
 	}
 
@@ -55,7 +63,7 @@ func Root(c protocol.Command) (root protocol.Command) {
 // CommandPath returns the full path to this command exclude itself.
 func CommandPath(command protocol.Command) (fullName string) {
 	for {
-		fullName = command.Name() + " " + fullName
+		fullName = command.Detail(protocol.AppLanguage).Name() + " " + fullName
 		command = command.Parent()
 		if command == nil {
 			break

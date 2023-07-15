@@ -11,8 +11,8 @@ import (
 // A FlagSet represents a set of defined fields
 type FlagSet struct {
 	object protocol.Object
-	fields []protocol.Object_Member_Field
-	parsed []protocol.Object_Member_Field
+	fields []protocol.DataType
+	parsed []protocol.DataType
 	args   []string // arguments after flags
 }
 
@@ -20,21 +20,30 @@ type FlagSet struct {
 //
 // field names must be unique within a FlagSet. An attempt to define a flag whose
 // name is already in use will cause panic.
-func (f *FlagSet) Init(ob protocol.Object, arguments []string) {
+//
+//libgo:impl libgo/protocol.ObjectLifeCycle
+func (f *FlagSet) Init(ob protocol.Object, arguments []string) (err protocol.Error) {
 	f.object = ob
 	f.fields = ob.Fields()
-	f.checkFields()
+	err = f.checkFields()
+	if err != nil {
+		return
+	}
 	if f.parsed == nil {
-		f.parsed = make([]protocol.Object_Member_Field, 0, len(f.fields))
+		f.parsed = make([]protocol.DataType, 0, len(f.fields))
 	}
 	f.args = arguments
+	return
 }
-func (f *FlagSet) Reinit() {
+func (f *FlagSet) Reinit() (err protocol.Error) {
 	f.fields = nil
 	f.parsed = f.parsed[:0]
 	f.args = nil
+	return
 }
-func (f *FlagSet) Deinit() {}
+func (f *FlagSet) Deinit() (err protocol.Error) {
+	return
+}
 
 // Parse parses flag definitions from f.args.
 // It Must be called after Init called and before flags are accessed by the program.
@@ -69,24 +78,31 @@ func (f *FlagSet) Arg(i int) string {
 
 // VisitAll visits the flags in given order, calling fn for each.
 // It visits all flags, even those not set.
-func (f *FlagSet) VisitAll(fn func(protocol.Object_Member_Field)) {
+func (f *FlagSet) VisitAll(fn func(protocol.DataType) (breaking bool)) {
 	for _, flag := range f.fields {
-		fn(flag)
+		var br = fn(flag)
+		if br {
+			return
+		}
 	}
 }
 
 // Visit visits the flags in given order, calling fn for each.
 // It visits only those flags that have been set.
-func (f *FlagSet) Visit(fn func(protocol.Object_Member_Field)) {
+func (f *FlagSet) Visit(fn func(protocol.DataType) (breaking bool)) {
 	for _, field := range f.parsed {
-		fn(field)
+		var br = fn(field)
+		if br {
+			return
+		}
 	}
 }
 
 // Lookup returns the Field of the named flag, returning nil if none exists.
-func (f *FlagSet) Lookup(name string) protocol.Object_Member_Field {
+func (f *FlagSet) Lookup(name string) protocol.DataType {
 	for _, field := range f.fields {
-		if field.Name() == name || field.Abbreviation() == name {
+		var fd = field.Detail(protocol.AppLanguage)
+		if fd.Name() == name || fd.Abbreviation() == name {
 			return field
 		}
 	}
@@ -100,35 +116,19 @@ func (f *FlagSet) Set(name, value string) (err protocol.Error) {
 		return &ErrFlagNotFound
 	}
 
-	var hasValue = len(value) > 0
-
-	if flag.Type() == protocol.Object_Type_Boolean && !hasValue { // special case: doesn't need an arg
-		value = "true"
-	} else {
-		// It must have a value, which might be the next argument.
-		if !hasValue && len(f.args) > 0 {
-			// value is the next arg
-			hasValue = true
-			value, f.args = f.args[0], f.args[1:]
-		}
-		if !hasValue {
-			return &ErrFlagNeedsAnArgument
-		}
-	}
-
 	err = flag.FromString(value)
 	if err != nil {
 		return
 	}
 	f.parsed = append(f.parsed, flag)
-	return nil
+	return
 }
 
-func (f *FlagSet) checkFields() {
+func (f *FlagSet) checkFields() (err protocol.Error) {
 	var fieldsName = make([]string, 0, len(f.fields))
 
 	for _, field := range f.fields {
-		var fieldName = field.Name()
+		var fieldName = field.Detail(protocol.AppLanguage).Name()
 
 		// Flag must not begin "-" or contain "=".
 		if strings.HasPrefix(fieldName, "-") {
@@ -153,6 +153,7 @@ func (f *FlagSet) checkFields() {
 			}
 		}
 	}
+	return
 }
 
 // parseOne parses one flag
@@ -186,6 +187,31 @@ func (f *FlagSet) parseOne() (err protocol.Error) {
 			value = name[i+1:]
 			name = name[0:i]
 			break
+		}
+	}
+
+	err = f.checkAndSet(name, value)
+	return
+}
+
+// checkAndSet check given value is correct or get from f, and sets the value of the named flag.
+func (f *FlagSet) checkAndSet(name, value string) (err protocol.Error) {
+	var hasValue = len(value) > 0
+	if !hasValue {
+		var flag = f.Lookup(name)
+		if flag == nil {
+			return &ErrFlagNotFound
+		}
+
+		var pf, ok = flag.(protocol.DataType_Primitive)
+		if ok && pf.Primitive() == protocol.DataType_PrimitiveKind_Boolean { // special case: doesn't need an arg
+			value = "true"
+		} else if len(f.args) > 0 { // It must have a value, which might be the next argument.
+			// value is the next arg
+			hasValue = true
+			value, f.args = f.args[0], f.args[1:]
+		} else {
+			return &ErrFlagNeedsAnArgument
 		}
 	}
 
