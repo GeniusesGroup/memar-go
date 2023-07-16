@@ -21,9 +21,18 @@ type DataType /*[T any]*/ interface {
 	// existence length
 	// DataType_ExpectedLen
 	// Len
-	Quiddity
-	Details
+	DataType_Details
 	Stringer
+}
+
+type DataType_Details interface {
+	Status() SoftwareStatus
+	ReferenceURI() string
+	IssueDate() Time
+	ExpiryDate() Time
+	ExpireInFavorOf() DataType
+
+	Details
 }
 
 type DataType_DefaultValue[T any] interface {

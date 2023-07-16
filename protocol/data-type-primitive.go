@@ -3,7 +3,7 @@
 package protocol
 
 type DataType_Primitive interface {
-	Primitive() DataType
+	Primitive() DataType_PrimitiveKind // DataType
 }
 
 // Primitive data types or built-in data types
