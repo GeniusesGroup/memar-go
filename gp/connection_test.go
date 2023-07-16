@@ -6,4 +6,4 @@ import (
 	"libgo/protocol"
 )
 
-var _ protocol.Connection = &Connection{}
+var _ protocol.OSI_Network = &Connection{}

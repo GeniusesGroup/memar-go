@@ -42,7 +42,7 @@ func (f Frame) Process(soc protocol.Socket) (err protocol.Error) {
 		// conn, err = MakeNewConnectionByPeerAdd(gpAddr, appMux.nl)
 		if err != nil {
 			// Send response or just ignore frame
-			conn.FailedPacketsReceived()
+			// conn.FailedPacketsReceived()
 			// TODO::: DDOS!!??
 			return
 		}

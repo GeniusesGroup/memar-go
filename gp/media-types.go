@@ -17,7 +17,7 @@ func init() {
 }
 
 type mediaType struct {
-	detail.DS
+	detail.Details
 	mediatype.MT
 }
 
@@ -32,5 +32,5 @@ func (m *mediaType) ExpiryDate() protocol.Time           { return nil }
 func (m *mediaType) ExpireInFavorOf() protocol.MediaType { return nil }
 
 //libgo:impl libgo/protocol.Object
-func (m *mediaType) Fields() []protocol.Object_Member_Field   { return nil }
-func (m *mediaType) Methods() []protocol.Object_Member_Method { return nil }
+func (m *mediaType) Fields() []protocol.DataType         { return nil }
+func (m *mediaType) Methods() []protocol.DataType_Method { return nil }

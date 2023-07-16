@@ -18,8 +18,6 @@ type Connections interface {
 	DeregisterConnection(conn *Connection) (err protocol.Error)
 	RevokeConnection(conn *Connection) (err protocol.Error)
 
-	protocol.ConnectionsMetrics
-
 	// Deinit the listener when the application closes or force to closes by not recovered panic.
 	protocol.ObjectLifeCycle
 }
