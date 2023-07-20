@@ -7,7 +7,7 @@ import (
 	"runtime"
 )
 
-var poolByCores = make(timingsHeap, cpu.CoreNum())
+var poolByCores = make(timing, cpu.CoreNum())
 
 func init() {
 	var coreNumbers = runtime.GOMAXPROCS(0)
@@ -16,10 +16,10 @@ func init() {
 	}
 }
 
-type timingsHeap []TimingHeap
+func getActiveTiming() *Timing { return poolByCores.activeTiming() }
 
-func (tsh timingsHeap) activeTiming() *TimingHeap {
-	return &tsh[cpu.ActiveCoreID()]
+type timing []Timing
+
+func (tg timing) activeTiming() *Timing {
+	return &tg[cpu.ActiveCoreID()]
 }
-
-func getActiveTiming() *TimingHeap { return poolByCores.activeTiming() }

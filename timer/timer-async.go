@@ -41,7 +41,7 @@ type Async struct {
 	// * a well-behaved function and not block.
 	callback protocol.TimerListener
 
-	timing *TimingHeap
+	timing *Timing
 }
 
 // Init initialize the timer with given callback function or make the channel and send signal on it
@@ -145,7 +145,7 @@ func (t *Async) Stop() (err protocol.Error) {
 
 			// Timer was not yet run.
 			if t.status.CompareAndSwap(activeStatus, protocol.TimerStatus_Deleted) {
-				timing.deletedTimers.Add(1)
+				timing.deletedTimersCount.Add(1)
 				return
 			}
 		case protocol.TimerStatus_Deleted, protocol.TimerStatus_Removing, protocol.TimerStatus_Removed:
@@ -205,7 +205,7 @@ loop:
 			}
 		case protocol.TimerStatus_Deleted:
 			if t.status.CompareAndSwap(activeStatus, protocol.TimerStatus_Modifying) {
-				t.timing.deletedTimers.Add(-1)
+				t.timing.deletedTimersCount.Add(-1)
 				break loop
 			}
 		case protocol.TimerStatus_Running, protocol.TimerStatus_Removing, protocol.TimerStatus_Moving:
