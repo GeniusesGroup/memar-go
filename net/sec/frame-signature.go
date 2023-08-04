@@ -1,24 +1,30 @@
-/* For license and copyright information please see LEGAL file in repository */
+/* For license and copyright information please see the LEGAL file in the code repository */
 
-package srpc
+package sec
 
 import (
-	"../protocol"
-	"../syllab"
+	"memar/protocol"
+	"memar/syllab"
 )
 
 /*
-type signatureFrame struct {
-	Length    [2]byte // including the header fields
-	StreamID  [4]byte // uint32
-	Signature []byte
-}
+registerStreamSignature
+
+	type SignatureFrame struct {
+		Length    [2]byte // including the header fields
+		StreamID  [4]byte // uint32
+		Signature []byte  // Checksum, MAC, Tag, ...
+	}
 */
-type signatureFrame []byte
+type SignatureFrame []byte
 
-func (f signatureFrame) ID() int64         { return syllab.GetInt64(f, 0) }
-func (f signatureFrame) NextFrame() []byte { return f[8:] }
+func (f SignatureFrame) ID() int64 { return syllab.GetInt64(f, 0) }
 
-func registerStreamSignature(conn protocol.Connection, frame signatureFrame) (err protocol.Error) {
+//memar:impl memar/protocol.Network_Frame
+func (f SignatureFrame) NextFrame() []byte { return f[8:] }
+
+func (f SignatureFrame) Do(sk protocol.Socket) (err protocol.Error) {
 	return
 }
+
+func checkSignature() {}

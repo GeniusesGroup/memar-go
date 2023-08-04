@@ -1,17 +1,21 @@
-/* For license and copyright information please see LEGAL file in repository */
+/* For license and copyright information please see the LEGAL file in the code repository */
 
-package srpc
+package sec
 
-import "../syllab"
+import (
+	"memar/binary"
+)
 
 /*
-type paddingFrame struct {
-	Length  [2]byte // including the header fields
-	Padding []byte
-}
+	type PaddingFrame struct {
+		Length  [2]byte // including the header fields
+		Padding []byte
+	}
 */
-type paddingFrame []byte
+type PaddingFrame []byte
 
-func (f paddingFrame) Length() uint16    { return syllab.GetUInt16(f, 0) }
-func (f paddingFrame) Payload() []byte   { return f[2:f.Length()] }
-func (f paddingFrame) NextFrame() []byte { return f[f.Length():] }
+func (f PaddingFrame) Length() uint16  { return binary.BigEndian(f[0:]).Uint16() }
+func (f PaddingFrame) Payload() []byte { return f[2:f.Length()] }
+
+//memar:impl memar/protocol.Network_Frame
+func (f PaddingFrame) NextFrame() []byte { return f[f.Length():] }
