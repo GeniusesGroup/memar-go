@@ -5,8 +5,8 @@ package net
 import (
 	"sync/atomic"
 
-	"libgo/protocol"
-	"libgo/time/unix"
+	"memar/protocol"
+	"memar/time/unix"
 )
 
 // ConnectionsMetric store the connection metric data and implement protocol.ConnectionMetrics
@@ -24,7 +24,7 @@ type ConnectionsMetric struct {
 	lifetimeClosedCount atomic.Int64
 }
 
-//libgo:impl libgo/protocol.ConnectionsMetrics
+//libgo:impl memar/protocol.ConnectionsMetrics
 func (cm *ConnectionsMetric) LastUsage() protocol.Time   { return &cm.lastUsage }
 func (cm *ConnectionsMetric) OpenCount() int64           { return cm.openCount.Load() }
 func (cm *ConnectionsMetric) GuestCount() int64          { return cm.guestCount.Load() }

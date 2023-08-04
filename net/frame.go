@@ -1,26 +1,20 @@
-/* For license and copyright information please see LEGAL file in repository */
+/* For license and copyright information please see the LEGAL file in the code repository */
 
-package srpc
+package net
+
+import (
+	"memar/protocol"
+)
 
 /*
-type frame struct {
-	Type     byte
-	Payload []byte
-}
+	type frame struct {
+		Type     byte
+		Payload []byte
+	}
 */
 type frame []byte
 
-func (f frame) Type() byte      { return byte(f[0]) }
-func (f frame) Payload() []byte { return f[1:] }
+//memar:impl memar/protocol.Network_Framer
+func (f frame) FrameType() protocol.Network_FrameType { return protocol.Network_FrameType(f[0]) }
 
-// Frame type ID is like service ID but fixed ID with 8bit length. Just some few services get one byte length service ID
-// Common services must register by 64bit unsigned integer.
-const (
-	frameTypePadding byte = iota
-	frameTypePing
-	frameTypeCallService
-	frameTypeOpenStream
-	frameTypeCloseStream
-	frameTypeData
-	frameTypeSignature
-)
+func (f frame) Payload() []byte { return f[1:] }

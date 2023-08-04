@@ -5,8 +5,8 @@ package net
 import (
 	"sync/atomic"
 
-	"libgo/protocol"
-	"libgo/time/unix"
+	"memar/protocol"
+	"memar/time/unix"
 )
 
 // Metric store the connection metric data and implement protocol.ConnectionMetrics
@@ -28,7 +28,7 @@ type Metric struct {
 	failedStreamCount           atomic.Uint64 // Count failed services call e.g. data validation failed, ...
 }
 
-//libgo:impl libgo/protocol.ConnectionMetrics
+//libgo:impl memar/protocol.ConnectionMetrics
 func (m *Metric) LastUsage() protocol.Time            { return &m.lastUsage }
 func (m *Metric) MaxBandwidth() uint64                { return m.maxBandwidth.Load() }
 func (m *Metric) BytesSent() uint64                   { return m.bytesSent.Load() }

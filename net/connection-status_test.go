@@ -3,7 +3,7 @@
 package net
 
 import (
-	"libgo/protocol"
+	"memar/protocol"
 )
 
 var _ protocol.Network_Status = &STATUS{}

@@ -3,7 +3,7 @@
 package net
 
 import (
-	"libgo/protocol"
+	"memar/protocol"
 )
 
 // STATUS is the same as the Status.
@@ -15,7 +15,7 @@ type Status struct {
 	state  chan protocol.NetworkStatus
 }
 
-//libgo:impl libgo/protocol.Network_Status
+//memar:impl memar/protocol.Network_Status
 func (s *Status) Status() protocol.NetworkStatus     { return s.status }
 func (s *Status) State() chan protocol.NetworkStatus { return s.state }
 func (s *Status) SetStatus(ns protocol.NetworkStatus) {

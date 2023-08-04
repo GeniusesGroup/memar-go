@@ -3,7 +3,7 @@
 package net
 
 import (
-	"libgo/protocol"
+	"memar/protocol"
 )
 
-var _ protocol.ConnectionsMetrics = &ConnectionsMetric{}
+var _ protocol.PacketTarget = &PacketTarget{}
