@@ -5,7 +5,8 @@
 package ipv4
 
 import (
-	"libgo/protocol"
+	"memar/detail"
+	"memar/protocol"
 )
 
 const domainEnglish = "IPv4"

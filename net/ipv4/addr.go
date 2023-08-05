@@ -3,7 +3,7 @@
 package ipv4
 
 import (
-	"libgo/protocol"
+	"memar/protocol"
 )
 
 // Well-known IPv4 addresses
@@ -17,7 +17,7 @@ var (
 // An Addr is an IP address version 4.
 type Addr [AddrLen]byte
 
-//libgo:impl libgo/protocol.Stringer
+//memar:impl memar/protocol.Stringer
 func (addr Addr) ToString() string {
 	const maxIPv4StringLen = len("255.255.255.255")
 

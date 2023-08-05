@@ -3,7 +3,7 @@
 package ipv4
 
 import (
-	er "libgo/error"
+	er "memar/error"
 )
 
 // Errors

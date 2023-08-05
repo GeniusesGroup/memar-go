@@ -3,8 +3,8 @@
 package ipv4
 
 import (
-	"libgo/protocol"
-	"libgo/tcp"
+	"memar/net/tcp"
+	"memar/protocol"
 )
 
 var tcpSockets = make(map[ipv4SocketKey]*tcp.Stream, 1024)
