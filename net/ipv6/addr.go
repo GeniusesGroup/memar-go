@@ -3,7 +3,7 @@
 package ipv6
 
 import (
-	"libgo/protocol"
+	"memar/protocol"
 )
 
 // Well-known IPv6 addresses
@@ -49,7 +49,7 @@ func (addr *Addr) FromIPv4(v4 [4]byte) {
 
 // ToString returns canonical string representation of IPv6.
 //
-//libgo:impl libgo/protocol.Stringer
+//memar:impl memar/protocol.Stringer
 func (addr Addr) ToString() string {
 	// Find longest run of zeros.
 	var e0 = -1
@@ -97,7 +97,7 @@ func (addr Addr) ToString() string {
 
 // FromString parses ip as a literal IPv6 address described in RFC 4291 and RFC 5952.
 //
-//libgo:impl libgo/protocol.Stringer
+//memar:impl memar/protocol.Stringer
 func (addr *Addr) FromString(ip string) (err protocol.Error) {
 	var ellipsis = -1 // position of ellipsis in ip
 

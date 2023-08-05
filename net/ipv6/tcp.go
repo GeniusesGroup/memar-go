@@ -3,8 +3,8 @@
 package ipv6
 
 import (
-	"libgo/protocol"
-	"libgo/tcp"
+	"memar/net/tcp"
+	"memar/protocol"
 )
 
 // TODO::: due to below map use by many core, in insert and expand time it must lock globally,
@@ -34,9 +34,11 @@ func ReceiveTCPOverIPv6(srcIPAddr, desIPAddr Addr, tcpRawSegment []byte) (err pr
 	}
 
 	// Check application support requested protocol
-	var ProtocolID = protocol.NetworkApplication_ProtocolID(desPort)
-	var protocolHandler protocol.NetworkApplication_Handler = protocol.App.GetNetworkApplicationHandler(ProtocolID)
-	if protocolHandler == nil {
+	// TODO::: below logic not work! we must find a socket in the object that hold application layer handler that get from dev or
+	// TODO::: like net/go return new socket to Accept() and ignore all others packets
+	var serviceID = protocol.ServiceID(desPort)
+	_, err = protocol.App.GetServiceByID(serviceID)
+	if err != nil {
 		// Send response or just ignore packet
 		// TODO::: DDOS!!??
 		return

@@ -3,8 +3,8 @@
 package ipv6
 
 import (
-	"libgo/binary"
-	"libgo/protocol"
+	"memar/binary"
+	"memar/protocol"
 )
 
 // Packet implement all methods to Get||Set data to a packet as a byte slice with 0-alloc

@@ -5,7 +5,8 @@
 package ipv6
 
 import (
-	"libgo/protocol"
+	"memar/detail"
+	"memar/protocol"
 )
 
 const domainPersian = "IPv6"

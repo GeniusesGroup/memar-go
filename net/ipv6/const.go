@@ -2,7 +2,7 @@
 
 package ipv6
 
-import "libgo/time/monotonic"
+import "memar/time/monotonic"
 
 const (
 	// Indicate max number of packet bundle in one buffer and processed

@@ -3,7 +3,7 @@
 package ipv6
 
 import (
-	er "libgo/error"
+	er "memar/error"
 )
 
 // Errors
