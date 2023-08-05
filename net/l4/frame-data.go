@@ -1,59 +1,76 @@
-/* For license and copyright information please see LEGAL file in repository */
+/* For license and copyright information please see the LEGAL file in the code repository */
 
-package srpc
+package l4
 
 import (
-	"../protocol"
-	"../syllab"
+	"memar/binary"
+	"memar/protocol"
 )
 
 /*
-type dataFrame struct {
-	Length   [2]byte // including the header fields
-	StreamID [4]byte // uint32
-	Offset   [4]byte // uint32 also can act as offset
-	Payload  []byte
-}
-*/
-type dataFrame []byte
-
-func (f dataFrame) Length() uint16    { return syllab.GetUInt16(f, 0) }
-func (f dataFrame) StreamID() uint32  { return syllab.GetUInt32(f, 2) }
-func (f dataFrame) Offset() uint32    { return syllab.GetUInt32(f, 6) }
-func (f dataFrame) Payload() []byte   { return f[10:f.Length()] }
-func (f dataFrame) NextFrame() []byte { return f[f.Length():] }
-
-// appendData add data to the requested offset of the stream
-func appendData(conn protocol.Connection, frame dataFrame) (err protocol.Error) {
-	var streamID uint32 = frame.StreamID()
-	var stream protocol.Stream
-	stream, err = conn.Stream(streamID)
-	if err != nil {
-		conn.StreamFailed()
-		// Send response or just ignore stream
-		// TODO::: DDOS!!??
-		return
+	type DataFrame struct {
+		Length   [2]byte // including the header fields
+		StreamID [8]byte // uint64
+		Offset   [8]byte // uint32
+		Payload  []byte
 	}
+*/
+type DataFrame []byte
 
-	// TODO:::
-	// add payload to Stream payload
-	// var offset uint32 = frame.Offset()
-	// err = addNewGPPacket(stream, GetPayload(packet), packetID)
+func (f DataFrame) Length() uint16   { return binary.BigEndian(f[0:]).Uint16() }
+func (f DataFrame) StreamID() uint64 { return binary.BigEndian(f[2:]).Uint64() }
+func (f DataFrame) Offset() uint32   { return binary.BigEndian(f[10:]).Uint32() }
+func (f DataFrame) Payload() []byte  { return f[18:f.Length()] }
 
-	if stream.Status() == protocol.ConnectionStateReady {
-		// decide by stream odd or even
-		// TODO::: check better performance as streamID&1 to check odd id
-		if streamID%2 == 0 {
-			err = stream.Protocol().HandleIncomeRequest(stream)
-			if err == nil {
-				conn.StreamSucceed()
-			} else {
-				conn.StreamFailed()
-			}
-		} else {
-			// income response
-			stream.SetState(protocol.ConnectionStateReady)
-		}
+//memar:impl memar/protocol.Network_Frame
+func (f DataFrame) NextFrame() []byte { return f[f.Length():] }
+
+func (f DataFrame) Process(sk protocol.Socket) (err protocol.Error) {
+	// TODO::: check socket situation first
+
+	// add payload to the requested offset of the stream payload
+	var payloadCompleted = f.addDataToStream(sk)
+	if payloadCompleted {
+		sk.ScheduleProcessingSocket()
 	}
 	return
 }
+
+func (f DataFrame) Do(sk protocol.Socket) (err protocol.Error) {
+	// TODO:::
+	return
+}
+
+func (f DataFrame) addDataToStream(sk protocol.Socket) (payloadCompleted bool) {
+	// var offset = f.Offset()
+	// var payload = f.Payload()
+	// TODO:::
+	return
+}
+
+/*
+func handleDataFrame(sk protocol.Socket, DataFrame []byte, packetID uint32) (err protocol.Error) {
+	// Handle packet received not by order
+	if packetID < st.LastPacketID {
+		st.State = StateBrokenPacket
+		err = &ErrPacketArrivedPosterior
+	} else if packetID > st.LastPacketID+1 {
+		st.State = StateBrokenPacket
+		err = &ErrPacketArrivedAnterior
+		// TODO::: send request to sender about not received packets!!
+	} else if packetID+1 == st.LastPacketID {
+		st.LastPacketID = packetID
+	}
+	// TODO::: non of above cover for packet 0||1 drop situation!
+
+	// Use PacketID 0||1 for request||response to set stream settings!
+	if packetID < 2 {
+		// as.SetStreamSettings(st, p)
+	} else {
+		// TODO::: can't easily copy this way!!
+		// copy(st.IncomePayload, p)
+	}
+
+	return
+}
+*/
