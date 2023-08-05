@@ -3,8 +3,8 @@
 package gp
 
 import (
-	"libgo/binary"
-	"libgo/protocol"
+	"memar/binary"
+	"memar/protocol"
 )
 
 // Some global address
@@ -27,7 +27,7 @@ func (addr *Addr) SetRouterID(id uint32)  { binary.BigEndian.PutUint32(addr[6:],
 func (addr *Addr) SetUserID(id uint32)    { binary.BigEndian.PutUint32(addr[10:], id) }
 func (addr *Addr) SetAppID(id uint16)     { binary.BigEndian.PutUint16(addr[14:], id) }
 
-//libgo:impl libgo/protocol.Stringer
+//memar:impl memar/protocol.Stringer
 func (addr *Addr) ToString() string {
 	// TODO::: ??
 	return string(addr[:])

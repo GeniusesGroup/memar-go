@@ -3,7 +3,7 @@
 package gp
 
 import (
-	"libgo/protocol"
+	"memar/protocol"
 )
 
 type Frame []byte
@@ -14,21 +14,23 @@ func (f Frame) CheckFrame() protocol.Error {
 	if len(f) != FrameLen {
 		return &ErrFrameLength
 	}
-	if f.FrameID() != protocol.Network_FrameID_GP {
-		return &ErrBadFrameID
+	if f.FrameType() != protocol.Network_FrameType_GP {
+		return &ErrBadFrameType
 	}
 	return nil
 }
 
-func (f Frame) FrameID() protocol.Network_FrameID { return protocol.Network_FrameID(f[0]) }
-func (f Frame) DestinationAddr() (addr Addr)      { copy(addr[:], f[1:]); return }
-func (f Frame) SourceAddr() (addr Addr)           { copy(addr[:], f[17:]); return }
+//memar:impl memar/protocol.Network_Framer
+func (f Frame) FrameType() protocol.Network_FrameType { return protocol.Network_FrameType(f[0]) }
 
-func (f Frame) SetFrameID(fID protocol.Network_FrameID) { f[0] = byte(fID) }
-func (f Frame) SetDestinationAddr(addr Addr)            { copy(f[1:], addr[:]) }
-func (f Frame) SetSourceAddr(addr Addr)                 { copy(f[17:], addr[:]) }
+func (f Frame) DestinationAddr() (addr Addr) { copy(addr[:], f[1:]); return }
+func (f Frame) SourceAddr() (addr Addr)      { copy(addr[:], f[17:]); return }
 
-//libgo:impl libgo/protocol.Network_Frame
+func (f Frame) SetFrameType(fID protocol.Network_FrameType) { f[0] = byte(fID) }
+func (f Frame) SetDestinationAddr(addr Addr)                { copy(f[1:], addr[:]) }
+func (f Frame) SetSourceAddr(addr Addr)                     { copy(f[17:], addr[:]) }
+
+//memar:impl memar/protocol.Network_Frame
 func (f Frame) FrameLen() (frameLength int) { return FrameLen }
 func (f Frame) NextFrame() []byte           { return f[FrameLen:] }
 func (f Frame) Process(soc protocol.Socket) (err protocol.Error) {

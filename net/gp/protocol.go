@@ -3,7 +3,7 @@
 package gp
 
 import (
-	"libgo/protocol"
+	"memar/protocol"
 )
 
 type Connections interface {

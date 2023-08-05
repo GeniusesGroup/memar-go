@@ -3,8 +3,8 @@
 package gp
 
 import (
-	"libgo/protocol"
-	"libgo/time/earth"
+	"memar/protocol"
+	"memar/time/earth"
 )
 
 const (
@@ -12,7 +12,7 @@ const (
 	AddrLen = 16
 
 	// FrameLen is GP frame length.
-	FrameLen = protocol.Network_FrameID_Length + AddrLen + AddrLen // 33 = 1+16+16
+	FrameLen = protocol.Network_FrameType_Length + AddrLen + AddrLen // 33 = 1+16+16
 )
 
 const (

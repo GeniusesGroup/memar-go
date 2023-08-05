@@ -3,14 +3,14 @@
 package gp
 
 import (
-	"libgo/protocol"
+	"memar/protocol"
 )
 
 // frameStructure is represent protocol frame structure.
 // It is just to show protocol in better way, we never use this type.
-// Read more about this protocol : https://github.com/GeniusesGroup/RFCs/blob/master/networking-osi_3-Giti-Network.md
+// Read more about this protocol : https://github.com/GeniusesGroup/memar/blob/main/networking-osi_3-Giti-Network.md
 type frameStructure struct {
-	FrameID protocol.Network_FrameID //
+	FrameType protocol.Network_FrameType //
 
 	// DestinationGPAddr Addr
 	DestinationPlanet  [2]byte // uint16

@@ -3,7 +3,7 @@
 package gp
 
 import (
-	"libgo/protocol"
+	"memar/protocol"
 )
 
 // Connection indicate the layer 3 OSI model.
@@ -12,7 +12,7 @@ type Connection struct {
 	remoteAddr Addr
 }
 
-//libgo:impl libgo/protocol.ObjectLifeCycle
+//memar:impl memar/protocol.ObjectLifeCycle
 func (conn *Connection) Init(localAddr, remoteAddr Addr) (err protocol.Error) {
 	conn.localAddr = localAddr
 	conn.remoteAddr = remoteAddr
@@ -24,14 +24,14 @@ func (conn *Connection) Reinit() (err protocol.Error) {
 }
 func (conn *Connection) Deinit() (err protocol.Error) { return }
 
-//libgo:impl libgo/protocol.Network_Framer
-func (conn *Connection) FrameID() protocol.Network_FrameID { return protocol.Network_FrameID_GP }
+//memar:impl memar/protocol.Network_Framer
+func (conn *Connection) FrameType() protocol.Network_FrameType { return protocol.Network_FrameType_GP }
 
-//libgo:impl libgo/protocol.NetworkAddress
+//memar:impl memar/protocol.NetworkAddress
 func (conn *Connection) LocalAddr() protocol.Stringer  { return &conn.localAddr }
 func (conn *Connection) RemoteAddr() protocol.Stringer { return &conn.remoteAddr }
 
-//libgo:impl libgo/protocol.Network_FrameWriter
+//memar:impl memar/protocol.Network_FrameWriter
 func (conn *Connection) WriteFrame(packet []byte) (n int, err protocol.Error) {
 	// TODO:::
 	return

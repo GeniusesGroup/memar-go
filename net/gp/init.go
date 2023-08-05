@@ -3,14 +3,14 @@
 package gp
 
 import (
-	"libgo/log"
-	"libgo/protocol"
+	"memar/log"
+	"memar/protocol"
 )
 
 // must assign before use the package
 var conns Connections
 
-//libgo:impl libgo/protocol.ObjectLifeCycle
+//memar:impl memar/protocol.ObjectLifeCycle
 func Init(cs Connections) (err protocol.Error) {
 	if conns != nil {
 		// err =

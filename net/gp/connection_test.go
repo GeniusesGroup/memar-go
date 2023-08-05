@@ -3,7 +3,7 @@
 package gp
 
 import (
-	"libgo/protocol"
+	"memar/protocol"
 )
 
 var _ protocol.OSI_Network = &Connection{}

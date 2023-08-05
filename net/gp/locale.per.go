@@ -5,7 +5,8 @@
 package gp
 
 import (
-	"libgo/protocol"
+	"memar/detail"
+	"memar/protocol"
 )
 
 const domainPersian = "شبکه گیتی"
