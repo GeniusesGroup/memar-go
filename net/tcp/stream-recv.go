@@ -3,9 +3,9 @@
 package tcp
 
 import (
-	"libgo/buffer"
-	"libgo/protocol"
-	"libgo/timer"
+	"memar/buffer"
+	"memar/protocol"
+	"memar/timer"
 )
 
 // recv is receive sequence space
@@ -24,7 +24,7 @@ type recv struct {
 	flag chan flag
 }
 
-//libgo:impl libgo/protocol.ObjectLifeCycle
+//memar:impl memar/protocol.ObjectLifeCycle
 func (r *recv) Init(timeout protocol.Duration) (err protocol.Error) {
 	r.flag = make(chan flag, 1) // 1 buffer slot??
 

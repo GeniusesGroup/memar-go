@@ -3,7 +3,7 @@
 package tcp
 
 import (
-	"libgo/protocol"
+	"memar/protocol"
 )
 
 type optionPartialOrderConnectionPermitted []byte
@@ -11,7 +11,7 @@ type optionPartialOrderConnectionPermitted []byte
 func (o optionPartialOrderConnectionPermitted) Length() byte { return o[0] }
 
 //	func (o optionPartialOrderConnectionPermitted) PartialOrderConnectionPermitted() uint16 {
-//		return binary.BigEndian.Uint16(o[1:])
+//		return binary.BigEndian(o[1:]).Uint16()
 //	}
 func (o optionPartialOrderConnectionPermitted) NextOption() []byte { return o[3:] }
 

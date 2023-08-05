@@ -3,14 +3,14 @@
 package tcp
 
 import (
-	"libgo/binary"
-	"libgo/protocol"
+	"memar/binary"
+	"memar/protocol"
 )
 
 type optionCC []byte
 
 func (o optionCC) Length() byte       { return o[0] }
-func (o optionCC) CC() uint16         { return binary.BigEndian.Uint16(o[1:]) }
+func (o optionCC) CC() uint16         { return binary.BigEndian(o[1:]).Uint16() }
 func (o optionCC) NextOption() []byte { return o[5:] }
 
 func (o optionCC) Process(s *Stream) (err protocol.Error) {

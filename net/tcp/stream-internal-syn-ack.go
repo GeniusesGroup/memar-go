@@ -3,7 +3,7 @@
 package tcp
 
 import (
-	"libgo/protocol"
+	"memar/protocol"
 )
 
 type synAck struct {

@@ -3,7 +3,7 @@
 package tcp
 
 import (
-	"libgo/timer"
+	"memar/timer"
 )
 
 // ATTENTION:::: Don't changed below settings without any good reason

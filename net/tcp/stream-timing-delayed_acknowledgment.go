@@ -3,8 +3,8 @@
 package tcp
 
 import (
-	"libgo/protocol"
-	"libgo/time/monotonic"
+	"memar/protocol"
+	"memar/time/monotonic"
 )
 
 type delayedAcknowledgment struct {
@@ -15,7 +15,7 @@ type delayedAcknowledgment struct {
 	nextCheck monotonic.Time
 }
 
-//libgo:impl libgo/protocol.ObjectLifeCycle
+//memar:impl memar/protocol.ObjectLifeCycle
 func (da *delayedAcknowledgment) Init(now monotonic.Time) (next protocol.Duration, err protocol.Error) {
 	da.enable = true
 	da.interval = CNF_DelayedAcknowledgment_Timeout
@@ -29,6 +29,8 @@ func (da *delayedAcknowledgment) Reinit() (err protocol.Error) {
 func (da *delayedAcknowledgment) Deinit() (err protocol.Error) {
 	return
 }
+
+func (da *delayedAcknowledgment) Enabled() bool { return da.enable }
 
 // Don't block the caller
 func (da *delayedAcknowledgment) CheckInterval(s *Stream, now monotonic.Time) (next protocol.Duration) {

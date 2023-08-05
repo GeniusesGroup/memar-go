@@ -3,10 +3,10 @@
 package tcp
 
 import (
-	"libgo/protocol"
+	"memar/protocol"
 )
 
-//libgo:impl libgo/protocol.Timeout
+//memar:impl memar/protocol.Timeout
 func (s *Stream) SetTimeout(d protocol.Duration) (err protocol.Error) {
 	err = s.SetReadTimeout(d)
 	if err != nil {

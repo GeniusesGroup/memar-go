@@ -3,8 +3,8 @@
 package tcp
 
 import (
-	"libgo/protocol"
-	"libgo/time/monotonic"
+	"memar/protocol"
+	"memar/time/monotonic"
 )
 
 type timingKeepAlive struct {
@@ -16,7 +16,7 @@ type timingKeepAlive struct {
 	retryCount int
 }
 
-//libgo:impl libgo/protocol.ObjectLifeCycle
+//memar:impl memar/protocol.ObjectLifeCycle
 func (ka *timingKeepAlive) Init(now monotonic.Time) (next protocol.Duration, err protocol.Error) {
 	ka.enable = CNF_KeepAlive_PerStream
 	ka.idle = CNF_KeepAlive_Idle

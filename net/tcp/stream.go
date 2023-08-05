@@ -3,15 +3,15 @@
 package tcp
 
 import (
-	"libgo/protocol"
-	"libgo/time/monotonic"
-	"libgo/time/utc"
+	"memar/protocol"
+	"memar/time/monotonic"
 )
 
 // Stream provide some fields to hold stream states.
 // Because each stream methods just call by a fixed worker on same CPU core in sync order, don't need to lock or changed atomic any field
 type Stream struct {
-	connection      protocol.Connection
+	// connection      protocol.Connection
+	sk              protocol.Socket
 	mtu             int
 	mss             int    // Max Segment Length
 	sourcePort      uint16 // local
@@ -19,8 +19,6 @@ type Stream struct {
 
 	// just store last send or receive segment not read or write to.
 	lastUse monotonic.Time
-
-	nextHandler protocol.NetworkCommonHandler
 
 	// TODO::: Cookie, save stream in nvm
 
@@ -33,15 +31,13 @@ type Stream struct {
 	// Data flow can be up to down (parse raw income data) or down to up (encode app data with respect MTU)
 	// If OutcomePayload not present stream is UnidirectionalStream otherwise it is BidirectionalStream!
 
-	id         protocol.StreamID   // Even number for Peer(who start connection). Odd number for server(who accept connection).
-	service    protocol.Service    //
-	protocolID protocol.ProtocolID // protocol ID usage is like TCP||UDP ports that indicate payload protocol.
+	id PortNumber
 
 	/* State */
-	err          protocol.Error              // Decode||Encode by ErrorID
+	err protocol.Error // Decode||Encode by ErrorID
 	// state        protocol.NetworkStatus      // States locate in const of this file.
 	// stateChannel chan protocol.NetworkStatus // States locate in const of this file.
-	weight       protocol.Weight             // 16 queue for priority weight of the streams exist.
+	weight protocol.Weight // 16 queue for priority weight of the streams exist.
 
 	status
 	StreamMetrics
@@ -49,7 +45,7 @@ type Stream struct {
 
 // Init use to initialize the stream after allocation in both server or client
 //
-//libgo:impl libgo/protocol.ObjectLifeCycle
+//memar:impl memar/protocol.ObjectLifeCycle
 func (s *Stream) Init(timeout protocol.Duration) (err protocol.Error) {
 	// TODO:::
 	s.mss = CNF_Segment_MaxSize
@@ -87,17 +83,6 @@ func (s *Stream) Deinit() (err protocol.Error) {
 	err = s.send.Deinit()
 	return
 }
-
-//libgo:impl libgo/protocol.Stream
-func (s *Stream) Connection() protocol.Connection        { return s.connection }
-func (s *Stream) Handler() protocol.NetworkCommonHandler { return s.nextHandler }
-
-// SetState change state of stream and send notification on stream StateChannel.
-// func (s *Stream) SetState(state protocol.NetworkStatus) {
-// 	s.state.Store(streamStatus(state))
-// 	// notify stream listener that stream state has been changed
-// 	s.stateChannel <- state
-// }
 
 // Reset use to reset the stream to store in a sync.Pool to reuse in near future before 2 GC period to dealloc forever
 func (s *Stream) Reset() (err protocol.Error) {
@@ -159,9 +144,9 @@ func (s *Stream) Receive(segment Segment) (err protocol.Error) {
 	return
 }
 
-// ScheduleProcessingStream is Non-Blocking means It must not block the caller in any ways.
+// ScheduleProcessingSocket is Non-Blocking means It must not block the caller in any ways.
 // Stream must start with NetworkStatus_NeedMoreData if it doesn't need to call the service when the state changed for the first time
-func (st *Stream) ScheduleProcessingStream() {
+func (st *Stream) ScheduleProcessingSocket() {
 	// decide by stream odd or even
 	// TODO::: check better performance as "streamID%2 == 0" to check odd id
 	// if streamID&1 == 0 {
@@ -172,33 +157,10 @@ func (st *Stream) ScheduleProcessingStream() {
 	// 	stream.SetState(protocol.NetworkStatus_Ready)
 	// }
 
-	if st.State == protocol.NetworkStatus_Open {
-		// TODO::: easily call by "go" or call by workers pool or what??
-		go st.callService()
-		return
-	}
-	st.SetState(protocol.NetworkStatus_ReceivedCompletely)
-}
-
-// Authorize authorize request by data in related stream and connection.
-func (st *Stream) Authorize() (err protocol.Error) {
-	err = st.service.Authorization.UserType.Check(st.Connection.UserType)
-	if err != nil {
-		return
-	}
-
-	var now = utc.Now()
-	err = st.connection.AccessControl.AuthorizeWhen(now.Weekdays(), now.DayHours())
-	if err != nil {
-		return
-	}
-	err = st.connection.AccessControl.AuthorizeWhich(st.service.ID, st.service.Authorization.CRUD)
-	if err != nil {
-		return
-	}
-	err = st.connection.AccessControl.AuthorizeWhere(st.Connection.GPAddr.GetSocietyID(), st.Connection.GPAddr.GetRouterID())
-	if err != nil {
-		return
-	}
-	return
+	// if st.State == protocol.NetworkStatus_Open {
+	// TODO::: easily call by "go" or call by workers pool or what??
+	// go st.callService()
+	// return
+	// }
+	// st.SetState(protocol.NetworkStatus_ReceivedCompletely)
 }

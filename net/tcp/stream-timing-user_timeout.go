@@ -3,8 +3,8 @@
 package tcp
 
 import (
-	"libgo/protocol"
-	"libgo/time/monotonic"
+	"memar/protocol"
+	"memar/time/monotonic"
 )
 
 // https://www.rfc-editor.org/rfc/rfc0793
@@ -19,7 +19,7 @@ type timingUserTimeout struct {
 	retryCount     int
 }
 
-//libgo:impl libgo/protocol.ObjectLifeCycle
+//memar:impl memar/protocol.ObjectLifeCycle
 func (ut *timingUserTimeout) Init(now monotonic.Time) (next protocol.Duration, err protocol.Error) {
 	ut.enable = CNF_UserTimeout_PerStream
 	ut.idle = CNF_KeepAlive_Idle

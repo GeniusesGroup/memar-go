@@ -3,8 +3,8 @@
 package tcp
 
 import (
-	"libgo/protocol"
-	"libgo/timer"
+	"memar/protocol"
+	"memar/timer"
 )
 
 // send as Send Sequence Space
@@ -21,7 +21,7 @@ type send struct {
 	// buf    []byte Don't need it, because we don't need to copy buffer between kernel and user-space
 }
 
-//libgo:impl libgo/protocol.ObjectLifeCycle
+//memar:impl memar/protocol.ObjectLifeCycle
 func (s *send) Init(timeout protocol.Duration) (err protocol.Error) {
 	err = s.writeTimer.Init()
 	err = s.writeTimer.Start(timeout)

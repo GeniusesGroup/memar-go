@@ -3,8 +3,8 @@
 package tcp
 
 import (
-	"libgo/binary"
-	"libgo/protocol"
+	"memar/binary"
+	"memar/protocol"
 )
 
 // Segment implement all methods to Get||Set data to a segment as a byte slice with 0-alloc
@@ -27,30 +27,30 @@ func (s Segment) CheckSegment() protocol.Error {
 /*
 ********** Get Methods **********
  */
-func (s Segment) SourcePort() uint16      { return binary.BigEndian.Uint16(s[0:]) }
-func (s Segment) DestinationPort() uint16 { return binary.BigEndian.Uint16(s[2:]) }
-func (s Segment) SequenceNumber() uint32  { return binary.BigEndian.Uint32(s[4:]) }
-func (s Segment) AckNumber() uint32       { return binary.BigEndian.Uint32(s[8:]) }
+func (s Segment) SourcePort() uint16      { return binary.BigEndian(s[0:]).Uint16() }
+func (s Segment) DestinationPort() uint16 { return binary.BigEndian(s[2:]).Uint16() }
+func (s Segment) SequenceNumber() uint32  { return binary.BigEndian(s[4:]).Uint32() }
+func (s Segment) AckNumber() uint32       { return binary.BigEndian(s[8:]).Uint32() }
 func (s Segment) DataOffset() uint8       { return (s[12] >> 4) * 4 }
-func (s Segment) Window() uint16          { return binary.BigEndian.Uint16(s[14:]) }
-func (s Segment) Checksum() uint16        { return binary.BigEndian.Uint16(s[16:]) }
-func (s Segment) UrgentPointer() uint16   { return binary.BigEndian.Uint16(s[18:]) }
+func (s Segment) Window() uint16          { return binary.BigEndian(s[14:]).Uint16() }
+func (s Segment) Checksum() uint16        { return binary.BigEndian(s[16:]).Uint16() }
+func (s Segment) UrgentPointer() uint16   { return binary.BigEndian(s[18:]).Uint16() }
 func (s Segment) Options() []byte         { return s[20:s.DataOffset()] }
 func (s Segment) Payload() []byte         { return s[s.DataOffset():] }
 
 /*
 ********** Set Methods **********
  */
-func (s Segment) SetSourcePort(port uint16)      { binary.BigEndian.PutUint16(s[0:], port) }
-func (s Segment) SetDestinationPort(port uint16) { binary.BigEndian.PutUint16(s[2:], port) }
-func (s Segment) SetSequenceNumber(v uint32)     { binary.BigEndian.PutUint32(s[4:], v) }
-func (s Segment) SetAckNumber(v uint32)          { binary.BigEndian.PutUint32(s[8:], v) }
+func (s Segment) SetSourcePort(port uint16)      { binary.BigEndian(s[0:]).PutUint16(port) }
+func (s Segment) SetDestinationPort(port uint16) { binary.BigEndian(s[2:]).PutUint16(port) }
+func (s Segment) SetSequenceNumber(v uint32)     { binary.BigEndian(s[4:]).PutUint32(v) }
+func (s Segment) SetAckNumber(v uint32)          { binary.BigEndian(s[8:]).PutUint32(v) }
 func (s Segment) SetDataOffset(ln uint8)         { s[12] = byte((ln/4)<<4) | s[12] }
 func (s Segment) SetFlagPartOne(flags byte)      { s[12] = s[12] | flags }
 func (s Segment) SetFlagPartTwo(flags byte)      { s[13] = flags }
-func (s Segment) SetWindow(v uint16)             { binary.BigEndian.PutUint16(s[14:], v) }
-func (s Segment) SetChecksum(v uint16)           { binary.BigEndian.PutUint16(s[16:], v) }
-func (s Segment) SetUrgentPointer(v uint16)      { binary.BigEndian.PutUint16(s[18:], v) }
+func (s Segment) SetWindow(v uint16)             { binary.BigEndian(s[14:]).PutUint16(v) }
+func (s Segment) SetChecksum(v uint16)           { binary.BigEndian(s[16:]).PutUint16(v) }
+func (s Segment) SetUrgentPointer(v uint16)      { binary.BigEndian(s[18:]).PutUint16(v) }
 func (s Segment) SetOptions(o []byte)            { copy(s[20:], o) }
 func (s Segment) SetPayload(payload []byte)      { copy(s[s.DataOffset():], payload) }
 

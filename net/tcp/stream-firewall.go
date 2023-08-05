@@ -3,7 +3,7 @@
 package tcp
 
 import (
-	"libgo/protocol"
+	"memar/protocol"
 )
 
 func (s *Stream) checkPushFlag() (err protocol.Error) {

@@ -3,7 +3,7 @@
 package tcp
 
 import (
-	er "libgo/error"
+	er "memar/error"
 )
 
 // Errors
@@ -13,6 +13,6 @@ var (
 )
 
 func init() {
-	ErrSegmentTooShort.Init("domain/tcp.protocol; type=error; name=packet-too-short")
-	ErrSegmentWrongLength.Init("domain/tcp.protocol; type=error; name=packet-wrong-length")
+	ErrSegmentTooShort.Init("domain/tcp.wg.ietf.org; type=error; name=packet-too-short")
+	ErrSegmentWrongLength.Init("domain/tcp.wg.ietf.org; type=error; name=packet-wrong-length")
 }

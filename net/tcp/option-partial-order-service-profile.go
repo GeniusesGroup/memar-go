@@ -3,8 +3,8 @@
 package tcp
 
 import (
-	"libgo/binary"
-	"libgo/protocol"
+	"memar/binary"
+	"memar/protocol"
 )
 
 /*
@@ -21,7 +21,7 @@ type optionPartialOrderServiceProfile []byte
 
 func (o optionPartialOrderServiceProfile) Length() byte { return o[0] }
 func (o optionPartialOrderServiceProfile) PartialOrderServiceProfile() uint16 {
-	return binary.BigEndian.Uint16(o[1:])
+	return binary.BigEndian(o[1:]).Uint16()
 	//
 }
 func (o optionPartialOrderServiceProfile) NextOption() []byte { return o[3:] }

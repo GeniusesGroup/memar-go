@@ -3,14 +3,14 @@
 package tcp
 
 import (
-	"syscall"
+	// "syscall"
 
-	"libgo/protocol"
+	"memar/protocol"
 )
 
 func (s *Stream) checkStream() (err protocol.Error) {
 	if s != nil {
-		err = syscall.EINVAL
+		// err = syscall.EINVAL
 	}
 	return
 }
@@ -65,8 +65,8 @@ func (s *Stream) incomeSegmentOnEstablishedState(segment Segment) (err protocol.
 			}
 
 			// TODO:::
-			s.recv.sendPushFlagSignal()
-			s.ScheduleProcessingStream()
+			s.recv.sendFlagSignal(flag_PSH)
+			s.ScheduleProcessingSocket()
 		}
 	} else {
 		err = s.validateSequence(segment)
@@ -159,7 +159,7 @@ func (s *Stream) sendSYN() (err protocol.Error) {
 func (s *Stream) sendACK() (err protocol.Error) {
 	s.recv.next++
 	// TODO:::
-	if CNF_DelayedAcknowledgment && s.delayedACK {
+	if CNF_DelayedAcknowledgment && s.timing.de.Enabled() {
 		// go to queue
 	} else {
 		s.sendQuickACK()
@@ -193,7 +193,7 @@ func (s *Stream) validateSequence(segment Segment) (err protocol.Error) {
 	var sn = segment.SequenceNumber()
 	var exceptedNext = s.recv.next
 	// TODO::: Due to CongestionControlAlgorithm make a decision to change next
-	err = s.recv.buf.WriteIn(payload, (sn - exceptedNext))
+	_, err = s.recv.buf.WriteIn(payload, (sn - exceptedNext))
 	return
 }
 
@@ -250,11 +250,11 @@ loop:
 	return
 }
 
-func (st *Stream) callService() {
-	var err = st.Handler().HandleIncomeRequest(st)
-	if err == nil {
-		st.connection.StreamSucceed()
-	} else {
-		st.connection.StreamFailed()
-	}
-}
+// func (st *Stream) callService() {
+// 	var err = st.Handler().HandleIncomeRequest(st)
+// 	if err == nil {
+// 		st.connection.StreamSucceed()
+// 	} else {
+// 		st.connection.StreamFailed()
+// 	}
+// }

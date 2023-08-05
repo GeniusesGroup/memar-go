@@ -3,7 +3,7 @@
 package tcp
 
 import (
-	"libgo/protocol"
+	"memar/protocol"
 )
 
 type StreamMetrics struct {
@@ -13,7 +13,7 @@ type StreamMetrics struct {
 	PacketDropCount uint8  // Count drop packets to prevent some attacks type!
 }
 
-//libgo:impl libgo/protocol.ObjectLifeCycle
+//memar:impl memar/protocol.ObjectLifeCycle
 func (sm *StreamMetrics) Init(timeout protocol.Duration) (err protocol.Error) {
 	return
 }

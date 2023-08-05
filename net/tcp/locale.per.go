@@ -5,7 +5,8 @@
 package tcp
 
 import (
-	"libgo/protocol"
+	"memar/detail"
+	"memar/protocol"
 )
 
 const domainPersian = "TCP"

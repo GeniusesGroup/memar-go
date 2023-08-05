@@ -3,10 +3,10 @@
 package tcp
 
 import (
-	"libgo/protocol"
+	"memar/protocol"
 )
 
-//libgo:impl libgo/protocol.Codec
+//memar:impl memar/protocol.Codec
 func (s *Stream) MediaType() protocol.MediaType       { return nil }
 func (s *Stream) CompressType() protocol.CompressType { return nil }
 func (s *Stream) Decode(source protocol.Codec) (n int, err protocol.Error) {

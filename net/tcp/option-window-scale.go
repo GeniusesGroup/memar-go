@@ -3,14 +3,14 @@
 package tcp
 
 import (
-	"libgo/binary"
-	"libgo/protocol"
+	"memar/binary"
+	"memar/protocol"
 )
 
 type optionWindowScale []byte
 
 func (o optionWindowScale) Length() byte        { return o[0] }
-func (o optionWindowScale) WindowScale() uint16 { return binary.BigEndian.Uint16(o[1:]) }
+func (o optionWindowScale) WindowScale() uint16 { return binary.BigEndian(o[1:]).Uint16() }
 func (o optionWindowScale) NextOption() []byte  { return o[2:] }
 
 // handler options -> stream

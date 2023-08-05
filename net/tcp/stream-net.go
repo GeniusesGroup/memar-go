@@ -7,13 +7,13 @@ import (
 	"net"
 	"time"
 
-	"libgo/protocol"
+	"memar/protocol"
 )
 
 // Non of below methods are concurrent safe. Use just by one goroutine.
 // TODO::: concurrency safe??
 //
-//libgo:impl std/net.Conn
+//memar:impl std/net.Conn
 func (s *Stream) Read(b []byte) (n int, err error) {
 	err = s.checkStream()
 	if err != nil {
@@ -46,7 +46,7 @@ func (s *Stream) LocalAddr() net.Addr {
 		return nil
 	}
 	return &net.TCPAddr{
-		IP:   net.IP(s.connection.LocalAddr()),
+		// IP:   net.IP(s.connection.LocalAddr()),
 		Port: int(s.sourcePort),
 	}
 }
@@ -56,7 +56,7 @@ func (s *Stream) RemoteAddr() net.Addr {
 		return nil
 	}
 	return &net.TCPAddr{
-		IP:   net.IP(s.connection.RemoteAddr()),
+		// IP:   net.IP(s.connection.RemoteAddr()),
 		Port: int(s.destinationPort),
 	}
 }
@@ -76,7 +76,7 @@ func (s *Stream) SetWriteDeadline(t time.Time) (err error) {
 	return
 }
 
-//libgo:impl std/net.TCPConn
+//memar:impl std/net.TCPConn
 func (s *Stream) CloseRead() (err error)                         { return }
 func (s *Stream) CloseWrite() (err error)                        { return }
 func (s *Stream) SetLinger(sec int) (err error)                  { return }

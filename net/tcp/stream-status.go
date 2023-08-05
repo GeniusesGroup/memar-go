@@ -3,8 +3,9 @@
 package tcp
 
 import (
-	"libgo/protocol"
 	"sync/atomic"
+
+	"memar/protocol"
 )
 
 // streamStatus use to indicate stream state.
@@ -49,7 +50,7 @@ type status struct {
 	ssChan chan streamStatus
 }
 
-//libgo:impl libgo/protocol.ObjectLifeCycle
+//memar:impl memar/protocol.ObjectLifeCycle
 func (s *status) Init(is streamStatus) (err protocol.Error) {
 	s.ssChan = make(chan streamStatus)
 	s.ss.Store(uint32(is))

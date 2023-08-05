@@ -3,9 +3,9 @@
 package tcp
 
 import (
-	"libgo/protocol"
-	"libgo/time/monotonic"
-	"libgo/timer"
+	"memar/protocol"
+	"memar/time/monotonic"
+	"memar/timer"
 )
 
 type timing struct {
@@ -17,7 +17,7 @@ type timing struct {
 	de delayedAcknowledgment
 }
 
-//libgo:impl libgo/protocol.ObjectLifeCycle
+//memar:impl memar/protocol.ObjectLifeCycle
 func (t *timing) Init(st *Stream) (err protocol.Error) {
 	var now = monotonic.Now()
 	var next protocol.Duration
