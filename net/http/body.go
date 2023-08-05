@@ -5,8 +5,8 @@ package http
 import (
 	"io"
 
-	"libgo/compress/raw"
-	"libgo/protocol"
+	"memar/compress/raw"
+	"memar/protocol"
 )
 
 // body is represent HTTP body.
@@ -17,14 +17,15 @@ type body struct {
 	protocol.Codec
 }
 
-func (b *body) Init()   {}
-func (b *body) Reinit() { b.Codec = nil }
-func (b *body) Deinit() {}
+//memar:impl memar/protocol.ObjectLifeCycle
+func (b *body) Init() (err protocol.Error)   { return }
+func (b *body) Reinit() (err protocol.Error) { b.Codec = nil; return }
+func (b *body) Deinit() (err protocol.Error) { return }
 
 func (b *body) Body() protocol.Codec         { return b }
 func (b *body) SetBody(codec protocol.Codec) { b.Codec = codec }
 
-//libgo:impl libgo/protocol.Codec
+//memar:impl memar/protocol.Codec
 func (b *body) Len() int {
 	if b.Codec != nil {
 		return b.Codec.Len()
@@ -82,7 +83,7 @@ func (b *body) UnmarshalFrom(data []byte) (remaining []byte, err protocol.Error)
 
 // ReadFrom decodes r *Request data by read from given io.Reader
 //
-//libgo:impl io.ReaderFrom
+//memar:impl io.ReaderFrom
 func (b *body) ReadFrom(reader io.Reader) (n int64, goErr error) {
 
 	return
@@ -90,7 +91,7 @@ func (b *body) ReadFrom(reader io.Reader) (n int64, goErr error) {
 
 // WriteTo encodes r(*Request) data and write it to given io.Writer
 //
-//libgo:impl io.WriterTo
+//memar:impl io.WriterTo
 func (b *body) WriteTo(writer io.Writer) (n int64, err error) {
 
 	return

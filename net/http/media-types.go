@@ -3,9 +3,9 @@
 package http
 
 import (
-	"libgo/detail"
-	"libgo/mediatype"
-	"libgo/protocol"
+	"memar/datatype"
+	"memar/mediatype"
+	"memar/protocol"
 )
 
 var (
@@ -21,49 +21,52 @@ func init() {
 }
 
 type mediaType struct {
-	detail.DS
+	datatype.DataType
 	mediatype.MT
 }
 
-//libgo:impl libgo/protocol.MediaType
-func (m *mediaType) FileExtension() string           { return "http" }
+//memar:impl memar/protocol.MediaType
+func (m *mediaType) FileExtension() string { return "http" }
+
+//memar:impl memar/protocol.DataType_Details
 func (m *mediaType) Status() protocol.SoftwareStatus { return protocol.Software_PreAlpha }
 func (m *mediaType) ReferenceURI() string {
 	return "https://www.iana.org/assignments/media-types/application/http"
 }
-func (m *mediaType) IssueDate() protocol.Time            { return nil }
-func (m *mediaType) ExpiryDate() protocol.Time           { return nil }
-func (m *mediaType) ExpireInFavorOf() protocol.MediaType { return nil }
-func (m *mediaType) Members() []protocol.Object_Member   { return nil }
+func (m *mediaType) IssueDate() protocol.Time           { return nil }
+func (m *mediaType) ExpiryDate() protocol.Time          { return nil }
+func (m *mediaType) ExpireInFavorOf() protocol.DataType { return nil }
 
 type mediaTypeRequest struct {
-	detail.DS
+	datatype.DataType
 	mediatype.MT
 }
 
-//libgo:impl /libgolibgo/protocol.MediaType
-func (m *mediaTypeRequest) FileExtension() string           { return "req.http" }
+//memar:impl memar/protocol.MediaType
+func (m *mediaTypeRequest) FileExtension() string { return "req.http" }
+
+//memar:impl memar/protocol.DataType_Details
 func (m *mediaTypeRequest) Status() protocol.SoftwareStatus { return protocol.Software_PreAlpha }
 func (m *mediaTypeRequest) ReferenceURI() string {
 	return "https://www.iana.org/assignments/media-types/application/http"
 }
-func (m *mediaTypeRequest) IssueDate() protocol.Time            { return nil }
-func (m *mediaTypeRequest) ExpiryDate() protocol.Time           { return nil }
-func (m *mediaTypeRequest) ExpireInFavorOf() protocol.MediaType { return nil }
-func (m *mediaTypeRequest) Members() []protocol.Object_Member   { return nil }
+func (m *mediaTypeRequest) IssueDate() protocol.Time           { return nil }
+func (m *mediaTypeRequest) ExpiryDate() protocol.Time          { return nil }
+func (m *mediaTypeRequest) ExpireInFavorOf() protocol.DataType { return nil }
 
 type mediaTypeResponse struct {
-	detail.DS
+	datatype.DataType
 	mediatype.MT
 }
 
-//libgo:impl libgo/protocol.MediaType
-func (m *mediaTypeResponse) FileExtension() string           { return "res.http" }
+//memar:impl memar/protocol.MediaType
+func (m *mediaTypeResponse) FileExtension() string { return "res.http" }
+
+//memar:impl memar/protocol.DataType_Details
 func (m *mediaTypeResponse) Status() protocol.SoftwareStatus { return protocol.Software_PreAlpha }
 func (m *mediaTypeResponse) ReferenceURI() string {
 	return "https://www.iana.org/assignments/media-types/application/http"
 }
-func (m *mediaTypeResponse) IssueDate() protocol.Time            { return nil }
-func (m *mediaTypeResponse) ExpiryDate() protocol.Time           { return nil }
-func (m *mediaTypeResponse) ExpireInFavorOf() protocol.MediaType { return nil }
-func (m *mediaTypeResponse) Members() []protocol.Object_Member   { return nil }
+func (m *mediaTypeResponse) IssueDate() protocol.Time           { return nil }
+func (m *mediaTypeResponse) ExpiryDate() protocol.Time          { return nil }
+func (m *mediaTypeResponse) ExpireInFavorOf() protocol.DataType { return nil }

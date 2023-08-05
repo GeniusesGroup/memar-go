@@ -5,7 +5,8 @@
 package http
 
 import (
-	"libgo/protocol"
+	"memar/detail"
+	"memar/protocol"
 )
 
 const domainEnglish = "HTTP"

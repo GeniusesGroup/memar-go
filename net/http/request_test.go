@@ -8,7 +8,7 @@ import (
 	"reflect"
 	"testing"
 
-	"libgo/compress/raw"
+	"memar/compress/raw"
 )
 
 type RequestTest struct {

@@ -5,8 +5,8 @@ package http
 import (
 	"strings"
 
-	"libgo/convert"
-	"libgo/protocol"
+	"memar/convert"
+	"memar/protocol"
 )
 
 type Cookies string

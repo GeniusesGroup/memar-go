@@ -7,8 +7,8 @@ import (
 
 	"golang.org/x/exp/maps"
 
-	"libgo/convert"
-	"libgo/protocol"
+	"memar/convert"
+	"memar/protocol"
 )
 
 // header is represent HTTP header structure!
@@ -17,15 +17,20 @@ type header struct {
 	valuesPool []string // shared backing array for headers' values
 }
 
-func (h *header) Init() {
+//memar:impl memar/protocol.ObjectLifeCycle
+func (h *header) Init() (err protocol.Error) {
 	h.headers = make(map[string][]string, headerInitMapLen)
 	h.valuesPool = make([]string, headerValuesPoolLen)
+	return
 }
-func (h *header) Reinit() {
+func (h *header) Reinit() (err protocol.Error) {
 	maps.Clear(h.headers)
 	h.valuesPool = h.valuesPool[:0]
+	return
 }
-func (h *header) Deinit() {}
+func (h *header) Deinit() (err protocol.Error) {
+	return
+}
 
 // Get returns the first value associated with the given key.
 // Key must already be in CanonicalHeaderKey form.
@@ -105,7 +110,7 @@ func (h *header) Exclude(exclude map[string]bool) {
 	}
 }
 
-//libgo:impl libgo/protocol.Codec
+//memar:impl memar/protocol.Codec
 func (h *header) Decode(source protocol.Codec) (n int, err protocol.Error) {
 	// TODO:::
 	return

@@ -6,10 +6,10 @@ import (
 	"io"
 	"strings"
 
-	"libgo/codec"
-	"libgo/convert"
-	"libgo/protocol"
-	"libgo/uri"
+	"memar/codec"
+	"memar/convert"
+	"memar/protocol"
+	"memar/uri"
 )
 
 // Request is represent HTTP request protocol structure.
@@ -23,24 +23,39 @@ type Request struct {
 	body
 }
 
-//libgo:impl libgo/protocol.ObjectLifeCycle
-func (r *Request) Init() {
-	r.H.Init()
-	r.body.Init()
+//memar:impl memar/protocol.ObjectLifeCycle
+func (r *Request) Init() (err protocol.Error) {
+	err = r.H.Init()
+	if err != nil {
+		return
+	}
+	err = r.body.Init()
+	return
 }
-func (r *Request) Reinit() {
+func (r *Request) Reinit() (err protocol.Error) {
 	r.method = ""
-	r.uri.Reinit()
+	err = r.uri.Reinit()
+	if err != nil {
+		return
+	}
 	r.version = ""
-	r.H.Reinit()
-	r.body.Reinit()
+	err = r.H.Reinit()
+	if err != nil {
+		return
+	}
+	err = r.body.Reinit()
+	return
 }
-func (r *Request) Deinit() {
-	r.H.Deinit()
-	r.body.Deinit()
+func (r *Request) Deinit() (err protocol.Error) {
+	err = r.H.Deinit()
+	if err != nil {
+		return
+	}
+	err = r.body.Deinit()
+	return
 }
 
-//libgo:impl libgo/protocol.HTTPRequest
+//memar:impl memar/protocol.HTTPRequest
 func (r *Request) Method() string              { return r.method }
 func (r *Request) URI() protocol.URI           { return &r.uri }
 func (r *Request) Version() string             { return r.version }
@@ -48,7 +63,7 @@ func (r *Request) SetMethod(method string)     { r.method = method }
 func (r *Request) SetVersion(version string)   { r.version = version }
 func (r *Request) Header() protocol.HTTPHeader { return &r.H }
 
-//libgo:impl libgo/protocol.Codec
+//memar:impl memar/protocol.Codec
 func (r *Request) MediaType() protocol.MediaType       { return &MediaTypeRequest }
 func (r *Request) CompressType() protocol.CompressType { return nil }
 func (r *Request) Len() (ln int) {
@@ -143,36 +158,15 @@ func (r *Request) UnmarshalFrom(httpPacket []byte) (maybeBody []byte, err protoc
 	// By use unsafe pointer here all strings assign in Request will just point to httpPacket slice
 	// and no need to alloc lot of new memory locations and copy request line and headers keys & values.
 	var s = convert.UnsafeByteSliceToString(httpPacket)
-
-	// si hold s index and i hold s index in new sliced state.
-	var si, i int
-
-	si, err = r.parseFirstLine(s)
-	if err != nil {
-		maybeBody = httpPacket[si:]
-		return
-	}
-	si += 2 // +2 due to have "\r\n"
-	s = s[si:]
-
-	i, err = r.H.unmarshal(s)
-	if err != nil {
-		maybeBody = httpPacket[i:]
-		return
-	}
-	si += i
-	// By https://tools.ietf.org/html/rfc2616#section-4 very simple http packet must end with CRLF even packet without header or body.
-	// So it can be occur panic if very simple request end without any CRLF
-	si += 2 // +2 due to have "\r\n" after header end
-
-	r.checkHost()
-
-	return httpPacket[si:], nil
+	var n int
+	n, err = r.unmarshalFrom(s)
+	maybeBody = httpPacket[n:]
+	return
 }
 
 // ReadFrom decodes r *Request data by read from given io.Reader
 //
-//libgo:impl go/io.ReaderFrom
+//memar:impl std/io.ReaderFrom
 func (r *Request) ReadFrom(reader io.Reader) (n int64, goErr error) {
 	// Make a buffer to hold incoming data.
 	var buf = make([]byte, MaxHTTPHeaderSize)
@@ -197,7 +191,7 @@ func (r *Request) ReadFrom(reader io.Reader) (n int64, goErr error) {
 
 // WriteTo encodes r(*Request) data and write it to given io.Writer
 //
-//libgo:impl go/io.WriterTo
+//memar:impl std/io.WriterTo
 func (r *Request) WriteTo(writer io.Writer) (n int64, err error) {
 	var lenWithoutBody = r.LenWithoutBody()
 	var bodyLen = r.body.Len()
@@ -223,9 +217,46 @@ func (r *Request) WriteTo(writer io.Writer) (n int64, err error) {
 	return
 }
 
+//memar:impl memar/protocol.Stringer
+func (r *Request) ToString() string {
+	var req, _ = r.Marshal()
+	return convert.UnsafeByteSliceToString(req)
+}
+func (r *Request) FromString(s string) (err protocol.Error) {
+	_, err = r.unmarshalFrom(s)
+	return
+}
+
 /*
 ********** Other methods **********
  */
+
+// Unmarshal parses and decodes data of given httpPacket to r *Request until body start.
+// In some bad packet may occur panic, handle panic by recover otherwise app will crash and exit.
+func (r *Request) unmarshalFrom(httpPacket string) (n int, err protocol.Error) {
+	// n hold httpPacket index and i hold s index in new sliced state.
+	var i int
+
+	n, err = r.parseFirstLine(httpPacket)
+	if err != nil {
+		return
+	}
+	n += 2 // +2 due to have "\r\n"
+	httpPacket = httpPacket[n:]
+
+	i, err = r.H.unmarshal(httpPacket)
+	n += i
+	if err != nil {
+		return
+	}
+	// By https://tools.ietf.org/html/rfc2616#section-4 very simple http packet must end with CRLF even packet without header or body.
+	// So it can be occur panic if very simple request end without any CRLF
+	n += 2 // +2 due to have "\r\n" after header end
+
+	r.checkHost()
+
+	return
+}
 
 // Unmarshal parses and decodes data of given httpPacket to r *Request until body start.
 // First line: GET /index.html HTTP/1.0

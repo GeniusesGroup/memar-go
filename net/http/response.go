@@ -7,9 +7,9 @@ import (
 	"strconv"
 	"strings"
 
-	"libgo/codec"
-	"libgo/convert"
-	"libgo/protocol"
+	"memar/codec"
+	"memar/convert"
+	"memar/protocol"
 )
 
 // Response is represent response protocol structure!
@@ -23,24 +23,36 @@ type Response struct {
 	body
 }
 
-//libgo:impl libgo/protocol.ObjectLifeCycle
-func (r *Response) Init() {
-	r.H.Init()
-	r.body.Init()
+//memar:impl memar/protocol.ObjectLifeCycle
+func (r *Response) Init() (err protocol.Error) {
+	err = r.H.Init()
+	if err != nil {
+		return
+	}
+	err = r.body.Init()
+	return
 }
-func (r *Response) Reinit() {
+func (r *Response) Reinit() (err protocol.Error) {
 	r.version = ""
 	r.statusCode = ""
 	r.reasonPhrase = ""
-	r.H.Reinit()
-	r.body.Reinit()
+	err = r.H.Reinit()
+	if err != nil {
+		return
+	}
+	err = r.body.Reinit()
+	return
 }
-func (r *Response) Deinit() {
-	r.H.Deinit()
-	r.body.Deinit()
+func (r *Response) Deinit() (err protocol.Error) {
+	err = r.H.Deinit()
+	if err != nil {
+		return
+	}
+	err = r.body.Deinit()
+	return
 }
 
-//libgo:impl libgo/protocol.HTTPResponse
+//memar:impl memar/protocol.HTTPResponse
 func (r *Response) Version() string               { return r.version }
 func (r *Response) StatusCode() string            { return r.statusCode }
 func (r *Response) ReasonPhrase() string          { return r.reasonPhrase }
@@ -81,7 +93,7 @@ func (r *Response) Redirect(code, phrase string, target string) {
 	r.H.Set(HeaderKeyLocation, target)
 }
 
-//libgo:impl libgo/protocol.Codec
+//memar:impl memar/protocol.Codec
 func (r *Response) MediaType() protocol.MediaType       { return &MediaTypeResponse }
 func (r *Response) CompressType() protocol.CompressType { return nil }
 func (r *Response) Len() (ln int) {
@@ -178,29 +190,10 @@ func (r *Response) UnmarshalFrom(httpPacket []byte) (maybeBody []byte, err proto
 	// By use unsafe pointer here all strings assign in Response will just point to httpPacket slice
 	// and no need to alloc lot of new memory locations and copy response line and headers keys & values!
 	var s = convert.UnsafeByteSliceToString(httpPacket)
-
-	// si hold s index and i hold s index in new sliced state.
-	var si, i int
-
-	si, err = r.parseFirstLine(s)
-	if err != nil {
-		maybeBody = httpPacket[si:]
-		return
-	}
-	si += 2 // +2 due to have "\r\n"
-	s = s[si:]
-
-	i, err = r.H.unmarshal(s)
-	if err != nil {
-		maybeBody = httpPacket[i:]
-		return
-	}
-	si += i
-	// By https://tools.ietf.org/html/rfc2616#section-4 very simple http packet must end with CRLF even packet without header or body!
-	// So it can be occur panic if very simple request end without any CRLF
-	si += 2 // +2 due to have "\r\n" after header end
-
-	return httpPacket[si:], nil
+	var n int
+	n, err = r.unmarshalFrom(s)
+	maybeBody = httpPacket[n:]
+	return
 }
 
 /*
@@ -258,9 +251,44 @@ func (r *Response) WriteTo(writer io.Writer) (n int64, err error) {
 	return
 }
 
+//memar:impl memar/protocol.Stringer
+func (r *Response) ToString() string {
+	var req, _ = r.Marshal()
+	return convert.UnsafeByteSliceToString(req)
+}
+func (r *Response) FromString(s string) (err protocol.Error) {
+	_, err = r.unmarshalFrom(s)
+	return
+}
+
 /*
 ********** local methods **********
  */
+
+// Unmarshal parses and decodes data of given httpPacket to r *Request until body start.
+// In some bad packet may occur panic, handle panic by recover otherwise app will crash and exit.
+func (r *Response) unmarshalFrom(httpPacket string) (n int, err protocol.Error) {
+	// n hold httpPacket index and i hold s index in new sliced state.
+	var i int
+
+	n, err = r.parseFirstLine(httpPacket)
+	if err != nil {
+		return
+	}
+	n += 2 // +2 due to have "\r\n"
+	httpPacket = httpPacket[n:]
+
+	i, err = r.H.unmarshal(httpPacket)
+	n += i
+	if err != nil {
+		return
+	}
+	// By https://tools.ietf.org/html/rfc2616#section-4 very simple http packet must end with CRLF even packet without header or body!
+	// So it can be occur panic if very simple request end without any CRLF
+	n += 2 // +2 due to have "\r\n" after header end
+
+	return
+}
 
 // Unmarshal parses and decodes data of given httpPacket to r *Request until body start.
 // First line: HTTP/1.0 200 OK

@@ -1,4 +1,6 @@
 # HTTP
+Implement the [HTTP working group of IETF](httpwg.org) protocol.
+
 [See why we develope this package if you prefer image vs code||text](https://viewer.diagrams.net/?tags=%7B%7D&highlight=0000ff&edit=_blank&layers=1&nav=1#R7Vtbc5s4FP41fmwGCTD2Y%2BKk2Yfdmcxmpt3mpaOADGpl5JXl2u6vXwHiJmGHeG2ILy8xOkgCnfN9OheRgT2ZrR85mkd%2FsQDTAbSC9cC%2BH0AILAjkTyLZZJIhgJkg5CRQnUrBM%2FmN85FKuiQBXtQ6CsaoIPO60GdxjH1RkyHO2arebcpo%2FalzFGJD8Owjakq%2FkkBEmXQEvVL%2BByZhlD8ZDMfZnRnKO6uVLCIUsFVFZD8M7AlnTGRXs%2FUE00R5uV6ycZ%2B33C1ejONYtBnwyCdf4ruv0feX2%2Fj59uXHC%2F%2Fy%2B5ObzfIL0aVasM%2FmG%2FXCYpNrAQdSKarJuIhYyGJEH0rpHWfLOMDJoyzZKvv8ydhcCoEU%2FsBCbJSF0VIwKYrEjKq7chV8808y%2FsbNm9%2Bq9%2B7XavKstclbayKyYbYDVPtb2rbAWLXLoUmjOvIJczLDAnMly1aeLHerlpVowZbcxztUm6MV8RCLHf3sAguSRJjJt%2BHSABbHFAnyq%2F4eSKE5LPqVBpcXyubvsD8w7B9hFEh1FIwiLE54Q9bSuNB6XU6nyV0NH3XrryIi8PMcpepZyX2hbmn1SMwFXu%2FWsqkVNWCkOKU2FSfn2KqkqG0pWVShp20dSY9eL5RR0K%2FD3t0N%2BoJmVZJVOLeFZgckBjwFYkCDGGIzx1LyN%2F53iRciNTZf%2BsnFwJPqGVK5lrtXyY1hmFxJfC8y7sh%2BJA7NHgPvfgeRQB9EshuIBGADkYbHIpJt6N1UpIUoZX7vm1ChhFx5TkvlwWMpb2Qoz9yW4uA2CYtkK2YxriulrsHSs0K3ssOAlvuLGlVsMd1tMG097xbzVsznNlgvl7Xeh9QTnhiJRYkee1xHT0HFfIpsmWpUNa7TJnIcbSLdyWV6MCZKEVYse3%2FQjY8Eur0wd4XcJUAOnGjY6rlvx63Q6zJuBQ1k%2FeiB6409GlVp%2Fsm6eTNJTFrHzPXstvzfApD%2FyeyxrYUibseENMO2swyXdQL3Hy8Ds4JzGPd7ajFfaw%2FcqwsG1vBAPhgA0LMTHh4JeacV%2BF1x1zXuPAN3sdQ8%2FBwJMTcQKPd6UYed9C%2FsJ54wyngJyymhVBMhSsJYNn2JiSRmSFyUID6it%2BrGjARBGg81%2BZ06uA%2FgeqBVVztwTdcz7DR0NKsNlLyG7HxNMHLdD2YCM%2Fe%2BHt8caGPPo7g3N3bYb53aMiBwEqmwY72dCnd7hFMg44RS4f7OcOBpsAMa7Ng7Lx24dwP3%2FnUj8MfMTXVG9Z%2Bbwl2HOZkirQUlfvL7MY50XP08rOlIx27Q4dGOdKBj6NDcpi4gv2%2Fvjq1mC3eTZ3l6crRvmuXp%2BVrHWRY8Vl3ppLL7K%2Bo6Rp1ZU5qihTjvzN6FdaX3nlZCs8Kyi%2Fs%2BRYsF8VMDIC5M8dZdoS1Te6uaaeecrrUnr%2FSJnI7PZ6BZq3lMa2ZPS2FGsySJz%2BaM0fPlnF7ELCzbG%2Bfe9xnF%2BXLOcZzDcE6fqGvO5VC5ci43CNhi2b44Z5ufkVwm57zRgfycPlHnnGuo96R6FCwpOeBM6ckLs2kijXD6l2MUpGZH%2Fs%2Fz5Z%2F%2B8YILTP6NOuWfWR%2B6TP457vimfrRk6wWl1l7PmKr4oKwrDpoVqwv3e9rHWbChqNit33tfbed8eTfSsoC9WadP1DnnzLrJ1e9tC0oKYlVAdqCPbmWz%2FIfOzLjlv8XaD%2F8B)
 
 ## Why - net/http disadvantages
@@ -25,13 +27,13 @@
 - ...
 
 ## Goals
-- Respect [HTTP protocol](github.com/GeniusesGroup/libgo/protocol/http.go) and implement all requirements to be comply with those interfaces as http rules. So any other packages can easily be changeable with this package.
+- Respect [HTTP protocols](../../protocol/http.go) and implement all requirements to be comply with those interfaces as http rules. So any other packages can easily be changeable with this package.
 
 ## Not Goals
 
 ## Protocols
-- HTTP/1 : https://en.wikipedia.org/wiki/Hypertext_Transfer_Protocol
-- HTTP/2 : https://httpwg.org/specs/rfc7540.html
-- HTTP/3 : https://quicwg.org/base-drafts/draft-ietf-quic-http.html
+- HTTP/1 : https://www.rfc-editor.org/rfc/rfc9110
+- HTTP/2 : https://www.rfc-editor.org/rfc/rfc9113
+- HTTP/3 : https://www.rfc-editor.org/rfc/rfc9114
 
 # Abbreviations

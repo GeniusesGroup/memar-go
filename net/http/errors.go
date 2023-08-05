@@ -3,7 +3,7 @@
 package http
 
 import (
-	er "libgo/error"
+	er "memar/error"
 )
 
 // Declare package errors
@@ -29,22 +29,22 @@ var (
 )
 
 func init() {
-	ErrNoConnection.Init("domain/http.protocol; type=error; name=no-connection")
-	ErrPacketTooShort.Init("domain/http.protocol; type=error; name=packet-too-short")
-	ErrPacketTooLong.Init("domain/http.protocol; type=error; name=packet-too-long")
-	ErrParseMethod.Init("domain/http.protocol; type=error; name=parse-method")
-	ErrParseVersion.Init("domain/http.protocol; type=error; name=parse-version")
-	ErrParseStatusCode.Init("domain/http.protocol; type=error; name=parse-status-code")
-	ErrParseReasonPhrase.Init("domain/http.protocol; type=error; name=parse-reason-phrase")
-	ErrParseHeaderTooLarge.Init("domain/http.protocol; type=error; name=parse-header-too-large")
+	ErrNoConnection.Init("domain/http.wg.ietf.org; type=error; name=no-connection")
+	ErrPacketTooShort.Init("domain/http.wg.ietf.org; type=error; name=packet-too-short")
+	ErrPacketTooLong.Init("domain/http.wg.ietf.org; type=error; name=packet-too-long")
+	ErrParseMethod.Init("domain/http.wg.ietf.org; type=error; name=parse-method")
+	ErrParseVersion.Init("domain/http.wg.ietf.org; type=error; name=parse-version")
+	ErrParseStatusCode.Init("domain/http.wg.ietf.org; type=error; name=parse-status-code")
+	ErrParseReasonPhrase.Init("domain/http.wg.ietf.org; type=error; name=parse-reason-phrase")
+	ErrParseHeaderTooLarge.Init("domain/http.wg.ietf.org; type=error; name=parse-header-too-large")
 
-	ErrCookieBadName.Init("domain/http.protocol; type=error; name=cookie-bad-name")
-	ErrCookieBadValue.Init("domain/http.protocol; type=error; name=cookie-bad-value")
-	ErrCookieBadPath.Init("domain/http.protocol; type=error; name=cookie-bad-path")
-	ErrCookieBadDomain.Init("domain/http.protocol; type=error; name=cookie-bad-domain")
+	ErrCookieBadName.Init("domain/http.wg.ietf.org; type=error; name=cookie-bad-name")
+	ErrCookieBadValue.Init("domain/http.wg.ietf.org; type=error; name=cookie-bad-value")
+	ErrCookieBadPath.Init("domain/http.wg.ietf.org; type=error; name=cookie-bad-path")
+	ErrCookieBadDomain.Init("domain/http.wg.ietf.org; type=error; name=cookie-bad-domain")
 
-	ErrNotFound.Init("domain/http.protocol; type=error; name=not-found")
-	ErrUnsupportedMediaType.Init("domain/http.protocol; type=error; name=unsupported-media-type")
+	ErrNotFound.Init("domain/http.wg.ietf.org; type=error; name=not-found")
+	ErrUnsupportedMediaType.Init("domain/http.wg.ietf.org; type=error; name=unsupported-media-type")
 
-	ErrBodySizeMismatch.Init("domain/http.protocol; type=error; name=body-size-mismatched")
+	ErrBodySizeMismatch.Init("domain/http.wg.ietf.org; type=error; name=body-size-mismatched")
 }

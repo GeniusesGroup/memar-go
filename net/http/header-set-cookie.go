@@ -8,8 +8,8 @@ import (
 	"strings"
 	"time"
 
-	"libgo/convert"
-	"libgo/protocol"
+	"memar/convert"
+	"memar/protocol"
 )
 
 // GetSetCookies parses and returns the Set-Cookie headers.
