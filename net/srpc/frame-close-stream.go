@@ -1,25 +1,24 @@
-/* For license and copyright information please see LEGAL file in repository */
+/* For license and copyright information please see the LEGAL file in the code repository */
 
 package srpc
 
-// import (
-// 	"../authorization"
-// 	"../protocol"
-// )
+import (
+	"memar/protocol"
+)
 
 // var closeStreamService = service.Service{
-// 	URN:                "urn:giti:achaemenid.protocol:service:close-stream",
+// 	URN:                "domain/srpc.scm.geniuses.group; type=service; name=close-stream",
 // 	Domain:             DomainName,
 // 	ID:                 6917897595815184909,
 // 	IssueDate:          1595478242,
 // 	ExpiryDate:         0,
 // 	ExpireInFavorOfURN: "",
 // 	ExpireInFavorOfID:  0,
-// 	Status:             protocol.SoftwareStatePreAlpha,
+// 	Status:             protocol.Software_PreAlpha,
 
 // 	Authorization: authorization.Service{
 // 		CRUD:     authorization.CRUDCreate,
-// 		UserType: authorization.UserTypeAll,
+// 		UserType: protocol.UserType_All,
 // 	},
 
 // 	Detail: map[protocol.LanguageID]service.ServiceDetail{
@@ -33,9 +32,9 @@ package srpc
 // 	SRPCHandler: CloseStream,
 // }
 
-// // CloseStream use by peer to close unwanted active StreamID on other party due to MaxConcurrentStreams restriction.
-// func CloseStream(st protocol.Stream) {
-// }
+// CloseStream use by peer to close unwanted active StreamID on other party due to MaxConcurrentStreams restriction.
+func CloseStream(sk protocol.Socket) {
+}
 
-// type closeStreamReq struct {
-// }
+type closeStreamReq struct {
+}

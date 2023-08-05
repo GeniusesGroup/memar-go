@@ -1,38 +1,41 @@
-/* For license and copyright information please see LEGAL file in repository */
+/* For license and copyright information please see the LEGAL file in the code repository */
 
 package srpc
 
 import (
-	"../protocol"
-	"../syllab"
+	"memar/binary"
+	"memar/protocol"
 )
 
 /*
-type openStreamFrame struct {
-	ProtocolID  uint16 // protocol ID usage is like TCP||UDP ports that indicate payload protocol.
-	SerErrID    uint64 // Service or Error
-	CompressID  uint64
-	TotalPacket uint32 // Expected packets count that send over this stream!
-	DataLength  uint64
-	Weight      protocol.ConnectionWeight
-}
+	type OpenStreamFrame struct {
+		HandlerID   uint64 // protocol ID usage is like TCP||UDP ports that indicate payload protocol.
+		ServiceID   uint64
+		CompressID  uint64
+		DataLength  uint64
+		Weight      protocol.Weight
+	}
+
+TotalPacket uint32 // Expected packets count that send over this stream.
 */
-type openStreamFrame []byte
+type OpenStreamFrame []byte
 
-func (f openStreamFrame) ProtocolID() uint16                { return syllab.GetUInt16(f, 0) }
-func (f openStreamFrame) SerErrID() uint64                  { return syllab.GetUInt64(f, 2) }
-func (f openStreamFrame) CompressID() uint64                { return syllab.GetUInt64(f, 10) }
-func (f openStreamFrame) Weight() protocol.ConnectionWeight { return protocol.ConnectionWeight(f[10]) }
-func (f openStreamFrame) NextFrame() []byte                 { return f[18:] }
+func (f OpenStreamFrame) HandlerID() uint64       { return binary.LittleEndian(f[0:]).Uint64() }
+func (f OpenStreamFrame) ServiceID() uint64       { return binary.LittleEndian(f[2:]).Uint64() }
+func (f OpenStreamFrame) CompressID() uint64      { return binary.LittleEndian(f[10:]).Uint64() }
+func (f OpenStreamFrame) DataLength() uint64      { return binary.LittleEndian(f[18:]).Uint64() }
+func (f OpenStreamFrame) Weight() protocol.Weight { return protocol.Weight(f[24]) }
 
-// setStreamSettings set stream settings like time sensitive use in VoIP, IPTV, ...
-func openStream(conn protocol.Connection, frame openStreamFrame) (err protocol.Error) {
+//memar:impl memar/protocol.Network_Frame
+func (f OpenStreamFrame) NextFrame() []byte { return f[25:] }
+
+func (f OpenStreamFrame) Do(sk protocol.Socket) (err protocol.Error) {
 	// TODO::: allow multiple settings set??
 
 	// Check server supported requested protocol
-	var ProtocolID = protocol.NetworkApplicationProtocolID(frame.ProtocolID())
-	var protocolHandler protocol.NetworkApplicationHandler = protocol.App.GetNetworkApplicationHandler(ProtocolID)
-	if protocolHandler == nil {
+	var serviceID = protocol.ServiceID(f.ServiceID())
+	_, err = protocol.App.GetServiceByID(serviceID)
+	if err != nil {
 		// Send response or just ignore packet
 		// TODO::: DDOS!!??
 		return
