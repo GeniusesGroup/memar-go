@@ -3,7 +3,7 @@
 package chapar
 
 import (
-	"libgo/protocol"
+	"memar/protocol"
 )
 
 type Connections interface {

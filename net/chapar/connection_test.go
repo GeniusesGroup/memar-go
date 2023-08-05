@@ -3,7 +3,7 @@
 package chapar
 
 import (
-	"libgo/protocol"
+	"memar/protocol"
 )
 
-var _ protocol.NetworkLink = &Connection{}
+var _ protocol.OSI_DataLink = &Connection{}

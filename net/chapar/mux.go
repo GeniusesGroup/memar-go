@@ -4,7 +4,7 @@ package chapar
 
 import (
 	"bytes"
-	"libgo/protocol"
+	"memar/protocol"
 )
 
 // Multiplexer Hardware implementation has some difference from Software(this) implementation:
@@ -20,14 +20,15 @@ type Multiplexer struct {
 	connections Connections
 }
 
-func (mux *Multiplexer) FrameID() (fID protocol.Network_FrameID) {
-	return protocol.Network_FrameID_Chapar
+//memar:impl memar/protocol.Network_Framer
+func (mux *Multiplexer) FrameType() protocol.Network_FrameType {
+	return protocol.Network_FrameType_Chapar
 }
 
 // Init initializes new Multiplexer object otherwise panic will occur on un-registered port or handler call.
 //
-//libgo:impl libgo/protocol.ObjectLifeCycle
-func (mux *Multiplexer) Init(portNumber byte, pConnection protocol.NetworkInterface, connections Connections) {
+//memar:impl memar/protocol.ObjectLifeCycle
+func (mux *Multiplexer) Init(portNumber byte, pConnection protocol.OSI_Physical, connections Connections) {
 	mux.portNumber = portNumber
 	mux.connections = connections
 

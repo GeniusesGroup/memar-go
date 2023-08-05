@@ -3,7 +3,7 @@
 package chapar
 
 import (
-	"libgo/protocol"
+	"memar/protocol"
 )
 
 var _ protocol.Network_Frame = &Frame{}

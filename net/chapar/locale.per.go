@@ -5,7 +5,8 @@
 package chapar
 
 import (
-	"libgo/protocol"
+	"memar/detail"
+	"memar/protocol"
 )
 
 const domainPersian = "چاپار"

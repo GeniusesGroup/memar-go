@@ -3,16 +3,16 @@
 package chapar
 
 import (
-	"libgo/protocol"
+	"memar/protocol"
 )
 
 type port struct {
 	portNumber         byte
 	mux                *Multiplexer
-	physicalConnection protocol.NetworkInterface
+	physicalConnection protocol.OSI_Physical
 }
 
-func (p *port) Init(portNumber byte, mux *Multiplexer, physicalConnection protocol.NetworkInterface) {
+func (p *port) Init(portNumber byte, mux *Multiplexer, physicalConnection protocol.OSI_Physical) {
 	p.portNumber = portNumber
 	p.mux = mux
 	p.physicalConnection = physicalConnection

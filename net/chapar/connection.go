@@ -5,11 +5,10 @@ package chapar
 import (
 	"bytes"
 
-	"libgo/net"
-	"libgo/protocol"
+	"memar/protocol"
 )
 
-// Connection keep some data and provide some methods to use as libgo/protocol.NetworkLink
+// Connection keep some data and provide some methods to use as memar/protocol.NetworkLink
 type Connection struct {
 	/* Connection data */
 	state      protocol.NetworkStatus
@@ -21,13 +20,11 @@ type Connection struct {
 	pathFromPeer     Path // Chapar switch spec
 	alternativePaths []Path
 	thingID          protocol.UserUUID
-
-	net.Metric
 }
 
 // Init set some data from given frame as connection initialize.
 //
-//libgo:impl libgo/protocol.ObjectLifeCycle
+//memar:impl memar/protocol.ObjectLifeCycle
 func (c *Connection) Init(frame Frame, port *port) (err protocol.Error) {
 	err = c.pathFromPeer.Unmarshal(frame)
 	if err != nil {
@@ -47,17 +44,17 @@ func (c *Connection) Deinit() (err protocol.Error) {
 	return
 }
 
-//libgo:impl libgo/protocol.NetworkLink
-func (c *Connection) FrameID() (fID protocol.Network_FrameID) { return protocol.Network_FrameID_Chapar }
+//memar:impl memar/protocol.NetworkLink
+func (c *Connection) FrameType() protocol.Network_FrameType { return protocol.Network_FrameType_Chapar }
 
-//libgo:impl libgo/protocol.NetworkAddress
+//memar:impl memar/protocol.NetworkAddress
 func (c *Connection) LocalAddr() protocol.Stringer  { return &c.pathFromPeer }
 func (c *Connection) RemoteAddr() protocol.Stringer { return &c.pathToPeer }
 
 func (c *Connection) ActivePaths() Path        { return c.pathToPeer }
 func (c *Connection) AlternativePaths() []Path { return c.alternativePaths }
 
-//libgo:impl libgo/protocol.NetworkLink
+//memar:impl memar/protocol.NetworkLink
 func (c *Connection) WriteFrame(packet []byte) (n int, err protocol.Error) {
 	var f = Frame(packet)
 	f.Init(c.pathToPeer.path[:])
@@ -67,7 +64,7 @@ func (c *Connection) WriteFrame(packet []byte) (n int, err protocol.Error) {
 
 // Send use to send complete frame that get from c.NewFrame
 //
-//libgo:impl libgo/protocol.NetworkLink
+//memar:impl memar/protocol.NetworkLink
 func (c *Connection) Send(frame []byte) (err protocol.Error) {
 	// send frame by connection port
 	err = c.port.Send(frame)
@@ -76,7 +73,7 @@ func (c *Connection) Send(frame []byte) (err protocol.Error) {
 	}
 	// TODO::: need to check path exist here to use c.AlternativePath?
 
-	c.Metric.PacketSent(uint64(len(frame)))
+	// c.Metric.PacketSent(uint64(len(frame)))
 	return
 }
 
@@ -88,7 +85,7 @@ func (c *Connection) ReSend(frame []byte) (err protocol.Error) {
 	}
 	// TODO::: need to check path exist here to use c.AlternativePath?
 
-	c.Metric.PacketResend(uint64(len(frame)))
+	// c.Metric.PacketResend(uint64(len(frame)))
 	return
 }
 

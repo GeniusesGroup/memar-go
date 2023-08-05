@@ -3,7 +3,7 @@
 package chapar
 
 import (
-	"libgo/protocol"
+	"memar/protocol"
 )
 
-var _ protocol.NetworkInterface = &BridgePort{}
+var _ protocol.OSI_Physical = &BridgePort{}

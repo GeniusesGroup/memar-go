@@ -3,14 +3,14 @@
 package chapar
 
 import (
-	er "libgo/error"
+	er "memar/error"
 )
 
 // Package errors
 var (
 	ErrShortFrameLength er.Error
 	ErrLongFrameLength  er.Error
-	ErrBadFrameID       er.Error
+	ErrBadFrameType     er.Error
 	ErrMTU              er.Error
 	ErrPortNotExist     er.Error
 	ErrPathAlreadyUse   er.Error
@@ -21,7 +21,7 @@ var (
 func init() {
 	ErrShortFrameLength.Init("domain/chapar.scm.geniuses.group; type=error; name=short-frame-length")
 	ErrLongFrameLength.Init("domain/chapar.scm.geniuses.group; type=error; name=long-frame-length")
-	ErrBadFrameID.Init("domain/chapar.scm.geniuses.group; type=error; name=bad-frame-id")
+	ErrBadFrameType.Init("domain/chapar.scm.geniuses.group; type=error; name=bad-frame-type")
 	ErrMTU.Init("domain/chapar.scm.geniuses.group; type=error; name=maximum-transmission-unit")
 	ErrPortNotExist.Init("domain/chapar.scm.geniuses.group; type=error; name=port-not-exist")
 	ErrPathAlreadyUse.Init("domain/chapar.scm.geniuses.group; type=error; name=path-already-use")

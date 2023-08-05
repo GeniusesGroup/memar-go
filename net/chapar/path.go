@@ -3,7 +3,7 @@
 package chapar
 
 import (
-	"libgo/protocol"
+	"memar/protocol"
 )
 
 // Path indicate Chapar switch route plan!
@@ -47,7 +47,7 @@ func (p *Path) CopyReverseTo(reverse *Path) {
 	return
 }
 
-//libgo:impl libgo/protocol.Stringer
+//memar:impl memar/protocol.Stringer
 func (p *Path) ToString() string {
 	// TODO::: ??
 	return string(p.path[:p.len])
@@ -57,7 +57,7 @@ func (p *Path) FromString(s string) (err protocol.Error) {
 	return
 }
 
-//libgo:impl libgo/protocol.Codec
+//memar:impl memar/protocol.Codec
 func (p *Path) MediaType() protocol.MediaType       { return nil }
 func (p *Path) CompressType() protocol.CompressType { return nil }
 func (p *Path) Len() int                            { return int(p.len) }
