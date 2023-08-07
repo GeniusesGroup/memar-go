@@ -2,10 +2,6 @@
 
 package protocol
 
-type Details interface {
-	Detail(lang LanguageID) Detail
-}
-
 // Detail is some piece of information that write for humans to understand some thing.
 //
 // When defining a new detail, the information included must be carefully vetted.
@@ -13,8 +9,6 @@ type Details interface {
 // Risks include leaking information that can be exploited to compromise the system,
 // access to the system, or the privacy of users of the system.
 type Detail interface {
-	Language() LanguageID
-
 	Quiddity
 
 	// Domain return locale domain name that MediaType belongs to it.
