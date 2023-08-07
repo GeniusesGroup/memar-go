@@ -3,7 +3,7 @@
 package error
 
 import (
-	"libgo/protocol"
+	"memar/protocol"
 )
 
 func ToGoError(err protocol.Error) error {

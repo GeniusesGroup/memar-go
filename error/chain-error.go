@@ -3,7 +3,7 @@
 package error
 
 import (
-	"libgo/protocol"
+	"memar/protocol"
 )
 
 // NewChain wrap an error and additional information usually use in logging to save more details about error.
@@ -25,7 +25,7 @@ type ChainError struct {
 
 func (ce *ChainError) PastChain() protocol.Error { return ce.Err }
 
-//libgo:impl libgo/protocol.Stringer
+//memar:impl memar/protocol.Stringer
 func (ce *ChainError) ToString() string {
 	return "\n" + ce.Err.ToString() + "\n	Chain Info: " + ce.info
 }

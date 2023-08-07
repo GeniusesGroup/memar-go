@@ -3,15 +3,10 @@
 package error
 
 import (
-	"libgo/datatype"
-	"libgo/mediatype"
-	"libgo/protocol"
+	"memar/datatype"
+	"memar/mediatype"
+	"memar/protocol"
 )
-
-// New return new Error that implement protocol.Error
-// Never change MediaType due to it adds unnecessary complicated troubleshooting errors on SDK.
-// TODO::: escapes to heap problem of return value, How prevent it??
-// func New(mediatype string) (err Error) { err.Init(mediatype); return }
 
 // Err is the same as the Error.
 // Use this type when embed in other struct to solve field & method same name problem(Error struct and Error() method) to satisfy interfaces.
@@ -28,18 +23,12 @@ type Error struct {
 // Init initialize Error that implement protocol.Error
 // Never change MediaType due to it adds unnecessary complicated troubleshooting errors on SDK.
 //
-//libgo:impl libgo/protocol.ObjectLifeCycle
+//memar:impl memar/protocol.ObjectLifeCycle
 func (e *Error) Init(mediatype string) (err protocol.Error) {
 	err = e.MT.Init(mediatype)
-	if err != nil {
-		return
-	}
-
-	// RegisterError will register in the application.
-	// Force to check by runtime check, due to testing package not let us by any const!
-	if protocol.App != nil {
-		protocol.App.RegisterError(e)
-	}
+	// if err != nil {
+	// 	return
+	// }
 	return
 }
 
