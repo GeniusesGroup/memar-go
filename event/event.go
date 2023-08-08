@@ -3,37 +3,37 @@
 package event
 
 import (
-	"libgo/protocol"
-	"libgo/time/unix"
+	"memar/protocol"
+	"memar/time/unix"
 )
 
 // Event implement protocol.LogEvent
 type Event struct {
-	mediaType protocol.MediaType
-	domain    protocol.MediaTypeID
-	nodeID    protocol.NodeID
-	time      unix.Time
+	domain   protocol.MediaType
+	domainID protocol.MediaTypeID
+	nodeID   protocol.NodeID
+	time     unix.Time
 }
 
-//libgo:impl libgo/protocol.ObjectLifeCycle
-func (e *Event) Init(mediaType protocol.MediaType, nodeID [16]byte, time unix.Time) {
-	e.mediaType = mediaType
-	e.domain = mediaType.ID()
+//memar:impl memar/protocol.ObjectLifeCycle
+func (e *Event) Init(domain protocol.MediaType, nodeID [16]byte, time unix.Time) {
+	e.domain = domain
+	e.domainID = domain.ID()
 	e.nodeID = nodeID
 	e.time = time
 }
 
-//libgo:impl libgo/protocol.Event
-func (e *Event) MediaType() protocol.MediaType { return e.mediaType }
-func (e *Event) Domain() protocol.MediaTypeID  { return e.domain }
-func (e *Event) NodeID() protocol.NodeID       { return e.nodeID }
-func (e *Event) Time() protocol.Time           { return &e.time }
-func (e *Event) Cancelable() bool              { return false }
-func (e *Event) DefaultPrevented() bool        { return false }
-func (e *Event) Bubbles() bool                 { return false }
-func (e *Event) PreventDefault()               {}
+//memar:impl memar/protocol.Event
+func (e *Event) Domain() protocol.MediaType     { return e.domain }
+func (e *Event) DomainID() protocol.MediaTypeID { return e.domainID }
+func (e *Event) NodeID() protocol.NodeID        { return e.nodeID }
+func (e *Event) Time() protocol.Time            { return &e.time }
+func (e *Event) Cancelable() bool               { return false }
+func (e *Event) DefaultPrevented() bool         { return false }
+func (e *Event) Bubbles() bool                  { return false }
+func (e *Event) PreventDefault()                {}
 
-//libgo:impl libgo/protocol.Syllab
+//memar:impl memar/protocol.Syllab
 func (e *Event) CheckSyllab(payload []byte) (err protocol.Error) {
 	if len(payload) < int(e.LenOfSyllabStack()) {
 		// err = syllab.ErrShortArrayDecode

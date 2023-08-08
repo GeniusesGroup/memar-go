@@ -5,7 +5,7 @@ package event
 import (
 	"sync"
 
-	"libgo/protocol"
+	"memar/protocol"
 )
 
 // TODO::: Can implement a parallel hash table here instead use of map and sync?
@@ -21,16 +21,16 @@ type listener struct {
 	options       protocol.AddEventListenerOptions
 }
 
-//libgo:impl libgo/protocol.ObjectLifeCycle
+//memar:impl memar/protocol.ObjectLifeCycle
 func (et *EventTarget) Init() (err protocol.Error) {
 	et.ls = make(map[protocol.ID][]listener)
 	return
 }
 
-//libgo:impl libgo/protocol.EventTarget
+//memar:impl memar/protocol.EventTarget
 func (et *EventTarget) DispatchEvent(event protocol.Event) (err protocol.Error) {
 	et.sync.Lock()
-	var eventDomain = event.Domain()
+	var eventDomain = event.DomainID()
 	var ls = et.ls[eventDomain]
 	for i := 0; i < len(ls); i++ {
 		// TODO::: handle options here or caller layer must handle it?

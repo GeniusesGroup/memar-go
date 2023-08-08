@@ -7,9 +7,9 @@ package protocol
 // https://developer.mozilla.org/en-US/docs/Web/API/Event
 // https://developer.mozilla.org/en-US/docs/Web/Events
 type Event interface {
-	MediaType() MediaType
-	Domain() MediaTypeID // domain that event dispatch(belong) from it, It must be same as MediaType().ID()
-	NodeID() NodeID      // node that event dispatch(belong) from it
+	Domain() MediaType
+	DomainID() MediaTypeID // domain that event dispatch(belong) from it, It must be same as Domain().ID()
+	NodeID() NodeID        // node that event dispatch(belong) from it
 	Time() Time
 
 	// Returns true or false depending on how event was initialized. Its return value does not always carry meaning,
