@@ -5,7 +5,8 @@ package cmd
 import (
 	"strings"
 
-	"libgo/protocol"
+	errs "memar/command/errors"
+	"memar/protocol"
 )
 
 // A FlagSet represents a set of defined fields
@@ -21,7 +22,7 @@ type FlagSet struct {
 // field names must be unique within a FlagSet. An attempt to define a flag whose
 // name is already in use will cause panic.
 //
-//libgo:impl libgo/protocol.ObjectLifeCycle
+//memar:impl memar/protocol.ObjectLifeCycle
 func (f *FlagSet) Init(ob protocol.Object, arguments []string) (err protocol.Error) {
 	f.object = ob
 	f.fields = ob.Fields()
@@ -101,8 +102,7 @@ func (f *FlagSet) Visit(fn func(protocol.DataType) (breaking bool)) {
 // Lookup returns the Field of the named flag, returning nil if none exists.
 func (f *FlagSet) Lookup(name string) protocol.DataType {
 	for _, field := range f.fields {
-		var fd = field.Detail(protocol.AppLanguage)
-		if fd.Name() == name || fd.Abbreviation() == name {
+		if field.Name() == name || field.Abbreviation() == name {
 			return field
 		}
 	}
@@ -113,7 +113,7 @@ func (f *FlagSet) Lookup(name string) protocol.DataType {
 func (f *FlagSet) Set(name, value string) (err protocol.Error) {
 	var flag = f.Lookup(name)
 	if flag == nil {
-		return &ErrFlagNotFound
+		return &errs.ErrFlagNotFound
 	}
 
 	err = flag.FromString(value)
@@ -128,7 +128,7 @@ func (f *FlagSet) checkFields() (err protocol.Error) {
 	var fieldsName = make([]string, 0, len(f.fields))
 
 	for _, field := range f.fields {
-		var fieldName = field.Detail(protocol.AppLanguage).Name()
+		var fieldName = field.Name()
 
 		// Flag must not begin "-" or contain "=".
 		if strings.HasPrefix(fieldName, "-") {
@@ -164,19 +164,19 @@ func (f *FlagSet) parseOne() (err protocol.Error) {
 
 	var s = f.args[0]
 	if len(s) < 2 || s[0] != '-' {
-		return &ErrFlagBadSyntax
+		return &errs.ErrFlagBadSyntax
 	}
 	var numMinuses = 1
 	if s[1] == '-' {
 		numMinuses++
 		if len(s) == 2 { // "--" terminates the flags
 			f.args = f.args[1:]
-			return &ErrFlagBadSyntax
+			return &errs.ErrFlagBadSyntax
 		}
 	}
 	var name = s[numMinuses:]
 	if len(name) == 0 || name[0] == '-' || name[0] == '=' {
-		return &ErrFlagBadSyntax
+		return &errs.ErrFlagBadSyntax
 	}
 
 	// it's a flag. does it have an argument?
@@ -200,7 +200,7 @@ func (f *FlagSet) checkAndSet(name, value string) (err protocol.Error) {
 	if !hasValue {
 		var flag = f.Lookup(name)
 		if flag == nil {
-			return &ErrFlagNotFound
+			return &errs.ErrFlagNotFound
 		}
 
 		var pf, ok = flag.(protocol.DataType_Primitive)
@@ -211,7 +211,7 @@ func (f *FlagSet) checkAndSet(name, value string) (err protocol.Error) {
 			hasValue = true
 			value, f.args = f.args[0], f.args[1:]
 		} else {
-			return &ErrFlagNeedsAnArgument
+			return &errs.ErrFlagNeedsAnArgument
 		}
 	}
 

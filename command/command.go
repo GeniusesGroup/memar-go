@@ -3,7 +3,8 @@
 package cmd
 
 import (
-	"libgo/protocol"
+	errs "memar/command/errors"
+	"memar/protocol"
 )
 
 type Command struct {
@@ -15,7 +16,7 @@ type Command struct {
 	subCommands []protocol.Command
 }
 
-//libgo:impl libgo/protocol.ObjectLifeCycle
+//memar:impl memar/protocol.ObjectLifeCycle
 func (c *Command) Init(parent protocol.Command, cmd ...protocol.Command) (err protocol.Error) {
 	c.parent = parent
 	// TODO::: check duplicate name usage
@@ -23,16 +24,15 @@ func (c *Command) Init(parent protocol.Command, cmd ...protocol.Command) (err pr
 	return
 }
 
-//libgo:impl libgo/protocol.Command
+//memar:impl memar/protocol.Command
 func (c *Command) Runnable() bool                  { return false }
 func (c *Command) Parent() protocol.Command        { return c.parent }
 func (c *Command) SubCommands() []protocol.Command { return c.subCommands }
 func (c *Command) SubCommand(name string) protocol.Command {
 	// TODO::: intelligent suggestion or correction
 	for _, cmd := range c.subCommands {
-		var cmdDetail = cmd.Detail(protocol.AppLanguage)
-		var cmdName = cmdDetail.Name()
-		var cmdAbbr = cmdDetail.Abbreviation()
+		var cmdName = cmd.Name()
+		var cmdAbbr = cmd.Abbreviation()
 
 		if cmdName == name {
 			return cmd
@@ -40,7 +40,7 @@ func (c *Command) SubCommand(name string) protocol.Command {
 		if cmdAbbr == name {
 			return cmd
 		}
-		for _, alias := range cmdDetail.Aliases() {
+		for _, alias := range cmd.Aliases() {
 			if alias == name {
 				return cmd
 			}
@@ -51,6 +51,6 @@ func (c *Command) SubCommand(name string) protocol.Command {
 
 // ServeCLI read and write to os.Stdin, os.Stdout, and os.Stderr files
 func (c *Command) ServeCLI() (err protocol.Error) {
-	err = &ErrServiceNotAcceptCLI
+	err = &errs.ErrServiceNotAcceptCLI
 	return
 }

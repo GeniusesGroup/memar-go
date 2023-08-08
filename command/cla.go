@@ -3,10 +3,10 @@
 package cmd
 
 import (
-	"libgo/protocol"
+	"memar/protocol"
 )
 
-// These functions are helper to implement libgo/protocol.CommandLineArguments easier.
+// These functions are helper to implement memar/protocol.CommandLineArguments easier.
 func FromCLA(object protocol.Object, arguments []string) (remaining []string, err protocol.Error) {
 	var flagSet FlagSet
 	flagSet.Init(object, arguments)
@@ -30,7 +30,7 @@ func ToCLA(object protocol.Object) (arguments []string, err protocol.Error) {
 		if fieldValue == "" {
 			continue
 		}
-		var fieldName = field.Detail(protocol.AppLanguage).Name()
+		var fieldName = field.Name()
 		arguments = append(arguments, fieldName)
 		arguments = append(arguments, fieldValue)
 	}

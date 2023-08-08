@@ -6,14 +6,14 @@ type InitReq struct {
 	name string
 }
 
-//libgo:impl protocol.Init_Request
+//memar:impl protocol.Init_Request
 func (req *InitReq) Name() string { return req.name }
 
-//libgo:impl libgo/protocol.Object
+//memar:impl memar/protocol.Object
 func (req *InitReq) Fields() []protocol.DataType   { return ... }
 func (req *InitReq) Methods() []protocol.DataType_Method { return ... }
 
-//libgo:impl libgo/protocol.CommandLineArguments
+//memar:impl memar/protocol.CommandLineArguments
 func (req *InitReq) FromCLA(arguments []string) (remaining []string, err protocol.Error) {
 	remaining, err = cmd.FromCLA(req, arguments)
 	return
@@ -51,7 +51,7 @@ type InitReq struct {
 	name string
 }
 
-//libgo:impl libgo/protocol.CommandLineArguments
+//memar:impl memar/protocol.CommandLineArguments
 func (req *InitReq) FromCLA(arguments []string) (remaining []string, err protocol.Error) {
 	var flagSet flag.FlagSet
 	// flagSet.Init("module.InitReq", flag.ContinueOnError)
