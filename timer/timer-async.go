@@ -6,10 +6,11 @@ import (
 	"strconv"
 	"unsafe"
 
-	"libgo/protocol"
-	"libgo/race"
-	"libgo/scheduler"
-	"libgo/time/monotonic"
+	"memar/protocol"
+	"memar/race"
+	"memar/scheduler"
+	"memar/time/monotonic"
+	errs "memar/timer/errors"
 )
 
 // NewAsync waits for the duration to elapse and then calls callback.
@@ -47,10 +48,10 @@ type Async struct {
 // Init initialize the timer with given callback function or make the channel and send signal on it
 // Be aware that given function must not be closure and must not block the caller.
 //
-//libgo:impl libgo/protocol.Timer
+//memar:impl memar/protocol.Timer
 func (t *Async) Init(callback protocol.TimerListener) (err protocol.Error) {
 	if t.callback != nil {
-		err = &ErrTimerAlreadyInit
+		err = &errs.ErrTimerAlreadyInit
 		return
 	}
 
@@ -58,7 +59,7 @@ func (t *Async) Init(callback protocol.TimerListener) (err protocol.Error) {
 	return
 }
 
-//libgo:impl libgo/protocol.SoftwareLifeCycle
+//memar:impl memar/protocol.SoftwareLifeCycle
 func (t *Async) Reinit(callback protocol.TimerListener) (err protocol.Error) {
 	// var status = t.status.Load()
 	// if !(status == protocol.TimerStatus_Unset || status == protocol.TimerStatus_Deleted) {
@@ -78,7 +79,7 @@ func (t *Async) Deinit() (err protocol.Error) {
 	return
 }
 
-//libgo:impl libgo/protocol.Timer
+//memar:impl memar/protocol.Timer
 func (t *Async) Status() (activeStatus protocol.TimerStatus) { return t.status.Load() }
 
 // Start adds the timer to the running cpu core timing.
@@ -86,27 +87,27 @@ func (t *Async) Status() (activeStatus protocol.TimerStatus) { return t.status.L
 // That avoids the risk of changing the when field of a timer in some P's heap,
 // which could cause the heap to become unsorted.
 //
-//libgo:impl libgo/protocol.Timer
+//memar:impl memar/protocol.Timer
 func (t *Async) Start(d protocol.Duration) (err protocol.Error) {
 	if t.callback == nil {
-		err = &ErrTimerNotInit
+		err = &errs.ErrTimerNotInit
 		return
 	}
 	// when must be positive. A negative value will cause ts.runTimer to
 	// overflow during its delta calculation and never expire other runtime timing.
 	// Zero will cause checkTimers to fail to notice the timer.
 	if d < 1 {
-		err = &ErrNegativeDuration
+		err = &errs.ErrNegativeDuration
 		return
 	}
 	var activeStatus = t.status.Load()
 	if activeStatus != protocol.TimerStatus_Unset || t.timing != nil {
-		err = &ErrTimerAlreadyStarted
+		err = &errs.ErrTimerAlreadyStarted
 		return
 	}
 
 	if !t.status.CompareAndSwap(protocol.TimerStatus_Unset, protocol.TimerStatus_Waiting) {
-		err = &ErrTimerRacyAccess
+		err = &errs.ErrTimerRacyAccess
 		return
 	}
 
@@ -124,10 +125,10 @@ func (t *Async) Start(d protocol.Duration) (err protocol.Error) {
 // We can only mark it as deleted. It will be removed in due course by the timing whose heap it is on.
 // Reports whether the timer was removed before it was run.
 //
-//libgo:impl libgo/protocol.Timer
+//memar:impl memar/protocol.Timer
 func (t *Async) Stop() (err protocol.Error) {
 	if t.callback == nil {
-		err = &ErrTimerNotInit
+		err = &errs.ErrTimerNotInit
 		return
 	}
 
@@ -136,7 +137,7 @@ func (t *Async) Stop() (err protocol.Error) {
 		activeStatus = t.status.Load()
 		switch activeStatus {
 		case protocol.TimerStatus_Unset:
-			err = &ErrTimerNotInit
+			err = &errs.ErrTimerNotInit
 			return
 		case protocol.TimerStatus_Waiting, protocol.TimerStatus_ModifiedLater, protocol.TimerStatus_ModifiedEarlier:
 			// Must fetch t.timing before changing status,
@@ -158,7 +159,7 @@ func (t *Async) Stop() (err protocol.Error) {
 			// Simultaneous calls to Reset(). Wait for the other call to complete.
 			scheduler.Yield(scheduler.Thread_WaitReason_Preempted)
 		default:
-			err = &ErrTimerBadStatus
+			err = &errs.ErrTimerBadStatus
 			return
 		}
 	}
@@ -168,17 +169,17 @@ func (t *Async) Stop() (err protocol.Error) {
 // It's OK to call Reset() on a newly allocated Timer.
 // Reports whether the timer was modified before it was run.
 //
-//libgo:impl libgo/protocol.Timer
+//memar:impl memar/protocol.Timer
 func (t *Async) Reset(d protocol.Duration) (err protocol.Error) {
 	// when must be positive. A negative value will cause ts.runTimer to
 	// overflow during its delta calculation and never expire other runtime timing.
 	// Zero will cause checkTimers to fail to notice the timer.
 	if d < 1 {
-		err = &ErrNegativeDuration
+		err = &errs.ErrNegativeDuration
 		return
 	}
 	if t.callback == nil {
-		err = &ErrTimerNotInit
+		err = &errs.ErrTimerNotInit
 		return
 	}
 
@@ -217,7 +218,7 @@ loop:
 			// Wait for the other call to complete.
 			scheduler.Yield(scheduler.Thread_WaitReason_Preempted)
 		default:
-			err = &ErrTimerBadStatus
+			err = &errs.ErrTimerBadStatus
 			return
 		}
 	}
@@ -232,7 +233,7 @@ loop:
 		t.timing = getActiveTiming()
 		t.timing.AddTimer(t)
 		if !t.status.CompareAndSwap(protocol.TimerStatus_Modifying, protocol.TimerStatus_Waiting) {
-			err = &ErrTimerRacyAccess
+			err = &errs.ErrTimerRacyAccess
 			// TODO::: Easily just return??
 			return
 		}
@@ -248,7 +249,7 @@ loop:
 
 		// Set the new status of the timer.
 		if !t.status.CompareAndSwap(protocol.TimerStatus_Modifying, newStatus) {
-			err = &ErrTimerRacyAccess
+			err = &errs.ErrTimerRacyAccess
 			// TODO::: Easily just return??
 			return
 		}
@@ -263,10 +264,10 @@ loop:
 // The durations must be greater than zero; if not, Tick() will panic.
 // Stop the ticker to release associated resources.
 //
-//libgo:impl libgo/protocol.Ticker
+//memar:impl memar/protocol.Ticker
 func (t *Async) Tick(first, interval protocol.Duration) (err protocol.Error) {
 	if first < 1 || interval < 1 {
-		err = &ErrNegativeDuration
+		err = &errs.ErrNegativeDuration
 		return
 	}
 	t.period = interval
@@ -274,7 +275,7 @@ func (t *Async) Tick(first, interval protocol.Duration) (err protocol.Error) {
 	return
 }
 
-//libgo:impl libgo/protocol.Stringer
+//memar:impl memar/protocol.Stringer
 func (t *Async) ToString() string {
 	var until = t.when.UntilNow()
 	var untilSecond = until / monotonic.Second

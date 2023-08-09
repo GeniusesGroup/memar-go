@@ -5,7 +5,7 @@ package timer
 import (
 	"sync"
 
-	"libgo/protocol"
+	"memar/protocol"
 )
 
 // Active timers live in the timers field as heap structure.
@@ -22,7 +22,7 @@ type timingHeap struct {
 	timers []timerBucketHeap
 }
 
-//libgo:impl libgo/protocol.SoftwareLifeCycle
+//memar:impl memar/protocol.SoftwareLifeCycle
 func (th *timingHeap) Init() (err protocol.Error) {
 	// TODO::: let application flow choose timers init cap or force it?
 	// th.timers = make([]timerBucketHeap, 1024)

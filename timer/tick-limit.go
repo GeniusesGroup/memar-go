@@ -3,12 +3,13 @@
 package timer
 
 import (
-	"libgo/protocol"
+	"memar/protocol"
+	errs "memar/timer/errors"
 )
 
 func NewLimitTicker(first, interval protocol.Duration, periodNumber int64) (t *LimitTicker, err protocol.Error) {
 	if periodNumber < 1 {
-		err = &ErrNegativePeriodNumber
+		err = &errs.ErrNegativePeriodNumber
 		return
 	}
 
@@ -28,7 +29,7 @@ type LimitTicker struct {
 	Sync
 }
 
-//libgo:impl libgo/protocol.Timer
+//memar:impl memar/protocol.Timer
 func (t *LimitTicker) Init() (err protocol.Error) {
 	// Give the channel a 1-element buffer.
 	// If the client falls behind while reading, we drop ticks

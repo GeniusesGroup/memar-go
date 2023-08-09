@@ -3,8 +3,8 @@
 package timer
 
 import (
-	"libgo/protocol"
-	"libgo/time/monotonic"
+	"memar/protocol"
+	"memar/time/monotonic"
 )
 
 // when is a helper function for setting the 'when' field of a Timer.

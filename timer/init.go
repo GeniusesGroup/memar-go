@@ -3,7 +3,7 @@
 package timer
 
 import (
-	"libgo/cpu"
+	"memar/cpu"
 	"runtime"
 )
 

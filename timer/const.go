@@ -3,7 +3,7 @@
 package timer
 
 import (
-	"libgo/time/monotonic"
+	"memar/time/monotonic"
 )
 
 // maxWhen is the maximum value for timer's when field.

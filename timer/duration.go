@@ -3,7 +3,7 @@
 package timer
 
 import (
-	"libgo/protocol"
+	"memar/protocol"
 )
 
 // Common durations.

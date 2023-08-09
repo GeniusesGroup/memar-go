@@ -3,8 +3,8 @@
 package timer
 
 import (
-	"libgo/protocol"
-	"libgo/scheduler"
+	"memar/protocol"
+	"memar/scheduler"
 )
 
 // Sleep pauses the execution of the current goroutine for at least the duration d.

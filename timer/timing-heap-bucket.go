@@ -3,8 +3,8 @@
 package timer
 
 import (
-	"libgo/protocol"
-	"libgo/time/monotonic"
+	"memar/protocol"
+	"memar/time/monotonic"
 )
 
 type timerBucketHeap struct {
@@ -15,7 +15,7 @@ type timerBucketHeap struct {
 	when monotonic.Time
 }
 
-//libgo:impl libgo/protocol.SoftwareLifeCycle
+//memar:impl memar/protocol.SoftwareLifeCycle
 func (tb *timerBucketHeap) Init() (err protocol.Error)   { return }
 func (tb *timerBucketHeap) Reinit() (err protocol.Error) { return }
 func (tb *timerBucketHeap) Deinit() (err protocol.Error) { tb.timer = nil; tb.when = 0; return }

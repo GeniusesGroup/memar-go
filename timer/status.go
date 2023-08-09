@@ -5,7 +5,7 @@ package timer
 import (
 	"sync/atomic"
 
-	"libgo/protocol"
+	"memar/protocol"
 )
 
 // timer.Start:

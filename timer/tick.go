@@ -3,7 +3,7 @@
 package timer
 
 import (
-	"libgo/protocol"
+	"memar/protocol"
 )
 
 // NewSyncTick is a convenience wrapper for SyncTimer.Tick() providing access to the ticking.
