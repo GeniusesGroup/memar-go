@@ -56,6 +56,7 @@ Some suggestion such as [change net package](https://github.com/golang/go/issues
 - https://github.com/google/gopacket/blob/master/layers/tcp.go
 - https://github.com/Samangan/go-tcp
 - https://github.com/mit-pdos/biscuit/blob/master/biscuit/src/inet/
+- https://github.com/jserv/nstack/
 
 ## Idea to improve TCP performance in kernel space
 - https://github.com/golang/go/issues/15735
