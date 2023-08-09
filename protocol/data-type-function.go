@@ -6,7 +6,7 @@ package protocol
 type DataType_Function interface {
 	// We believe fields MUST always access from inside the object,
 	// So we MUST have this method just in methods not fields.
-	Access() Object_Access
+	Access() DataType_Access
 
 	WhenToExecuted() // runtime, compile time
 

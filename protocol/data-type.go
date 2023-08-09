@@ -32,7 +32,7 @@ type DataType_Details interface {
 	ExpiryDate() Time
 	ExpireInFavorOf() DataType
 
-	Details
+	Detail
 }
 
 type DataType_DefaultValue[T any] interface {
