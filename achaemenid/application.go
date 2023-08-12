@@ -4,13 +4,13 @@ package achaemenid
 
 import (
 	"strconv"
-	"sync"
 
-	er "libgo/error"
-	"libgo/event"
-	"libgo/log"
-	"libgo/protocol"
-	"libgo/service"
+	"memar/errors"
+	"memar/event"
+	"memar/log"
+	"memar/net"
+	"memar/protocol"
+	"memar/service"
 )
 
 // App is the base object that use by other part of app and platforms.
@@ -19,39 +19,33 @@ var App app
 
 // app represents application (server or client) requirements data to serving some functionality such as networks, ...
 type app struct {
-	softwareStatus    protocol.SoftwareStatus
-	state             protocol.ApplicationState
-	stateListeners    []chan protocol.ApplicationState
-	stateChangeLocker sync.Mutex
+	softwareStatus protocol.SoftwareStatus
+	status
 
-	Manifest Manifest
+	manifest Manifest
 
 	Cryptography cryptography
 
-	log.Logger
 	service.SS
-	er.Errors
+	errors.Errors
 	event.EventTarget
-	netAppMux
+	net.PacketListener
 }
 
 func (app *app) Engine() protocol.ApplicationEngine      { return nil }
+func (app *app) Manifest() protocol.ApplicationManifest  { return &app.manifest }
 func (app *app) SoftwareStatus() protocol.SoftwareStatus { return app.softwareStatus }
-func (app *app) Status() protocol.ApplicationState       { return app.state }
-func (app *app) NotifyState(notifyBy chan protocol.ApplicationState) {
-	app.stateListeners = append(app.stateListeners, notifyBy)
-}
 
 // Init method use to initialize app object with default data in second phase.
 //
-//libgo:impl libgo/protocol.ObjectLifeCycle
+//memar:impl memar/protocol.ObjectLifeCycle
 func (app *app) Init() (err protocol.Error) {
-	defer app.PanicHandler()
+	defer log.PanicHandler()
 
-	protocol.App.Log(log.InfoEvent(&DefaultEvent_MediaType, `-----------------------------Achaemenid Application-----------------------------
-Try to initialize application...`))
+	log.Info(&domain, `-----------------------------Achaemenid Application-----------------------------
+Try to initialize application...`)
 
-	app.changeState(protocol.ApplicationState_Starting)
+	app.changeState(protocol.ApplicationStatus_Starting)
 
 	app.SS.Init()
 	app.Errors.Init()
@@ -62,20 +56,23 @@ Try to initialize application...`))
 
 	// Get UserGivenPermission from OS
 
-	app.Manifest.init()
-	app.Cryptography.init()
+	app.manifest.init()
+	err = app.Cryptography.init()
+	err = app.PacketListener.Init()
 	return
 }
 
 // Reinit or Reload use to reload application
-func (app *app) Reinit() {}
+func (app *app) Reinit() (err protocol.Error) {
+	return
+}
 
 // Deinit use to graceful stop app
 func (app *app) Deinit() (err protocol.Error) {
-	app.changeState(protocol.ApplicationState_Stopping)
-	protocol.App.Log(log.InfoEvent(&DefaultEvent_MediaType, "Waiting for app to finish and release process, It will take up to 60 seconds"))
+	app.changeState(protocol.ApplicationStatus_Stopping)
+	log.Info(&domain, "Waiting for app to finish and release process, It will take up to 60 seconds")
 
-	app.changeState(protocol.ApplicationState_Stopping)
+	app.changeState(protocol.ApplicationStatus_Stopping)
 
 	err = app.Cryptography.Deinit()
 	if err != nil {
@@ -86,28 +83,30 @@ func (app *app) Deinit() (err protocol.Error) {
 
 	// Wait to finish above logic, or kill app in --- second
 	// time.Sleep(10 * time.Second)
+
+	err = app.PacketListener.Deinit()
 	return
 }
 
-//libgo:impl libgo/protocol.OS_Signal_Listener
+//memar:impl memar/protocol.OS_Signal_Listener
 func (app *app) OsSignalHandler(signal protocol.OS_Signal) {
 	switch signal {
 	case protocol.OS_Signal_Interrupt, protocol.OS_Signal_Quit, protocol.OS_Signal_Terminated, protocol.OS_Signal_Killed:
-		protocol.App.Log(log.InfoEvent(&DefaultEvent_MediaType, "Caught signal to stop app"))
-		if app.Status() == protocol.ApplicationState_Running {
+		log.Info(&domain, "Caught signal to stop app")
+		if app.Status() == protocol.ApplicationStatus_Running {
 			go app.Deinit()
 		}
 	case protocol.OS_Signal_Urgent:
-		protocol.App.Log(log.WarnEvent(&DefaultEvent_MediaType, "Caught urgent I/O condition signal"))
+		log.Warn(&domain, "Caught urgent I/O condition signal")
 	case protocol.OS_Signal_Hangup:
-		protocol.App.Log(log.InfoEvent(&DefaultEvent_MediaType, "Caught signal to reload app"))
+		log.Info(&domain, "Caught signal to reload app")
 		app.Reinit()
 	case protocol.OS_Signal_Upgrade:
-		protocol.App.Log(log.InfoEvent(&DefaultEvent_MediaType, "Caught signal to update, upgrade and reload application"))
+		log.Info(&domain, "Caught signal to update, upgrade and reload application")
 		app.Upgrade()
 	default:
 		var msg = "Caught un-managed signal: " + strconv.Itoa(int(signal))
-		protocol.App.Log(log.WarnEvent(&DefaultEvent_MediaType, msg))
+		log.Warn(&domain, msg)
 	}
 }
 
@@ -117,14 +116,4 @@ func (app *app) Upgrade() {
 	// https://github.com/cloudflare/tableflip
 
 	app.Reinit()
-}
-
-func (app *app) changeState(state protocol.ApplicationState) {
-	app.stateChangeLocker.Lock()
-	defer app.stateChangeLocker.Unlock()
-	app.state = state
-	for _, listener := range app.stateListeners {
-		// TODO::: can be blocking if listener hasn't enough capacity buffer??
-		listener <- state
-	}
 }

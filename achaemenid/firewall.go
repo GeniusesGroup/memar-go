@@ -1,4 +1,4 @@
-/* For license and copyright information please see LEGAL file in repository */
+/* For license and copyright information please see the LEGAL file in the code repository */
 
 package achaemenid
 
@@ -10,4 +10,4 @@ package achaemenid
 // Send signal to gateway router to block Attacker IP addresses.
 
 // Each connection can use just by one device,
-// so if 2 device send packet on diffrent IP it means attack or mobile IP!!
+// so if 2 device send packet on different IP it means attack or mobile IP!!

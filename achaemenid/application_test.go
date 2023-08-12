@@ -3,7 +3,7 @@
 package achaemenid
 
 import (
-	"libgo/protocol"
+	"memar/protocol"
 )
 
 var _ protocol.Application = &App

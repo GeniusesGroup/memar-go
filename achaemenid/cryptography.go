@@ -3,8 +3,8 @@
 package achaemenid
 
 import (
-	"libgo/crypto"
-	"libgo/protocol"
+	"memar/crypto"
+	"memar/protocol"
 )
 
 // cryptography : Public-key for related domain.
