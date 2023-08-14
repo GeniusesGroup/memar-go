@@ -3,6 +3,10 @@
 package errors
 
 func init() {
+	errors.Init()
+}
+
+func init() {
 	ErrNotFound.Init()
 	ErrNotExist.Init()
 

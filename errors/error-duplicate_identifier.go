@@ -16,7 +16,7 @@ func (dt *errDuplicateIdentifier) Init() (err protocol.Error) {
 	if err != nil {
 		return
 	}
-	err = protocol.App.RegisterError(dt)
+	err = Register(dt)
 	return
 }
 
