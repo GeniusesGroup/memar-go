@@ -5,12 +5,10 @@ package achaemenid
 import (
 	"strconv"
 
-	"memar/errors"
 	"memar/event"
 	"memar/log"
 	"memar/net"
 	"memar/protocol"
-	"memar/service"
 )
 
 // App is the base object that use by other part of app and platforms.
@@ -26,9 +24,8 @@ type app struct {
 
 	Cryptography cryptography
 
-	service.SS
-	errors.Errors
 	event.EventTarget
+
 	net.PacketListener
 }
 
@@ -47,8 +44,6 @@ Try to initialize application...`)
 
 	app.changeState(protocol.ApplicationStatus_Starting)
 
-	app.SS.Init()
-	app.Errors.Init()
 	err = app.EventTarget.Init()
 	if err != nil {
 		return
