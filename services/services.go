@@ -18,40 +18,19 @@ func GetByMediaType(mt string) (ser protocol.Service, err protocol.Error) {
 	return services.GetByMediaType(mt)
 }
 
-var services services_
+	// TODO::: decide about poolSize by hardware
+const poolSizes = 512
+
+var services = services_{
+	poolByRegisterTime: make([]protocol.Service, poolSizes),
+	poolByID : make(map[protocol.ServiceID]protocol.Service, poolSizes),
+	poolByMediaType: make(map[string]protocol.Service, poolSizes),
+}
 
 type services_ struct {
 	poolByRegisterTime []protocol.Service
 	poolByID           map[protocol.ServiceID]protocol.Service
 	poolByMediaType    map[string]protocol.Service
-}
-
-// Init use to initialize
-func (ss *services_) Init() (err protocol.Error) {
-	const poolSizes = 512
-	// TODO::: decide about poolSize by hardware
-
-	ss.poolByRegisterTime = make([]protocol.Service, poolSizes)
-	ss.poolByID = make(map[protocol.ServiceID]protocol.Service, poolSizes)
-	ss.poolByMediaType = make(map[string]protocol.Service, poolSizes)
-	return
-}
-func (ss *services_) Reinit() (err protocol.Error) {
-	// TODO:::
-	// for _, s := range ss.poolByURIPath {
-	// 	s.Reinit()
-	// }
-	return
-}
-func (ss *services_) Deinit() (err protocol.Error) {
-	for _, s := range ss.poolByRegisterTime {
-		err = s.Deinit()
-		// TODO::: easily return if occur any error??
-		if err != nil {
-			return
-		}
-	}
-	return
 }
 
 // RegisterService use to register application services.
