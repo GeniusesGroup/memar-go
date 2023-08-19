@@ -3,7 +3,7 @@
 package log
 
 import (
-	"libgo/protocol"
+	"memar/protocol"
 )
 
 // Logger is default global protocol.Logger like window.console.log global variable in browsers.

@@ -5,11 +5,11 @@ package log
 import (
 	"runtime/debug"
 
-	"libgo/event"
-	"libgo/protocol"
+	"memar/event"
+	"memar/protocol"
 
-	// "libgo/syllab"
-	"libgo/time/unix"
+	// "memar/syllab"
+	"memar/time/unix"
 )
 
 // Event implement protocol.LogEvent
@@ -21,37 +21,37 @@ type Event struct {
 	stack   []byte
 }
 
-//libgo:impl libgo/protocol.LogEvent
+//memar:impl memar/protocol.LogEvent
 func (e *Event) Level() protocol.LogLevel { return e.level }
 func (e *Event) Message() string          { return e.message }
 func (e *Event) Stack() []byte            { return e.stack }
 
-//libgo:impl libgo/protocol.ObjectLifeCycle
-func (e *Event) Init(mediaType protocol.MediaType, level protocol.LogLevel, message string, stack bool) {
+//memar:impl memar/protocol.ObjectLifeCycle
+func (e *Event) Init(domain protocol.MediaType, level protocol.LogLevel, message string, stack bool) {
 	e.level = level
 	e.message = message
 	if stack {
 		e.stack = debug.Stack()
 	}
 	// TODO::: set NodeID???
-	e.Event.Init(mediaType, [16]byte{}, unix.Now())
+	e.Event.Init(domain, [16]byte{}, unix.Now())
 }
 
-//libgo:impl libgo/protocol.Codec
-func (e *Event) MediaType() protocol.MediaType       { return e.Event.MediaType() }
+//memar:impl memar/protocol.Codec
+func (e *Event) MediaType() protocol.MediaType       { return e.Event.Domain() }
 func (e *Event) CompressType() protocol.CompressType { return nil }
 
-//libgo:impl libgo/protocol.Decoder
+//memar:impl memar/protocol.Decoder
 func (e *Event) Decode(source protocol.Codec) (n int, err protocol.Error) {
 	return
 }
 
-//libgo:impl libgo/protocol.Encoder
+//memar:impl memar/protocol.Encoder
 func (e *Event) Encode(destination protocol.Codec) (n int, err protocol.Error) {
 	return
 }
 
-//libgo:impl libgo/protocol.Unmarshaler
+//memar:impl memar/protocol.Unmarshaler
 func (e *Event) Unmarshal(data []byte) (n int, err protocol.Error) {
 	return
 }
@@ -59,7 +59,7 @@ func (e *Event) UnmarshalFrom(data []byte) (remaining []byte, err protocol.Error
 	return
 }
 
-//libgo:impl libgo/protocol.Marshaler
+//memar:impl memar/protocol.Marshaler
 func (e *Event) Marshal() (data []byte, err protocol.Error) {
 	return
 }
@@ -67,10 +67,10 @@ func (e *Event) MarshalTo(data []byte) (added []byte, err protocol.Error) {
 	return
 }
 
-//libgo:impl libgo/protocol.Len
+//memar:impl memar/protocol.Len
 func (e *Event) Len() int { return 0 }
 
-//libgo:impl libgo/protocol.Syllab
+//memar:impl memar/protocol.Syllab
 func (e *Event) CheckSyllab(payload []byte) (err protocol.Error) {
 	if len(payload) < int(e.LenOfSyllabStack()) {
 		// err = &syllab.ErrShortArrayDecode

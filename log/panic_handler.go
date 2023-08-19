@@ -5,7 +5,7 @@ package log
 import (
 	"fmt"
 
-	"libgo/protocol"
+	"memar/protocol"
 )
 
 // PanicHandler recover from panics if exist to prevent app stop.
@@ -20,15 +20,15 @@ func PanicHandler() {
 		case protocol.Error:
 			logEvent = ErrorEvent(message, message.ToString())
 		case error:
-			logEvent = ErrorEvent(&DefaultEvent_MediaType, message.Error())
+			logEvent = ErrorEvent(&domain, message.Error())
 		case string:
-			logEvent = ErrorEvent(&DefaultEvent_MediaType, message)
+			logEvent = ErrorEvent(&domain, message)
 		case protocol.Stringer:
-			logEvent = ErrorEvent(&DefaultEvent_MediaType, message.ToString())
+			logEvent = ErrorEvent(&domain, message.ToString())
 		case fmt.Stringer:
-			logEvent = ErrorEvent(&DefaultEvent_MediaType, message.String())
+			logEvent = ErrorEvent(&domain, message.String())
 		default:
-			logEvent = ErrorEvent(&DefaultEvent_MediaType, fmt.Sprint(r))
+			logEvent = ErrorEvent(&domain, fmt.Sprint(r))
 		}
 		Logger.Log(logEvent)
 	}

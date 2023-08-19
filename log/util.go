@@ -5,7 +5,7 @@ package log
 import (
 	"runtime"
 
-	"libgo/protocol"
+	"memar/protocol"
 )
 
 func CheckLevelEnabled(level protocol.LogLevel) bool {

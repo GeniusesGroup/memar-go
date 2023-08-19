@@ -30,9 +30,15 @@ type Logger interface {
 type LogEvent interface {
 	Event
 
-	Level() LogLevel //
-	Message() string // save formatted data e.g. fmt.Sprintf("Panic Exception: %s\nDebug Stack: %s", r, debug.Stack())
-	Stack() []byte   // if log need to trace, specially in panic situation. Default fill by `debug.Stack()`
+	Level() LogLevel
+
+	// Log don't provide or suggest methods like Printf(format string, v ...interface{}) to writes a formatted message,
+	// That must use some runtime logic e.g. fmt.Sprintf("Panic Exception: %s\nDebug Stack: %s", r, debug.Stack()).
+	// Strongly suggest prepare formatted data in compile time by implement Stringer in desire type that provide this LogEvent.
+	Message() string
+
+	 // if log need to trace, specially in panic situation. Default fill by `debug.Stack()`
+	Stack() []byte
 
 	Codec
 }

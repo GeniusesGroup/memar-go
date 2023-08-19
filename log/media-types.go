@@ -3,34 +3,33 @@
 package log
 
 import (
-	"libgo/detail"
-	"libgo/mediatype"
-	"libgo/protocol"
+	"memar/datatype"
+	"memar/mediatype"
+	"memar/protocol"
 )
 
 var (
-	DefaultEvent_MediaType mediaType
+	domain domain_
 )
 
 func init() {
-	DefaultEvent_MediaType.Init("domain/libgo.scm.geniuses.group; package=log; type=event; name=default")
+	domain.Init()
 }
 
-type mediaType struct {
-	detail.DS
+type domain_ struct {
+	datatype.DataType
 	mediatype.MT
 }
 
-//libgo:impl libgo/protocol.MediaType
-func (m *mediaType) FileExtension() string           { return "" }
-func (m *mediaType) Status() protocol.SoftwareStatus { return protocol.Software_PreAlpha }
-func (m *mediaType) ReferenceURI() string {
-	return ""
+//memar:impl memar/protocol.ObjectLifeCycle
+func (dt *domain_) Init() (err protocol.Error) {
+	err = dt.MT.Init("domain/memar.scm.geniuses.group; package=log")
+	return
 }
-func (m *mediaType) IssueDate() protocol.Time            { return nil }
-func (m *mediaType) ExpiryDate() protocol.Time           { return nil }
-func (m *mediaType) ExpireInFavorOf() protocol.MediaType { return nil }
 
-//libgo:impl libgo/protocol.Object
-func (m *mediaType) Fields() []protocol.Object_Member_Field   { return nil }
-func (m *mediaType) Methods() []protocol.Object_Member_Method { return nil }
+//memar:impl memar/protocol.DataType_Details
+func (dt *domain_) Status() protocol.SoftwareStatus    { return protocol.Software_PreAlpha }
+func (dt *domain_) ReferenceURI() string               { return "" }
+func (dt *domain_) IssueDate() protocol.Time           { return nil }
+func (dt *domain_) ExpiryDate() protocol.Time          { return nil }
+func (dt *domain_) ExpireInFavorOf() protocol.DataType { return nil }
