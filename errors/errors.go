@@ -11,24 +11,14 @@ func UnRegister(er protocol.Error) (err protocol.Error)    { return errors.UnReg
 func GetByID(id protocol.MediaTypeID) (err protocol.Error) { return errors.GetByID(id) }
 func GetByMediaType(mt string) (err protocol.Error)        { return errors.GetByMediaType(mt) }
 
-var errors errors_
+var errors = errors_{
+	poolByID: make(map[protocol.MediaTypeID]protocol.Error, 256),
+	poolByMediaType: make(map[string]protocol.Error, 256),
+}
 
 type errors_ struct {
 	poolByID        map[protocol.MediaTypeID]protocol.Error
 	poolByMediaType map[string]protocol.Error
-}
-
-//memar:impl memar/protocol.ObjectLifeCycle
-func (e *errors_) Init() (err protocol.Error) {
-	e.poolByID = make(map[protocol.MediaTypeID]protocol.Error, 256)
-	e.poolByMediaType = make(map[string]protocol.Error, 256)
-	return
-}
-func (e *errors_) Reinit() (err protocol.Error) {
-	return
-}
-func (e *errors_) Deinit() (err protocol.Error) {
-	return
 }
 
 func (e *errors_) Register(errorToRegister protocol.Error) (err protocol.Error) {
