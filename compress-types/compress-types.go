@@ -1,75 +1,86 @@
-/* For license and copyright information please see LEGAL file in repository */
+/* For license and copyright information please see the LEGAL file in the code repository */
 
-package compress
+package cts
 
 import (
-	"../protocol"
+	errs "memar/compress-types/errors"
+	"memar/protocol"
 )
 
-// CompressTypes store all compress types to use by anyone want protocol.CompressTypes
-type CompressTypes struct{}
+var cts = compressTypes{
+	poolByID:              map[protocol.ID]protocol.CompressType{},
+	poolByMediaType:       map[string]protocol.CompressType{},
+	poolByFileExtension:   map[string]protocol.CompressType{},
+	poolByContentEncoding: map[string]protocol.CompressType{},
+}
+
+func Register(ct protocol.CompressType) (err protocol.Error)                { return cts.Register(ct) }
+func GetByID(id protocol.ID) (ct protocol.CompressType, err protocol.Error) { return cts.GetByID(id) }
+func GetByMediaType(mt string) (ct protocol.CompressType, err protocol.Error) {
+	return cts.GetByMediaType(mt)
+}
+func GetByFileExtension(ex string) (ct protocol.CompressType, err protocol.Error) {
+	return cts.GetByFileExtension(ex)
+}
+func GetByContentEncoding(ce string) (ct protocol.CompressType, err protocol.Error) {
+	return cts.GetByContentEncoding(ce)
+}
+func ContentEncodings() []string { return cts.ContentEncodings() }
+
+type compressTypes struct {
+	poolByID              map[protocol.ID]protocol.CompressType
+	poolByMediaType       map[string]protocol.CompressType
+	poolByFileExtension   map[string]protocol.CompressType
+	poolByContentEncoding map[string]protocol.CompressType
+	contentEncodings      []string
+}
 
 // RegisterCompressType register given CompressType
-func (cts *CompressTypes) RegisterCompressType(ct protocol.CompressType) {
+func (cts *compressTypes) Register(ct protocol.CompressType) (err protocol.Error) {
+	// TODO::: change panics to error
 	if ct.MediaType() == nil {
 		panic("CompressType doesn't has a valid MediaType. Can't register it.")
 	}
 	if ct.ContentEncoding() == "" {
 		panic("CompressType doesn't has a valid ContentEncoding. Can't register it.")
 	}
-	register(ct)
-}
 
-func (cts *CompressTypes) GetCompressTypeByID(id uint64) (ct protocol.CompressType, err protocol.Error) {
-	ct = ByID(id)
-	if ct == nil {
-		err = ErrNotFound
-	}
-	return
-}
-func (cts *CompressTypes) GetCompressTypeByMediaType(mt string) (ct protocol.CompressType, err protocol.Error) {
-	ct = ByMediaType(mt)
-	if ct == nil {
-		err = ErrNotFound
-	}
-	return
-}
-func (cts *CompressTypes) GetCompressTypeByFileExtension(ex string) (ct protocol.CompressType, err protocol.Error) {
-	ct = ByFileExtension(ex)
-	if ct == nil {
-		err = ErrNotFound
-	}
-	return
-}
-func (cts *CompressTypes) GetCompressTypeByContentEncoding(ce string) (ct protocol.CompressType, err protocol.Error) {
-	ct = ByContentEncoding(ce)
-	if ct == nil {
-		err = ErrNotFound
-	}
-	return
-}
-func (cts *CompressTypes) ContentEncodings() []string { return contentEncodings }
-
-var (
-	poolByID              = map[uint64]protocol.CompressType{}
-	poolByMediaType       = map[string]protocol.CompressType{}
-	poolByFileExtension   = map[string]protocol.CompressType{}
-	poolByContentEncoding = map[string]protocol.CompressType{}
-	contentEncodings      []string
-)
-
-func ByID(id uint64) protocol.CompressType              { return poolByID[id] }
-func ByMediaType(mt string) protocol.CompressType       { return poolByMediaType[mt] }
-func ByFileExtension(ex string) protocol.CompressType   { return poolByFileExtension[ex] }
-func ByContentEncoding(ce string) protocol.CompressType { return poolByContentEncoding[ce] }
-func ContentEncodings() []string                        { return contentEncodings }
-
-func register(ct protocol.CompressType) {
 	// TODO::: lock??
-	poolByID[ct.MediaType().ID()] = ct
-	poolByMediaType[ct.MediaType().MediaType()] = ct
-	poolByFileExtension[ct.FileExtension()] = ct
+	cts.poolByID[ct.MediaType().ID()] = ct
+	cts.poolByMediaType[ct.MediaType().ToString()] = ct
+	cts.poolByFileExtension[ct.FileExtension()] = ct
 	var ce = ct.ContentEncoding()
-	poolByContentEncoding[ce] = ct
-	contentEncodings = append(contentEncodings, ce)
+	cts.poolByContentEncoding[ce] = ct
+	cts.contentEncodings = append(cts.contentEncodings, ce)
+	return
 }
+
+func (cts *compressTypes) GetByID(id protocol.ID) (ct protocol.CompressType, err protocol.Error) {
+	ct = cts.poolByID[id]
+	if ct == nil {
+		err = &errs.ErrNotFound
+	}
+	return
+}
+func (cts *compressTypes) GetByMediaType(mt string) (ct protocol.CompressType, err protocol.Error) {
+	ct = cts.poolByMediaType[mt]
+	if ct == nil {
+		err = &errs.ErrNotFound
+	}
+	return
+}
+func (cts *compressTypes) GetByFileExtension(ex string) (ct protocol.CompressType, err protocol.Error) {
+	ct = cts.poolByFileExtension[ex]
+	if ct == nil {
+		err = &errs.ErrNotFound
+	}
+	return
+}
+func (cts *compressTypes) GetByContentEncoding(ce string) (ct protocol.CompressType, err protocol.Error) {
+	ct = cts.poolByContentEncoding[ce]
+	if ct == nil {
+		err = &errs.ErrNotFound
+	}
+	return
+}
+func (cts *compressTypes) ContentEncodings() []string { return cts.contentEncodings }
