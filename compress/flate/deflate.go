@@ -1,11 +1,11 @@
-/* For license and copyright information please see LEGAL file in repository */
+/* For license and copyright information please see the LEGAL file in the code repository */
 
 package flate
 
 import (
-	compress ".."
-	"../../mediatype"
-	"../../protocol"
+	"memar/datatype"
+	"memar/mediatype"
+	"memar/protocol"
 )
 
 const (
@@ -13,41 +13,40 @@ const (
 	Extension       = "zz"
 )
 
-var Deflate = deflate{
-	CompressType: compress.New(ContentEncoding, mediatype.New("domain/deflate.protocol.data-structure").SetFileExtension(Extension)),
-}
+var Deflate deflate
 
 type deflate struct {
-	*compress.CompressType
+	datatype.DataType
+	mediatype.MT
 }
 
+//memar:impl memar/protocol.ObjectLifeCycle
+func (d *deflate) Init() (err protocol.Error) {
+	err = d.MT.Init("application/deflate")
+	return
+}
+
+//memar:impl memar/protocol.DataType_Details
+func (d *deflate) Status() protocol.SoftwareStatus    { return protocol.Software_StableRelease }
+func (d *deflate) ReferenceURI() string               { return "" }
+func (d *deflate) IssueDate() protocol.Time           { return nil }
+func (d *deflate) ExpiryDate() protocol.Time          { return nil }
+func (d *deflate) ExpireInFavorOf() protocol.DataType { return nil }
+
+//memar:impl memar/protocol.MediaType
+func (d *deflate) FileExtension() string { return Extension }
+
+//memar:impl memar/protocol.CompressType
+func (d *deflate) ContentEncoding() string { return ContentEncoding }
 func (d *deflate) Compress(raw protocol.Codec, options protocol.CompressOptions) (compressed protocol.Codec, err protocol.Error) {
-	compressed = &Compressor{
-		source:  raw,
-		options: options,
-	}
+	var com Compressor
+	err = com.Init(raw, options)
+	compressed = &com
 	return
 }
-func (d *deflate) CompressBySlice(raw []byte, options protocol.CompressOptions) (compressed protocol.Codec, err protocol.Error) {
-	// TODO:::
-	return
-}
-func (d *deflate) CompressByReader(raw protocol.Reader, options protocol.CompressOptions) (compressed protocol.Codec, err protocol.Error) {
-	// TODO:::
-	return
-}
-
 func (d *deflate) Decompress(compressed protocol.Codec) (raw protocol.Codec, err protocol.Error) {
-	raw = &Decompressor{
-		source: compressed,
-	}
-	return
-}
-func (d *deflate) DecompressFromSlice(compressed []byte) (raw protocol.Codec, err protocol.Error) {
-	// TODO:::
-	return
-}
-func (d *deflate) DecompressFromReader(compressed protocol.Reader, compressedLen int) (raw protocol.Codec, err protocol.Error) {
-	// TODO:::
+	var dec Decompressor
+	err = dec.Init(compressed)
+	raw = &dec
 	return
 }

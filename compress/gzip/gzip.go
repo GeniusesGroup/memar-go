@@ -1,58 +1,52 @@
-/* For license and copyright information please see LEGAL file in repository */
+/* For license and copyright information please see the LEGAL file in the code repository */
 
 package gzip
 
 import (
-	compress ".."
-	"../../mediatype"
-	"../../protocol"
+	"memar/datatype"
+	"memar/mediatype"
+	"memar/protocol"
 )
 
 const (
-	GZIPContentEncoding = "gzip"
-	GZIPExtension       = "gzip"
+	ContentEncoding = "gzip"
+	Extension       = "gzip"
 )
 
-var GZIP = gzip{
-	CompressType: compress.New(GZIPContentEncoding, mediatype.New("domain/gzip.protocol.data-structure").SetFileExtension(GZIPExtension)),
-}
+var GZIP gzip
 
 type gzip struct {
-	*compress.CompressType
+	datatype.DataType
+	mediatype.MT
 }
 
+//memar:impl memar/protocol.ObjectLifeCycle
+func (g *gzip) Init() (err protocol.Error) {
+	err = g.MT.Init("application/gzip")
+	return
+}
+
+//memar:impl memar/protocol.DataType_Details
+func (g *gzip) Status() protocol.SoftwareStatus    { return protocol.Software_StableRelease }
+func (g *gzip) ReferenceURI() string               { return "" }
+func (g *gzip) IssueDate() protocol.Time           { return nil }
+func (g *gzip) ExpiryDate() protocol.Time          { return nil }
+func (g *gzip) ExpireInFavorOf() protocol.DataType { return nil }
+
+//memar:impl memar/protocol.MediaType
+func (g *gzip) FileExtension() string { return Extension }
+
+//memar:impl memar/protocol.CompressType
+func (g *gzip) ContentEncoding() string { return ContentEncoding }
 func (g *gzip) Compress(raw protocol.Codec, options protocol.CompressOptions) (compressed protocol.Codec, err protocol.Error) {
-	compressed = &Compressor{
-		source:  raw,
-		options: options,
-	}
+	var com Compressor
+	err = com.Init(raw, options)
+	compressed = &com
 	return
 }
-func (g *gzip) CompressBySlice(raw []byte, options protocol.CompressOptions) (compressed protocol.Codec, err protocol.Error) {
-	// TODO:::
-	return
-}
-func (g *gzip) CompressByReader(raw protocol.Reader, options protocol.CompressOptions) (compressed protocol.Codec, err protocol.Error) {
-	// TODO:::
-	return
-}
-
 func (g *gzip) Decompress(compressed protocol.Codec) (raw protocol.Codec, err protocol.Error) {
-	var gzipDecoder Decompressor
-	gzipDecoder.initByCodec(compressed)
-	raw = &gzipDecoder
-	return
-}
-func (g *gzip) DecompressFromSlice(compressed []byte) (raw protocol.Codec, err protocol.Error) {
-	var gzipDecoder Decompressor
-	err = gzipDecoder.Unmarshal(compressed)
-	raw = &gzipDecoder
-	return
-}
-func (g *gzip) DecompressFromReader(compressed protocol.Reader, compressedLen int) (raw protocol.Codec, err protocol.Error) {
-	var gzipDecoder Decompressor
-	gzipDecoder.comLen = compressedLen
-	err = gzipDecoder.Decode(compressed)
-	raw = &gzipDecoder
+	var dec Decompressor
+	err = dec.Init(compressed)
+	raw = &dec
 	return
 }

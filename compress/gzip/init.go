@@ -1,14 +1,12 @@
-/* For license and copyright information please see LEGAL file in repository */
+/* For license and copyright information please see the LEGAL file in the code repository */
 
 package gzip
 
 import (
-	"../../protocol"
+	cts "memar/compress-types"
 )
 
 func init() {
-	// Check due to os can be nil almost in tests and benchmarks build
-	if protocol.OS != nil {
-		protocol.OS.RegisterCompressType(&GZIP)
-	}
+	GZIP.Init()
+	cts.Register(&GZIP)
 }
