@@ -38,7 +38,7 @@ type compressTypes struct {
 // RegisterCompressType register given CompressType
 func (cts *compressTypes) Register(ct protocol.CompressType) (err protocol.Error) {
 	// TODO::: change panics to error
-	if ct.MediaType() == nil {
+	if ct.MediaType() == "" {
 		panic("CompressType doesn't has a valid MediaType. Can't register it.")
 	}
 	if ct.ContentEncoding() == "" {
@@ -46,8 +46,8 @@ func (cts *compressTypes) Register(ct protocol.CompressType) (err protocol.Error
 	}
 
 	// TODO::: lock??
-	cts.poolByID[ct.MediaType().ID()] = ct
-	cts.poolByMediaType[ct.MediaType().ToString()] = ct
+	cts.poolByID[ct.ID()] = ct
+	cts.poolByMediaType[ct.ToString()] = ct
 	cts.poolByFileExtension[ct.FileExtension()] = ct
 	var ce = ct.ContentEncoding()
 	cts.poolByContentEncoding[ce] = ct
