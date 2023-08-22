@@ -5,8 +5,10 @@ package main
 import (
 	"os"
 
-	"libgo/modules"
+	"memar/modules"
 )
+
+// TODO::: act as a server??
 
 func init() {
 	modules.RootCommand.Init()
