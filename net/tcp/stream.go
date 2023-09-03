@@ -11,11 +11,9 @@ import (
 // Because each stream methods just call by a fixed worker on same CPU core in sync order, don't need to lock or changed atomic any field
 type Stream struct {
 	// connection      protocol.Connection
-	sk              protocol.Socket
-	mtu             int
-	mss             int    // Max Segment Length
-	sourcePort      uint16 // local
-	destinationPort uint16 // remote
+	sk  protocol.Socket
+	mtu int
+	mss int // Max Segment Length
 
 	// just store last send or receive segment not read or write to.
 	lastUse monotonic.Time
@@ -25,6 +23,7 @@ type Stream struct {
 	timing
 	send
 	recv
+	port
 
 	// Stream use to send or receive data on specific connection.
 	// It can pass to logic layer to give data access to developer!
@@ -46,7 +45,7 @@ type Stream struct {
 // Init use to initialize the stream after allocation in both server or client
 //
 //memar:impl memar/protocol.ObjectLifeCycle
-func (s *Stream) Init(timeout protocol.Duration) (err protocol.Error) {
+func (s *Stream) Init(timeout protocol.Duration, cca CCA) (err protocol.Error) {
 	// TODO:::
 	s.mss = CNF_Segment_MaxSize
 	s.status.Init(StreamStatus_Listen)

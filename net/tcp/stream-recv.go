@@ -5,13 +5,10 @@ package tcp
 import (
 	"memar/buffer"
 	"memar/protocol"
-	"memar/timer"
 )
 
 // recv is receive sequence space
 type recv struct {
-	readTimer timer.Sync // read deadline timer
-
 	next uint32 // receive next
 	wnd  uint16 // receive window
 	up   bool   // receive urgent pointer
@@ -28,8 +25,6 @@ type recv struct {
 func (r *recv) Init(timeout protocol.Duration) (err protocol.Error) {
 	r.flag = make(chan flag, 1) // 1 buffer slot??
 
-	err = r.readTimer.Init()
-	err = r.readTimer.Start(timeout)
 
 	// TODO:::
 	return
@@ -40,7 +35,6 @@ func (r *recv) Reinit() (err protocol.Error) {
 }
 func (r *recv) Deinit() (err protocol.Error) {
 	// TODO:::
-	err = r.readTimer.Deinit()
 	return
 }
 

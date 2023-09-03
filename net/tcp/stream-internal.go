@@ -226,17 +226,14 @@ loop:
 		select {
 		// TODO::: if buffer not full but before get push flag go to full state??
 		// I think we must send custom package level flag here when process last segment change buffer state to full.
-		case <-s.readTimer.Signal():
-			// TODO:::
-			// break
 		case flag := <-s.recv.flag:
 			switch flag {
 			case flag_FIN:
-				s.readTimer.Stop()
+				// s.readTimer.Stop()
 				// err = TODO:::
 				break loop
 			case flag_RST:
-				s.readTimer.Stop()
+				// s.readTimer.Stop()
 				// err = TODO:::
 				break loop
 			case flag_PSH, flag_URG:

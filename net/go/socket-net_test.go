@@ -1,25 +1,25 @@
 /* For license and copyright information please see the LEGAL file in the code repository */
 
-package tcp
+package net
 
 import (
 	"testing"
 )
 
-func TestStream_Read(t *testing.T) {
+func TestSocket_Read(t *testing.T) {
 	type args struct {
 		b []byte
 	}
 	tests := []struct {
 		name    string
-		s       *Stream
+		s       *Socket
 		args    args
 		wantN   int
 		wantErr bool
 	}{
 		{
 			name: "buffer full and return",
-			s: &Stream{
+			s: &Socket{
 				recv: recv{
 					// buf: buffer.Queue{},
 				},
@@ -32,7 +32,7 @@ func TestStream_Read(t *testing.T) {
 		},
 		{
 			name: "buffer not full and timer based",
-			s: &Stream{
+			s: &Socket{
 				recv: recv{
 					// readTimer: timer.Timer{},
 					// buf: buffer.Queue{},
@@ -46,7 +46,7 @@ func TestStream_Read(t *testing.T) {
 		},
 		{
 			name: "buffer not full and signal based",
-			s: &Stream{
+			s: &Socket{
 				recv: recv{
 					// readTimer: timer.Timer{},
 					// buf: buffer.Queue{},
@@ -76,11 +76,11 @@ func TestStream_Read(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			gotN, err := tt.s.Read(tt.args.b)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("Stream.Read() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("Socket.Read() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if gotN != tt.wantN {
-				t.Errorf("Stream.Read() = %v, want %v", gotN, tt.wantN)
+				t.Errorf("Socket.Read() = %v, want %v", gotN, tt.wantN)
 			}
 		})
 	}

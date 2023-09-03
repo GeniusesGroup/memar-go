@@ -4,13 +4,10 @@ package tcp
 
 import (
 	"memar/protocol"
-	"memar/timer"
 )
 
 // send as Send Sequence Space
 type send struct {
-	writeTimer timer.Sync // write deadline timer
-
 	una  uint32 // send unacknowledged
 	next uint32
 	wnd  uint16 // send window
@@ -23,9 +20,6 @@ type send struct {
 
 //memar:impl memar/protocol.ObjectLifeCycle
 func (s *send) Init(timeout protocol.Duration) (err protocol.Error) {
-	err = s.writeTimer.Init()
-	err = s.writeTimer.Start(timeout)
-
 	// TODO:::
 	return
 }
@@ -35,6 +29,5 @@ func (s *send) Reinit() (err protocol.Error) {
 }
 func (s *send) Deinit() (err protocol.Error) {
 	// TODO:::
-	err = s.writeTimer.Deinit()
 	return
 }
