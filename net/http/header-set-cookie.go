@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"memar/convert"
+	errs "memar/net/http/errors"
 	"memar/protocol"
 )
 
@@ -284,7 +285,7 @@ func sanitizeCookiePath(v string) (path string, err protocol.Error) {
 		if 0x20 <= b && b < 0x7f {
 			buf = append(buf, b)
 		} else {
-			err = &ErrCookieBadPath
+			err = &errs.ErrCookieBadPath
 		}
 	}
 	path = convert.UnsafeByteSliceToString(buf)
@@ -296,7 +297,7 @@ func sanitizeCookiePath(v string) (path string, err protocol.Error) {
 func sanitizeCookieDomain(d string) (domain string, err protocol.Error) {
 	var ln = len(d)
 	if ln == 0 || ln > 255 {
-		return domain, &ErrCookieBadDomain
+		return domain, &errs.ErrCookieBadDomain
 	}
 
 	// A cookie a domain attribute may start with a leading dot.
@@ -312,7 +313,7 @@ func sanitizeCookieDomain(d string) (domain string, err protocol.Error) {
 		b = d[i]
 		switch {
 		default:
-			return domain, &ErrCookieBadDomain
+			return domain, &errs.ErrCookieBadDomain
 		case 'a' <= b && b <= 'z' || 'A' <= b && b <= 'Z':
 			// No '_' allowed here (in contrast to package net).
 			partlen++
@@ -322,16 +323,16 @@ func sanitizeCookieDomain(d string) (domain string, err protocol.Error) {
 		case b == '-':
 			// Byte before dash cannot be dot.
 			if last == '.' {
-				return domain, &ErrCookieBadDomain
+				return domain, &errs.ErrCookieBadDomain
 			}
 			partlen++
 		case b == '.':
 			// Byte before dot cannot be dot or dash.
 			if last == '.' || last == '-' {
-				return domain, &ErrCookieBadDomain
+				return domain, &errs.ErrCookieBadDomain
 			}
 			if partlen > 63 || partlen == 0 {
-				return domain, &ErrCookieBadDomain
+				return domain, &errs.ErrCookieBadDomain
 			}
 			partlen = 0
 		}
@@ -346,5 +347,5 @@ func sanitizeCookieDomain(d string) (domain string, err protocol.Error) {
 		return d, err
 	}
 
-	return domain, &ErrCookieBadDomain
+	return domain, &errs.ErrCookieBadDomain
 }

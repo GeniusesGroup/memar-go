@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"memar/convert"
+	errs "memar/net/http/errors"
 	"memar/protocol"
 )
 
@@ -125,7 +126,7 @@ func sanitizeCookieName(n string) (name string, err protocol.Error) {
 		b = n[i]
 		if b == '\n' || b == '\r' {
 			buf = append(buf, '-')
-			err = &ErrCookieBadName
+			err = &errs.ErrCookieBadName
 		} else {
 			buf = append(buf, b)
 		}
@@ -152,7 +153,7 @@ func sanitizeCookieValue(v string) (value string, err protocol.Error) {
 		if 0x20 <= b && b < 0x7f && b != ' ' && b != '"' && b != ',' && b != '\\' {
 			buf = append(buf, b)
 		} else {
-			err = &ErrCookieBadValue
+			err = &errs.ErrCookieBadValue
 		}
 	}
 	value = convert.UnsafeByteSliceToString(buf)

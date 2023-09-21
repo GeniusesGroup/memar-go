@@ -2,18 +2,13 @@
 
 package http
 
-/*
-				********************PAY ATTENTION:*******************
-	We believe HTTP version 2 and above are new protocol not new version of HTTP.
-	So we don't support HTTP2 and HTTP3 specs in this package.
-*/
-
 const (
-	// PacketLen is minimum Packet length of HTTP Packet.
-	PacketLen = 64
-
-	// MaxHTTPHeaderSize is max HTTP header size.
-	MaxHTTPHeaderSize = 8192
+	Length_Min_Packet     = 64
+	Length_Max_Header     = 8192
+	Length_Max_StatusCode = 4 // plus one for ' ' character after method name.
+	// Due to RFC(https://datatracker.ietf.org/doc/html/rfc2616#section-6.1.1) can't indicate phrase max length
+	Length_Max_VersionMaxLength = 9 // plus one for ' ' or '\r' character after method name.
+	Length_Max_MethodMaxLength  = 8 // plus one for ' ' character after method name.
 
 	// TimeFormat is the time format to use when generating times in HTTP
 	// headers. It is like time.RFC1123 but hard-codes GMT as the time
@@ -21,16 +16,14 @@ const (
 	// generate the correct format.
 	TimeFormat = "Mon, 02 Jan 2006 15:04:05 GMT"
 
-	versionMaxLength    = 9 // plus one for ' ' or '\r' character after method name.
-	methodMaxLength     = 8 // plus one for ' ' character after method name.
 	headerInitMapLen    = 16
 	headerValuesPoolLen = 16
 )
 
 // Some default values
 const (
-	DefaultUserAgent = "Achaemenid-Client"
-	DefaultServer    = "Achaemenid"
+	DefaultUserAgent = "Memar-Client"
+	DefaultServer    = "Memar"
 
 	SP             byte   = ' '  // <US-ASCII SP, space (32)>
 	HT             byte   = '	'  // <US-ASCII HT, horizontal-tab (9)>
@@ -190,9 +183,6 @@ const (
 // HTTP Status codes
 // https://tools.ietf.org/html/rfc7231#section-6
 const (
-	statusCodeMaxLength = 4 // plus one for ' ' character after method name.
-	// Due to RFC(https://datatracker.ietf.org/doc/html/rfc2616#section-6.1.1) can't indicate phrase max length
-
 	StatusContinue                 uint16 = 100 // RFC 7231, 6.2.1
 	StatusContinueCode                    = "100"
 	StatusContinuePhrase                  = "Continue"

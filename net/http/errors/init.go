@@ -1,12 +1,11 @@
 /* For license and copyright information please see the LEGAL file in the code repository */
 
-package http
+package errs
 
 import (
 	er "memar/error"
 )
 
-// Declare package errors
 var (
 	ErrNoConnection        er.Error
 	ErrPacketTooShort      er.Error
@@ -23,7 +22,12 @@ var (
 	ErrCookieBadDomain er.Error
 
 	ErrNotFound             er.Error
+	ErrServiceNotAcceptHTTP er.Error
+
 	ErrUnsupportedMediaType er.Error
+	UnsupportedTransferEncoding er.Error
+
+	ErrBadHost er.Error
 
 	ErrBodySizeMismatch er.Error
 )
@@ -44,7 +48,12 @@ func init() {
 	ErrCookieBadDomain.Init("domain/http.wg.ietf.org; type=error; name=cookie-bad-domain")
 
 	ErrNotFound.Init("domain/http.wg.ietf.org; type=error; name=not-found")
+	ErrServiceNotAcceptHTTP.Init("domain/http.wg.ietf.org; type=error; name=service_not_accept_http")
+
 	ErrUnsupportedMediaType.Init("domain/http.wg.ietf.org; type=error; name=unsupported-media-type")
+	UnsupportedTransferEncoding.Init("domain/http.wg.ietf.org; type=error; name=unsupported-media-type")
+
+	ErrBadHost.Init("domain/http.wg.ietf.org; type=error; name=unsupported-media-type")
 
 	ErrBodySizeMismatch.Init("domain/http.wg.ietf.org; type=error; name=body-size-mismatched")
 }

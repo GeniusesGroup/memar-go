@@ -10,12 +10,3 @@ import (
 )
 
 const domainPersian = "HTTP"
-
-func init() {
-	ErrNoConnection.SetDetail(protocol.LanguagePersian, domainPersian,
-		"عدم وجود ارتباط",
-		"هیچ راه ارتباطی با رایانه مقصد برای پردازش درخواست مورد نظر وجود ندارد",
-		"",
-		"",
-		nil)
-}
