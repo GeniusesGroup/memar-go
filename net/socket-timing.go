@@ -3,33 +3,22 @@
 package net
 
 import (
-	"memar/time/monotonic"
 	"memar/protocol"
+	"memar/time/monotonic"
 )
 
 //memar:impl memar/protocol.ObjectLifeCycle
-func (sk *Socket) initTimeout() (err protocol.Error) {
-	err = sk.readTimer.Init(sk)
-	if err != nil {
-		return
-	}
-	err = sk.writeTimer.Init(sk)
+func (sk *Socket) initTimeout(timeout protocol.Duration) (err protocol.Error) {
+	err = sk.socketTimer.Init(sk)
+	err = sk.socketTimer.Start(timeout)
 	return
 }
-func (sk *Socket) reinitTimeout() (err protocol.Error) {
-	err = sk.readTimer.Reinit(sk)
-	if err != nil {
-		return
-	}
-	err = sk.writeTimer.Reinit(sk)
+func (sk *Socket) reinitTimeout(timeout protocol.Duration) (err protocol.Error) {
+	err = sk.socketTimer.Reset(timeout)
 	return
 }
 func (sk *Socket) deinitTimeout() (err protocol.Error) {
-	err = sk.readTimer.Deinit()
-	if err != nil {
-		return
-	}
-	err = sk.writeTimer.Deinit()
+	err = sk.socketTimer.Deinit()
 	return
 }
 

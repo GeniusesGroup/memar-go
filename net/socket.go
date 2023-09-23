@@ -26,18 +26,15 @@ type Socket struct {
 
 //libgo:impl libgo/protocol.ObjectLifeCycle
 func (sk *Socket) Init(timeout protocol.Duration) (err protocol.Error) {
-
-	err = sk.socketTimer.Init(sk)
-	err = sk.socketTimer.Start(timeout)
-
+	err = sk.initTimeout(timeout)
 	return
 }
-func (sk *Socket) Reinit() (err protocol.Error) {
-	err = sk.socketTimer.Reinit(sk)
+func (sk *Socket) Reinit(timeout protocol.Duration) (err protocol.Error) {
+	err = sk.reinitTimeout(timeout)
 	return
 }
 func (sk *Socket) Deinit() (err protocol.Error) {
-	err = sk.socketTimer.Deinit()
+	err = sk.deinitTimeout()
 
 	// first closing open listener for income frame and refuse all new frame,
 	// then closing all idle connections,
