@@ -4,41 +4,55 @@ package net
 
 import (
 	"memar/protocol"
+	"memar/time/monotonic"
 	"memar/timer"
+	// "memar/uuid/16byte"
 )
 
 type Socket struct {
-	buf
-	STATUS
+	/* Connection data */
+	weight protocol.Weight
 
-	// timeout logic
-	readTimer  timer.Async // read deadline timer
-	writeTimer timer.Async // write deadline timer
+	// socketTiming
+	socketTimer   timer.Async
+	readDeadline  monotonic.Atomic
+	writeDeadline monotonic.Atomic
+
+	STATUS
 }
 
-//memar:impl memar/protocol.ObjectLifeCycle
+//libgo:impl libgo/protocol.ObjectLifeCycle
 func (sk *Socket) Init(timeout protocol.Duration) (err protocol.Error) {
-	err = sk.buf.Init()
-	if err != nil {
-		return
-	}
-	err = sk.initTimeout()
-	if err != nil {
-		return
-	}
-	err = sk.SetTimeout(timeout)
+
+	err = sk.socketTimer.Init(sk)
+	err = sk.socketTimer.Start(timeout)
+
 	return
 }
 func (sk *Socket) Reinit() (err protocol.Error) {
-	err = sk.reinitTimeout()
+	err = sk.socketTimer.Reinit(sk)
 	return
 }
 func (sk *Socket) Deinit() (err protocol.Error) {
-	err = sk.deinitTimeout()
+	err = sk.socketTimer.Deinit()
+
+	// first closing open listener for income frame and refuse all new frame,
+	// then closing all idle connections,
+	// and then waiting indefinitely for connections to return to idle
+	// and then shut down
 	return
 }
 
-func (sk *Socket) Check() (err protocol.Error) {
-	// TODO:::
-	return
-}
+func (sk *Socket) Weight() protocol.Weight { return sk.weight }
+
+//libgo:impl libgo/protocol.NetworkAddress
+// func (s *Socket) LocalAddr() protocol.Stringer  { return &s.localAddr }
+// func (s *Socket) RemoteAddr() protocol.Stringer { return &s.remoteAddr }
+
+//libgo:impl libgo/protocol.Session
+func (sk *Socket) Close() (err protocol.Error)  { return }
+func (sk *Socket) Revoke() (err protocol.Error) { return }
+
+func (sk *Socket) Check() (err protocol.Error) { 
+	// TODO::: 
+	return }

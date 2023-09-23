@@ -58,11 +58,11 @@ func (s *Stream) Init(timeout protocol.Duration, cca CCA) (err protocol.Error) {
 	if err != nil {
 		return
 	}
-	err = s.recv.Init(timeout)
+	err = s.recv.Init()
 	if err != nil {
 		return
 	}
-	err = s.send.Init(timeout)
+	err = s.send.Init()
 	return
 }
 func (s *Stream) Reinit() (err protocol.Error) {

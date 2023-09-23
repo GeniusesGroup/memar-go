@@ -3,6 +3,7 @@
 package net
 
 import (
+	"memar/time/monotonic"
 	"memar/protocol"
 )
 
@@ -32,9 +33,17 @@ func (sk *Socket) deinitTimeout() (err protocol.Error) {
 	return
 }
 
-// TimerHandler or NotifyChannel does a non-blocking send the signal on sk.signal
+// Don't block the caller
 func (sk *Socket) TimerHandler() {
-	// TODO:::
+	var timerWhen = sk.socketTimer.When()
+
+	if sk.readDeadline.Load() <= timerWhen {
+		sk.SetStatus(protocol.NetworkStatus_Timeout_Read)
+	} else if sk.writeDeadline.Load() <= timerWhen {
+		sk.SetStatus(protocol.NetworkStatus_Timeout_Write)
+	} else {
+		// TODO::: Is it possible??
+	}
 }
 
 //memar:impl memar/protocol.Timeout
@@ -52,13 +61,7 @@ func (sk *Socket) SetReadTimeout(d protocol.Duration) (err protocol.Error) {
 		return
 	}
 
-	if d < 0 {
-		// no timeout
-		// TODO::: is it ok??
-		err = sk.readTimer.Stop()
-		return
-	}
-	sk.readTimer.Reset(d)
+	err = sk.setWriteTimeout(d)
 	return
 }
 func (sk *Socket) SetWriteTimeout(d protocol.Duration) (err protocol.Error) {
@@ -67,17 +70,44 @@ func (sk *Socket) SetWriteTimeout(d protocol.Duration) (err protocol.Error) {
 		return
 	}
 
-	if d < 0 {
-		// no timeout
-		err = sk.writeTimer.Stop()
-		return
-	}
-	sk.writeTimer.Reset(d)
+	err = sk.setReadTimeout(d)
 	return
 }
 
-//memar:impl memar/protocol.Deadline
-func (sk *Socket) SetDeadline(d protocol.Time) (err protocol.Error) {
+func (sk *Socket) setReadTimeout(d protocol.Duration) (err protocol.Error) {
+	if d < 0 {
+		// no timeout
+		sk.readDeadline.Store(0)
+		if sk.writeDeadline.Load() == 0 {
+			sk.socketTimer.Stop()
+		}
+		return
+	}
 
+	var readDeadline = monotonic.Now()
+	readDeadline.Add(d)
+	sk.readDeadline.Store(readDeadline)
+
+	if readDeadline < sk.socketTimer.When() {
+		sk.socketTimer.Reset(d)
+	}
+	return
+}
+func (sk *Socket) setWriteTimeout(d protocol.Duration) (err protocol.Error) {
+	if d < 0 {
+		// no timeout
+		sk.writeDeadline.Store(0)
+		if sk.readDeadline.Load() == 0 {
+			sk.socketTimer.Stop()
+		}
+	}
+
+	var writeDeadline = monotonic.Now()
+	writeDeadline.Add(d)
+	sk.writeDeadline.Store(writeDeadline)
+
+	if writeDeadline < sk.socketTimer.When() {
+		sk.socketTimer.Reset(d)
+	}
 	return
 }

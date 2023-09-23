@@ -27,7 +27,6 @@ func (s *Socket) Read(b []byte) (n int, err error) {
 	n, err = sk.recv.buf.Read(b)
 	return
 }
-
 func (s *Socket) Write(b []byte) (n int, err error) {
 	n, err = s.Unmarshal(b)
 	return

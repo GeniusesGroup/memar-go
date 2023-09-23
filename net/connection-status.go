@@ -3,6 +3,8 @@
 package net
 
 import (
+	"sync/atomic"
+
 	"memar/protocol"
 )
 
@@ -11,17 +13,17 @@ import (
 type STATUS = Status
 
 type Status struct {
-	status protocol.NetworkStatus
+	status atomic.Uint32
 	state  chan protocol.NetworkStatus
 }
 
 //memar:impl memar/protocol.Network_Status
-func (s *Status) Status() protocol.NetworkStatus     { return s.status }
+func (s *Status) Status() protocol.NetworkStatus     { return protocol.NetworkStatus(s.status.Load()) }
 func (s *Status) State() chan protocol.NetworkStatus { return s.state }
 func (s *Status) SetStatus(ns protocol.NetworkStatus) {
-	// TODO::: atomic and non blocking logic
-	// atomic.StoreUInt64(&st.State, state)
-	s.status = ns
+	s.status.Store(uint32(ns))
+
+	// TODO::: non blocking logic??
 	// notify stream listener that stream state has been changed!
 	s.state <- ns
 }

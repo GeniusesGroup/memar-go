@@ -22,7 +22,7 @@ type recv struct {
 }
 
 //memar:impl memar/protocol.ObjectLifeCycle
-func (r *recv) Init(timeout protocol.Duration) (err protocol.Error) {
+func (r *recv) Init() (err protocol.Error) {
 	r.flag = make(chan flag, 1) // 1 buffer slot??
 
 

@@ -19,7 +19,7 @@ type send struct {
 }
 
 //memar:impl memar/protocol.ObjectLifeCycle
-func (s *send) Init(timeout protocol.Duration) (err protocol.Error) {
+func (s *send) Init() (err protocol.Error) {
 	// TODO:::
 	return
 }
