@@ -2,6 +2,7 @@
 
 package tcp
 
+// TODO::: byte is not enough here to distinguish between flags in first byte or second one
 type flag byte
 
 const (

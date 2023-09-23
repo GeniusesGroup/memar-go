@@ -1,68 +1,89 @@
 /* For license and copyright information please see the LEGAL file in the code repository */
 
-package tcp
+package net
 
 import (
 	"memar/protocol"
 )
 
 //memar:impl memar/protocol.Codec
-func (s *Stream) MediaType() protocol.MediaType       { return nil }
-func (s *Stream) CompressType() protocol.CompressType { return nil }
-func (s *Stream) Decode(source protocol.Codec) (n int, err protocol.Error) {
-	return source.Encode(s)
+func (sk *Socket) MediaType() protocol.MediaType       { return nil }
+func (sk *Socket) CompressType() protocol.CompressType { return nil }
+func (sk *Socket) Decode(source protocol.Codec) (n int, err protocol.Error) {
+	return source.Encode(sk)
 }
-func (s *Stream) Encode(destination protocol.Codec) (n int, err protocol.Error) {
-	return destination.Decode(s)
+func (sk *Socket) Encode(destination protocol.Codec) (n int, err protocol.Error) {
+	return destination.Decode(sk)
 }
-func (s *Stream) Marshal() (data []byte, err protocol.Error) {
-	err = s.checkStream()
+func (sk *Socket) Marshal() (data []byte, err protocol.Error) {
+	err = sk.Check()
 	if err != nil {
 		return
 	}
 
-	if !s.recv.buf.Full() {
-		err = s.blockInSelect()
+	if !sk.buf.Full() {
+		err = sk.blockInSelect()
 	}
 	// TODO::: check and wrap above error?
-	return s.recv.buf.Marshal()
+	return sk.buf.Marshal()
 }
-func (s *Stream) MarshalTo(data []byte) (added []byte, err protocol.Error) {
-	err = s.checkStream()
+func (sk *Socket) MarshalTo(data []byte) (added []byte, err protocol.Error) {
+	err = sk.Check()
 	if err != nil {
 		return
 	}
 
-	if !s.recv.buf.Full() {
-		err = s.blockInSelect()
+	if !sk.buf.Full() {
+		err = sk.blockInSelect()
 	}
 	// TODO::: check and wrap above error?
-	return s.recv.buf.MarshalTo(data)
+	return sk.buf.MarshalTo(data)
 }
-func (s *Stream) Unmarshal(data []byte) (n int, err protocol.Error) {
-	err = s.checkStream()
-	if err != nil {
-		return
-	}
-
+func (sk *Socket) Unmarshal(data []byte) (n int, err protocol.Error) {
 	for len(data) > 0 {
-		select {
-		case <-s.writeTimer.Signal():
-			// err =
+		err = sk.Check()
+		if err != nil {
 			return
-		default:
-			var sendNumber int
-			sendNumber, err = s.sendPayload(data)
-			if err != nil {
-				return
+		}
+
+		var sendNumber int
+		sendNumber, err = sk.sendPayload(data)
+		if err != nil {
+			return
+		}
+		n += sendNumber
+		data = data[sendNumber:]
+	}
+	return
+}
+func (sk *Socket) UnmarshalFrom(data []byte) (remaining []byte, err protocol.Error) {
+	return
+}
+func (sk *Socket) Len() (ln int) { return sk.buf.Len() }
+
+// BlockInSelect waits for something to happen, which is one of the following conditions in the function body.
+func (sk *Socket) blockInSelect() (err protocol.Error) {
+	// TODO::: check auto scheduling or block??
+
+loop:
+	for {
+		select {
+		// TODO::: if buffer not full but before get push flag go to full state??
+		// I think we must send custom package level flag here when process last segment change buffer state to full.
+		case state := <-sk.State():
+			switch state {
+			case protocol.NetworkStatus_ReceivedCompletely:
+				sk.socketTimer.Stop()
+				break loop
+			default:
+				// TODO::: attack??
+				goto loop
 			}
-			n += sendNumber
-			data = data[sendNumber:]
 		}
 	}
 	return
 }
-func (s *Stream) UnmarshalFrom(data []byte) (remaining []byte, err protocol.Error) {
+
+func (sk *Socket) sendPayload(b []byte) (n int, err protocol.Error) {
 	return
 }
-func (s *Stream) Len() (ln int) { return s.recv.buf.Len() }

@@ -55,7 +55,7 @@ func (s *Stream) incomeSegmentOnEstablishedState(segment Segment) (err protocol.
 	if sn == exceptedNext {
 		s.sendACK()
 
-		_, err = s.recv.buf.Write(payload)
+		_, err = s.sk.Unmarshal(payload)
 
 		// TODO::: Due to CongestionControlAlgorithm, if a segment with push flag not send again
 		if segment.FlagPSH() {
@@ -65,8 +65,8 @@ func (s *Stream) incomeSegmentOnEstablishedState(segment Segment) (err protocol.
 			}
 
 			// TODO:::
-			s.recv.sendFlagSignal(flag_PSH)
-			s.ScheduleProcessingSocket()
+			// s.recv.sendFlagSignal(flag_PSH)
+			s.sk.ScheduleProcessingSocket()
 		}
 	} else {
 		err = s.validateSequence(segment)
@@ -193,7 +193,7 @@ func (s *Stream) validateSequence(segment Segment) (err protocol.Error) {
 	var sn = segment.SequenceNumber()
 	var exceptedNext = s.recv.next
 	// TODO::: Due to CongestionControlAlgorithm make a decision to change next
-	_, err = s.recv.buf.WriteIn(payload, (sn - exceptedNext))
+	_, err = s.sk.Buffer().WriteAt(payload, int64(sn - exceptedNext))
 	return
 }
 
@@ -210,41 +210,6 @@ func (s *Stream) needReset() bool {
 	var ss = s.status.Load()
 	return ss == StreamStatus_Established || ss == StreamStatus_CloseWait ||
 		ss == StreamStatus_FinWait1 || ss == StreamStatus_FinWait2 || ss == StreamStatus_SynReceived
-}
-
-func (s *Stream) sendPayload(b []byte) (n int, err protocol.Error) {
-
-	return
-}
-
-// BlockInSelect waits for something to happen, which is one of the following conditions in the function body.
-func (s *Stream) blockInSelect() (err protocol.Error) {
-	// TODO::: check auto scheduling or block??
-
-loop:
-	for {
-		select {
-		// TODO::: if buffer not full but before get push flag go to full state??
-		// I think we must send custom package level flag here when process last segment change buffer state to full.
-		case flag := <-s.recv.flag:
-			switch flag {
-			case flag_FIN:
-				// s.readTimer.Stop()
-				// err = TODO:::
-				break loop
-			case flag_RST:
-				// s.readTimer.Stop()
-				// err = TODO:::
-				break loop
-			case flag_PSH, flag_URG:
-				break loop
-			default:
-				// TODO::: attack??
-				goto loop
-			}
-		}
-	}
-	return
 }
 
 // func (st *Stream) callService() {

@@ -13,16 +13,10 @@ type recv struct {
 	up   bool   // receive urgent pointer
 	irs  uint32 // initial receive sequence number
 	// TODO::: not in order segments
-
-	// TODO::: Send more than these flags: push, reset, finish, urgent
-	// TODO::: byte is not enough here to distinguish between flags in first byte or second one
-	flag chan flag
 }
 
 //memar:impl memar/protocol.ObjectLifeCycle
 func (r *recv) Init() (err protocol.Error) {
-	r.flag = make(chan flag, 1) // 1 buffer slot??
-
 	// TODO:::
 	return
 }
@@ -33,14 +27,4 @@ func (r *recv) Reinit() (err protocol.Error) {
 func (r *recv) Deinit() (err protocol.Error) {
 	// TODO:::
 	return
-}
-
-// sendFlagSignal use to notify listener in the r.flag channel
-func (r *recv) sendFlagSignal(f flag) {
-	select {
-	case r.flag <- f:
-		// nothing to do
-	default:
-		break
-	}
 }
