@@ -3,6 +3,7 @@
 package net
 
 import (
+	"memar/buffer"
 	"memar/protocol"
 	"memar/time/monotonic"
 	"memar/timer"
@@ -12,6 +13,8 @@ import (
 type Socket struct {
 	/* Connection data */
 	weight protocol.Weight
+
+	buf buffer.Queue
 
 	// socketTiming
 	socketTimer   timer.Async
@@ -53,6 +56,7 @@ func (sk *Socket) Weight() protocol.Weight { return sk.weight }
 func (sk *Socket) Close() (err protocol.Error)  { return }
 func (sk *Socket) Revoke() (err protocol.Error) { return }
 
-func (sk *Socket) Check() (err protocol.Error) { 
-	// TODO::: 
-	return }
+func (sk *Socket) Check() (err protocol.Error) {
+	// TODO:::
+	return
+}
