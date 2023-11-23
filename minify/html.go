@@ -1,11 +1,11 @@
-/* For license and copyright information please see LEGAL file in repository */
+/* For license and copyright information please see the LEGAL file in the code repository */
 
 package minify
 
 import (
 	"regexp"
 
-	"../protocol"
+	"memar/protocol"
 
 	thtml "github.com/tdewolff/minify/html"
 	"github.com/tdewolff/parse/buffer"
@@ -21,13 +21,19 @@ type html struct {
 
 // Minify replace file data with minify of them.
 func (html *html) Minify(data protocol.Codec) (err protocol.Error) {
-	var rawData = data.Marshal()
+	var rawData []byte
+	rawData, err = data.Marshal()
+	if err != nil {
+		return
+	}
+
 	var minifiedData []byte
 	minifiedData, err = html.MinifyBytes(rawData)
 	if err != nil {
 		return
 	}
-	err = data.Unmarshal(minifiedData)
+
+	_, err = data.Unmarshal(minifiedData)
 	return
 }
 

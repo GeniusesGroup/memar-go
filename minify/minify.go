@@ -1,11 +1,11 @@
-/* For license and copyright information please see LEGAL file in repository */
+/* For license and copyright information please see the LEGAL file in the code repository */
 
 package minify
 
 import (
 	"regexp"
 
-	"../protocol"
+	"memar/protocol"
 
 	"github.com/tdewolff/minify"
 	tcss "github.com/tdewolff/minify/css"
@@ -29,10 +29,16 @@ func init() {
 
 // Minify replace file data with minify of them.
 func Minify(data protocol.Codec) (err protocol.Error) {
-	var minifiedData, goErr = minifier.Bytes(data.MediaType().MediaType(), data.Marshal())
+	var rawData []byte
+	rawData, err = data.Marshal()
+	if err != nil {
+		return
+	}
+
+	var minifiedData, goErr = minifier.Bytes(data.MediaType().ToString(), rawData)
 	if goErr != nil {
 		return
 	}
-	err = data.Unmarshal(minifiedData)
+	_, err = data.Unmarshal(minifiedData)
 	return
 }

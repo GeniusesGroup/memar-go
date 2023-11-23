@@ -1,9 +1,9 @@
-/* For license and copyright information please see LEGAL file in repository */
+/* For license and copyright information please see the LEGAL file in the code repository */
 
 package minify
 
 import (
-	"../protocol"
+	"memar/protocol"
 
 	tcss "github.com/tdewolff/minify/css"
 	"github.com/tdewolff/parse/buffer"
@@ -17,13 +17,19 @@ type css struct {
 
 // Minify replace file data with minify of them.
 func (css *css) Minify(data protocol.Codec) (err protocol.Error) {
-	var rawData = data.Marshal()
+	var rawData []byte
+	rawData, err = data.Marshal()
+	if err != nil {
+		return
+	}
+
 	var minifiedData []byte
 	minifiedData, err = css.MinifyBytes(rawData)
 	if err != nil {
 		return
 	}
-	err = data.Unmarshal(minifiedData)
+
+	_, err = data.Unmarshal(minifiedData)
 	return
 }
 
@@ -32,7 +38,7 @@ func (css *css) MinifyBytes(data []byte) (minifiedData []byte, err protocol.Erro
 	var minifiedWriter = buffer.NewWriter(make([]byte, 0, len(data)))
 	var goErr = css.Minifier.Minify(minifier, minifiedWriter, buffer.NewReader(data), nil)
 	if goErr != nil {
-		// err = 
+		// err =
 		return
 	}
 	minifiedData = minifiedWriter.Bytes()
