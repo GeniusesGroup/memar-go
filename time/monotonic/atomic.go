@@ -5,7 +5,7 @@ package monotonic
 import (
 	"sync/atomic"
 
-	"libgo/protocol"
+	"memar/protocol"
 )
 
 // Atomic same as Time is monotonic clock is for measuring time.
@@ -23,12 +23,12 @@ func (a *Atomic) CompareAndSwap(old, new Time) (swapped bool) {
 }
 func (a *Atomic) Add(d protocol.Duration) { a.Int64.Add(int64(d)) }
 
-//libgo:impl /libgo/protocol.Time
+//memar:impl memar/protocol.Time
 func (a *Atomic) Epoch() protocol.TimeEpoch { return protocol.TimeEpoch_Monotonic }
 func (a *Atomic) SecondElapsed() int64      { return int64(a.Load()) / int64(Second) }
 func (a *Atomic) NanoSecondElapsed() int32  { var t = a.Load(); return int32(t % (t / Time(Second))) }
 
-//libgo:impl /libgo/protocol.Stringer
+//memar:impl memar/protocol.Stringer
 func (a *Atomic) ToString() string {
 	var t = a.Load()
 	return t.ToString()

@@ -5,7 +5,7 @@ package unix
 import (
 	"testing"
 
-	"libgo/protocol"
+	"memar/protocol"
 )
 
 func Test_nsecToSec(t *testing.T) {

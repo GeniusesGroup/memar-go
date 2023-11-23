@@ -3,7 +3,7 @@
 package unix
 
 import (
-	"libgo/protocol"
+	"memar/protocol"
 )
 
 // Common durations.

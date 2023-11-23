@@ -7,7 +7,7 @@ January 1 of the absolute year(1970), like January 1 of 2001, was a Monday.
 package unix
 
 import (
-	"libgo/protocol"
+	"memar/protocol"
 )
 
 const Base = "00:00:00 UTC on 1 January 1970" // Thursday
@@ -30,12 +30,12 @@ type Time struct {
 	nsec int32
 }
 
-//libgo:impl libgo/protocol.Time
+//memar:impl memar/protocol.Time
 func (t *Time) Epoch() protocol.TimeEpoch { return protocol.TimeEpoch_Unix }
 func (t *Time) SecondElapsed() int64      { return t.sec }
 func (t *Time) NanoSecondElapsed() int32  { return t.nsec }
 
-//libgo:impl libgo/protocol.Stringer
+//memar:impl memar/protocol.Stringer
 func (t *Time) ToString() string {
 	// TODO:::
 	return ""

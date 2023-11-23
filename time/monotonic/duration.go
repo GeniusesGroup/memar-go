@@ -3,7 +3,7 @@
 package monotonic
 
 import (
-	"libgo/protocol"
+	"memar/protocol"
 )
 
 // Common durations.

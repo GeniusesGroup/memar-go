@@ -5,7 +5,7 @@ package unix
 import (
 	"sync/atomic"
 
-	"libgo/protocol"
+	"memar/protocol"
 )
 
 // Atomic same as Time is unix clock is for measuring time.
@@ -16,7 +16,7 @@ type Atomic struct {
 	nsec atomic.Int32
 }
 
-//libgo:impl libgo/protocol.Time
+//memar:impl memar/protocol.Time
 func (t *Atomic) Epoch() protocol.TimeEpoch { return protocol.TimeEpoch_Unix }
 func (t *Atomic) SecondElapsed() int64      { return t.sec.Load() }
 func (t *Atomic) NanoSecondElapsed() int32  { return t.nsec.Load() }
@@ -52,4 +52,14 @@ func (a *Atomic) Add(d protocol.Duration) {
 	var sec, nsec = nsecToSec(d)
 	a.sec.Add(sec)
 	a.nsec.Add(nsec)
+}
+
+//memar:impl memar/protocol.Stringer
+func (a *Atomic) ToString() string {
+	// TODO:::
+	return ""
+}
+func (a *Atomic) FromString(s string) (err protocol.Error) {
+	// TODO:::
+	return
 }

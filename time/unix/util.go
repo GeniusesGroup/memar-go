@@ -2,7 +2,7 @@
 
 package unix
 
-import "libgo/protocol"
+import "memar/protocol"
 
 func nsecToSec(d protocol.Duration) (sec int64, nsec int32) {
 	sec = int64(d / Second)

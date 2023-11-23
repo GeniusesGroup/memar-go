@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"libgo/protocol"
+	"memar/protocol"
 )
 
 func Test_ShowNow(t *testing.T) {

@@ -1,9 +1,9 @@
-/* For license and copyright information please see LEGAL file in repository */
+/* For license and copyright information please see the LEGAL file in the code repository */
 
 package utc
 
 import (
-	"../../protocol"
+	"memar/protocol"
 )
 
 // A Weekdays specifies a day of the week.
