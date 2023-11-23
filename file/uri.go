@@ -1,12 +1,12 @@
-/* For license and copyright information please see LEGAL file in repository */
+/* For license and copyright information please see the LEGAL file in the code repository */
 
 package file
 
 import (
 	"path/filepath"
 
-	"../convert"
-	"../protocol"
+	"memar/convert"
+	"memar/protocol"
 )
 
 // URI implement protocol.URI and protocol.FileURI interface
@@ -35,16 +35,46 @@ func (uri *URI) Extension() string            { return uri.extension }
 func (uri *URI) IsDirectory() bool            { return IsPathDirectory(uri.path) }
 func (uri *URI) PathParts() []string          { return FilePathParts(uri.path) }
 
-func IsPathDirectory(uriPath string) bool { return uriPath[len(uriPath)-1] == '/' }
-
 // Rename just rename the file name
 func (uri *URI) Rename(newName string) {
 	uri.name = newName
-	for i := len(newName) - 1; i >= 0; i-- {
-		if newName[i] == '.' {
-			uri.extension = newName[i+1:]
+	uri.extension = Extension(newName)
+}
+
+//memar:impl memar/protocol.Codec
+func (uri *URI) MediaType() protocol.MediaType       { return &MediaType }
+func (uri *URI) CompressType() protocol.CompressType { return nil }
+
+// Marshal encodes and return whole file data.
+func (uri *URI) Marshal() (data []byte, err protocol.Error) {
+	var ln = 5
+	data = make([]byte, 0, ln)
+	return
+}
+
+// MarshalTo encodes whole file data to given data and return it with new len.
+func (uri *URI) MarshalTo(data []byte) (added []byte, err protocol.Error) {
+	return data, nil
+}
+
+// Unmarshal save given data to the file. It will overwritten exiting data.
+func (uri *URI) Unmarshal(data []byte) (n int, err protocol.Error) {
+	var dataAsString = convert.UnsafeByteSliceToString(data)
+	var dir, fileName = filepath.Split(dataAsString)
+	uri.path = dir
+	uri.name = fileName
+	// TODO::: decode more data
+	return
+}
+
+func Extension(name string) (ex string) {
+	for i := len(name) - 1; i >= 0; i-- {
+		if name[i] == '.' {
+			ex = name[i+1:]
+			break
 		}
 	}
+	return
 }
 
 func FilePathParts(uriPath string) (parts []string) {
@@ -60,31 +90,4 @@ func FilePathParts(uriPath string) (parts []string) {
 	return
 }
 
-/*
-********** protocol.Codec interface **********
- */
-
-func (uri *URI) MediaType() string    { return "application/uri" }
-func (uri *URI) CompressType() string { return "" }
-
-// Marshal enecodes and return whole file data!
-func (uri *URI) Marshal() (data []byte) {
-	var ln = 5
-	data = make([]byte, 0, ln)
-	return
-}
-
-// MarshalTo enecodes whole file data to given data and return it with new len!
-func (uri *URI) MarshalTo(data []byte) []byte {
-	return data
-}
-
-// Unmarshal save given data to the file. It will overwritten exiting data.
-func (uri *URI) Unmarshal(data []byte) (err protocol.Error) {
-	var dataAsString = convert.UnsafeByteSliceToString(data)
-	var dir, fileName = filepath.Split(dataAsString)
-	uri.path = dir
-	uri.name = fileName
-	// TODO::: decode more data
-	return
-}
+func IsPathDirectory(uriPath string) bool { return uriPath[len(uriPath)-1] == '/' }
