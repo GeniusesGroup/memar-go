@@ -1,4 +1,4 @@
-/* For license and copyright information please see LEGAL file in repository */
+/* For license and copyright information please see the LEGAL file in the code repository */
 
 package protocol
 
@@ -6,7 +6,8 @@ package protocol
 // Usually dev must not use this interface due to it can damage any data written by objects, files, records, k/v interfaces
 type StorageBlockVolatile interface {
 	// return volume capacity
-	Cap() int
+	Cap
+
 	// Extended length may vary of requested cap, Due to Extend() is base on storage device block size not bytes,
 	// e.g. on SSDs block sizes are 256*page-size like 256*4(page-size)=1024(B)=1(MB)
 	Extend(cap int) (extended int, err Error)

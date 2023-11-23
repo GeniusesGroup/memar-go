@@ -10,11 +10,10 @@ Application (OSI Layer 7: Application)
 
 // OSI_Application usually use to save state and release thread(goroutine) in waiting state
 type OSI_Application interface {
-	Handler() Network_Application_Handler //
-	Service() Service                     //
-	Request() any                         // Codec
-	Response() any                        // Codec
-	Error() Error                         // just indicate peer error that receive by response of the request.
+	Service() Service //
+	Request() any     // Codec
+	Response() any    // Codec
+	Error() Error     // just indicate peer error that receive by response of the request.
 
 	ObjectLifeCycle
 	OSI_Application_LowLevelAPIs
@@ -22,32 +21,20 @@ type OSI_Application interface {
 
 // OSI_Application_LowLevelAPIs is low level APIs, don't use them in the services layer, if you don't know how it can be effect the application.
 type OSI_Application_LowLevelAPIs interface {
-	// TODO::: below methods must call just once,
-	// TODO::: But some protocol like http allow to change it after first set in a reusable socket like IP/TCP, Allow them??
-	SetHandler(nah Network_Application_Handler)
+	// Below Set methods must call just once,
+	// But some protocol like http allow to change it after first set in a reusable socket like IP/TCP.
 	SetService(ser Service)
-	SetError(err Error)
 	SetRequest(req any)
 	SetResponse(res any)
+	SetError(err Error)
+
+	OSI_Application_Handler
+	Stringer_To // e.g. "http", ...
 }
 
-type Network_Application_ProtocolID = MediaTypeID
-
-// Network_Application_Multiplexer
-type Network_Application_Multiplexer interface {
-	GetNetworkApplicationHandler(pID Network_Application_ProtocolID) Network_Application_Handler
-	SetNetworkApplicationHandler(nah Network_Application_Handler)
-	DeleteNetworkApplicationHandler(pID Network_Application_ProtocolID)
-}
-
-// Network_Application_Handler
-type Network_Application_Handler interface {
-	ProtocolID() Network_Application_ProtocolID
+type OSI_Application_Handler interface {
 	// HandleIncomeRequest must check socket status
 	HandleIncomeRequest(sk Socket) (err Error)
-
-	ObjectLifeCycle
-	Stringer // e.g. "http", ...
 
 	// SendBidirectionalRequest()
 	// SendUnidirectionalRequest()

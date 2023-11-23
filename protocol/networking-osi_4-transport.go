@@ -18,13 +18,13 @@ type OSI_Transport interface {
 	NetworkAddress // string form of address (for example, "tcp://443", "srpc://1254872653")
 
 	OSI_Transport_LowLevelAPIs
-	OSI_Transport_Options
 }
 
 // OSI_Transport_LowLevelAPIs is low level APIs, don't use them in the services layer, if you don't know how it can be effect the application.
 // It will use in chunks managing packages e.g. sRPC, TCP, UDP, ... or protocols wrappers e.g. QUIC, HTTPv2, ...
 type OSI_Transport_LowLevelAPIs interface {
 	Network_FrameWriter
+	OSI_Transport_Options
 }
 
 type OSI_Transport_Options interface {

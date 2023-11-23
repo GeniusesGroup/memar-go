@@ -14,6 +14,7 @@ const (
 	CRUD_Read   CRUD = 0b00000010
 	CRUD_Update CRUD = 0b00000100
 	CRUD_Delete CRUD = 0b00001000
+	CRUD_Notify CRUD = 0b00010000
 	// Approve
 	CRUD_All CRUD = 0b11111111
 )

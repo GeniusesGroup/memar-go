@@ -1,4 +1,4 @@
-/* For license and copyright information please see LEGAL file in repository */
+/* For license and copyright information please see the LEGAL file in the code repository */
 
 package protocol
 
@@ -12,8 +12,8 @@ package protocol
 // https://www.researchgate.net/publication/324435978_Graph_based_Platform_for_Electricity_Market_Study_Education_and_Training
 // https://github.com/milvus-io/milvus
 type Graph interface {
-	PrimaryNode() [16]byte
-	SecondaryNode() [16]byte
+	PrimaryNode() UUID
+	SecondaryNode() UUID
 	Relation() GraphRelationLabel // Edge in graph data type
 }
 

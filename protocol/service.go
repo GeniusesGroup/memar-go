@@ -2,32 +2,13 @@
 
 package protocol
 
-// Services is the interface that must implement by any Application.
-type Services interface {
-	// RegisterService use to register application services.
-	// Due to minimize performance impact, This method isn't safe to use concurrently and
-	// must register all service before use GetService methods.
-	RegisterService(s Service) (err Error)
-
-	Services() []Service
-	GetServiceByID(id MediaTypeID) (ser Service, err Error)
-	GetServiceByMediaType(mt string) (ser Service, err Error)
-	GetServiceByURI(uri string) (ser Service, err Error)
-}
+type ServiceID = MediaTypeID
 
 // Service is the interface that must implement by any struct to be a service.
 type Service interface {
-	// Fill just if any http like type handler needed. Suggest use simple immutable path,
-	// not variable data included in path describe here:https://www.rfc-editor.org/rfc/rfc6570 e.g. "/product?id=1" instead of "/product/1/"
-	// API services can set like "/s?{{.ServiceID}}" but it is not efficient, instead find services by ID as base64
-	URI() string // suggest use just URI.Path
+	ID() ServiceID // Usually easily return s.MT.ID() or it can return some old way numbering like HTTP:80, HTTPS:443, ...
 
-	// Service authorization to authorize incoming service request
-	CRUDType() CRUD
-	UserType() UserType
-
-	SRPCHandler
-
+	Service_Authorization
 	OperationImportance
 	ServiceDetails
 	ObjectLifeCycle
@@ -37,14 +18,20 @@ type ServiceHandlers[ReqT, ResT any] interface {
 	// Call service locally by import service package to other one
 	Process(sk Socket, req ReqT) (res ResT, err Error)
 	//
-	// Call service remotely by preferred protocol.
+	// Call service remotely by preferred(SDK generator choose) protocol.
 	Do(req ReqT) (res ResT, err Error)
+}
+
+// Service authorization to authorize incoming service request
+type Service_Authorization interface {
+	CRUDType() CRUD
+	UserType() UserType
 }
 
 type ServiceDetails interface {
 	Request() DataType
 	Response() DataType
 
-	Details
+	Detail
 	MediaType
 }

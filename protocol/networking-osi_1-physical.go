@@ -27,7 +27,7 @@ type OSI_Physical interface {
 	Send(packet []byte) (err Error)
 
 	ObjectLifeCycle
-	Details
+	Detail
 	Network_Framer
 	NetworkMTU
 	// NetworkAddress

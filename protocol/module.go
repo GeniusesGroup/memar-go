@@ -21,10 +21,10 @@ type Module interface {
 	DependOn() []Module
 
 	Services() []Service
-	Pages() []GUIPage
+	Pages() []GUI_Page
 	// Widgets() []GUI
 
-	Details
+	Detail
 	MediaType
 	ObjectLifeCycle
 }

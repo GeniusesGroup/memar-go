@@ -17,6 +17,8 @@ type Socket interface {
 	// due to the Unix philosophy that "everything is a file", and the analogies between sockets and files.
 	// Both have functions to read, write, open, and close
 
+	Buffer() Buffer
+
 	Socket_LowLevelAPIs
 	NetworkAddress      // string form of full address of socket to dial any time later.
 	Network_Status      //
@@ -39,6 +41,4 @@ type Socket_LowLevelAPIs interface {
 	// Put in related queue to process income socket in non-blocking mode, means It must not block the caller in any ways.
 	// Socket must start with NetworkStatus_NeedMoreData if it doesn't need to call the service when the state changed for the first time
 	ScheduleProcessingSocket()
-
-	Send(data Codec) (err Error) // Listen to socket state to check request successfully send, response ready to serve, ...
 }

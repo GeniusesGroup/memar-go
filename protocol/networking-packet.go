@@ -7,9 +7,9 @@ package protocol
 type Network_Packet []byte
 
 type PacketTarget interface {
-	// TODO::: just accept Network_FrameID? other conditions? some thing like Regex??
-	AddPacketListener(fID Network_FrameID, callback Network_PacketListener) (err Error)
-	RemovePacketListener(fID Network_FrameID, callback Network_PacketListener) (err Error)
+	// TODO::: just accept Network_FrameType? other conditions? some thing like Regex??
+	AddPacketListener(fID Network_FrameType, callback Network_PacketListener) (err Error)
+	RemovePacketListener(fID Network_FrameType, callback Network_PacketListener) (err Error)
 }
 
 // Network_PacketListener

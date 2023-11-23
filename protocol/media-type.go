@@ -2,19 +2,12 @@
 
 package protocol
 
-type MediaTypes interface {
-	RegisterMediaType(mt MediaType)
-	GetMediaType(mt string) MediaType
-	GetMediaTypeByID(id MediaTypeID) MediaType
-	GetMediaTypeByFileExtension(ex string) MediaType
-}
-
 type MediaTypeID = ID
 
 // MediaType or MimeType protocol is the shape of any coding media-type.
 // It is a special way to naming a DataType. So all MediaType implementors MUST be a DataType too, But not reverse.
 // Means not all DataType need to implements MediaType
-// It also implement our RFC details on https://github.com/GeniusesGroup/RFCs/blob/master/media-type.md
+// It also implement our RFC details on https://github.com/GeniusesGroup/memar/blob/main/media-type.md
 type MediaType interface {
 	// Below names are case-insensitive.
 	MediaType() string    // must "maintype "/" [tree "."] subtype ["+" suffix]* [";" parameters]"

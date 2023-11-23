@@ -1,4 +1,4 @@
-/* For license and copyright information please see LEGAL file in repository */
+/* For license and copyright information please see the LEGAL file in the code repository */
 
 package protocol
 
@@ -19,11 +19,11 @@ type BlockCipher interface {
 
 	// Encrypt encrypts the first block in src into dst.
 	// Dst and src must overlap entirely or not at all.
-	Encrypt(dst, src []byte)
+	Encrypt(dst, src []byte) (err Error)
 
 	// Decrypt decrypts the first block in src into dst.
 	// Dst and src must overlap entirely or not at all.
-	Decrypt(dst, src []byte)
+	Decrypt(dst, src []byte) (err Error)
 }
 
 // A Stream represents a stream cipher.
@@ -38,14 +38,13 @@ type StreamCipher interface {
 	// Multiple calls to XORKeyStream behave as if the concatenation of
 	// the src buffers was passed in a single run. That is, Stream
 	// maintains state and does not reset at each XORKeyStream call.
-	XORKeyStream(dst, src []byte)
+	XORKeyStream(dst, src []byte) (err Error)
 }
 
 // https://en.wikipedia.org/wiki/Cipher_suite
 type CipherSuite interface {
-	Stringer                   // e.g. TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256
+	Stringer // e.g. TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256
 
-	ID() uint64                // hash of Stringer like GitiURN
 	Protocol() string          // Defines the protocol that this cipher suite is for e.g. TLS
 	KeyExchange() string       // indicates the key exchange algorithm being used e.g. ECDHE
 	Authentication() string    // authentication mechanism during the handshake e.g. RSA
@@ -57,4 +56,6 @@ type CipherSuite interface {
 	// Insecure is true if the cipher suite has known security issues
 	// due to its primitives, design, or implementation.
 	Insecure() bool
+
+	UUID_Hash // hash of Stringer like MediaType
 }

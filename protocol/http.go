@@ -3,30 +3,35 @@
 package protocol
 
 // HTTPHandler is any object to be HTTP service handler.
+// Some other protocol like gRPC, SOAP, ... must implement inside HTTP, If they are use HTTP as a transfer protocol.
 type HTTPHandler interface {
-	ServeHTTP(stream Stream, httpReq HTTPRequest, httpRes HTTPResponse) (err Error)
+	// Fill just if any http handler needed. Suggest use simple immutable path,
+	// not variable data included in path describe here:https://www.rfc-editor.org/rfc/rfc6570 e.g. "/product?id=1" instead of "/product/1/"
+	// API services can set like "/s?{{.ServiceID}}" but it is not efficient, instead find services by ID as base64
+	URI() string // suggest use just URI.Path
+
+	// ** NOTE: Due to reuse underling buffer If caller need to keep any data from httpReq or httpRes it must make a copy and
+	// ** prevent from keep a reference to any data get from these two interface after return.
+	// **
+	ServeHTTP(sk Socket, httpReq HTTPRequest, httpRes HTTPResponse) (err Error)
 	// ServeGoHTTP(httpRes http.ResponseWriter, httpReq *http.Request) Due to bad sign, we can't standard it here.
 
 	// Call service remotely by HTTP protocol
 	// doHTTP(req any) (res any, err Error) Due to specific sign for each service, we can't standard it here.
 }
 
-// HTTPRequest indicate request semantic.
+// HTTPRequest indicate HTTP request semantic.
 type HTTPRequest interface {
 	HTTP_PseudoHeader_Request
 	Header() HTTPHeader
 	HTTPBody
-
-	Codec
 }
 
-// HTTPResponse indicate response semantic.
+// HTTPResponse indicate HTTP response semantic.
 type HTTPResponse interface {
 	HTTP_PseudoHeader_Response
 	Header() HTTPHeader
 	HTTPBody
-
-	Codec
 }
 
 // HTTP_PseudoHeader_Request indicate request pseudo header.

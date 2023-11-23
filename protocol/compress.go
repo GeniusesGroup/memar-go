@@ -1,31 +1,19 @@
-/* For license and copyright information please see LEGAL file in repository */
+/* For license and copyright information please see the LEGAL file in the code repository */
 
 package protocol
 
-type CompressTypes interface {
-	RegisterCompressType(ct CompressType)
-	GetCompressTypeByID(id uint64) (ct CompressType, err Error)
-	GetCompressTypeByMediaType(mt string) (ct CompressType, err Error)
-	GetCompressTypeByFileExtension(ex string) (ct CompressType, err Error)
-	GetCompressTypeByContentEncoding(ce string) (ct CompressType, err Error)
-	ContentEncodings() []string
-}
-
 // CompressType is standard shape of any compress coding type
-// https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Encoding
 // https://en.wikipedia.org/wiki/HTTP_compression
-type CompressType interface {
-	MediaType() MediaType
+type CompressType /* [T Codec] */ interface {
+	MediaType
+
+	// https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Encoding
+	// https://www.iana.org/assignments/http-parameters/http-parameters.xml#content-coding
 	ContentEncoding() string
-	FileExtension() string // copy of MediaType().FileExtension() to improve performance
 
 	Compress(raw Codec, options CompressOptions) (compressed Codec, err Error)
-	CompressBySlice(raw []byte, options CompressOptions) (compressed Codec, err Error)
-	CompressByReader(raw Reader, options CompressOptions) (compressed Codec, err Error)
 
 	Decompress(compressed Codec) (raw Codec, err Error)
-	DecompressFromSlice(compressed []byte) (raw Codec, err Error)
-	DecompressFromReader(compressed Reader, compressedLen int) (raw Codec, err Error)
 }
 
 type CompressOptions struct {
