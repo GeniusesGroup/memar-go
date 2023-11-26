@@ -1,14 +1,14 @@
-/* For license and copyright information please see LEGAL file in repository */
+/* For license and copyright information please see the LEGAL file in the code repository */
 
 package www
 
 const returnHTMLPage = `
-<!-- For license and copyright information please see LEGAL file in repository -->
+<!-- For license and copyright information please see the LEGAL file in the code repository -->
 <!DOCTYPE html>
 <html>
 
 <head>
-    <title>SabzCity - Your browser is outdated!</title>
+    <title>Your browser is outdated!</title>
 </head>
 
 <body>
@@ -81,7 +81,7 @@ const returnHTMLPage = `
         <h2>Your browser is outdated!</h2>
         <div>
             <p>
-                Don't take this personally, but your browser is too old to run <strong>SabzCity Platform</strong>.<br />
+                Don't take this personally, but your browser is too old to run <strong>the Platform</strong>.<br />
                 We require HTML5 support to work.
             </p>
             <p>

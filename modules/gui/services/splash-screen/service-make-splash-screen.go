@@ -1,4 +1,4 @@
-/* For license and copyright information please see LEGAL file in repository */
+/* For license and copyright information please see the LEGAL file in the code repository */
 
 package www
 
@@ -6,7 +6,7 @@ import (
 	"bytes"
 	"text/template"
 
-	"../protocol"
+	"memar/protocol"
 )
 
 // MakeSplashFiles make splash screen that use as landing page or first screen user see when open GUI app.
@@ -35,7 +35,7 @@ func MakeSplashFiles(html, css, json protocol.File) (err error) {
 }
 
 var splashHTMLFileTemplate = template.Must(template.New("splashHTMLFile").Parse(`
-<!-- For license and copyright information please see LEGAL file in repository -->
+<!-- For license and copyright information please see the LEGAL file in the code repository -->
 
 <main>
     <div>
@@ -51,7 +51,7 @@ var splashHTMLFileTemplate = template.Must(template.New("splashHTMLFile").Parse(
 `))
 
 var splashCSSFileTemplate = template.Must(template.New("splashCSSFile").Parse(`
-/* For license and copyright information please see LEGAL file in repository */
+/* For license and copyright information please see the LEGAL file in the code repository */
 
 main {
     position: fixed;

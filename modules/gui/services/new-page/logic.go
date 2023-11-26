@@ -1,6 +1,6 @@
-/* For license and copyright information please see LEGAL file in repository */
+/* For license and copyright information please see the LEGAL file in the code repository */
 
-package www
+package np
 
 import (
 	"bytes"
@@ -9,18 +9,8 @@ import (
 	"unsafe"
 )
 
-type MakeNewPageReq struct {
-	Domain      string
-	ScopeName   string
-	PageVarName string
-}
-
-type MakeNewPageRes struct {
-	JS, HTML, CSS, JSON []byte
-}
-
 // MakeNewPage generate 4 files for a ui page.
-func MakeNewPage(req *MakeNewPageReq) (res *MakeNewPageRes, err error) {
+func MakeNewPage(req *Request) (res *Response, err error) {
 	if req.PageVarName == "" {
 		req.PageVarName = strings.ReplaceAll(strings.Title(req.ScopeName), "-", " ")
 	}
@@ -30,7 +20,7 @@ func MakeNewPage(req *MakeNewPageReq) (res *MakeNewPageRes, err error) {
 	if err != nil {
 		return
 	}
-	res = &MakeNewPageRes{
+	res = &Response{
 		JS:   jsBuf.Bytes(),
 		HTML: (*(*[]byte)(unsafe.Pointer(&htmlPageFile))),
 		CSS:  (*(*[]byte)(unsafe.Pointer(&cssPageFile))),
@@ -40,13 +30,13 @@ func MakeNewPage(req *MakeNewPageReq) (res *MakeNewPageRes, err error) {
 	return
 }
 
-var jsPageFile = template.Must(template.New("jsPageFile").Parse(`/* For license and copyright information please see LEGAL file in repository */
+var jsPageFile = template.Must(template.New("jsPageFile").Parse(`/* For license and copyright information please see the LEGAL file in the code repository */
 
-import '../libjs/widget-notification/force-leave-page.js'
+import 'github.com/GeniusesGroup/libjs/widget-notification/force-leave-page.js'
 
 const page{{.PageVarName}} = {
     URN: {
-		URN: "urn:giti:{{.Domain}}:page:{{.ScopeName}}",
+		URN: "domain/{{.Domain}}:page:{{.ScopeName}}",
 		ID: "",
         Domain: "{{.Domain}}",
         Scope: "page",
@@ -101,7 +91,7 @@ page{{.PageVarName}}.DeactivatePage = async function () {
 page{{.PageVarName}}.OtherAction = async function () {}
 `))
 
-var htmlPageFile = `<!-- For license and copyright information please see LEGAL file in repository -->
+var htmlPageFile = `<!-- For license and copyright information please see the LEGAL file in the code repository -->
 
 <header>
 </header>
@@ -114,7 +104,7 @@ var htmlPageFile = `<!-- For license and copyright information please see LEGAL 
     </footer>
 </main>`
 
-var cssPageFile = `/* For license and copyright information please see LEGAL file in repository */
+var cssPageFile = `/* For license and copyright information please see the LEGAL file in the code repository */
 
 `
 
