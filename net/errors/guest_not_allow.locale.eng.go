@@ -2,7 +2,7 @@
 
 /* For license and copyright information please see the LEGAL file in the code repository */
 
-package errors
+package errs
 
 //memar:impl errGuestNotAllow memar/protocol.Detail
 func (dt *errGuestNotAllow) Domain() string  { return domainEnglish }

@@ -1,9 +1,10 @@
 /* For license and copyright information please see the LEGAL file in the code repository */
 
-package errors
+package errs
 
 import (
 	er "memar/error"
+	"memar/errors"
 	"memar/protocol"
 )
 
@@ -20,6 +21,8 @@ func (dt *errGuestNotAllow) Init() (err protocol.Error) {
 	if err != nil {
 		return
 	}
-	err = protocol.App.RegisterError(dt)
+	err = errors.Register(dt)
 	return
 }
+
+// memar error make guest-not-allowed ./errors -langs="eng,per"
