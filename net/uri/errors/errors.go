@@ -1,9 +1,9 @@
 /* For license and copyright information please see the LEGAL file in the code repository */
 
-package uri
+package errs
 
 import (
-	er "libgo/error"
+	er "memar/error"
 )
 
 // Errors

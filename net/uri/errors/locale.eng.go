@@ -2,10 +2,11 @@
 
 /* For license and copyright information please see the LEGAL file in the code repository */
 
-package uri
+package errs
 
 import (
-	"libgo/protocol"
+	"memar/detail"
+	"memar/protocol"
 )
 
 const domainEnglish = "URI"
@@ -35,4 +36,8 @@ func init() {
 		"",
 		"",
 		nil)
+}
+
+func init() {
+	MediaType.SetDetail(protocol.LanguageEnglish, "URI", "", "", "", "", []string{})
 }
