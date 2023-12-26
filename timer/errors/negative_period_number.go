@@ -4,6 +4,7 @@ package errs
 
 import (
 	er "memar/error"
+	"memar/errors"
 	"memar/protocol"
 )
 
@@ -16,6 +17,6 @@ func (dt *errNegativePeriodNumber) Init() (err protocol.Error) {
 	if err != nil {
 		return
 	}
-	err = protocol.App.RegisterError(dt)
+	err = errors.Register(dt)
 	return
 }
