@@ -45,8 +45,7 @@ type Async struct {
 	timing *Timing
 }
 
-// Init initialize the timer with given callback function or make the channel and send signal on it
-// Be aware that given function must not be closure and must not block the caller.
+// Init initialize the timer with given callback.
 //
 //memar:impl memar/protocol.Timer
 func (t *Async) Init(callback protocol.TimerListener) (err protocol.Error) {
@@ -81,6 +80,7 @@ func (t *Async) Deinit() (err protocol.Error) {
 
 //memar:impl memar/protocol.Timer
 func (t *Async) Status() (activeStatus protocol.TimerStatus) { return t.status.Load() }
+func (t *Async) When() monotonic.Time                        { return t.when }
 
 // Start adds the timer to the running cpu core timing.
 // This should only be called with a newly created timer.
@@ -258,7 +258,7 @@ loop:
 	return
 }
 
-// Tick will send a signal on the t.Signal() channel after each tick on initialized Timer.
+// Tick will call the t.callback.TimerHandler() after each tick on initialized Timer.
 // The period of the ticks is specified by the duration arguments.
 // The ticker will adjust the time interval or drop ticks to make up for slow receivers.
 // The durations must be greater than zero; if not, Tick() will panic.

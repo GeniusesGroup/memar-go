@@ -7,7 +7,7 @@ import (
 	"runtime"
 )
 
-var poolByCores = make(timing, cpu.CoreNum())
+var poolByCores = make(timing, cpu.LogicalCount())
 
 func init() {
 	var coreNumbers = runtime.GOMAXPROCS(0)

@@ -37,6 +37,8 @@ type Sync struct {
 	signal chan struct{}
 }
 
+// Init initialize the timer by make the channel and send signal on it
+//
 //memar:impl memar/protocol.Timer
 func (t *Sync) Init() (err protocol.Error) {
 	// Give the channel a 1-element buffer.

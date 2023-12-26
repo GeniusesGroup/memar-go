@@ -3,8 +3,6 @@
 package timer
 
 import (
-	"sync"
-
 	"memar/protocol"
 )
 
@@ -14,11 +12,10 @@ import (
 //
 // Normally access the timers while running on same CPU core,
 // but the scheduler can also do it from a different CPU core,
-// So in this case caller must hold Lock() to access.
+// Anyway caller MUST decide and MAY use any sync algorithm to sync operations.
 //
 // https://en.wikipedia.org/wiki/Heap_(data_structure)#Comparison_of_theoretic_bounds_for_variants
 type timingHeap struct {
-	sync.Mutex
 	timers []timerBucketHeap
 }
 
@@ -29,7 +26,8 @@ func (th *timingHeap) Init() (err protocol.Error) {
 	return
 }
 func (th *timingHeap) Reinit() (err protocol.Error) {
-	th.timers = nil
+	// TODO::: Do timers??
+	th.timers = th.timers[:0]
 	return
 }
 func (th *timingHeap) Deinit() (err protocol.Error) {
@@ -42,7 +40,6 @@ func (th *timingHeap) Append(b timerBucketHeap) { th.timers = append(th.timers, 
 
 // deleteTimer removes timer i from the timers heap.
 // It returns the smallest changed index in the timingHeap
-// The caller MUST have locked the timingHeap
 func (th *timingHeap) DeleteTimer(i int) (smallestChanged int) {
 	th.timers[i].timer.timing = nil
 
@@ -66,7 +63,6 @@ func (th *timingHeap) DeleteTimer(i int) (smallestChanged int) {
 
 // deleteTimer0 removes timer 0 from the timers heap.
 // It reports whether it saw no problems due to races.
-// The caller MUST have locked the timingHeap
 func (th *timingHeap) DeleteTimer0() {
 	th.timers[0].timer.timing = nil
 
@@ -80,14 +76,6 @@ func (th *timingHeap) DeleteTimer0() {
 		th.SiftDownTimer(0)
 	}
 }
-
-// Heap maintenance algorithms.
-// These algorithms check for slice index errors manually.
-// Slice index error can happen if the program is using racy
-// access to timers. We don't want to panic here, because
-// it will cause the program to crash with a mysterious
-// "panic holding locks" message. Instead, we panic while not
-// holding a lock.
 
 // SiftUpTimer puts the timer at position i in the right place
 // in the heap by moving it up toward the top of the heap.
