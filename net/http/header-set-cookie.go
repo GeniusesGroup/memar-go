@@ -13,30 +13,37 @@ import (
 	"memar/protocol"
 )
 
-// GetSetCookies parses and returns the Set-Cookie headers.
+// SetCookies returns the Set-Cookie headers.
 // By related RFC must exist just one Set-Cookie in each line of header.
 // https://tools.ietf.org/html/rfc6265#section-4.1.1
-func (h *header) SetCookies() (setCookies []SetCookie) {
-	var scs = h.Gets(HeaderKeySetCookie)
-	var setCookieCount = len(scs)
-	if setCookieCount == 0 {
-		return
-	}
-	setCookies = make([]SetCookie, setCookieCount)
-	for i := 0; i < setCookieCount; i++ {
-		setCookies[i].Unmarshal(scs[i])
-	}
-	return
-}
+func (h *Header) SetCookies() SetCookies { return SetCookies{0, h} }
 
-// MarshalSetCookies parses and set given Set-Cookies to the header.
+// AddSetCookie will marshal and add given Set-Cookies to the Set-Cookie header.
 // By related RFC must exist just one Set-Cookie in each line of header.
 // https://tools.ietf.org/html/rfc6265#section-4.1.1
-func (h *header) MarshalSetCookies(setCookies []SetCookie) {
+func (h *Header) AddSetCookie(setCookies ...SetCookie) {
 	var ln = len(setCookies)
 	for i := 0; i < ln; i++ {
-		h.Add(HeaderKeySetCookie, setCookies[i].Marshal())
+		h.Header_Add(HeaderKey_SetCookie, setCookies[i].Marshal())
 	}
+}
+
+// SetCookies store the header index
+type SetCookies struct {
+	startIndex int
+	headers    *Header
+}
+
+func (scs *SetCookies) Next() (setCookie SetCookie, exist bool) {
+	var sc, sci = scs.headers.Header_Find(scs.startIndex, HeaderKey_SetCookie)
+	if sc == "" {
+		exist = false
+	} else {
+		exist = true
+		setCookie.Unmarshal(sc)
+		scs.startIndex = sci + 1
+	}
+	return
 }
 
 /*

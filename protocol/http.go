@@ -2,9 +2,13 @@
 
 package protocol
 
+// Other languages:
+// - https://www.php-fig.org/psr/psr-7/
+// - https://nodejs.org/api/http.html#requestgetheaders
+
 // HTTPHandler is any object to be HTTP service handler.
 // Some other protocol like gRPC, SOAP, ... must implement inside HTTP, If they are use HTTP as a transfer protocol.
-type HTTPHandler interface {
+type HTTPHandler /*[REQ, RES any]*/ interface {
 	// Fill just if any http handler needed. Suggest use simple immutable path,
 	// not variable data included in path describe here:https://www.rfc-editor.org/rfc/rfc6570 e.g. "/product?id=1" instead of "/product/1/"
 	// API services can set like "/s?{{.ServiceID}}" but it is not efficient, instead find services by ID as base64
@@ -17,21 +21,21 @@ type HTTPHandler interface {
 	// ServeGoHTTP(httpRes http.ResponseWriter, httpReq *http.Request) Due to bad sign, we can't standard it here.
 
 	// Call service remotely by HTTP protocol
-	// doHTTP(req any) (res any, err Error) Due to specific sign for each service, we can't standard it here.
+	// DoHTTP(req REQ) (res RES, err Error) Due to specific sign for each service, we can't standard it here.
 }
 
 // HTTPRequest indicate HTTP request semantic.
 type HTTPRequest interface {
 	HTTP_PseudoHeader_Request
-	Header() HTTPHeader
-	HTTPBody
+	HTTP_Header
+	HTTP_Body
 }
 
 // HTTPResponse indicate HTTP response semantic.
 type HTTPResponse interface {
 	HTTP_PseudoHeader_Response
-	Header() HTTPHeader
-	HTTPBody
+	HTTP_Header
+	HTTP_Body
 }
 
 // HTTP_PseudoHeader_Request indicate request pseudo header.
@@ -60,18 +64,20 @@ type HTTP_PseudoHeader_Response interface {
 }
 
 // HTTPHeader indicate HTTP header semantic.
-type HTTPHeader interface {
-	Get(key string) (value string)
-	Gets(key string) (values []string)
-	Add(key, value string)
-	Adds(key string, values []string)
-	Set(key string, value string)
-	Sets(key string, values []string)
-	Del(key string)
+type HTTP_Header interface {
+	Header_Get(key string) (value string)
+	Header_Add(key, value string)
+	// Header_Set is same as Header_Del() >> Header_Add()
+	Header_Set(key, value string)
+	Header_Del(key string)
 }
 
+// some header fields such as "Set-Cookie", "WWW-Authenticate", "Proxy-Authenticate" break multiple values
+// separate by comma and use multi line same key! implementations MUST provide iteration mechanism over all header fields.
+type HTTP_Header_Iteration Iteration_KV[string, string]
+
 // HTTP Body Semantic
-type HTTPBody interface {
+type HTTP_Body interface {
 	Body() Codec
 	SetBody(codec Codec)
 }

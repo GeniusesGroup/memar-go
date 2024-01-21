@@ -2,31 +2,33 @@
 
 package http
 
-import "strconv"
+import (
+	"strconv"
+)
 
 // ContentLength read all value about content in header
-func (h *header) ContentLength() (l uint64) {
-	var contentLength = h.Get(HeaderKeyContentLength)
+func (h *Header) ContentLength() (l uint64) {
+	var contentLength = h.Header_Get(HeaderKey_ContentLength)
 	l, _ = strconv.ParseUint(contentLength, 10, 64)
 	return
 }
 
-// SetContentLength set body length to header
-func (h *header) SetContentLength(bodyLength uint64) {
-	h.Set(HeaderKeyContentLength, strconv.FormatUint(bodyLength, 10))
+// AddContentLength add body length to header
+func (h *Header) AddContentLength(bodyLength uint64) {
+	h.Header_Add(HeaderKey_ContentLength, strconv.FormatUint(bodyLength, 10))
 }
 
-// SetZeroContentLength set body length to header
-func (h *header) SetZeroContentLength() {
-	h.Set(HeaderKeyContentLength, "0")
+// AddZeroContentLength set body length to header
+func (h *Header) AddZeroContentLength() {
+	h.Header_Add(HeaderKey_ContentLength, "0")
 }
 
-// SetContentLength set body length to header.
-func (r *Request) SetContentLength() {
-	r.H.Set(HeaderKeyContentLength, strconv.FormatUint(uint64(r.body.Len()), 10))
+// AddContentLength add body length to header.
+func (r *Request) AddContentLength() {
+	r.Header_Add(HeaderKey_ContentLength, strconv.FormatUint(uint64(r.body.Len()), 10))
 }
 
-// SetContentLength set body length to header.
-func (r *Response) SetContentLength() {
-	r.H.Set(HeaderKeyContentLength, strconv.FormatUint(uint64(r.body.Len()), 10))
+// AddContentLength add body length to header.
+func (r *Response) AddContentLength() {
+	r.Header_Add(HeaderKey_ContentLength, strconv.FormatUint(uint64(r.body.Len()), 10))
 }

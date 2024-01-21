@@ -3,24 +3,24 @@
 package http
 
 import (
-	"memar/net/uri"
 	"memar/protocol"
 )
 
 // Request is represent HTTP request protocol structure.
 // https://tools.ietf.org/html/rfc2616#section-5
 type Request struct {
-	method  string
-	uri     uri.URI
-	version string
-
-	H header // Exported field to let consumers use other methods that protocol.HTTPHeader
+	PseudoHeader_Request
+	Header
 	body
 }
 
 //memar:impl memar/protocol.ObjectLifeCycle
 func (r *Request) Init() (err protocol.Error) {
-	err = r.H.Init()
+	err = r.PseudoHeader_Request.Init()
+	if err != nil {
+		return
+	}
+	err = r.Header.Init()
 	if err != nil {
 		return
 	}
@@ -28,13 +28,11 @@ func (r *Request) Init() (err protocol.Error) {
 	return
 }
 func (r *Request) Reinit() (err protocol.Error) {
-	r.method = ""
-	err = r.uri.Reinit()
+	err = r.PseudoHeader_Request.Reinit()
 	if err != nil {
 		return
 	}
-	r.version = ""
-	err = r.H.Reinit()
+	err = r.Header.Reinit()
 	if err != nil {
 		return
 	}
@@ -42,21 +40,17 @@ func (r *Request) Reinit() (err protocol.Error) {
 	return
 }
 func (r *Request) Deinit() (err protocol.Error) {
-	err = r.H.Deinit()
+	err = r.PseudoHeader_Request.Deinit()
+	if err != nil {
+		return
+	}
+	err = r.Header.Deinit()
 	if err != nil {
 		return
 	}
 	err = r.body.Deinit()
 	return
 }
-
-//memar:impl memar/protocol.HTTPRequest
-func (r *Request) Method() string              { return r.method }
-func (r *Request) URI() protocol.URI           { return &r.uri }
-func (r *Request) Version() string             { return r.version }
-func (r *Request) SetMethod(method string)     { r.method = method }
-func (r *Request) SetVersion(version string)   { r.version = version }
-func (r *Request) Header() protocol.HTTPHeader { return &r.H }
 
 // CheckHost check host of request by RFC 7230, section 5.3 rules: Must treat
 //
@@ -70,7 +64,7 @@ func (r *Request) Header() protocol.HTTPHeader { return &r.H }
 //
 // the same. In the second case, any Host line is ignored.
 func (r *Request) CheckHost() {
-	if r.uri.Authority() == "" {
-		r.uri.SetAuthority(r.H.Get(HeaderKeyHost))
+	if r.U.Authority() == "" {
+		r.U.SetAuthority(r.Header_Get(HeaderKey_Host))
 	}
 }

@@ -16,8 +16,7 @@ const (
 	// generate the correct format.
 	TimeFormat = "Mon, 02 Jan 2006 15:04:05 GMT"
 
-	headerInitMapLen    = 16
-	headerValuesPoolLen = 16
+	headerInitLen = 16
 )
 
 // Some default values
@@ -42,24 +41,24 @@ const (
 
 // Standard HTTP versions
 const (
-	VersionHTTP1  = "HTTP/1.0"
-	VersionHTTP11 = "HTTP/1.1"
-	VersionHTTP2  = "HTTP/2.0"
-	VersionHTTP3  = "HTTP/3.0"
+	Version_HTTP1  = "HTTP/1.0"
+	Version_HTTP11 = "HTTP/1.1"
+	Version_HTTP2  = "HTTP/2.0"
+	Version_HTTP3  = "HTTP/3.0"
 )
 
 // Standard HTTP methods
 // https://tools.ietf.org/html/rfc7231#section-4
 const (
-	MethodGET     = "GET"
-	MethodPOST    = "POST"
-	MethodHEAD    = "HEAD"
-	MethodPUT     = "PUT"
-	MethodDELETE  = "DELETE"
-	MethodOPTIONS = "OPTIONS"
-	MethodCONNECT = "CONNECT"
-	MethodTRACE   = "TRACE"
-	MethodPATCH   = "PATCH" // https://tools.ietf.org/html/rfc5789#section-2
+	Method_GET     = "GET"
+	Method_POST    = "POST"
+	Method_HEAD    = "HEAD"
+	Method_PUT     = "PUT"
+	Method_DELETE  = "DELETE"
+	Method_OPTIONS = "OPTIONS"
+	Method_CONNECT = "CONNECT"
+	Method_TRACE   = "TRACE"
+	Method_PATCH   = "PATCH" // https://tools.ietf.org/html/rfc5789#section-2
 )
 
 // Standard HTTP header keys
@@ -67,117 +66,117 @@ const (
 // https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers
 const (
 	// Request context
-	HeaderKeyFrom           = "From"
-	HeaderKeyHost           = "Host"
-	HeaderKeyReferer        = "Referer"
-	HeaderKeyReferrerPolicy = "Referrer-Policy"
-	HeaderKeyUserAgent      = "User-Agent"
+	HeaderKey_From           = "From"
+	HeaderKey_Host           = "Host"
+	HeaderKey_Referer        = "Referer"
+	HeaderKey_ReferrerPolicy = "Referrer-Policy"
+	HeaderKey_UserAgent      = "User-Agent"
 
 	// Response context
-	HeaderKeyAllow   = "Allow"
-	HeaderKeyServer  = "Server"
-	HeaderKeyErrorID = "Error-ID"
+	HeaderKey_Allow   = "Allow"
+	HeaderKey_Server  = "Server"
+	HeaderKey_ErrorID = "Error-ID"
 
 	// Authentication
-	HeaderKeyAuthorization      = "Authorization"
-	HeaderKeyProxyAuthorization = "Proxy-Authorization"
-	HeaderKeyProxyAuthenticate  = "Proxy-Authenticate" // res
-	HeaderKeyWWWAuthenticate    = "WWW-Authenticate"   // res
+	HeaderKey_Authorization      = "Authorization"
+	HeaderKey_ProxyAuthorization = "Proxy-Authorization"
+	HeaderKey_ProxyAuthenticate  = "Proxy-Authenticate" // res
+	HeaderKey_WWWAuthenticate    = "WWW-Authenticate"   // res
 
 	// Caching
-	HeaderKeyAge           = "Age"           // res
-	HeaderKeyCacheControl  = "Cache-Control" // req & res
-	HeaderKeyClearSiteData = "Clear-Site-Data"
-	HeaderKeyExpires       = "Expires" // res
-	HeaderKeyPragma        = "Pragma"  // req & res
-	HeaderKeyWarning       = "Warning" // req & res
-	HeaderKeyVary          = "Vary"    // res
+	HeaderKey_Age           = "Age"           // res
+	HeaderKey_CacheControl  = "Cache-Control" // req & res
+	HeaderKey_ClearSiteData = "Clear-Site-Data"
+	HeaderKey_Expires       = "Expires" // res
+	HeaderKey_Pragma        = "Pragma"  // req & res
+	HeaderKey_Warning       = "Warning" // req & res
+	HeaderKey_Vary          = "Vary"    // res
 
 	// Conditionals
-	HeaderKeyETag              = "ETag" // res
-	HeaderKeyIfMatch           = "If-Match"
-	HeaderKeyIfNoneMatch       = "If-None-Match"
-	HeaderKeyIfModifiedSince   = "If-Modified-Since"
-	HeaderKeyIfUnmodifiedSince = "If-Unmodified-Since"
-	HeaderKeyLastModified      = "Last-Modified" // res
+	HeaderKey_ETag              = "ETag" // res
+	HeaderKey_IfMatch           = "If-Match"
+	HeaderKey_IfNoneMatch       = "If-None-Match"
+	HeaderKey_IfModifiedSince   = "If-Modified-Since"
+	HeaderKey_IfUnmodifiedSince = "If-Unmodified-Since"
+	HeaderKey_LastModified      = "Last-Modified" // res
 
 	// Range requests
-	HeaderKeyAcceptRanges = "Accept-Ranges" // res
-	HeaderKeyContentRange = "Content-Range" // res
-	HeaderKeyIfRange      = "If-Range"
-	HeaderKeyRange        = "Range"
+	HeaderKey_AcceptRanges = "Accept-Ranges" // res
+	HeaderKey_ContentRange = "Content-Range" // res
+	HeaderKey_IfRange      = "If-Range"
+	HeaderKey_Range        = "Range"
 
 	// Connection management
-	HeaderKeyConnection = "Connection" // req & res
-	HeaderKeyKeepAlive  = "Keep-Alive"
-	HeaderKeyUpgrade    = "Upgrade"
+	HeaderKey_Connection = "Connection" // req & res
+	HeaderKey_KeepAlive  = "Keep-Alive"
+	HeaderKey_Upgrade    = "Upgrade"
 
 	// CORS
-	HeaderKeyAccessControlAllowOrigin      = "Access-Control-Allow-Origin"      // res
-	HeaderKeyAccessControlAllowMethods     = "Access-Control-Allow-Methods"     // res
-	HeaderKeyAccessControlAllowCredentials = "Access-Control-Allow-Credentials" // res
-	HeaderKeyAccessControlAllowHeaders     = "Access-Control-Allow-Headers"     // res
-	HeaderKeyAccessControlExposeHeaders    = "Access-Control-Expose-Headers"    // res
-	HeaderKeyAccessControlMaxAge           = "Access-Control-Max-Age"           // res
-	HeaderKeyAccessControlRequestHeaders   = "Access-Control-Request-Headers"   // res
-	HeaderKeyAccessControlRequestMethod    = "Access-Control-Request-Method"    // res
-	HeaderKeyOrigin                        = "Origin"
-	HeaderKeyTimingAllowOrigin             = "Timing-Allow-Origin"
-	HeaderKeyXPermittedCrossDomainPolicies = "X-Permitted-Cross-Domain-Policies"
+	HeaderKey_AccessControlAllowOrigin      = "Access-Control-Allow-Origin"      // res
+	HeaderKey_AccessControlAllowMethods     = "Access-Control-Allow-Methods"     // res
+	HeaderKey_AccessControlAllowCredentials = "Access-Control-Allow-Credentials" // res
+	HeaderKey_AccessControlAllowHeaders     = "Access-Control-Allow-Headers"     // res
+	HeaderKey_AccessControlExposeHeaders    = "Access-Control-Expose-Headers"    // res
+	HeaderKey_AccessControlMaxAge           = "Access-Control-Max-Age"           // res
+	HeaderKey_AccessControlRequestHeaders   = "Access-Control-Request-Headers"   // res
+	HeaderKey_AccessControlRequestMethod    = "Access-Control-Request-Method"    // res
+	HeaderKey_Origin                        = "Origin"
+	HeaderKey_TimingAllowOrigin             = "Timing-Allow-Origin"
+	HeaderKey_XPermittedCrossDomainPolicies = "X-Permitted-Cross-Domain-Policies"
 
 	// Content negotiation
-	HeaderKeyAcceptContent  = "Accept"
-	HeaderKeyAcceptCharset  = "Accept-Charset" // deprecated
-	HeaderKeyAcceptEncoding = "Accept-Encoding"
-	HeaderKeyAcceptLanguage = "Accept-Language"
-	HeaderKeyAcceptDatetime = "Accept-Datetime"
-	HeaderKeyAcceptPatch    = "Accept-Patch" // res
+	HeaderKey_AcceptContent  = "Accept"
+	HeaderKey_AcceptCharset  = "Accept-Charset" // deprecated
+	HeaderKey_AcceptEncoding = "Accept-Encoding"
+	HeaderKey_AcceptLanguage = "Accept-Language"
+	HeaderKey_AcceptDatetime = "Accept-Datetime"
+	HeaderKey_AcceptPatch    = "Accept-Patch" // res
 
 	// Message body information
-	HeaderKeyContentLength      = "Content-Length"      // req & res
-	HeaderKeyContentMD5         = "Content-MD5"         // req & res
-	HeaderKeyContentType        = "Content-Type"        // req & res
-	HeaderKeyContentDisposition = "Content-Disposition" // res
-	HeaderKeyContentEncoding    = "Content-Encoding"    // res
-	HeaderKeyContentLanguage    = "Content-Language"    // res
-	HeaderKeyContentLocation    = "Content-Location"    // res
-	HeaderKeyTransferEncoding   = "Transfer-Encoding"   // res
+	HeaderKey_ContentLength      = "Content-Length"      // req & res
+	HeaderKey_ContentMD5         = "Content-MD5"         // req & res
+	HeaderKey_ContentType        = "Content-Type"        // req & res
+	HeaderKey_ContentDisposition = "Content-Disposition" // res
+	HeaderKey_ContentEncoding    = "Content-Encoding"    // res
+	HeaderKey_ContentLanguage    = "Content-Language"    // res
+	HeaderKey_ContentLocation    = "Content-Location"    // res
+	HeaderKey_TransferEncoding   = "Transfer-Encoding"   // res
 
 	// Not ordered
-	HeaderKeyCookie                  = "Cookie"
-	HeaderKeySetCookie               = "Set-Cookie" // res
-	HeaderKeyDate                    = "Date"       // req & res
-	HeaderKeyVia                     = "Via"
-	HeaderKeyExpect                  = "Expect"
-	HeaderKeyForwarded               = "Forwarded"
-	HeaderKeyMaxForwards             = "Max-Forwards"
-	HeaderKeyTE                      = "TE"
-	HeaderKeyAltSvc                  = "Alt-Svc"                   // res
-	HeaderKeyLink                    = "Link"                      // res
-	HeaderKeyLocation                = "Location"                  // res
-	HeaderKeyP3P                     = "P3P"                       // res
-	HeaderKeyPublicKeyPins           = "Public-Key-Pins"           // res
-	HeaderKeyRefresh                 = "Refresh"                   // res
-	HeaderKeyRetryAfter              = "Retry-After"               // res
-	HeaderKeyStrictTransportSecurity = "Strict-Transport-Security" // res
-	HeaderKeyTrailer                 = "Trailer"                   // res
-	HeaderKeyTk                      = "Tk"                        // res
-	HeaderKeyXFrameOptions           = "X-Frame-Options"           // res
-	HeaderKeyNonAuthoritativeReason  = "Non-Authoritative-Reason"  // res
+	HeaderKey_Cookie                  = "Cookie"
+	HeaderKey_SetCookie               = "Set-Cookie" // res
+	HeaderKey_Date                    = "Date"       // req & res
+	HeaderKey_Via                     = "Via"
+	HeaderKey_Expect                  = "Expect"
+	HeaderKey_Forwarded               = "Forwarded"
+	HeaderKey_MaxForwards             = "Max-Forwards"
+	HeaderKey_TE                      = "TE"
+	HeaderKey_AltSvc                  = "Alt-Svc"                   // res
+	HeaderKey_Link                    = "Link"                      // res
+	HeaderKey_Location                = "Location"                  // res
+	HeaderKey_P3P                     = "P3P"                       // res
+	HeaderKey_PublicKeyPins           = "Public-Key-Pins"           // res
+	HeaderKey_Refresh                 = "Refresh"                   // res
+	HeaderKey_RetryAfter              = "Retry-After"               // res
+	HeaderKey_StrictTransportSecurity = "Strict-Transport-Security" // res
+	HeaderKey_Trailer                 = "Trailer"                   // res
+	HeaderKey_Tk                      = "Tk"                        // res
+	HeaderKey_XFrameOptions           = "X-Frame-Options"           // res
+	HeaderKey_NonAuthoritativeReason  = "Non-Authoritative-Reason"  // res
 )
 
 // Standard HTTP header values
 // https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers
 const (
 	// Connection management
-	HeaderValueKeepAlive = "Keep-Alive"
-	HeaderValueClose     = "Close"
+	HeaderValue_KeepAlive = "Keep-Alive"
+	HeaderValue_Close     = "Close"
 
 	// Message body information
-	HeaderValueChunked  = "chunked"
-	HeaderValueCompress = "compress"
-	HeaderValueDeflate  = "deflate"
-	HeaderValueGZIP     = "gzip"
+	HeaderValue_Chunked  = "chunked"
+	HeaderValue_Compress = "compress"
+	HeaderValue_Deflate  = "deflate"
+	HeaderValue_GZIP     = "gzip"
 )
 
 // HTTP Status codes

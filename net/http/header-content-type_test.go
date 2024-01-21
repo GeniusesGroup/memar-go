@@ -41,7 +41,9 @@ func Test_getContentType(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if gotC := getContentType(tt.args.contentType); !reflect.DeepEqual(gotC, tt.wantC) {
+			var gotC ContentType
+			gotC.FromString(tt.args.contentType)
+			if !reflect.DeepEqual(gotC, tt.wantC) {
 				t.Errorf("getContentType() = %v, want %v", gotC, tt.wantC)
 			}
 		})

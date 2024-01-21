@@ -1,6 +1,6 @@
 /* For license and copyright information please see the LEGAL file in the code repository */
 
-package http
+package httpv1
 
 import (
 	"bytes"
@@ -8,7 +8,7 @@ import (
 	"reflect"
 	"testing"
 
-	"memar/compress/raw"
+	"memar/buffer"
 )
 
 type RequestTest struct {
@@ -23,18 +23,20 @@ var requestTests = []RequestTest{
 		name:   "simple1",
 		packet: []byte("GET / HTTP/1.1\r\n" + "\r\n"),
 		req: Request{
-			method: "GET",
-			// uri: uri.URI{
-			// 	uri:       "/",
-			// 	uriAsByte: []byte("/"),
-			// 	scheme:    "",
-			// 	authority: "",
-			// 	path:      "/",
-			// 	query:     "",
-			// 	fragment:  "",
-			// },
-			version: "HTTP/1.1",
-			H:       header{},
+			PseudoHeader_Request: PseudoHeader_Request{
+				method: "GET",
+				// uri: uri.URI{
+				// 	uri:       "/",
+				// 	uriAsByte: []byte("/"),
+				// 	scheme:    "",
+				// 	authority: "",
+				// 	path:      "/",
+				// 	query:     "",
+				// 	fragment:  "",
+				// },
+				version: "HTTP/1.1",
+			},
+			Header: Header{},
 			body: body{
 				Codec: nil,
 			},
@@ -56,35 +58,37 @@ var requestTests = []RequestTest{
 			"\r\n" +
 			`{"Omid":"OMID"}`),
 		req: Request{
-			method: "POST",
-			// uri: uri.URI{
-			// 	uri:       "/m?2586547852",
-			// 	uriAsByte: []byte("/m?2586547852"),
-			// 	scheme:    "",
-			// 	authority: "",
-			// 	path:      "/m",
-			// 	query:     "2586547852",
-			// 	fragment:  "",
-			// },
-			version: "HTTP/1.1",
-			H: header{
-				headers: map[string][]string{
-					"Accept":                    {"text/html"},
-					"Accept-Encoding":           {"gzip, deflate"},
-					"Accept-Language":           {"en,fa;q=0.9"},
-					"Cache-Control":             {"max-age=0"},
-					"Connection":                {"keep-alive"},
-					"Content-Length":            {"15"},
-					"Content-Type":              {"application/json"},
-					"Host":                      {"geniuses.group"},
-					"Set-Cookie":                {"test"},
-					"Upgrade-Insecure-Requests": {"1"},
-					"User-Agent":                {"Mozilla"},
+			PseudoHeader_Request: PseudoHeader_Request{
+				method: "POST",
+				// uri: uri.URI{
+				// 	uri:       "/m?2586547852",
+				// 	uriAsByte: []byte("/m?2586547852"),
+				// 	scheme:    "",
+				// 	authority: "",
+				// 	path:      "/m",
+				// 	query:     "2586547852",
+				// 	fragment:  "",
+				// },
+				version: "HTTP/1.1",
+			},
+			Header: Header{
+				lines: []header_KV{
+					{"Accept", "text/html"},
+					{"Accept-Encoding", "gzip, deflate"},
+					{"Accept-Language", "en,fa;q=0.9"},
+					{"Cache-Control", "max-age=0"},
+					{"Connection", "keep-alive"},
+					{"Content-Length", "15"},
+					{"Content-Type", "application/json"},
+					{"Host", "geniuses.group"},
+					{"Set-Cookie", "test"},
+					{"Upgrade-Insecure-Requests", "1"},
+					{"User-Agent", "Mozilla"},
 				},
 			},
 			body: body{
-				Codec: &raw.ComDecom{
-					Data: []byte(`{"Omid":"OMID"}`),
+				Codec: &buffer.ComDecom{
+					Buf: []byte(`{"Omid":"OMID"}`),
 				},
 			},
 		},
@@ -104,30 +108,32 @@ var requestTests = []RequestTest{
 			"User-Agent: Mozilla\r\n" +
 			"\r\n"),
 		req: Request{
-			method: "POST",
-			// uri: uri.URI{
-			// 	uri:       "/m?2586547852",
-			// 	uriAsByte: []byte("/m?2586547852"),
-			// 	scheme:    "",
-			// 	authority: "",
-			// 	path:      "/m",
-			// 	query:     "2586547852",
-			// 	fragment:  "",
-			// },
-			version: "HTTP/1.1",
-			H: header{
-				headers: map[string][]string{
-					"Accept":                    {"text/html"},
-					"Accept-Encoding":           {"gzip, deflate"},
-					"Accept-Language":           {"en,fa;q=0.9"},
-					"Cache-Control":             {"max-age=0"},
-					"Connection":                {"keep-alive"},
-					"Content-Length":            {"15"},
-					"Content-Type":              {"application/json"},
-					"Host":                      {"geniuses.group"},
-					"Set-Cookie":                {"test"},
-					"Upgrade-Insecure-Requests": {"1"},
-					"User-Agent":                {"Mozilla"},
+			PseudoHeader_Request: PseudoHeader_Request{
+				method: "POST",
+				// uri: uri.URI{
+				// 	uri:       "/m?2586547852",
+				// 	uriAsByte: []byte("/m?2586547852"),
+				// 	scheme:    "",
+				// 	authority: "",
+				// 	path:      "/m",
+				// 	query:     "2586547852",
+				// 	fragment:  "",
+				// },
+				version: "HTTP/1.1",
+			},
+			Header: Header{
+				lines: []header_KV{
+					{"Accept", "text/html"},
+					{"Accept-Encoding", "gzip, deflate"},
+					{"Accept-Language", "en,fa;q=0.9"},
+					{"Cache-Control", "max-age=0"},
+					{"Connection", "keep-alive"},
+					{"Content-Length", "15"},
+					{"Content-Type", "application/json"},
+					{"Host", "geniuses.group"},
+					{"Set-Cookie", "test"},
+					{"Upgrade-Insecure-Requests", "1"},
+					{"User-Agent", "Mozilla"},
 				},
 			},
 			body: body{
@@ -138,9 +144,9 @@ var requestTests = []RequestTest{
 }
 
 func init() {
-	requestTests[0].req.uri.Set("", "", "/", "", "")
-	requestTests[1].req.uri.Set("", "", "/m", "2586547852", "")
-	requestTests[2].req.uri.Set("", "", "/m", "2586547852", "")
+	requestTests[0].req.U.Set("", "", "/", "", "")
+	requestTests[1].req.U.Set("", "", "/m", "2586547852", "")
+	requestTests[2].req.U.Set("", "", "/m", "2586547852", "")
 }
 
 func TestRequest_Unmarshal(t *testing.T) {
@@ -154,8 +160,8 @@ func TestRequest_Unmarshal(t *testing.T) {
 			if tt.out.method != tt.req.method {
 				t.Errorf("Request.Unmarshal(%q) - Method:\n\tgot  %v\n\twant %v\n", tt.packet, tt.out.method, tt.req.method)
 			}
-			if tt.out.uri.URI() != tt.req.uri.URI() {
-				t.Errorf("Request.Unmarshal(%q) - URI:\n\tgot  %v\n\twant %v\n", tt.packet, tt.out.uri.URI(), tt.req.uri.URI())
+			if tt.out.U.URI() != tt.req.U.URI() {
+				t.Errorf("Request.Unmarshal(%q) - URI:\n\tgot  %v\n\twant %v\n", tt.packet, tt.out.U.URI(), tt.req.U.URI())
 			}
 			if tt.out.version != tt.req.version {
 				t.Errorf("Request.Unmarshal(%q) - Version:\n\tgot  %v\n\twant %v\n", tt.packet, tt.out.version, tt.req.version)

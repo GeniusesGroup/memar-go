@@ -2,6 +2,20 @@
 
 package http
 
+import (
+	"memar/protocol"
+)
+
+// ContentType read all value about content in header
+func (h *Header) ContentType() (c ContentType) {
+	var contentType = h.Header_Get(HeaderKey_ContentType)
+	c.FromString(contentType)
+	return
+}
+func (h *Header) AddContentType(ct string) {
+	h.Header_Add(HeaderKey_ContentType, ct)
+}
+
 // ContentType store
 // https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Type
 type ContentType struct {
@@ -11,14 +25,8 @@ type ContentType struct {
 	Boundary string
 }
 
-// ContentType read all value about content in header
-func (h *header) ContentType() (c ContentType) {
-	var contentType = h.Get(HeaderKeyContentType)
-	return getContentType(contentType)
-}
-
-// getContentType read all value about content in header
-func getContentType(contentType string) (c ContentType) {
+//memar:impl memar/protocol.Stringer_From
+func (ct *ContentType) FromString(contentType string) (err protocol.Error) {
 	var mediaTypeFirst, mediaTypeSecond string
 	var index int
 	for i := 0; i < len(contentType); i++ {
@@ -34,23 +42,23 @@ func getContentType(contentType string) (c ContentType) {
 
 	switch contentType[0] {
 	case 'c': // charset=
-		c.Charset = contentType[8:]
+		ct.Charset = contentType[8:]
 	case 'b': // boundary=
-		c.Boundary = contentType[9:]
+		ct.Boundary = contentType[9:]
 	}
 
 	switch mediaTypeFirst {
 	case "text":
-		c.Type = ContentTypeMimeTypeText
+		ct.Type = ContentTypeMimeTypeText
 	case "application":
-		c.Type = ContentTypeMimeTypeApplication
+		ct.Type = ContentTypeMimeTypeApplication
 	}
 
 	switch mediaTypeSecond {
 	case "html":
-		c.SubType = ContentTypeMimeSubTypeHTML
+		ct.SubType = ContentTypeMimeSubTypeHTML
 	case "json":
-		c.SubType = ContentTypeMimeSubTypeJSON
+		ct.SubType = ContentTypeMimeSubTypeJSON
 	}
 
 	return

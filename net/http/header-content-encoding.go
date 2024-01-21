@@ -4,35 +4,43 @@ package http
 
 import "strings"
 
-type ContentEncodings string
-
-func (c ContentEncodings) Next() (contentEncoding string, remain ContentEncodings) {
-	var commaIndex int = strings.IndexByte(string(c), Comma)
-	if commaIndex == -1 {
-		commaIndex = len(c)
-	} else {
-		remain = c[commaIndex+1:]
-	}
-	contentEncoding = string(c[:commaIndex])
-	return
-}
-
 // ContentEncoding return content encoding and notify if multiple exist
 // To read multiple just call this method in a loop to get multiple became false
 // https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Encoding
-func (h *header) ContentEncoding() (ce string, multiple bool) {
-	var contentEncoding = h.Get(HeaderKeyContentEncoding)
-	var commaIndex int = strings.IndexByte(contentEncoding, Comma)
-	if commaIndex == -1 {
-		commaIndex = len(contentEncoding)
-	} else {
-		h.Replace(HeaderKeyContentEncoding, contentEncoding[commaIndex+1:])
-		multiple = true
-	}
-	ce = contentEncoding[:commaIndex]
-	return
+func (h *Header) ContentEncoding() ContentEncodings {
+	var contentEncodings = h.Header_Get(HeaderKey_ContentEncoding)
+	return ContentEncodings(contentEncodings)
 }
 
-func (h *header) SetContentEncoding(contentEncodings ...string) {
-	h.Sets(HeaderKeyContentEncoding, contentEncodings)
+func (h *Header) AddContentEncoding(contentEncodings string) {
+	h.Header_Add(HeaderKey_ContentEncoding, contentEncodings)
+}
+
+type ContentEncodings string
+
+// Last return last ContentEncoding and remove it from ContentEncodings.
+//
+// https://www.rfc-editor.org/rfc/rfc9110.html#section-8.4
+// If one or more encodings have been applied to a representation,
+// the sender that applied the encodings MUST generate a Content-Encoding header field
+// that lists the content codings in the order in which they were applied.
+// In other words, decode in the reverse order to the order in the header.
+func (c *ContentEncodings) Last() (contentEncoding string, exist bool) {
+	var ce = string(*c)
+
+	if len(ce) == 0 {
+		exist = false
+		return
+	}
+
+	var commaIndex int = strings.LastIndexByte(ce, Comma)
+	if commaIndex == -1 {
+		commaIndex = 0
+		*c = ""
+	} else {
+		*c = ContentEncodings(ce[:commaIndex-1])
+	}
+	contentEncoding = ce[commaIndex+1:]
+	exist = true
+	return
 }

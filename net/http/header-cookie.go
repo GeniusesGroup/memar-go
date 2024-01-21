@@ -10,44 +10,19 @@ import (
 	"memar/protocol"
 )
 
-type Cookies string
-
 // Cookies parses and returns the Cookie headers.
 // By related RFC we just support one Cookie in header.
 // https://tools.ietf.org/html/rfc6265#section-5.4
-func (c Cookies) Next() (cookie Cookie, remain Cookies) {
-	var rawRemain, _ = cookie.UnmarshalFrom(string(c))
-	remain = Cookies(rawRemain)
-	return
+func (h *Header) Cookies() Cookies {
+	var cookies = h.Header_Get(HeaderKey_Cookie)
+	return Cookies(cookies)
+}
+func (h *Header) AddCookies(cookies string) {
+	h.Header_Add(HeaderKey_Cookie, cookies)
 }
 
-// Cookies parses and returns the Cookie headers.
-// By related RFC we just support one Cookie in header.
-// https://tools.ietf.org/html/rfc6265#section-5.4
-func (h *header) Cookies() (cookies []Cookie) {
-	var cookie = h.Get(HeaderKeyCookie)
-	if len(cookie) == 0 {
-		return
-	}
-	var index int
-	cookies = make([]Cookie, 0, 8)
-	var c Cookie
-	for {
-		index = strings.IndexByte(cookie, ';')
-		if index == -1 {
-			c.Unmarshal(cookie)
-			cookies = append(cookies, c)
-			return
-		}
-		c.Unmarshal(cookie[:index])
-		cookies = append(cookies, c)
-
-		cookie = cookie[index+2:]
-	}
-}
-
-// MarshalCookies parses and set them to the Cookie header.
-func (h *header) MarshalCookies(cookies []Cookie) {
+// AddCookie will marshal and add given cookies to the Cookie header.
+func (h *Header) AddCookie(cookies ...Cookie) {
 	// TODO::: make buffer by needed size.
 	var b strings.Builder
 	var ln = len(cookies)
@@ -62,7 +37,26 @@ func (h *header) MarshalCookies(cookies []Cookie) {
 			break
 		}
 	}
-	h.Set(HeaderKeyCookie, b.String())
+	h.Header_Add(HeaderKey_Cookie, b.String())
+}
+
+// Cookies store all the Cookie headers.
+type Cookies string
+
+func (c *Cookies) Next() (cookie Cookie, exist bool) {
+	var cs = *c
+
+	if len(cs) == 0 {
+		exist = false
+		return
+	}
+
+	var remain, _ = cookie.UnmarshalFrom(string(cs))
+	if len(remain) > 0 {
+		exist = true
+		*c = Cookies(remain)
+	}
+	return
 }
 
 // Cookie represents an HTTP cookie as sent in the Cookie header of an HTTP request.

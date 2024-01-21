@@ -13,17 +13,18 @@ import (
 // Response is represent response protocol structure.
 // https://tools.ietf.org/html/rfc2616#section-6
 type Response struct {
-	version      string
-	statusCode   string
-	reasonPhrase string
-
-	H header // Exported field to let consumers use other methods that protocol.HTTPHeader
+	PseudoHeader_Response
+	Header
 	body
 }
 
 //memar:impl memar/protocol.ObjectLifeCycle
 func (r *Response) Init() (err protocol.Error) {
-	err = r.H.Init()
+	err = r.PseudoHeader_Response.Init()
+	if err != nil {
+		return
+	}
+	err = r.Header.Init()
 	if err != nil {
 		return
 	}
@@ -31,10 +32,11 @@ func (r *Response) Init() (err protocol.Error) {
 	return
 }
 func (r *Response) Reinit() (err protocol.Error) {
-	r.version = ""
-	r.statusCode = ""
-	r.reasonPhrase = ""
-	err = r.H.Reinit()
+	err = r.PseudoHeader_Response.Reinit()
+	if err != nil {
+		return
+	}
+	err = r.Header.Reinit()
 	if err != nil {
 		return
 	}
@@ -42,7 +44,11 @@ func (r *Response) Reinit() (err protocol.Error) {
 	return
 }
 func (r *Response) Deinit() (err protocol.Error) {
-	err = r.H.Deinit()
+	err = r.PseudoHeader_Response.Deinit()
+	if err != nil {
+		return
+	}
+	err = r.Header.Deinit()
 	if err != nil {
 		return
 	}
@@ -50,18 +56,10 @@ func (r *Response) Deinit() (err protocol.Error) {
 	return
 }
 
-//memar:impl memar/protocol.HTTPResponse
-func (r *Response) Version() string               { return r.version }
-func (r *Response) StatusCode() string            { return r.statusCode }
-func (r *Response) ReasonPhrase() string          { return r.reasonPhrase }
-func (r *Response) SetVersion(version string)     { r.version = version }
-func (r *Response) SetStatus(code, phrase string) { r.statusCode = code; r.reasonPhrase = phrase }
-func (r *Response) Header() protocol.HTTPHeader   { return &r.H }
-
 // GetStatusCode get status code as uit16
 func (r *Response) GetStatusCode() (code uint16, err protocol.Error) {
 	// TODO::: don't use strconv for such simple task
-	var c, goErr = strconv.ParseUint(r.statusCode, 10, 16)
+	var c, goErr = strconv.ParseUint(r.StatusCode(), 10, 16)
 	if goErr != nil {
 		return 0, &errs.ErrParseStatusCode
 	}
@@ -70,7 +68,7 @@ func (r *Response) GetStatusCode() (code uint16, err protocol.Error) {
 
 // GetError return related protocol.Error in header of the Response
 func (r *Response) GetError() (err protocol.Error) {
-	var errIDString = r.H.Get(HeaderKeyErrorID)
+	var errIDString = r.Header_Get(HeaderKey_ErrorID)
 	var errID, _ = strconv.ParseUint(errIDString, 10, 64)
 	if errID == 0 {
 		return
@@ -81,14 +79,14 @@ func (r *Response) GetError() (err protocol.Error) {
 
 // SetError set given protocol.Error to header of the response
 func (r *Response) SetError(err protocol.Error) {
-	r.H.Set(HeaderKeyErrorID, err.IDasString())
+	r.Header_Set(HeaderKey_ErrorID, err.IDasString())
 }
 
 // Redirect set given status and target location to the response
 // httpRes.Redirect(http.StatusMovedPermanentlyCode, http.StatusMovedPermanentlyPhrase, "http://www.google.com/")
 func (r *Response) Redirect(code, phrase string, target string) {
 	r.SetStatus(code, phrase)
-	r.H.Set(HeaderKeyLocation, target)
+	r.Header_Set(HeaderKey_Location, target)
 }
 
 func (r *Response) SetStatusByError(err protocol.Error) {
