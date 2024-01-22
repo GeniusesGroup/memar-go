@@ -13,7 +13,7 @@ type HashTable[K HashTable_Key[any], V HashTable_Value] interface {
 
 	Clear() (err Error)
 	Copy() (new HashTable[K, V], err Error)
-	Iterate(Iterate_KV[any]) (err Error)
+	Iterate(Iterate_KV[K, V]) (err Error)
 
 	Len
 	Cap
