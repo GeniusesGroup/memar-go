@@ -19,8 +19,9 @@ type DataType /*[T any]*/ interface {
 	// TODO::: add more
 
 	// existence length
-	// DataType_ExpectedLen
+	// DataType_ExpectedLength
 	// Len
+
 	DataType_Details
 	Stringer
 }
@@ -59,10 +60,12 @@ type DataType_AtomicAccessor[T any] interface {
 // a Clone implementation for a type T can do arbitrarily complicated operations required to create a new T.
 // It is a normal trait (other than being in the prelude), and so requires being used like a normal trait, with method calls, etc.
 type DataType_Clone[T any] interface {
-	// Returns a copy of the itself
-	Clone() T
-	// Performs copy-assignment from source
-	CloneFrom(source T)
+	// Returns a clone of the itself
+	Clone() (c T, err Error)
+	// Performs clone-assignment from source
+	CloneFrom(source T) (err Error)
+	// Performs clone-assignment to destination
+	CloneTo(destination T) (err Error)
 }
 
 // DataType_Copy is implicit, inexpensive, and cannot be re-implemented (memcpy).
@@ -72,9 +75,11 @@ type DataType_Clone[T any] interface {
 // every Copy type is also required to be Clone
 type DataType_Copy[T any] interface {
 	// Returns a copy of the itself
-	Copy() T
+	Copy() (c T, err Error)
 	// Performs copy-assignment from source
-	CopyFrom(source T)
+	CopyFrom(source T) (err Error)
+	// Performs copy-assignment to destination
+	CopyTo(destination T) (err Error)
 }
 
 type DataType_Locker interface {
@@ -82,10 +87,10 @@ type DataType_Locker interface {
 	Unlock()
 }
 
-// DataType_ExpectedLen or Expected length
-type DataType_ExpectedLen interface {
-	MinLen() int // in byte or 8bit
-	MaxLen() int // in byte or 8bit
+// DataType_ExpectedLength indicate min and max expected length.
+type DataType_ExpectedLength interface {
+	MinLength() NumberOfElement
+	MaxLength() NumberOfElement
 }
 
 type DataType_OptionalValue interface {

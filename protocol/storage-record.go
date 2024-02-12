@@ -14,25 +14,25 @@ package protocol
 // - If need encryption, Implement requirements at block storage level.
 type StorageRecords interface {
 	MediatypeNumbers() (num uint64, err Error)
-	ListMediatypeIDs(offset, limit uint64) (ids []uint64, err Error)
+	ListMediatypeIDs(offset ElementIndex, limit NumberOfElement) (ids []uint64, err Error)
 
 	RecordNumbers(mt MediaTypeID) (num uint64, err Error)
-	ListRecords(mt MediaTypeID, offset, limit uint64) (ids []UUID, err Error)
+	ListRecords(mt MediaTypeID, offset ElementIndex, limit NumberOfElement) (ids []UUID, err Error)
 
 	// Lock works only in versioned manner. use to reach strict consistency
-	Lock(mt MediaTypeID, id UUID) (lastVersion []byte, vo VersionOffset, err Error)
-	Unlock(mt MediaTypeID, id UUID, newVersion []byte) (err Error)
+	Lock(mt MediaTypeID, id UUID) (lastVersion Buffer, vo VersionOffset, err Error)
+	Unlock(mt MediaTypeID, id UUID, newVersion Buffer) (err Error)
 
 	// Count has eventual consistency behavior
-	Count(mt MediaTypeID, id UUID, offset, limit uint64) (numbers NumberOfVersion, err Error)
-	Length(mt MediaTypeID, id UUID, vo VersionOffset) (ln int, err Error)
+	Count(mt MediaTypeID, id UUID, offset ElementIndex, limit NumberOfElement) (numbers NumberOfVersion, err Error)
+	Length(mt MediaTypeID, id UUID, vo VersionOffset) (ln NumberOfElement, err Error)
 
-	Get(mt MediaTypeID, id UUID, vo VersionOffset) (record []byte, numbers NumberOfVersion, err Error)
+	Get(mt MediaTypeID, id UUID, vo VersionOffset) (record Buffer, numbers NumberOfVersion, err Error)
 	// GetLast has eventual consistency behavior
-	// GetLast(mt MediaTypeID, id UUID) (record []byte, vo VersionOffset, err Error)
+	// GetLast(mt MediaTypeID, id UUID) (record Buffer, vo VersionOffset, err Error)
 
-	Save(mt MediaTypeID, id UUID, record []byte) (err Error)
-	Update(mt MediaTypeID, id UUID, record []byte, vo VersionOffset) (err Error)
+	Save(mt MediaTypeID, id UUID, record Buffer) (err Error)
+	Update(mt MediaTypeID, id UUID, record Buffer, vo VersionOffset) (err Error)
 	// make invisible just by remove from primary index for all version of record.
 	Delete(mt MediaTypeID, id UUID) (err Error)
 	// make invisible just by remove from primary index. next Get() can know that a version exist, but data gone and no access to data anymore.

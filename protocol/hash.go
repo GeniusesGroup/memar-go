@@ -12,25 +12,23 @@ package protocol
 // The hash state may contain portions of the input in its original form,
 // which users are expected to handle for any possible security implications.
 type Hash interface {
-	// Write (via the embedded io.Writer interface) adds more data to the running hash.
-	// It never returns an error.
-	Writer
+	ObjectLifeCycle
+	// Init(source Buffer) Error
+	// Reinit resets the Hash to its initial state.
+	Reinit(source Buffer) Error
 
-	// Sum appends the current hash to b and returns the resulting slice.
+	// Sum returns the resulting hash slice with `HashLength()` length.
 	// It does not change the underlying hash state.
-	Sum(b []byte) []byte
+	Sum() []byte
 
-	// Reset resets the Hash to its initial state.
-	Reset()
+	// HashLength returns the number of bytes Sum will return.
+	HashLength() NumberOfElement
 
-	// Size returns the number of bytes Sum will return.
-	Size() int
-
-	// BlockSize returns the hash's underlying block size.
+	// BlockLength returns the hash's underlying block size.
 	// The Write method must be able to accept any amount
 	// of data, but it may operate more efficiently if all writes
 	// are a multiple of the block size.
-	BlockSize() int
+	BlockLength() NumberOfElement
 }
 
 // Hash16 is the common interface implemented by all 16-bit hash functions.
@@ -54,7 +52,7 @@ type Hash64 interface {
 // Hash128 is the common interface implemented by all 128-bit hash functions.
 type Hash128 interface {
 	// Hash
-	Sum128() uint64
+	Sum128() [16]byte
 }
 
 // Hash160 is the common interface implemented by all 160-bit hash functions.

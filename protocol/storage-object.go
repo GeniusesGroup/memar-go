@@ -2,6 +2,8 @@
 
 package protocol
 
+type Storage_Object = Buffer
+
 // StorageObjects is the interface that show how an object directory work.
 // Object owner is one app so it must handle concurrent protection internally.
 // Strongly think fundamentally due to all data in computer must store as k/v in storages finally even files or rows.
@@ -10,22 +12,22 @@ package protocol
 // If need encryption, Implement requirements at block storage level.
 type StorageObjects interface {
 	MediatypeNumbers() (num uint64, err Error)
-	ListMediatypeIDs(offset, limit uint64) (ids []uint64, err Error)
+	ListMediatypeIDs(offset ElementIndex, limit NumberOfElement) (ids []uint64, err Error)
 
 	ObjectNumbers(mt MediaTypeID) (num uint64, err Error)
-	ListObjects(mt MediaTypeID, offset, limit uint64) (ids []UUID, err Error)
+	ListObjects(mt MediaTypeID, offset ElementIndex, limit NumberOfElement) (ids []UUID, err Error)
 
-	Lock(mt MediaTypeID, id UUID) (object []byte, err Error)
-	Unlock(mt MediaTypeID, id UUID, object []byte) (err Error)
+	Lock(mt MediaTypeID, id UUID) (object Storage_Object, err Error)
+	Unlock(mt MediaTypeID, id UUID, object Storage_Object) (err Error)
 
-	Length(mt MediaTypeID, id UUID) (ln int, err Error)
-	Get(mt MediaTypeID, id UUID) (object []byte, err Error)
-	Read(mt MediaTypeID, id UUID, offset, limit uint64) (data []byte, err Error)
-	Save(mt MediaTypeID, id UUID, object []byte) (err Error)
-	Write(mt MediaTypeID, id UUID, offset uint64, data []byte) (err Error)
+	Length(mt MediaTypeID, id UUID) (ln NumberOfElement, err Error)
+	Get(mt MediaTypeID, id UUID) (object Storage_Object, err Error)
+	Read(mt MediaTypeID, id UUID, offset ElementIndex, limit NumberOfElement) (data Storage_Object, err Error)
+	Save(mt MediaTypeID, id UUID, object Storage_Object) (err Error)
+	Write(mt MediaTypeID, id UUID, offset ElementIndex, data Storage_Object) (err Error)
 
-	Append(mt MediaTypeID, id UUID, data []byte) (err Error)
-	Prepend(mt MediaTypeID, id UUID, data []byte) (err Error)
+	Append(mt MediaTypeID, id UUID, data Storage_Object) (err Error)
+	Prepend(mt MediaTypeID, id UUID, data Storage_Object) (err Error)
 	Extend(mt MediaTypeID, id UUID, length uint64) (err Error)
 
 	// make invisible just by remove from primary index

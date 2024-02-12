@@ -78,8 +78,8 @@ type FileData interface {
 	// Depend on OS, file data can be cache on ram until Save() called.
 	Save() (err Error)
 
-	Prepend(data []byte)
-	Append(data []byte)
-	Replace(old, new []byte, n int)
+	Prepend(data Buffer)
+	Append(data Buffer)
+	Replace(old, new Buffer, n int)
 	Codec
 }

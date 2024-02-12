@@ -2,9 +2,9 @@
 
 package protocol
 
-// Receiver must release Network_Packet slice and don't use it after return.
+// Receiver must release Network_Packet and don't use it after return.
 // So almost in most cases dev must copy Network_Packet payload to the socket.
-type Network_Packet []byte
+type Network_Packet = Buffer
 
 type PacketTarget interface {
 	// TODO::: just accept Network_FrameType? other conditions? some thing like Regex??

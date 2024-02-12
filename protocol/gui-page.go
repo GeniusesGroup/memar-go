@@ -43,5 +43,5 @@ type GUI_Page interface {
 
 type GUI_Page_DefaultConditions interface {
 	Editable() bool
-	MarketingUTM
+	// MarketingUTM
 }

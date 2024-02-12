@@ -2,17 +2,21 @@
 
 package protocol
 
-// Logger provide logging mechanism to prevent application from runtime crashes and
-// save details about runtime events to check by developers to fix bugs or develope better features.
+// Logger provide logging mechanism to save details about runtime events
+// to check by developers to fix bugs or develope better features.
+// `Logger` and `LogEvent` are local data structures.
+// For distributed usage the related domain module MUST provide other one that include e.g. `AppNodeID`, ...
+// Distributed log module can do these logic (not limit to these):
+// - Dispatch events to their listeners.
+// - Cache log events in the node that create it.
+// - Save all logs per day for a node in the record with LogMediatypeID as record type and `AppNodeID` as primary key.
+//
 // We can't accept all data in below post and proposal, just add to more details.
 // https://docs.google.com/document/d/1nFRxQ5SJVPpIBWTFHV-q5lBYiwGrfCMkESFGNzsrvBU/
 // https://dave.cheney.net/2015/11/05/lets-talk-about-logging
 type Logger interface {
 	// TODO::: Log or Logging:
-	// Log suggest to:
-	// - First Dispatch(event).
-	// - Cache log events in the node that create it.
-	// - Save all logs per day for a node in the record with LogMediatypeID as record type and NodeID as primary key.
+	// Log just DispatchEvent(event) to local listeners.
 	Log(event LogEvent) (err Error)
 
 	// Due to expect Fatal terminate app and it brake the app, Dev must design it in the app architecture with panic and log the event with LogLevel_Fatal
@@ -37,10 +41,8 @@ type LogEvent interface {
 	// Strongly suggest prepare formatted data in compile time by implement Stringer in desire type that provide this LogEvent.
 	Message() string
 
-	 // if log need to trace, specially in panic situation. Default fill by `debug.Stack()`
-	Stack() []byte
-
-	Codec
+	// if log need to trace, specially in panic situation. Default fill by `debug.Stack()`
+	Stack() string
 }
 
 // LogLevel indicate log level.
@@ -48,6 +50,10 @@ type LogLevel uint32
 
 const (
 	LogLevel_Unset LogLevel = 0
+
+	// LogLevel_AllSet = LogLevel_Debug | LogLevel_DeepDebug | LogLevel_Warning | LogLevel_Error | LogLevel_Alert |
+	// LogLevel_Critical | LogLevel_Emergency | LogLevel_Fatal | LogLevel_Security | LogLevel_Confidential
+	LogLevel_AllSet LogLevel = ^(LogLevel_Unset)
 
 	//
 	LogLevel_Information LogLevel = (1 << iota)
@@ -107,11 +113,4 @@ const (
 
 	// It can be enabled along with any above level indicate log carry sensitive data like full http data.
 	LogLevel_Confidential
-)
-
-// If any below mode disabled, logger must not save that log type.
-// But logger must Dispatch() it to any client requested any types even it is not enabled.
-const (
-	LogMode LogLevel = LogLevel_Debug | LogLevel_DeepDebug | LogLevel_Warning | LogLevel_Error | LogLevel_Alert |
-		LogLevel_Critical | LogLevel_Emergency | LogLevel_Fatal | LogLevel_Security | LogLevel_Confidential
 )

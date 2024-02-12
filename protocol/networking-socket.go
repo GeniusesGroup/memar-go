@@ -17,14 +17,17 @@ type Socket interface {
 	// due to the Unix philosophy that "everything is a file", and the analogies between sockets and files.
 	// Both have functions to read, write, open, and close
 
-	Buffer() Buffer
-
 	Socket_LowLevelAPIs
 	NetworkAddress      // string form of full address of socket to dial any time later.
 	Network_Status      //
 	OperationImportance // base on the connection and the service priority and weight
 	Timeout
-	Codec
+	// Codec
+}
+
+type Socket_Buffer interface {
+	SendBuffer() Buffer
+	ReceiveBuffer() Buffer
 }
 
 // Socket_LowLevelAPIs is low level APIs, don't use them in the services layer, if you don't know how it can be effect the application.
@@ -41,4 +44,6 @@ type Socket_LowLevelAPIs interface {
 	// Put in related queue to process income socket in non-blocking mode, means It must not block the caller in any ways.
 	// Socket must start with NetworkStatus_NeedMoreData if it doesn't need to call the service when the state changed for the first time
 	ScheduleProcessingSocket()
+
+	Socket_Buffer
 }

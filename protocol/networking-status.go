@@ -29,7 +29,9 @@ const (
 
 	NetworkStatus_NotResponse // peer not response to recently send request
 	NetworkStatus_RateLimited // socket limited due to higher usage than permitted
-	NetworkStatus_Timeout     // socket timeout(DeadlineExceeded) and must close
+
+	NetworkStatus_Timeout_Read  // socket timeout(DeadlineExceeded) and must close
+	NetworkStatus_Timeout_Write // socket timeout(DeadlineExceeded) and must close
 
 	NetworkStatus_BrokenPacket
 	NetworkStatus_NeedMoreData

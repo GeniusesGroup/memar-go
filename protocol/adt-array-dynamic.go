@@ -3,12 +3,15 @@
 package protocol
 
 // Slice is dynamically size array
-type Slice interface {
+// https://en.wikipedia.org/wiki/Dynamic_array
+type ADT_Array_Dynamic[ELEMENT any] interface {
 	// Data() T
-	Cap() int
 
 	// Append(v T)
 	// Copy(d T)
 
-	Len
+	Capacity
+	OccupiedLength
 }
+
+// Growth factor

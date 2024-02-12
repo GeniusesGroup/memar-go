@@ -9,7 +9,6 @@ package protocol
 type Event interface {
 	Domain() MediaType
 	DomainID() MediaTypeID // domain that event dispatch(belong) from it, It must be same as Domain().ID()
-	NodeID() NodeID        // node that event dispatch(belong) from it
 	Time() Time
 
 	// Returns true or false depending on how event was initialized. Its return value does not always carry meaning,

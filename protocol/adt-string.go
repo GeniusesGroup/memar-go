@@ -5,7 +5,7 @@ package protocol
 type String interface {
 	CharacterEncoding() CharacterEncoding
 
-	Slice
+	ADT_Array_Dynamic[any]
 }
 
 // Stringer code the data to/from human readable format. It can be any other format like JSON(not recommended).
@@ -15,8 +15,8 @@ type Stringer interface {
 }
 
 type Stringer_To interface {
-	ToString() string
+	ToString() (s string, err Error)
 }
 type Stringer_From interface {
-	FromString(s string) (err Error)
+	FromString(s string) (dl NumberOfElement, err Error)
 }

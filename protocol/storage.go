@@ -13,7 +13,7 @@ const (
 )
 
 type Storage_Versioned interface {
-	VersionNumber() NumberOfVersion
+	VersionNumber() VersionOffset
 }
 
 // MaxVersion == StorageRecord_NoVersion means this record don't need versioning or just one version.

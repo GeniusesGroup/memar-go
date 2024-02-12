@@ -11,12 +11,13 @@ const (
 type Network_FrameType byte
 
 type Network_Frame interface {
-	// TODO::: due to method need custom args in each frame type, we can't uncomment bellow easily!
+	// TODO::: due to method need custom args in each frame type, we can't uncomment bellow easily.
 	// StaticFrameLen(args) int
 
 	// FrameLen or FrameLength
-	FrameLen() int
+	FrameLength() NumberOfElement
 	NextFrame() []byte // Network_Frame
+	// Buffer
 
 	Process(sk Socket) (err Error)
 	Do(sk Socket) (err Error)
@@ -26,17 +27,19 @@ type Network_Framer interface {
 	FrameType() Network_FrameType
 }
 type Network_FrameWriter interface {
-	WriteFrame(packet []byte) (n int, err Error)
+	WriteFrame(packet Network_Packet) (n int, err Error)
 }
 
 // https://github.com/GeniusesGroup/memar/blob/main/networking.md#frames-number
 const (
 	Network_FrameType_Unset Network_FrameType = iota
+
+	// e.g. A way to process all old protocols e.g. Ethernet, ATM, IPv4, IPv6,
+	Network_FrameType_OldProtocols
+
 	Network_FrameType_Asb
 	Network_FrameType_Chapar
 	Network_FrameType_GP
-	// Network_FrameType_Ethernet
-	// Network_FrameType_ATM
 
 	Network_FrameType_Padding // Network_FrameType = 128 + iota
 	Network_FrameType_CallService

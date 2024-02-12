@@ -2,11 +2,10 @@
 
 package protocol
 
-// Codec wraps some other interfaces to act an object as a codec.
-// Differences:
-// - Marshal() don't think about any other parts and make a byte slice and serialize data to it.
-// - MarshalTo() care about the fact that serialized data must wrap with other data and serialize data in the given byte slice.
-// - Encode() like MarshalTo() but encode to a buffer not a byte slice by Buffer interface methods. buf can be a temp or final write location.
+// Codec wraps some other interfaces that need an data structure be a codec.
+// Just protocols that have just one specific logic NEED to implement this interface e.g. HTTP, MP3, AVI, ...
+// Others can implement other Codec e.g. Syllab, JSON, XML, HTML, CSS, ...
+// https://en.wikipedia.org/wiki/Codec
 type Codec interface {
 	MediaType() MediaType
 	CompressType() CompressType
@@ -14,55 +13,47 @@ type Codec interface {
 	Decoder
 	Encoder
 
-	Unmarshaler
-	Marshaler
+	// Unmarshaler
+	// Marshaler
 }
 
 // Decoder is the interface that wraps the Decode method.
-// Just one side need to implement Decode and can call other-side Encode().
-// Usually the side own data in non serialized shape must implement this interface.
 type Decoder interface {
 	// Decode read and decode data until end of needed data or occur error.
-	// Unlike Buffer.ReadFrom() it isn't read until EOF and just read needed data.
-	Decode(source Codec) (n int, err Error)
+	// Unlike io.ReadFrom() it isn't read until EOF and just read needed data.
+	Decode(source Buffer) (err Error)
 }
 
 // Encoder is the interface that wraps the Encode & Len methods.
-// Just one side need to implement Encode and can call other-side Decode().
-// Usually the side own data in non serialized shape must implement this interface.
 type Encoder interface {
-	// Encode writes serialized(encoded) data to writer until there's no more data to write.
-	// It like Buffer.WriteTo() with a very tiny difference that this method know about the serialized data but WriteTo just know marshaled data is a binary data.
-	// It use in old OSs fashion or stream writing in large data length. Old OSs do some logic in kernel e.g. IP/TCP packeting, ... that need heavy context switching logic.
-	// It will care about how to write data to respect performance. Usually by make temp fixed size buffer like bufio package.
-	Encode(destination Codec) (n int, err Error)
+	// Encode writes serialized(encoded) data to destination until there's no more data to write.
+	// Return any error that occur in buffer logic e.g. timeout error in socket, ...
+	Encode(destination Buffer) (err Error)
 
-	// Len return value n is the number of bytes that will written as encode data. 0 means no data and -1 means can't tell until full write.
-	Len
+	CodecLength
 }
+
+// In computer science, marshalling or marshaling (US spelling) is the process of
+// transforming the memory representation of an object into a data format suitable for storage or transmission.
+// https://en.wikipedia.org/wiki/Marshalling_(computer_science)
 
 // Unmarshaler is the interface that wraps the Unmarshal method.
 type Unmarshaler interface {
-	// Unmarshal reads and decode data from given slice until end of data or occur error
-	Unmarshal(data []byte) (n int, err Error)
-	UnmarshalFrom(data []byte) (remaining []byte, err Error)
+	// Unmarshal reads and decode data from given slice until end of needed data or occur error.
+	Unmarshal(source []byte) (n NumberOfElement, err Error)
 }
 
 // Marshaler is the interface that wraps the Marshal methods.
-// Return any error that occur in logic e.g. timeout error in socket, ...
 type Marshaler interface {
-	// Marshal serialized(encoded) data and return the byte slice hold serialized data.
-	Marshal() (data []byte, err Error)
-	// MarshalTo serialized(encoded) data to given slice from len to max cap and save marshal state for future call.
-	// It is very similar to Read() in Reader interface but with one difference behavior that this method don't need temporary buffer
-	MarshalTo(data []byte) (added []byte, err Error)
+	// Marshal write serialized(encoded) data to given slice from len to max cap and save marshal state for future call.
+	Marshal(destination []byte) (n NumberOfElement, err Error)
 
-	// Len return value n that is the number of bytes that will written by Marshal()||MarshalTo()
-	Len
+	CodecLength
 }
 
-type SerializeLen interface {
-	ComputeLen() (ln int)
-
-	Len
+type CodecLength interface {
+	// SerializationLength return value ln, that is the max number of bytes that will written as encode data by Encode()||Marshal()
+	// 0 means no data and -1 means can't tell until full write.
+	// Due to prevent performance penalty, Implementors can return max number instead of actual number of length.
+	SerializationLength() (ln NumberOfElement)
 }

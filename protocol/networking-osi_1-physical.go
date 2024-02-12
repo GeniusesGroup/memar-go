@@ -24,7 +24,7 @@ type OSI_Physical interface {
 	// A situation might be occur that the port available when a packet queued but when the time to send is come,
 	// the port broken and sender don't know about this.
 	// Due to speed matters in link layer, and it is very rare situation, it is better to ignore suddenly port unavailability.
-	Send(packet []byte) (err Error)
+	Send(packet Network_Packet) (err Error)
 
 	ObjectLifeCycle
 	Detail
