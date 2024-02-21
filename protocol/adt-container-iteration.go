@@ -16,13 +16,3 @@ type Iterate[ELEMENT any] interface {
 	// In each iteration if err != nil, iteration will be stopped
 	Iterate(index ElementIndex, el ELEMENT) (err Error)
 }
-
-type Iteration_KV[K, V any] interface {
-	Iterate_KV(startIndex int, iterator Iterate_KV[K, V]) (err Error)
-}
-
-type Iterate_KV[K, V any] interface {
-	// Iterate or traverse
-	// In each iteration if err != nil, iteration will be stopped
-	Iterate(index int, key K, value V) (err Error)
-}
