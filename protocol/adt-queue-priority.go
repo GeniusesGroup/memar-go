@@ -2,6 +2,4 @@
 
 package protocol
 
-type Validation interface {
-	Validate() (err Error)
-}
+// https://en.wikipedia.org/wiki/Priority_queue

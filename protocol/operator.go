@@ -16,8 +16,3 @@ const (
 	// https://en.wikipedia.org/wiki/Three-way_comparison
 	ComparisonOperator_ThreeWayComparison
 )
-
-// Equal provide comparable two items.
-type Equal[T any] interface {
-	Equal(v1, v2 T) bool
-}

@@ -3,7 +3,7 @@
 package protocol
 
 // Codec wraps some other interfaces that need an data structure be a codec.
-// Just protocols that have just one specific logic NEED to implement this interface e.g. HTTP, MP3, AVI, ...
+// Protocols that have just one specific logic NEED to implement this interface e.g. HTTP, MP3, AVI, ...
 // Others can implement other Codec e.g. Syllab, JSON, XML, HTML, CSS, ...
 // https://en.wikipedia.org/wiki/Codec
 type Codec interface {
@@ -12,9 +12,6 @@ type Codec interface {
 
 	Decoder
 	Encoder
-
-	// Unmarshaler
-	// Marshaler
 }
 
 // Decoder is the interface that wraps the Decode method.

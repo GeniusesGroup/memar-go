@@ -28,11 +28,16 @@ type OSI_Application_LowLevelAPIs interface {
 	SetResponse(res any)
 	SetError(err Error)
 
+	OperationImportance // base on the connection and the service priority and weight
 	OSI_Application_Handler
 	Stringer_To // e.g. "http", ...
 }
 
 type OSI_Application_Handler interface {
+	// Put in related queue to process income socket in non-blocking mode, means It must not block the caller in any ways.
+	// Socket must start with NetworkStatus_NeedMoreData if it doesn't need to call the service when the state changed for the first time
+	ScheduleProcessingSocket()
+
 	// HandleIncomeRequest must check socket status
 	HandleIncomeRequest(sk Socket) (err Error)
 

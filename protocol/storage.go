@@ -12,6 +12,8 @@ const (
 	StorageRecord_LastSourceVersion VersionOffset = 18446744073709551615
 )
 
+// Some other framework also introduce this protocol too:
+// https://docs.abp.io/en/abp/latest/Entities#versioning-entities
 type Storage_Versioned interface {
 	VersionNumber() VersionOffset
 }

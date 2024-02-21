@@ -12,15 +12,17 @@ type Buffer interface {
 	ObjectLifeCycle
 	// Init(opt BufferOptions)
 
-	ADT_Container[[]byte]
-
 	Buffer_Index
 	Buffer_Sizer
-	Buffer_Resize
 
-	// Codec
+	Container[byte]
 
-	// DataType_Locker
+	ADT_Compare[Buffer]
+	ADT_Concat[Buffer]
+	ADT_Split_Element[Buffer, byte]
+	ADT_Split_Offset[Buffer, byte]
+
+	// If source is a `Split` result, no copy action need and just increase buffer write index.
 	DataType_Clone[Buffer]
 	DataType_Copy[Buffer]
 }
@@ -71,13 +73,6 @@ const (
 // ReadAt blocks until either all the data is available or an error occurs.
 // In this respect ReadAt is different from Read.
 
-type Buffer_Resize interface {
-	Resize(ln NumberOfElement) Error
-	Resized() bool
-	// Resizable returns true if the Buffer can be resized, or false if not.
-	Resizable() bool
-}
-
 type Buffer_Index interface {
 	ReadIndex() ElementIndex
 	WriteIndex() ElementIndex
@@ -89,9 +84,4 @@ type Buffer_Index interface {
 type Buffer_Sizer interface {
 	// UnreadLength returns how many bytes are not read(ReadIndex to WriteIndex) in the buffer.
 	UnreadLength() NumberOfElement
-}
-
-type Buffer_Circular interface {
-	Head() ElementIndex
-	Tail() ElementIndex
 }

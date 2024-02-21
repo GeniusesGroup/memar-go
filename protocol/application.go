@@ -14,11 +14,6 @@ const (
 	AppMode_Dev = true
 )
 
-// App is default global protocol.Application like window global variable in browsers.
-// You must assign to it by any object implement protocol.Application on your main.go file. Suggestion:
-// protocol.App = &achaemenid.App
-var App Application
-
 // Application is the interface that must implement by any Application.
 // It introduce just local computing mechanism not network, storage, distributed, gui, ...
 type Application interface {

@@ -5,3 +5,18 @@ package protocol
 // ElementIndex is related to `NumberOfElement`
 // ElementIndex can refer to any location of memory blocks in byte or 8bit number.
 type ElementIndex int
+
+type ADT_LastElementIndex interface {
+	// LastElementIndex return the location of last element in the container.
+	LastElementIndex() ElementIndex
+}
+
+type ADT_Index[ELEMENT any] interface {
+	// Index return the location of given element in the container.
+	Index(el ELEMENT) (ei ElementIndex, err Error)
+}
+
+type ADT_LastIndex[ELEMENT any] interface {
+	// LastIndex return the location of given element in the container from end of container.
+	LastIndex(el ELEMENT) (ei ElementIndex, err Error)
+}

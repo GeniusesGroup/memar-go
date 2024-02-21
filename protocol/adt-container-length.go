@@ -17,11 +17,16 @@ type Capacity interface {
 }
 
 type OccupiedLength interface {
-	// OccupiedLength return a length that store before this method call.
+	// OccupiedLength return a length that occupied in the container before this method call.
 	OccupiedLength() NumberOfElement
 }
 
 type AvailableLength interface {
 	// AvailableLength or EmptyLength() or RemainingLength() returns how a length that are unused or can be set.
 	AvailableLength() NumberOfElement
+}
+
+type ADT_Count[ELEMENT any] interface {
+	// Count return the NumberOfElement of given element that exist in the container.
+	Count(el ELEMENT) (ne NumberOfElement, err Error)
 }

@@ -74,7 +74,7 @@ type HTTP_Header interface {
 
 // some header fields such as "Set-Cookie", "WWW-Authenticate", "Proxy-Authenticate" break multiple values
 // separate by comma and use multi line same key! implementations MUST provide iteration mechanism over all header fields.
-type HTTP_Header_Iteration Iteration_KV[string, string]
+type HTTP_Header_Iteration ADT_Iteration_KV[string, string]
 
 // HTTP Body Semantic
 type HTTP_Body interface {

@@ -8,13 +8,13 @@ type Error interface {
 	Type() ErrorType
 	CheckType(et ErrorType) bool
 
-	// Check both flat or chain situation.
-	Equal(Error) bool
-
 	// Add below method is not force by this interface but we must implement it to respect golang error interface as inner syntax
 	// **ATTENTION** assign Error in error typed variables cause serious problems.
 	// **ATTENTION** nil interface assign into other interface don't make nil value.
 	Error() string
+
+	// Check both flat or chain situation.
+	DataType_Equal[Error]
 
 	DataType
 	MediaType

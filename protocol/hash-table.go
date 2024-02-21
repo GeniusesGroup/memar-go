@@ -27,7 +27,7 @@ type HashTable_AtomicAccessor[K HashTable_Key[any], V HashTable_Value] interface
 }
 
 type HashTable_Key[T any] interface {
-	Equal[T]
+	DataType_Equal[T]
 	Hash64
 }
 
