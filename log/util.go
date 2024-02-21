@@ -8,10 +8,6 @@ import (
 	"memar/protocol"
 )
 
-func CheckLevelEnabled(level protocol.LogLevel) bool {
-	return protocol.LogMode&level != 0
-}
-
 func CallerInfo(calldepth int) (file string, line int) {
 	var ok bool
 	_, file, line, ok = runtime.Caller(calldepth)

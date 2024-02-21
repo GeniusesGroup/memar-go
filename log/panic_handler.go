@@ -18,13 +18,15 @@ func PanicHandler() {
 		case protocol.LogEvent:
 			logEvent = message
 		case protocol.Error:
-			logEvent = ErrorEvent(message, message.ToString())
+			var msgStr, _ = message.ToString()
+			logEvent = ErrorEvent(message, msgStr)
 		case error:
 			logEvent = ErrorEvent(&domain, message.Error())
 		case string:
 			logEvent = ErrorEvent(&domain, message)
 		case protocol.Stringer:
-			logEvent = ErrorEvent(&domain, message.ToString())
+			var msgStr, _ = message.ToString()
+			logEvent = ErrorEvent(&domain, msgStr)
 		case fmt.Stringer:
 			logEvent = ErrorEvent(&domain, message.String())
 		default:
