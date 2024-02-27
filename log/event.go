@@ -5,7 +5,7 @@ package log
 import (
 	"runtime/debug"
 
-	"memar/convert"
+	"memar/ce/utf8"
 	"memar/event"
 	"memar/protocol"
 	"memar/time/unix"
@@ -16,22 +16,32 @@ type Event struct {
 	event.Event
 
 	level   protocol.LogLevel
-	message string
-	stack   string
+	message protocol.String
+	stack   protocol.String
+
+	msgSTR   utf8.String
+	stackSTR utf8.ByteSlice
+}
+
+//memar:impl memar/protocol.ObjectLifeCycle
+func (e *Event) Init(domain protocol.MediaType, level protocol.LogLevel, message, stack protocol.String) {
+	e.level = level
+	e.message = message
+	e.stack = stack
+	e.Event.Init(domain, unix.Now())
 }
 
 //memar:impl memar/protocol.LogEvent
 func (e *Event) Level() protocol.LogLevel { return e.level }
-func (e *Event) Message() string          { return e.message }
-func (e *Event) Stack() string            { return e.stack }
+func (e *Event) Message() protocol.String { return e.message }
+func (e *Event) Stack() protocol.String   { return e.stack }
 
-//memar:impl memar/protocol.ObjectLifeCycle
-func (e *Event) Init(domain protocol.MediaType, level protocol.LogLevel, message string, stack bool) {
-	e.level = level
-	e.message = message
-	if stack {
-		e.stack = convert.UnsafeByteSliceToString(debug.Stack())
-	}
-	// TODO::: set NodeID???
-	e.Event.Init(domain, unix.Now())
+func (e *Event) DefaultStack() {
+	e.stackSTR.Init(debug.Stack())
+	e.stack = &e.stackSTR
+}
+
+func (e *Event) MSG_string(msg string) {
+	e.msgSTR = utf8.String(msg)
+	e.message = &e.msgSTR
 }

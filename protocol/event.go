@@ -8,7 +8,6 @@ package protocol
 // https://developer.mozilla.org/en-US/docs/Web/Events
 type Event interface {
 	Domain() MediaType
-	DomainID() MediaTypeID // domain that event dispatch(belong) from it, It must be same as Domain().ID()
 	Time() Time
 
 	// Returns true or false depending on how event was initialized. Its return value does not always carry meaning,
@@ -29,25 +28,28 @@ type Event interface {
 	// Indicates whether or not the event was initiated by the browser (after a user click, for instance) or by a script (using an event creation method, for example).
 	// IsTrusted() bool
 
+	Event_Methods
+}
+
+type Event_Methods interface {
 	// If invoked when the cancelable attribute value is true, and while executing a listener for the event with passive set to false,
 	// signals to the operation that caused event to be dispatched that it needs to be canceled.
 	PreventDefault()
 }
 
 // EventTarget is a interface implemented to receive events and may have listeners for them.
-// If it use in a domain, It means method only accept that domain event not other one.
-// So if AddEventListener called and give a domain MediaTypeID other than of this domain, it will return with proper error.
+// It MUST implement in each domain that need to dispatch, It means method only accept that domain event not other one.
 // https://developer.mozilla.org/en-US/docs/Web/API/EventTarget
-type EventTarget interface {
+type EventTarget[E Event] interface {
 	// Appends an event listener for events whose type attribute value is type.
 	// The callback argument sets the callback that will be invoked when the event is dispatched.
 	// The event listener is appended to target's event listener list and is not appended if it has the same type, callback, and capture.
 	// https://developer.mozilla.org/en-US/docs/Web/API/EventTarget/addEventListener
-	AddEventListener(domain MediaTypeID, callback EventListener, options AddEventListenerOptions) (err Error)
+	AddEventListener(callback EventListener[E], options AddEventListenerOptions) (err Error)
 
 	// Removes the event listener in target's event listener list with the same type, callback, and options.
 	// https://developer.mozilla.org/en-US/docs/Web/API/EventTarget/removeEventListener
-	RemoveEventListener(domain MediaTypeID, callback EventListener, options EventListenerOptions) (err Error)
+	RemoveEventListener(callback EventListener[E], options EventListenerOptions) (err Error)
 
 	// DispatchEvent() invokes event handlers synchronously. All applicable event handlers are called and return before DispatchEvent() returns.
 	// The terms "notify clients", "send notifications", "trigger notifications", and "fire notifications" are used interchangeably with DispatchEvent.
@@ -57,9 +59,9 @@ type EventTarget interface {
 	// type DomainEventTarget interface {
 	// Raise[T Event](event T)
 	// }
-	DispatchEvent(event Event) (err Error)
+	DispatchEvent(event E) (err Error)
 
-	// EventListeners() []EventListener // Due to security problem, can't expose listeners to others
+	// EventListeners() []EventListener[E] // Due to security problem, can't expose listeners to others
 }
 
 type EventListenerOptions struct {
@@ -92,7 +94,7 @@ type AddEventListenerOptions struct {
 // - Carry log event to desire node and show on screen e.g. in control room of the organization
 // - Notify to related person about critical log that must check as soon as possible by pager, sms, email, web notification, user GUI app, ...
 // - Local GUI application to notify the developers in AppMode_Dev
-type EventListener interface {
+type EventListener[E Event] interface {
 	// Non-Blocking, means It must not block the caller in any ways.
-	EventHandler(event Event)
+	EventHandler(event E)
 }

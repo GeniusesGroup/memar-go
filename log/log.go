@@ -3,10 +3,9 @@
 package log
 
 import (
-	"memar/protocol"
+	"memar/event"
 )
 
-// Logger is default global protocol.Logger like window.console.log global variable in browsers.
-// You must assign to it by any object implement protocol.Logger on your main.go file. Suggestion:
-// log.Logger = &esteghrar.Logger
-var Logger protocol.Logger
+// Logger is default global  like window.console.log global variable in browsers.
+// As suggested in protocol.Logger document, You can listen to notify about any log events occur.
+var Logger event.EventTarget[*Event]

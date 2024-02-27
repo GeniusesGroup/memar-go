@@ -13,25 +13,33 @@ import (
 func PanicHandler() {
 	var r = recover()
 	if r != nil {
-		var logEvent protocol.LogEvent
+		var logEvent *Event
 		switch message := r.(type) {
-		case protocol.LogEvent:
+		case *Event:
 			logEvent = message
+		case protocol.LogEvent:
+			var e Event
+			e.Init(message.Domain(), message.Level(), message.Message(), message.Stack())
+			logEvent = &e
 		case protocol.Error:
 			var msgStr, _ = message.ToString()
 			logEvent = ErrorEvent(message, msgStr)
 		case error:
-			logEvent = ErrorEvent(&domain, message.Error())
+			logEvent = ErrorEvent(&DT, nil)
+			logEvent.MSG_string(message.Error())
 		case string:
-			logEvent = ErrorEvent(&domain, message)
-		case protocol.Stringer:
+			logEvent = ErrorEvent(&DT, nil)
+			logEvent.MSG_string(message)
+		case protocol.Stringer[protocol.String]:
 			var msgStr, _ = message.ToString()
-			logEvent = ErrorEvent(&domain, msgStr)
+			logEvent = ErrorEvent(&DT, msgStr)
 		case fmt.Stringer:
-			logEvent = ErrorEvent(&domain, message.String())
+			logEvent = ErrorEvent(&DT, nil)
+			logEvent.MSG_string(message.String())
 		default:
-			logEvent = ErrorEvent(&domain, fmt.Sprint(r))
+			logEvent = ErrorEvent(&DT, nil)
+			logEvent.MSG_string(fmt.Sprint(r))
 		}
-		Logger.Log(logEvent)
+		Logger.DispatchEvent(logEvent)
 	}
 }

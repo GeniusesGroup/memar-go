@@ -8,30 +8,29 @@ import (
 	"memar/protocol"
 )
 
-// TODO::: Can implement a parallel hash table here instead use of map and sync?
+// TODO::: Can implement anything instead use of sync??
 
 // EventTarget dispatch events to listeners on desire protocol.EventMainType types.
-type EventTarget struct {
+type EventTarget[E protocol.Event] struct {
 	sync sync.Mutex
-	ls   map[protocol.MediaTypeID][]listener
+	ls   []listener[E]
 }
 
-type listener struct {
-	eventListener protocol.EventListener
+type listener[E protocol.Event] struct {
+	eventListener protocol.EventListener[E]
 	options       protocol.AddEventListenerOptions
 }
 
 //memar:impl memar/protocol.ObjectLifeCycle
-func (et *EventTarget) Init() (err protocol.Error) {
-	et.ls = make(map[protocol.ID][]listener)
+func (et *EventTarget[E]) Init() (err protocol.Error) {
+	et.ls = make([]listener[E], 0, CNF_InitialListenersLength)
 	return
 }
 
 //memar:impl memar/protocol.EventTarget
-func (et *EventTarget) DispatchEvent(event protocol.Event) (err protocol.Error) {
+func (et *EventTarget[E]) DispatchEvent(event E) (err protocol.Error) {
 	et.sync.Lock()
-	var eventDomain = event.DomainID()
-	var ls = et.ls[eventDomain]
+	var ls = et.ls
 	for i := 0; i < len(ls); i++ {
 		// TODO::: handle options here or caller layer must handle it?
 		ls[i].eventListener.EventHandler(event)
@@ -39,24 +38,24 @@ func (et *EventTarget) DispatchEvent(event protocol.Event) (err protocol.Error) 
 	et.sync.Unlock()
 	return
 }
-func (et *EventTarget) AddEventListener(domain protocol.MediaTypeID, callback protocol.EventListener, options protocol.AddEventListenerOptions) (err protocol.Error) {
+func (et *EventTarget[E]) AddEventListener(callback protocol.EventListener[E], options protocol.AddEventListenerOptions) (err protocol.Error) {
 	et.sync.Lock()
-	var dls = et.ls[domain]
-	dls = append(dls, listener{callback, options})
-	et.ls[domain] = dls
+	var dls = et.ls
+	dls = append(dls, listener[E]{callback, options})
+	et.ls = dls
 	et.sync.Unlock()
 	return
 }
-func (et *EventTarget) RemoveEventListener(domain protocol.MediaTypeID, callback protocol.EventListener, options protocol.EventListenerOptions) (err protocol.Error) {
+func (et *EventTarget[E]) RemoveEventListener(callback protocol.EventListener[E], options protocol.EventListenerOptions) (err protocol.Error) {
 	et.sync.Lock()
-	var dls = et.ls[domain]
+	var dls = et.ls
 	var ln = len(dls)
 	for i := 0; i < ln; i++ {
 		// TODO::: handle options here or caller layer must handle it?
 		if dls[i].eventListener == callback {
 			copy(dls[i:], dls[i+1:])
 			dls = dls[:ln-1]
-			et.ls[domain] = dls
+			et.ls = dls
 			break
 		}
 	}
