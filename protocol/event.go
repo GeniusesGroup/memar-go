@@ -7,7 +7,7 @@ package protocol
 // https://developer.mozilla.org/en-US/docs/Web/API/Event
 // https://developer.mozilla.org/en-US/docs/Web/Events
 type Event interface {
-	Domain() MediaType
+	Domain() DataType
 	Time() Time
 
 	// Returns true or false depending on how event was initialized. Its return value does not always carry meaning,
