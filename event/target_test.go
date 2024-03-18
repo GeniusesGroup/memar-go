@@ -6,4 +6,4 @@ import (
 	"memar/protocol"
 )
 
-var _ protocol.EventTarget[*Event] = &EventTarget[*Event]{}
+var _ protocol.EventTarget[*Event, Options] = &EventTarget[*Event]{}

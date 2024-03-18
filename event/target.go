@@ -18,7 +18,7 @@ type EventTarget[E protocol.Event] struct {
 
 type listener[E protocol.Event] struct {
 	eventListener protocol.EventListener[E]
-	options       protocol.AddEventListenerOptions
+	options       Options
 }
 
 //memar:impl memar/protocol.ObjectLifeCycle
@@ -38,15 +38,16 @@ func (et *EventTarget[E]) DispatchEvent(event E) (err protocol.Error) {
 	et.sync.Unlock()
 	return
 }
-func (et *EventTarget[E]) AddEventListener(callback protocol.EventListener[E], options protocol.AddEventListenerOptions) (err protocol.Error) {
+func (et *EventTarget[E]) AddEventListener(callback protocol.EventListener[E], options Options) (err protocol.Error) {
 	et.sync.Lock()
 	var dls = et.ls
+	// TODO::: handle options here or caller layer must handle it?
 	dls = append(dls, listener[E]{callback, options})
 	et.ls = dls
 	et.sync.Unlock()
 	return
 }
-func (et *EventTarget[E]) RemoveEventListener(callback protocol.EventListener[E], options protocol.EventListenerOptions) (err protocol.Error) {
+func (et *EventTarget[E]) RemoveEventListener(callback protocol.EventListener[E], options Options) (err protocol.Error) {
 	et.sync.Lock()
 	var dls = et.ls
 	var ln = len(dls)
