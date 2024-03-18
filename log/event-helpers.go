@@ -6,69 +6,59 @@ import (
 	"memar/protocol"
 )
 
-func NewEvent(domain protocol.MediaType, level protocol.LogLevel, message protocol.String) (event *Event) {
+func NewEvent(dt protocol.DataType, level protocol.LogLevel, message, stack protocol.String) (event *Event) {
 	//go:gc stack
 	var e Event
-	e.Init(domain, level, message, nil)
+	e.Init(dt, level, message, stack)
 	return &e
 }
 
-func TraceEvent(domain protocol.MediaType, level protocol.LogLevel, message protocol.String) (event *Event) {
+func NoticeEvent(dt protocol.DataType, message, stack protocol.String) (event *Event) {
 	var e Event
-	e.Init(domain, level, message, nil)
-	e.DefaultStack()
+	e.Init(dt, protocol.LogLevel_Notice, message, stack)
 	return &e
 }
 
-func NoticeEvent(domain protocol.MediaType, message protocol.String) (event *Event) {
+func ErrorEvent(dt protocol.DataType, message, stack protocol.String) (event *Event) {
 	var e Event
-	e.Init(domain, protocol.LogLevel_Notice, message, nil)
+	e.Init(dt, protocol.LogLevel_Error, message, stack)
 	return &e
 }
 
-func ErrorEvent(domain protocol.MediaType, message protocol.String) (event *Event) {
+func DebugEvent(dt protocol.DataType, message, stack protocol.String) (event *Event) {
 	var e Event
-	e.Init(domain, protocol.LogLevel_Error, message, nil)
-	e.DefaultStack()
+	e.Init(dt, protocol.LogLevel_Debug, message, stack)
 	return &e
 }
 
-func DebugEvent(domain protocol.MediaType, message protocol.String) (event *Event) {
+func DeepDebugEvent(dt protocol.DataType, message, stack protocol.String) (event *Event) {
 	var e Event
-	e.Init(domain, protocol.LogLevel_Debug, message, nil)
+	e.Init(dt, protocol.LogLevel_DeepDebug, message, stack)
 	return &e
 }
 
-func DeepDebugEvent(domain protocol.MediaType, message protocol.String) (event *Event) {
+func InfoEvent(dt protocol.DataType, message, stack protocol.String) (event *Event) {
 	var e Event
-	e.Init(domain, protocol.LogLevel_DeepDebug, message, nil)
-	e.DefaultStack()
+	e.Init(dt, protocol.LogLevel_Information, message, stack)
 	return &e
 }
 
-func InfoEvent(domain protocol.MediaType, message protocol.String) (event *Event) {
+func WarnEvent(dt protocol.DataType, message, stack protocol.String) (event *Event) {
 	var e Event
-	e.Init(domain, protocol.LogLevel_Information, message, nil)
-	return &e
-}
-
-func WarnEvent(domain protocol.MediaType, message protocol.String) (event *Event) {
-	var e Event
-	e.Init(domain, protocol.LogLevel_Warning, message, nil)
+	e.Init(dt, protocol.LogLevel_Warning, message, stack)
 	return &e
 }
 
 // FatalEvent return new event with fatal level and added stack trace.
-func FatalEvent(domain protocol.MediaType, message protocol.String) (event *Event) {
+func FatalEvent(dt protocol.DataType, message, stack protocol.String) (event *Event) {
 	var e Event
-	e.Init(domain, protocol.LogLevel_Fatal, message, nil)
-	e.DefaultStack()
+	e.Init(dt, protocol.LogLevel_Fatal, message, stack)
 	return &e
 }
 
 // ConfEvent return new event with "Confidential" level
-func ConfEvent(domain protocol.MediaType, message protocol.String) (event *Event) {
+func ConfEvent(dt protocol.DataType, message, stack protocol.String) (event *Event) {
 	var e Event
-	e.Init(domain, protocol.LogLevel_Confidential, message, nil)
+	e.Init(dt, protocol.LogLevel_Confidential, message, stack)
 	return &e
 }

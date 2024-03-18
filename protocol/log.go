@@ -2,11 +2,12 @@
 
 package protocol
 
-// Logger provide logging mechanism to save details about runtime events
+// Logger provide logging mechanism to dispatch events about runtime events
 // to check by developers to fix bugs or develope better features.
-// 
+//
 // `Logger` and `LogEvent` are local data structures.
 // Distributed log listener mechanism usually implement on some kind of services that:
+// - Provide many filter for listens on events.
 // - Carry log event to desire node and show on screen e.g. in control room of the organization
 // - Notify to related person about critical log that must check as soon as possible by pager, sms, email, web notification, user GUI app, ...
 // - Local GUI application to notify the developers in AppMode_Dev
@@ -25,22 +26,26 @@ package protocol
 // We can't accept all data in below post and proposal, just add to more details.
 // https://docs.google.com/document/d/1nFRxQ5SJVPpIBWTFHV-q5lBYiwGrfCMkESFGNzsrvBU/
 // https://dave.cheney.net/2015/11/05/lets-talk-about-logging
-type Logger[LE LogEvent] EventTarget[LE]
+type Logger[LE LogEvent, OPTs any] EventTarget[LE, OPTs]
 
 // LogEvent just suggest base structure, Additional data can structure in `Message` field as describe in many RFCs e.g.
 // https://datatracker.ietf.org/doc/html/rfc5424
 type LogEvent interface {
 	Event
 
-	Level() LogLevel
+	LogLevel() LogLevel
 
+	LogEvent_Message
+	Runtime_Stack
+}
+
+// LogEvent_Message will implement by any capsule that CAN be a log event.
+// Usually implement by `Error` capsules.
+type LogEvent_Message interface {
 	// Log don't provide or suggest methods like Printf(format string, v ...interface{}) to writes a formatted message,
 	// That must use some runtime logic e.g. fmt.Sprintf("Panic Exception: %s\nDebug Stack: %s", r, debug.Stack()).
-	// Strongly suggest prepare formatted data in compile time by implement Stringer in desire type that provide this LogEvent.
-	Message() String
-
-	// if log need to trace, specially in panic situation. Default fill by `debug.Stack()`
-	Stack() String
+	// Strongly suggest prepare formatted data in compile time by implement below method that provide log message.
+	LogMessage() String
 }
 
 // LogLevel indicate log level.

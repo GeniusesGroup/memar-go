@@ -19,27 +19,41 @@ func PanicHandler() {
 			logEvent = message
 		case protocol.LogEvent:
 			var e Event
-			e.Init(message.Domain(), message.Level(), message.Message(), message.Stack())
+			e.Init(message.Domain(), message.LogLevel(), message.LogMessage(), message.RuntimeStack())
 			logEvent = &e
+		case protocol.LogEvent_Message:
+			var e Event_UTF8
+			e.Init(&DT, protocol.LogLevel_Error, "", true)
+			e.message = message.LogMessage()
+			logEvent = &e.Event
 		case protocol.Error:
-			var msgStr, _ = message.ToString()
-			logEvent = ErrorEvent(message, msgStr)
+			var e Event_UTF8
+			e.Init(message, protocol.LogLevel_Error, message.DataTypeID_string(), true)
+			logEvent = &e.Event
 		case error:
-			logEvent = ErrorEvent(&DT, nil)
-			logEvent.MSG_string(message.Error())
+			var e Event_UTF8
+			e.Init(&DT, protocol.LogLevel_Error, message.Error(), true)
+			logEvent = &e.Event
 		case string:
-			logEvent = ErrorEvent(&DT, nil)
-			logEvent.MSG_string(message)
-		case protocol.Stringer[protocol.String]:
+			var e Event_UTF8
+			e.Init(&DT, protocol.LogLevel_Error, message, true)
+			logEvent = &e.Event
+		case protocol.Stringer_To[protocol.String]:
 			var msgStr, _ = message.ToString()
-			logEvent = ErrorEvent(&DT, msgStr)
+			var e Event_UTF8
+			e.Init(&DT, protocol.LogLevel_Error, "", true)
+			e.message = msgStr
+			logEvent = &e.Event
 		case fmt.Stringer:
-			logEvent = ErrorEvent(&DT, nil)
-			logEvent.MSG_string(message.String())
+			var e Event_UTF8
+			e.Init(&DT, protocol.LogLevel_Error, message.String(), true)
+			logEvent = &e.Event
 		default:
-			logEvent = ErrorEvent(&DT, nil)
-			logEvent.MSG_string(fmt.Sprint(r))
+			var e Event_UTF8
+			e.Init(&DT, protocol.LogLevel_Error, fmt.Sprint(r), true)
+			logEvent = &e.Event
 		}
+
 		Logger.DispatchEvent(logEvent)
 	}
 }

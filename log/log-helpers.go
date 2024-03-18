@@ -7,62 +7,67 @@ import (
 )
 
 // TODO::: Can't force compiler to inline below functions, Delete file to force developers use this way:
-// Logger.DispatchEvent(log.ConfEvent(&domain, "???"))
+// Logger.DispatchEvent(log.ConfEvent(&dt, "???"))
 
 // Trace make new event with given level and add stack trace and log it to Logger
-func Trace(domain protocol.MediaType, level protocol.LogLevel, message protocol.String) (err protocol.Error) {
-	// var e Event
-	// e.Init(level, message, nil)
-	return Logger.DispatchEvent(TraceEvent(domain, level, message))
+func Trace(dt protocol.DataType, level protocol.LogLevel, message string) (err protocol.Error) {
+	var e Event_UTF8
+	e.Init(dt, level, message, true)
+	return Logger.DispatchEvent(&e.Event)
 }
 
 // Info make new event with "Information" level and log it to Logger
-func Info(domain protocol.MediaType, message protocol.String) (err protocol.Error) {
-	var e Event
-	e.Init(domain, protocol.LogLevel_Information, message, nil)
-	return Logger.DispatchEvent(&e)
+func Info(dt protocol.DataType, message string) (err protocol.Error) {
+	var e Event_UTF8
+	e.Init(dt, protocol.LogLevel_Information, message, false)
+	return Logger.DispatchEvent(&e.Event)
 }
 
 // Notice make new event with "Notice" level and log it to Logger
-func Notice(domain protocol.MediaType, message protocol.String) (err protocol.Error) {
-	var e Event
-	e.Init(domain, protocol.LogLevel_Notice, message, nil)
-	return Logger.DispatchEvent(&e)
+func Notice(dt protocol.DataType, message string) (err protocol.Error) {
+	var e Event_UTF8
+	e.Init(dt, protocol.LogLevel_Notice, message, false)
+	return Logger.DispatchEvent(&e.Event)
+}
+
+// Error make new event with "Error" level and add stack trace and log it to Logger
+func Error(dt protocol.DataType, message string) (err protocol.Error) {
+	var e Event_UTF8
+	e.Init(dt, protocol.LogLevel_Error, message, true)
+	return Logger.DispatchEvent(&e.Event)
 }
 
 // Debug make new event with "Debug" level and log it to Logger
-func Debug(domain protocol.MediaType, message protocol.String) (err protocol.Error) {
-	var e Event
-	e.Init(domain, protocol.LogLevel_Debug, message, nil)
-	return Logger.DispatchEvent(&e)
+func Debug(dt protocol.DataType, message string) (err protocol.Error) {
+	var e Event_UTF8
+	e.Init(dt, protocol.LogLevel_Debug, message, false)
+	return Logger.DispatchEvent(&e.Event)
 }
 
 // DeepDebug make new event with "DeepDebug" level and log it to Logger
-func DeepDebug(domain protocol.MediaType, message protocol.String) (err protocol.Error) {
-	var e Event
-	e.Init(domain, protocol.LogLevel_DeepDebug, message, nil)
-	e.DefaultStack()
-	return Logger.DispatchEvent(&e)
+func DeepDebug(dt protocol.DataType, message string) (err protocol.Error) {
+	var e Event_UTF8
+	e.Init(dt, protocol.LogLevel_DeepDebug, message, true)
+	return Logger.DispatchEvent(&e.Event)
 }
 
 // Warn make new event with "Warning" level and log it to Logger
-func Warn(domain protocol.MediaType, message protocol.String) (err protocol.Error) {
-	var e Event
-	e.Init(domain, protocol.LogLevel_Warning, message, nil)
-	return Logger.DispatchEvent(&e)
+func Warn(dt protocol.DataType, message string) (err protocol.Error) {
+	var e Event_UTF8
+	e.Init(dt, protocol.LogLevel_Warning, message, false)
+	return Logger.DispatchEvent(&e.Event)
 }
 
 // Fatal make new event with "Fatal" level and log it to Logger
-func Fatal(domain protocol.MediaType, message protocol.String) (err protocol.Error) {
-	var e Event
-	e.Init(domain, protocol.LogLevel_Fatal, message, nil)
-	e.DefaultStack()
-	return Logger.DispatchEvent(&e)
+func Fatal(dt protocol.DataType, message string) (err protocol.Error) {
+	var e Event_UTF8
+	e.Init(dt, protocol.LogLevel_Fatal, message, true)
+	return Logger.DispatchEvent(&e.Event)
 }
 
 // Conf make new event with "Confidential" level and log it to Logger
-func Conf(domain protocol.MediaType, message protocol.String) (err protocol.Error) {
-	var e Event
-	e.Init(domain, protocol.LogLevel_Confidential, message, nil)
-	return Logger.DispatchEvent(&e)
+func Conf(dt protocol.DataType, message string) (err protocol.Error) {
+	var e Event_UTF8
+	e.Init(dt, protocol.LogLevel_Confidential, message, false)
+	return Logger.DispatchEvent(&e.Event)
 }

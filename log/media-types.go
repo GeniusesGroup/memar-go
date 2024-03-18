@@ -4,28 +4,17 @@ package log
 
 import (
 	"memar/datatype"
-	"memar/mediatype"
 	"memar/protocol"
 )
 
-var (
-	DT domainType
-)
-
-func init() {
-	DT.Init()
-}
+var DT domainType
 
 type domainType struct {
 	datatype.DataType
-	mediatype.MT
 }
 
-//memar:impl memar/protocol.ObjectLifeCycle
-func (dt *domainType) Init() (err protocol.Error) {
-	err = dt.MT.Init("domain/memar.scm.geniuses.group; package=log")
-	return
-}
+//memar:impl memar/protocol.MediaType
+func (dt *domainType) MediaType() string { return "domain/memar.scm.geniuses.group; package=log" }
 
 //memar:impl memar/protocol.DataType_Details
 func (dt *domainType) Status() protocol.SoftwareStatus    { return protocol.Software_PreAlpha }

@@ -3,9 +3,6 @@
 package log
 
 import (
-	"runtime/debug"
-
-	"memar/ce/utf8"
 	"memar/event"
 	"memar/protocol"
 	"memar/time/unix"
@@ -18,30 +15,21 @@ type Event struct {
 	level   protocol.LogLevel
 	message protocol.String
 	stack   protocol.String
-
-	msgSTR   utf8.String
-	stackSTR utf8.ByteSlice
 }
 
 //memar:impl memar/protocol.ObjectLifeCycle
-func (e *Event) Init(domain protocol.MediaType, level protocol.LogLevel, message, stack protocol.String) {
+func (e *Event) Init(dt protocol.DataType, level protocol.LogLevel, message, stack protocol.String) {
 	e.level = level
 	e.message = message
 	e.stack = stack
-	e.Event.Init(domain, unix.Now())
+	e.Event.Init(dt, unix.Now())
 }
 
 //memar:impl memar/protocol.LogEvent
-func (e *Event) Level() protocol.LogLevel { return e.level }
-func (e *Event) Message() protocol.String { return e.message }
-func (e *Event) Stack() protocol.String   { return e.stack }
+func (e *Event) LogLevel() protocol.LogLevel { return e.level }
 
-func (e *Event) DefaultStack() {
-	e.stackSTR.Init(debug.Stack())
-	e.stack = &e.stackSTR
-}
+//memar:impl memar/protocol.LogEvent_Message
+func (e *Event) LogMessage() protocol.String { return e.message }
 
-func (e *Event) MSG_string(msg string) {
-	e.msgSTR = utf8.String(msg)
-	e.message = &e.msgSTR
-}
+//memar:impl memar/protocol.Runtime_Stack
+func (e *Event) RuntimeStack() protocol.String { return e.stack }
