@@ -1,16 +1,17 @@
-/* For license and copyright information please see LEGAL file in repository */
+/* For license and copyright information please see the LEGAL file in the code repository */
 
 package uuid
 
 import (
 	"crypto/rand"
+	"encoding/base64"
 	"io"
 
 	"golang.org/x/crypto/sha3"
 
-	"github.com/GeniusesGroup/libgo/binary"
-	"github.com/GeniusesGroup/libgo/protocol"
-	"github.com/GeniusesGroup/libgo/time/unix"
+	"memar/binary"
+	"memar/protocol"
+	"memar/time/unix"
 )
 
 type UUID [16]byte
@@ -22,7 +23,16 @@ func (id UUID) ExistenceTime() protocol.Time {
 	time.ChangeTo(unix.SecElapsed(id.secondElapsed()), id.nanoSecondElapsed())
 	return &time
 }
-func (id UUID) ToString() string { return "TODO:::" }
+
+//memar:impl memar/protocol.Stringer
+func (id UUID) ToString() (s string, err protocol.Error) {
+	s = base64.RawURLEncoding.EncodeToString(id[:])
+	return
+}
+func (id *UUID) FromString(s string) (err protocol.Error) {
+	// TODO:::
+	return
+}
 
 // New will generate 16 byte time based UUID.
 // **CAUTION**: Use for ObjectID in a clustered software without any hash cause all writes always go to one node.

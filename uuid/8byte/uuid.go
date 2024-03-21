@@ -1,4 +1,4 @@
-/* For license and copyright information please see LEGAL file in repository */
+/* For license and copyright information please see the LEGAL file in the code repository */
 
 package uuid
 
@@ -9,9 +9,9 @@ import (
 
 	"golang.org/x/crypto/sha3"
 
-	"github.com/GeniusesGroup/libgo/binary"
-	"github.com/GeniusesGroup/libgo/protocol"
-	"github.com/GeniusesGroup/libgo/time/unix"
+	"memar/binary"
+	"memar/protocol"
+	"memar/time/unix"
 )
 
 type UUID [8]byte
@@ -19,11 +19,20 @@ type UUID [8]byte
 func (id UUID) UUID() [8]byte      { return id }
 func (id UUID) ID() [3]byte        { return id.id() }
 func (id UUID) IDasString() string { return base64.RawURLEncoding.EncodeToString(id[:8]) }
-func (id UUID) ToString() string   { return "TODO:::" }
 func (id UUID) ExistenceTime() protocol.Time {
 	var time unix.Time
 	time.ChangeTo(unix.SecElapsed(id.secondElapsed()), 0)
 	return &time
+}
+
+//memar:impl memar/protocol.Stringer
+func (id UUID) ToString() (s string, err protocol.Error) {
+	s = base64.RawURLEncoding.EncodeToString(id[:])
+	return
+}
+func (id *UUID) FromString(s string) (err protocol.Error) {
+	// TODO:::
+	return
 }
 
 // New will generate 8 byte time based UUID.
@@ -62,8 +71,8 @@ func (id *UUID) NewRandom() {
 	}
 }
 
-func (id UUID) id() (rid [3]byte)    { copy(rid[:], id[5:]); return }
-func (id UUID) secondElapsed() int64 { 
+func (id UUID) id() (rid [3]byte) { copy(rid[:], id[5:]); return }
+func (id UUID) secondElapsed() int64 {
 	var sec [8]byte
 	copy(sec[:], id[:])
 	return int64(binary.LittleEndian.Uint64(id[0:])) >> (64 - 40)

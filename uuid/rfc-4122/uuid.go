@@ -1,4 +1,4 @@
-/* For license and copyright information please see LEGAL file in repository */
+/* For license and copyright information please see the LEGAL file in the code repository */
 
 package uuid
 
@@ -8,8 +8,9 @@ import (
 	"encoding/hex"
 	"io"
 
-	"github.com/GeniusesGroup/libgo/binary"
-	"github.com/GeniusesGroup/libgo/convert"
+	"memar/binary"
+	"memar/convert"
+	"memar/protocol"
 )
 
 // RFC4122 representation compliant with specification described in https://tools.ietf.org/html/rfc4122.
@@ -48,7 +49,22 @@ func (uuid UUID) Equal(uuid2 UUID) bool {
 	return bytes.Equal(uuid[:], uuid2[:])
 }
 
-func (uuid UUID) ToString() string { return uuid.String() }
+// encode/parse by RFC4122
+//
+//memar:impl memar/protocol.Stringer
+func (uuid UUID) ToString() (s string, err protocol.Error) {
+	s = uuid.String()
+	return
+}
+func (uuid UUID) FromString(s string) (err protocol.Error) {
+	var text = convert.UnsafeStringToByteSlice(s)
+	hex.Decode(uuid[0:4], text[:8])
+	hex.Decode(uuid[4:6], text[9:13])
+	hex.Decode(uuid[6:8], text[14:18])
+	hex.Decode(uuid[8:10], text[19:23])
+	hex.Decode(uuid[10:], text[24:])
+	return
+}
 
 // String returns canonical string representation of RFC4122:
 // xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx.
@@ -56,16 +72,6 @@ func (uuid UUID) String() string {
 	var buf [36]byte
 	encodeHex(buf[:], uuid)
 	return string(buf[:])
-}
-
-// FromString will parsing RFC4122 from string input
-func (uuid UUID) FromString(s string) {
-	var text = convert.UnsafeStringToByteSlice(s)
-	hex.Decode(uuid[0:4], text[:8])
-	hex.Decode(uuid[4:6], text[9:13])
-	hex.Decode(uuid[6:8], text[14:18])
-	hex.Decode(uuid[8:10], text[19:23])
-	hex.Decode(uuid[10:], text[24:])
 }
 
 // URI returns the RFC 2141 URN form of uuid,
