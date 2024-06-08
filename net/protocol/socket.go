@@ -18,8 +18,8 @@ type Socket interface {
 	// Both have functions to read, write, open, and close
 
 	Socket_LowLevelAPIs
-	NetworkAddress      // string form of full address of socket to dial any time later.
-	Network_Status      //
+	NetworkAddress // string form of full address of socket to dial any time later.
+	Network_Status //
 	Timeout
 }
 

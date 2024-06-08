@@ -5,6 +5,6 @@ package protocol
 // Addr represents a network end point address.
 // They can be any layer 2 or 3 or even 4.
 type NetworkAddress interface {
-	LocalAddr() Stringer
-	RemoteAddr() Stringer
+	LocalAddr() Stringer[String]
+	RemoteAddr() Stringer[String]
 }

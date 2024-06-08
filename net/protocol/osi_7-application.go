@@ -30,7 +30,7 @@ type OSI_Application_LowLevelAPIs interface {
 
 	OperationImportance // base on the connection and the service priority and weight
 	OSI_Application_Handler
-	Stringer_To // e.g. "http", ...
+	// Stringer_To[String] // e.g. "http", ...
 }
 
 type OSI_Application_Handler interface {
