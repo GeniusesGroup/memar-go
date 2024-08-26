@@ -1,10 +1,10 @@
 /* For license and copyright information please see the LEGAL file in the code repository */
 
-package protocol
+package gui_p
 
 // Screen indicate some information about screen that a page-state(window) can render to it.
 // https://developer.mozilla.org/en-US/docs/Web/API/Screen
-type GUIScreen interface {
+type Screen interface {
 	ID() int
 	Type() ScreenType
 	Mode() ScreenMode
@@ -19,7 +19,7 @@ type GUIScreen interface {
 	ColorDepth() int
 	Orientation() ScreenOrientation
 
-	EventTarget
+	// EventTarget[GUIScreen]
 }
 
 type ScreenType uint8

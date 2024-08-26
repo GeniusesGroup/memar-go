@@ -1,15 +1,15 @@
 /* For license and copyright information please see the LEGAL file in the code repository */
 
-package protocol
+package gui_p
 
-type GUI_Navigator interface {
+type Navigator interface {
 	// Active a page like alt+tab in windows to show Pages() and their states
 	SwitcherPage()
 
-	HomePage() (page GUI_Page)
-	ActivePage() (page GUI_Page)
+	HomePage() (page Page)
+	ActivePage() (page Page)
 	// It must reorder by recently active page be last item in the array
-	ActivePages() (pages []GUI_Page)
+	ActivePages() (pages []Page)
 
 	ActivatePage(url string) // Navigate(url string)
 }

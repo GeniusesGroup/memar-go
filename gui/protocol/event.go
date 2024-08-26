@@ -1,12 +1,12 @@
 /* For license and copyright information please see the LEGAL file in the code repository */
 
-package protocol
+package gui_p
 
 // Event usually can be any other domain records that store in storage layer.
 // https://www.w3.org/TR/DOM-Level-3-Events/#event-flow
 // https://developer.mozilla.org/en-US/docs/Web/API/Event
 // https://developer.mozilla.org/en-US/docs/Web/Events
-type GUI_Event interface {
+type Event interface {
 	// Returns true or false depending on how event was initialized.
 	// True if event goes through its target's ancestors in reverse tree order, and false otherwise.
 	// When set to true, options's capture prevents callback from being invoked when the event's eventPhase attribute value is BUBBLING_PHASE.

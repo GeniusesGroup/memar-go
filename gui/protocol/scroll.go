@@ -1,13 +1,13 @@
 /* For license and copyright information please see the LEGAL file in the code repository */
 
-package protocol
+package gui_p
 
-// GUI_Scroll indicate scroll behavior in any elements.
+// Scroll indicate scroll behavior in any elements.
 // If the element's direction is rtl (right-to-left), then scrollLeft is 0 when the scrollbar is at its rightmost position
 // (at the start of the scrolled content), and then increasingly negative as you scroll towards the end of the content.
-type GUI_Scroll interface {
+type Scroll interface {
 	// https://developer.mozilla.org/en-US/docs/Web/API/Window/scroll
-	Scroll(x, y int, options GUI_Scroll_Options)
+	Scroll(x, y int, options Scroll_Options)
 	// Scrolls to the HTML element with the given id.
 	ScrollToID(id string)
 
@@ -32,18 +32,18 @@ type GUI_Scroll interface {
 	// 		overflow-x: scroll;		/* Show horizontal scrollbar */
 	Scrollbars() (x, y bool)
 
-	EventTarget
+	// EventTarget[Scroll]
 }
 
-type GUI_Scroll_Options struct {
-	Behavior GUI_Scroll_Behavior
+type Scroll_Options struct {
+	Behavior Scroll_Behavior
 }
 
 // Specifies the scrolling animate behavior
-type GUI_Scroll_Behavior uint8
+type Scroll_Behavior uint8
 
 const (
-	GUI_Scroll_Behavior_Auto GUI_Scroll_Behavior = iota
-	GUI_Scroll_Behavior_Smoothly
-	GUI_Scroll_Behavior_Instantly // instantly in a single jump
+	Scroll_Behavior_Auto Scroll_Behavior = iota
+	Scroll_Behavior_Smoothly
+	Scroll_Behavior_Instantly // instantly in a single jump
 )

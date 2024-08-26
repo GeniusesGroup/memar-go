@@ -1,10 +1,10 @@
 /* For license and copyright information please see the LEGAL file in the code repository */
 
-package protocol
+package gui_p
 
-type GUI_History interface {
-	PreviousPageState() GUI_PageState
-	FollowingPageState() GUI_PageState
+type History interface {
+	PreviousPageState() PageState
+	FollowingPageState() PageState
 
 	// Find states by PageID, Title, ...
 }
