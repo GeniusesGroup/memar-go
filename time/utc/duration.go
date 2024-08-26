@@ -3,16 +3,12 @@
 package utc
 
 import (
-	"memar/protocol"
+	"memar/time/duration"
 )
 
 // Common durations.
 const (
-	Nanosecond  protocol.Duration = 1
-	Microsecond                   = 1000 * Nanosecond
-	Millisecond                   = 1000 * Microsecond
-	Second                        = 1000 * Millisecond
-	Minute                        = 60 * Second
+	Minute duration.NanoSecond = 60 * duration.OneSecond
 	Hour                          = 60 * Minute
 	Day                           = 24 * Hour
 	Week                          = 7 * Day

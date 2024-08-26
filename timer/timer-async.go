@@ -3,20 +3,22 @@
 package timer
 
 import (
-	"strconv"
 	"unsafe"
 
+	"memar/math/integer"
 	"memar/protocol"
-	"memar/race"
-	"memar/scheduler"
+	"memar/runtime/race"
+	"memar/runtime/scheduler"
+	"memar/time/duration"
 	"memar/time/monotonic"
 	errs "memar/timer/errors"
+	timer_p "memar/timer/protocol"
 )
 
 // NewAsync waits for the duration to elapse and then calls callback.
 // If callback need blocking operation it must do its logic in new thread(goroutine).
 // It returns a Timer that can be used to cancel the call using its Stop method.
-func NewAsync(d protocol.Duration, callback protocol.TimerListener) (t *Async, err protocol.Error) {
+func NewAsync(d duration.NanoSecond, callback timer_p.TimerListener) (t *Async, err protocol.Error) {
 	var timer Async
 	timer.Init(callback)
 	err = timer.Start(d)
@@ -31,16 +33,16 @@ type Async struct {
 	// Timer wakes up at when, and then at when+period, ... (period > 0 only)
 	// when must be positive on an active timer.
 	when   monotonic.Time
-	period protocol.Duration
+	period duration.NanoSecond
 
 	// The status field holds one of the values in status file.
-	status status
+	status Status
 
 	// callback function that call when reach
 	// it is possible that callback will be called a little after the delay.
 	// * NOTE: each time calling callback() in the timer goroutine, so callback must be
 	// * a well-behaved function and not block.
-	callback protocol.TimerListener
+	callback timer_p.TimerListener
 
 	timing *Timing
 }
@@ -48,7 +50,7 @@ type Async struct {
 // Init initialize the timer with given callback.
 //
 //memar:impl memar/protocol.Timer
-func (t *Async) Init(callback protocol.TimerListener) (err protocol.Error) {
+func (t *Async) Init(callback timer_p.TimerListener) (err protocol.Error) {
 	if t.callback != nil {
 		err = &errs.ErrTimerAlreadyInit
 		return
@@ -59,9 +61,9 @@ func (t *Async) Init(callback protocol.TimerListener) (err protocol.Error) {
 }
 
 //memar:impl memar/protocol.SoftwareLifeCycle
-func (t *Async) Reinit(callback protocol.TimerListener) (err protocol.Error) {
+func (t *Async) Reinit(callback timer_p.TimerListener) (err protocol.Error) {
 	// var status = t.status.Load()
-	// if !(status == protocol.TimerStatus_Unset || status == protocol.TimerStatus_Deleted) {
+	// if !(status == Status_Unset || status == Status_Deleted) {
 	// 	panic("timer: Reinit called with non stopped timer")
 	// }
 	err = t.Stop()
@@ -79,8 +81,8 @@ func (t *Async) Deinit() (err protocol.Error) {
 }
 
 //memar:impl memar/protocol.Timer
-func (t *Async) Status() (activeStatus protocol.TimerStatus) { return t.status.Load() }
-func (t *Async) When() monotonic.Time                        { return t.when }
+func (t *Async) Status() (activeStatus Status) { return t.status.Load() }
+func (t *Async) When() monotonic.Time          { return t.when }
 
 // Start adds the timer to the running cpu core timing.
 // This should only be called with a newly created timer.
@@ -88,7 +90,7 @@ func (t *Async) When() monotonic.Time                        { return t.when }
 // which could cause the heap to become unsorted.
 //
 //memar:impl memar/protocol.Timer
-func (t *Async) Start(d protocol.Duration) (err protocol.Error) {
+func (t *Async) Start(d duration.NanoSecond) (err protocol.Error) {
 	if t.callback == nil {
 		err = &errs.ErrTimerNotInit
 		return
@@ -101,12 +103,12 @@ func (t *Async) Start(d protocol.Duration) (err protocol.Error) {
 		return
 	}
 	var activeStatus = t.status.Load()
-	if activeStatus != protocol.TimerStatus_Unset || t.timing != nil {
+	if activeStatus != Status_Unset || t.timing != nil {
 		err = &errs.ErrTimerAlreadyStarted
 		return
 	}
 
-	if !t.status.CompareAndSwap(protocol.TimerStatus_Unset, protocol.TimerStatus_Waiting) {
+	if !t.status.CompareAndSwap(Status_Unset, Status_Waiting) {
 		err = &errs.ErrTimerRacyAccess
 		return
 	}
@@ -132,30 +134,30 @@ func (t *Async) Stop() (err protocol.Error) {
 		return
 	}
 
-	var activeStatus protocol.TimerStatus
+	var activeStatus Status
 	for {
 		activeStatus = t.status.Load()
 		switch activeStatus {
-		case protocol.TimerStatus_Unset:
+		case Status_Unset:
 			err = &errs.ErrTimerNotInit
 			return
-		case protocol.TimerStatus_Waiting, protocol.TimerStatus_ModifiedLater, protocol.TimerStatus_ModifiedEarlier:
+		case Status_Waiting, Status_ModifiedLater, Status_ModifiedEarlier:
 			// Must fetch t.timing before changing status,
-			// due to ts.cleanTimers in another goroutine can clear t.timing of timing in protocol.TimerStatus_Deleted status.
+			// due to ts.cleanTimers in another goroutine can clear t.timing of timing in Status_Deleted status.
 			var timing = t.timing
 
 			// Timer was not yet run.
-			if t.status.CompareAndSwap(activeStatus, protocol.TimerStatus_Deleted) {
+			if t.status.CompareAndSwap(activeStatus, Status_Deleted) {
 				timing.deletedTimersCount.Add(1)
 				return
 			}
-		case protocol.TimerStatus_Deleted, protocol.TimerStatus_Removing, protocol.TimerStatus_Removed:
+		case Status_Deleted, Status_Removing, Status_Removed:
 			// Timer was already run.
 			return
-		case protocol.TimerStatus_Running, protocol.TimerStatus_Moving:
+		case Status_Running, Status_Moving:
 			// The timer is being run or moved, by a different P Wait for it to complete.
 			scheduler.Yield(scheduler.Thread_WaitReason_Preempted)
-		case protocol.TimerStatus_Modifying:
+		case Status_Modifying:
 			// Simultaneous calls to Reset(). Wait for the other call to complete.
 			scheduler.Yield(scheduler.Thread_WaitReason_Preempted)
 		default:
@@ -170,7 +172,7 @@ func (t *Async) Stop() (err protocol.Error) {
 // Reports whether the timer was modified before it was run.
 //
 //memar:impl memar/protocol.Timer
-func (t *Async) Reset(d protocol.Duration) (err protocol.Error) {
+func (t *Async) Reset(d duration.NanoSecond) (err protocol.Error) {
 	// when must be positive. A negative value will cause ts.runTimer to
 	// overflow during its delta calculation and never expire other runtime timing.
 	// Zero will cause checkTimers to fail to notice the timer.
@@ -188,32 +190,32 @@ func (t *Async) Reset(d protocol.Duration) (err protocol.Error) {
 	}
 
 	var wasRemovedFromTiming = false
-	var activeStatus protocol.TimerStatus
+	var activeStatus Status
 loop:
 	for {
 		activeStatus = t.status.Load()
 		switch activeStatus {
-		case protocol.TimerStatus_Waiting, protocol.TimerStatus_ModifiedEarlier, protocol.TimerStatus_ModifiedLater:
-			if t.status.CompareAndSwap(activeStatus, protocol.TimerStatus_Modifying) {
+		case Status_Waiting, Status_ModifiedEarlier, Status_ModifiedLater:
+			if t.status.CompareAndSwap(activeStatus, Status_Modifying) {
 				break loop
 			}
-		case protocol.TimerStatus_Unset, protocol.TimerStatus_Removed:
+		case Status_Unset, Status_Removed:
 			// Timer was already run and t is no longer in a timing.
 			// Act like AddTimer.
-			if t.status.CompareAndSwap(activeStatus, protocol.TimerStatus_Modifying) {
+			if t.status.CompareAndSwap(activeStatus, Status_Modifying) {
 				wasRemovedFromTiming = true
 				break loop
 			}
-		case protocol.TimerStatus_Deleted:
-			if t.status.CompareAndSwap(activeStatus, protocol.TimerStatus_Modifying) {
+		case Status_Deleted:
+			if t.status.CompareAndSwap(activeStatus, Status_Modifying) {
 				t.timing.deletedTimersCount.Add(-1)
 				break loop
 			}
-		case protocol.TimerStatus_Running, protocol.TimerStatus_Removing, protocol.TimerStatus_Moving:
+		case Status_Running, Status_Removing, Status_Moving:
 			// The timer is being run or moved, by a different P.
 			// Wait for it to complete.
 			scheduler.Yield(scheduler.Thread_WaitReason_Preempted)
-		case protocol.TimerStatus_Modifying:
+		case Status_Modifying:
 			// Multiple simultaneous calls to Reset().
 			// Wait for the other call to complete.
 			scheduler.Yield(scheduler.Thread_WaitReason_Preempted)
@@ -232,7 +234,7 @@ loop:
 	if wasRemovedFromTiming {
 		t.timing = getActiveTiming()
 		t.timing.AddTimer(t)
-		if !t.status.CompareAndSwap(protocol.TimerStatus_Modifying, protocol.TimerStatus_Waiting) {
+		if !t.status.CompareAndSwap(Status_Modifying, Status_Waiting) {
 			err = &errs.ErrTimerRacyAccess
 			// TODO::: Easily just return??
 			return
@@ -241,14 +243,14 @@ loop:
 		// TODO::: as describe here: https://github.com/golang/go/issues/53953#issuecomment-1189769955
 		// we need to access to timerBucket.when to decide correctly about new timer status,
 		// updateTimerModifiedEarliest() may call wrongly and waste resource. Any idea to fix?
-		var newStatus = protocol.TimerStatus_ModifiedLater
+		var newStatus = Status_ModifiedLater
 		if timerNewWhen < timerOldWhen {
-			newStatus = protocol.TimerStatus_ModifiedEarlier
+			newStatus = Status_ModifiedEarlier
 			t.timing.updateTimerModifiedEarliest(timerNewWhen)
 		}
 
 		// Set the new status of the timer.
-		if !t.status.CompareAndSwap(protocol.TimerStatus_Modifying, newStatus) {
+		if !t.status.CompareAndSwap(Status_Modifying, newStatus) {
 			err = &errs.ErrTimerRacyAccess
 			// TODO::: Easily just return??
 			return
@@ -265,7 +267,7 @@ loop:
 // Stop the ticker to release associated resources.
 //
 //memar:impl memar/protocol.Ticker
-func (t *Async) Tick(first, interval protocol.Duration) (err protocol.Error) {
+func (t *Async) Tick(first, interval duration.NanoSecond) (err protocol.Error) {
 	if first < 1 || interval < 1 {
 		err = &errs.ErrNegativeDuration
 		return
@@ -276,10 +278,13 @@ func (t *Async) Tick(first, interval protocol.Duration) (err protocol.Error) {
 }
 
 //memar:impl memar/protocol.Stringer
-func (t *Async) ToString() string {
+func (t *Async) ToString() (str string, err protocol.Error) {
 	var until = t.when.UntilNow()
-	var untilSecond = until / monotonic.Second
-	var untilSecondString = strconv.FormatInt(int64(untilSecond), 10)
-	return "Timer sleep for " + untilSecondString + " seconds"
+	var untilSecond = until / duration.OneSecond
+	var untilSecondINT = integer.S64(untilSecond)
+	var untilSecondString string
+	untilSecondString, err = untilSecondINT.ToString()
+	str = "Timer sleep for " + untilSecondString + " seconds"
+	return
 }
-func (t *Async) FromString(s string) (err protocol.Error) { return }
+func (t *Async) FromString(str string) (err protocol.Error) { return }

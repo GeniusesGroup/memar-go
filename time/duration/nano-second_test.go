@@ -1,22 +1,20 @@
 /* For license and copyright information please see the LEGAL file in the code repository */
 
-package unix
+package duration
 
 import (
 	"testing"
-
-	"memar/protocol"
 )
 
 func Test_nsecToSec(t *testing.T) {
 	type args struct {
-		d protocol.Duration
+		d NanoSecond
 	}
 	tests := []struct {
 		name     string
 		args     args
-		wantSec  int64
-		wantNsec int32
+		wantSec  Second
+		wantNsec NanoInSecond
 	}{
 		{
 			name: "test1",
@@ -29,7 +27,7 @@ func Test_nsecToSec(t *testing.T) {
 		{
 			name: "test2",
 			args: args{
-				d: 1*Second + 1,
+				d: 1*OneSecond + 1,
 			},
 			wantSec:  1,
 			wantNsec: 1,
@@ -37,7 +35,7 @@ func Test_nsecToSec(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			gotSec, gotNsec := nsecToSec(tt.args.d)
+			gotSec, gotNsec := tt.args.d.ToSecAndNano()
 			if gotSec != tt.wantSec {
 				t.Errorf("nsecToSec() gotSec = %v, want %v", gotSec, tt.wantSec)
 			}

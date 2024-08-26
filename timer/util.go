@@ -3,7 +3,7 @@
 package timer
 
 import (
-	"memar/protocol"
+	"memar/time/duration"
 	"memar/time/monotonic"
 )
 
@@ -11,7 +11,7 @@ import (
 // It returns what the time will be, in nanoseconds, Duration d in the future.
 // If d is negative, it is ignored. If the returned value would be less than
 // zero because of an overflow, MaxInt64 is returned.
-func when(d protocol.Duration) (t monotonic.Time) {
+func when(d duration.NanoSecond) (t monotonic.Time) {
 	t.Now()
 	if d <= 0 {
 		return

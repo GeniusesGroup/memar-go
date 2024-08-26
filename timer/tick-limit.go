@@ -4,10 +4,11 @@ package timer
 
 import (
 	"memar/protocol"
+	"memar/time/duration"
 	errs "memar/timer/errors"
 )
 
-func NewLimitTicker(first, interval protocol.Duration, periodNumber int64) (t *LimitTicker, err protocol.Error) {
+func NewLimitTicker(first, interval duration.NanoSecond, periodNumber int64) (t *LimitTicker, err protocol.Error) {
 	if periodNumber < 1 {
 		err = &errs.ErrNegativePeriodNumber
 		return

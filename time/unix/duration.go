@@ -3,19 +3,20 @@
 package unix
 
 import (
-	"memar/protocol"
+	"memar/time/duration"
 )
 
 // Common durations.
 const (
-	Nanosecond  protocol.Duration = 1
-	Microsecond                   = 1000 * Nanosecond
-	Millisecond                   = 1000 * Microsecond
-	Second                        = 1000 * Millisecond
-	Minute                        = 60 * Second
-	Hour                          = 60 * Minute
-	Day                           = 24 * Hour
-	Week                          = 7 * Day
-	Month                         = 2629743 * Second  // 30.44 days
-	Year                          = 31556926 * Second // 365.24 days
+	Minute duration.NanoSecond = 60 * duration.OneSecond
+	Hour                       = 60 * Minute
+	Day                        = 24 * Hour
+	Week                       = 7 * Day
+	Month                      = 2629743 * duration.OneSecond  // 30.44 days
+	Year                       = 31556926 * duration.OneSecond // 365.24 days
+)
+
+type (
+	DayElapsed   int64 // fast way: unix.Now().DayElapsed()
+	HourElapsed  int64 // fast way: unix.Now().HourElapsed()
 )

@@ -4,13 +4,14 @@ package timer
 
 import (
 	"memar/protocol"
+	"memar/time/duration"
 )
 
 // After waits for the duration to elapse and then sends signal on the returned channel.
 // The underlying Timer is not recovered by the garbage collector until the timer fires.
 // If efficiency is a concern, copy the body instead and call timer.Stop() if the timer is no longer needed.
 // It will **panic** if it can't start the timer due to any situation like not enough memory, ...
-func After(d protocol.Duration) <-chan struct{} {
+func After(d duration.NanoSecond) <-chan struct{} {
 	var timer Sync
 	timer.Init()
 	var err = timer.Start(d)
@@ -23,7 +24,7 @@ func After(d protocol.Duration) <-chan struct{} {
 // NewAsync waits for the duration to elapse and then calls callback.
 // If callback need blocking operation it must do its logic in new thread(goroutine).
 // It returns a SyncTimer that can be used to cancel the call using its Stop method.
-func NewSync(d protocol.Duration) (t *Sync, err protocol.Error) {
+func NewSync(d duration.NanoSecond) (t *Sync, err protocol.Error) {
 	var timer Sync
 	timer.Init()
 	err = timer.Start(d)

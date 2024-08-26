@@ -4,10 +4,9 @@ package unix
 
 import (
 	"fmt"
+	"memar/time/duration"
 	"testing"
 	"time"
-
-	"memar/protocol"
 )
 
 func Test_ShowNow(t *testing.T) {
@@ -27,7 +26,7 @@ func Test_ShowNow(t *testing.T) {
 
 func TestTime_ElapsedByDuration(t *testing.T) {
 	type args struct {
-		d protocol.Duration
+		d duration.NanoSecond
 	}
 	tests := []struct {
 		name       string
@@ -44,7 +43,7 @@ func TestTime_ElapsedByDuration(t *testing.T) {
 			args: args{
 				d: 10,
 			},
-			wantPeriod: 1 * int64(Second) / 10,
+			wantPeriod: 1 * int64(duration.OneSecond) / 10,
 		},
 		{
 			name: "test2",
@@ -55,7 +54,7 @@ func TestTime_ElapsedByDuration(t *testing.T) {
 			args: args{
 				d: 10,
 			},
-			wantPeriod: (1*int64(Second) + 100) / 10,
+			wantPeriod: (1*int64(duration.OneSecond) + 100) / 10,
 		},
 		{
 			name: "test3",
@@ -64,7 +63,7 @@ func TestTime_ElapsedByDuration(t *testing.T) {
 				nsec: 100,
 			},
 			args: args{
-				d: (1 * Second) + 10,
+				d: (1 * duration.OneSecond) + 10,
 			},
 			wantPeriod: 10,
 		},

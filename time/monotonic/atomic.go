@@ -6,6 +6,8 @@ import (
 	"sync/atomic"
 
 	"memar/protocol"
+	"memar/time/duration"
+	time_p "memar/time/protocol"
 )
 
 // Atomic same as Time is monotonic clock is for measuring time.
@@ -21,21 +23,26 @@ func (a *Atomic) Swap(new Time) (old Time) { return Time(a.Int64.Swap(int64(new)
 func (a *Atomic) CompareAndSwap(old, new Time) (swapped bool) {
 	return a.Int64.CompareAndSwap(int64(old), int64(new))
 }
-func (a *Atomic) Add(d protocol.Duration) { a.Int64.Add(int64(d)) }
+func (a *Atomic) Add(d duration.NanoSecond) { a.Int64.Add(int64(d)) }
 
-//memar:impl memar/protocol.Time
-func (a *Atomic) Epoch() protocol.TimeEpoch { return protocol.TimeEpoch_Monotonic }
-func (a *Atomic) SecondElapsed() int64      { return int64(a.Load()) / int64(Second) }
-func (a *Atomic) NanoSecondElapsed() int32  { var t = a.Load(); return int32(t % (t / Time(Second))) }
+//memar:impl memar/time/protocol.Time
+func (a *Atomic) Epoch() time_p.Epoch { return &Epoch }
+func (a *Atomic) SecondElapsed() duration.Second {
+	return duration.Second(a.Load()) / duration.Second(duration.OneSecond)
+}
+func (a *Atomic) NanoInSecondElapsed() duration.NanoInSecond {
+	var t = a.Load()
+	return duration.NanoInSecond(t % (t / Time(duration.OneSecond)))
+}
 
 //memar:impl memar/protocol.Stringer
-func (a *Atomic) ToString() string {
+func (a *Atomic) ToString() (s string, err protocol.Error) {
 	var t = a.Load()
 	return t.ToString()
 }
-func (a *Atomic) FromString(s string) (err protocol.Error) {
+func (a *Atomic) FromString(str string) (err protocol.Error) {
 	var t Time
-	err = t.FromString(s)
+	err = t.FromString(str)
 	a.Store(t)
 	return
 }

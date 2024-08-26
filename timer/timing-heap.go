@@ -35,15 +35,22 @@ func (th *timingHeap) Deinit() (err protocol.Error) {
 	return
 }
 
-func (th *timingHeap) Len() int                 { return len(th.timers) }
+//memar:impl memar/protocol.ADT_LastElementIndex
+func (th *timingHeap) LastElementIndex() protocol.ElementIndex {
+	return protocol.ElementIndex(th.OccupiedLength() - 1)
+}
+
+//memar:impl memar/protocol.OccupiedLength
+func (th *timingHeap) OccupiedLength() int { return len(th.timers) }
+
 func (th *timingHeap) Append(b timerBucketHeap) { th.timers = append(th.timers, b) }
 
-// deleteTimer removes timer i from the timers heap.
+// DeleteTimer removes timer i from the timers heap.
 // It returns the smallest changed index in the timingHeap
 func (th *timingHeap) DeleteTimer(i int) (smallestChanged int) {
 	th.timers[i].timer.timing = nil
 
-	var last = th.Len() - 1
+	var last = int(th.LastElementIndex())
 	if i != last {
 		th.timers[i] = th.timers[last]
 	}
@@ -61,12 +68,12 @@ func (th *timingHeap) DeleteTimer(i int) (smallestChanged int) {
 	return
 }
 
-// deleteTimer0 removes timer 0 from the timers heap.
+// DeleteTimer0 removes timer 0 from the timers heap.
 // It reports whether it saw no problems due to races.
 func (th *timingHeap) DeleteTimer0() {
 	th.timers[0].timer.timing = nil
 
-	var last = th.Len() - 1
+	var last = th.LastElementIndex()
 	if last > 0 {
 		th.timers[0] = th.timers[last]
 	}

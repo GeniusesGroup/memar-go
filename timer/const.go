@@ -14,4 +14,5 @@ const maxWhen monotonic.Time = 1<<63 - 1 // math.MaxInt64
 const verifyTimers = false
 
 // The default heap ary is 4-ary. See siftUpTimer and siftDownTimer.
+// It MUST be even number.
 const heapAry = 4
