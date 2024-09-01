@@ -4,7 +4,7 @@ package log
 
 import (
 	"memar/event"
-	"memar/protocol"
+	"memar/log/protocol"
 )
 
-var _ protocol.Logger[*Event, event.Options] = &Logger
+var _ log_p.Logger[*Event, event.Options] = &Logger

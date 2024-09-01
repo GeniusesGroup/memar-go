@@ -4,7 +4,9 @@ package log
 
 import (
 	"memar/event"
+	log_p "memar/log/protocol"
 	"memar/protocol"
+	string_p "memar/string/protocol"
 	"memar/time/unix"
 )
 
@@ -12,13 +14,13 @@ import (
 type Event struct {
 	event.Event
 
-	level   protocol.LogLevel
-	message protocol.String
-	stack   protocol.String
+	level   log_p.Level
+	message string_p.String
+	stack   string_p.String
 }
 
 //memar:impl memar/protocol.ObjectLifeCycle
-func (e *Event) Init(dt protocol.DataType, level protocol.LogLevel, message, stack protocol.String) {
+func (e *Event) Init(dt protocol.DataType, level log_p.Level, message, stack string_p.String) {
 	e.level = level
 	e.message = message
 	e.stack = stack
@@ -26,10 +28,10 @@ func (e *Event) Init(dt protocol.DataType, level protocol.LogLevel, message, sta
 }
 
 //memar:impl memar/protocol.LogEvent
-func (e *Event) LogLevel() protocol.LogLevel { return e.level }
+func (e *Event) LogLevel() log_p.Level { return e.level }
 
 //memar:impl memar/protocol.LogEvent_Message
-func (e *Event) LogMessage() protocol.String { return e.message }
+func (e *Event) LogMessage() string_p.String { return e.message }
 
 //memar:impl memar/protocol.Runtime_Stack
-func (e *Event) RuntimeStack() protocol.String { return e.stack }
+func (e *Event) RuntimeStack() string_p.String { return e.stack }

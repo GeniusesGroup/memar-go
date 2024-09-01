@@ -3,62 +3,64 @@
 package log
 
 import (
+	log_p "memar/log/protocol"
 	"memar/protocol"
+	string_p "memar/string/protocol"
 )
 
-func NewEvent(dt protocol.DataType, level protocol.LogLevel, message, stack protocol.String) (event *Event) {
+func NewEvent(dt protocol.DataType, level log_p.Level, message, stack string_p.String) (event *Event) {
 	//go:gc stack
 	var e Event
 	e.Init(dt, level, message, stack)
 	return &e
 }
 
-func NoticeEvent(dt protocol.DataType, message, stack protocol.String) (event *Event) {
+func NoticeEvent(dt protocol.DataType, message, stack string_p.String) (event *Event) {
 	var e Event
-	e.Init(dt, protocol.LogLevel_Notice, message, stack)
+	e.Init(dt, log_p.Level_Notice, message, stack)
 	return &e
 }
 
-func ErrorEvent(dt protocol.DataType, message, stack protocol.String) (event *Event) {
+func ErrorEvent(dt protocol.DataType, message, stack string_p.String) (event *Event) {
 	var e Event
-	e.Init(dt, protocol.LogLevel_Error, message, stack)
+	e.Init(dt, log_p.Level_Error, message, stack)
 	return &e
 }
 
-func DebugEvent(dt protocol.DataType, message, stack protocol.String) (event *Event) {
+func DebugEvent(dt protocol.DataType, message, stack string_p.String) (event *Event) {
 	var e Event
-	e.Init(dt, protocol.LogLevel_Debug, message, stack)
+	e.Init(dt, log_p.Level_Debug, message, stack)
 	return &e
 }
 
-func DeepDebugEvent(dt protocol.DataType, message, stack protocol.String) (event *Event) {
+func DeepDebugEvent(dt protocol.DataType, message, stack string_p.String) (event *Event) {
 	var e Event
-	e.Init(dt, protocol.LogLevel_DeepDebug, message, stack)
+	e.Init(dt, log_p.Level_DeepDebug, message, stack)
 	return &e
 }
 
-func InfoEvent(dt protocol.DataType, message, stack protocol.String) (event *Event) {
+func InfoEvent(dt protocol.DataType, message, stack string_p.String) (event *Event) {
 	var e Event
-	e.Init(dt, protocol.LogLevel_Information, message, stack)
+	e.Init(dt, log_p.Level_Information, message, stack)
 	return &e
 }
 
-func WarnEvent(dt protocol.DataType, message, stack protocol.String) (event *Event) {
+func WarnEvent(dt protocol.DataType, message, stack string_p.String) (event *Event) {
 	var e Event
-	e.Init(dt, protocol.LogLevel_Warning, message, stack)
+	e.Init(dt, log_p.Level_Warning, message, stack)
 	return &e
 }
 
 // FatalEvent return new event with fatal level and added stack trace.
-func FatalEvent(dt protocol.DataType, message, stack protocol.String) (event *Event) {
+func FatalEvent(dt protocol.DataType, message, stack string_p.String) (event *Event) {
 	var e Event
-	e.Init(dt, protocol.LogLevel_Fatal, message, stack)
+	e.Init(dt, log_p.Level_Fatal, message, stack)
 	return &e
 }
 
 // ConfEvent return new event with "Confidential" level
-func ConfEvent(dt protocol.DataType, message, stack protocol.String) (event *Event) {
+func ConfEvent(dt protocol.DataType, message, stack string_p.String) (event *Event) {
 	var e Event
-	e.Init(dt, protocol.LogLevel_Confidential, message, stack)
+	e.Init(dt, log_p.Level_Confidential, message, stack)
 	return &e
 }

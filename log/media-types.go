@@ -19,6 +19,6 @@ func (dt *domainType) MediaType() string { return "domain/memar.scm.geniuses.gro
 //memar:impl memar/protocol.DataType_Details
 func (dt *domainType) Status() protocol.SoftwareStatus    { return protocol.Software_PreAlpha }
 func (dt *domainType) ReferenceURI() string               { return "" }
-func (dt *domainType) IssueDate() protocol.Time           { return nil }
-func (dt *domainType) ExpiryDate() protocol.Time          { return nil }
+func (dt *domainType) IssueDate() string                  { return "" }
+func (dt *domainType) ExpiryDate() string                 { return "" }
 func (dt *domainType) ExpireInFavorOf() protocol.DataType { return nil }

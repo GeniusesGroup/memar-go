@@ -5,11 +5,12 @@ package log
 import (
 	"runtime/debug"
 
-	"memar/ce/utf8"
+	log_p "memar/log/protocol"
 	"memar/protocol"
+	"memar/string/utf8"
 )
 
-// Event implement protocol.LogEvent
+// Event is a log event
 type Event_UTF8 struct {
 	Event
 
@@ -18,7 +19,7 @@ type Event_UTF8 struct {
 }
 
 //memar:impl memar/protocol.ObjectLifeCycle
-func (e *Event_UTF8) Init(dt protocol.DataType, level protocol.LogLevel, message string, stack bool) {
+func (e *Event_UTF8) Init(dt protocol.DataType, level log_p.Level, message string, stack bool) {
 	e.msgSTR = utf8.String(message)
 	if stack {
 		e.stackSTR.Init(debug.Stack())
