@@ -4,8 +4,14 @@ package cpu
 
 import "runtime"
 
-// ActiveCoreID or WhichCoreAmIOn return active core id that thread(goroutine) run on it.
-func ActiveCoreID() uint64
+type CoreID uint64
+
+func (id *CoreID) Active() {
+	*id = CoreID(activeCoreID())
+}
+
+// activeCoreID or WhichCoreAmIOn return active core id that thread(goroutine) run on it.
+func activeCoreID() uint64
 
 // LogicalCount returns the number of logical CPUs usable by the current process.
 func LogicalCount() uint { return uint(runtime.NumCPU()) }

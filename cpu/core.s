@@ -1,5 +1,5 @@
-// func ActiveCoreID() uint64
-TEXT ·ActiveCoreID(SB),7,$0
+// func activeCoreID() uint64
+TEXT ·activeCoreID(SB),7,$0
 	MOVQ $0xB,AX
 	XORQ CX,CX
 	CPUID
