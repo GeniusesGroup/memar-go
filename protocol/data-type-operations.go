@@ -2,6 +2,25 @@
 
 package protocol
 
+type DataType_Operations[T any] interface {
+	DataType_DefaultValue[T]
+	DataType_Accessor[T]
+	DataType_AtomicAccessor[T]
+	DataType_Clone[T]
+	DataType_Copy[T]
+	DataType_Equal[T]
+	DataType_NotEqual[T]
+
+	DataType_Validation
+	DataType_Locker
+	DataType_OptionalValue
+	DataType_Existence
+
+	// Stringer[String] // value stringer
+
+	// TODO::: add more
+}
+
 type DataType_DefaultValue[T any] interface {
 	Default() T
 	SetDefault() // default value
@@ -52,6 +71,9 @@ type DataType_Copy[T any] interface {
 type DataType_Equal[T any] interface {
 	Equal(with T) bool
 }
+type DataType_NotEqual[T any] interface {
+	NotEqual(with T) bool
+}
 
 // **ATTENTION**::: strongly suggest use DataType_Accessor to prevent invalid state at first place.
 type DataType_Validation interface {
@@ -61,12 +83,6 @@ type DataType_Validation interface {
 type DataType_Locker interface {
 	Lock() (err Error)
 	Unlock() (err Error)
-}
-
-// DataType_ExpectedLength indicate min and max expected length.
-type DataType_ExpectedLength interface {
-	MinLength() NumberOfElement
-	MaxLength() NumberOfElement
 }
 
 type DataType_OptionalValue interface {
