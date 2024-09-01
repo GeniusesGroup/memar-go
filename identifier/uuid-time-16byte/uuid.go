@@ -11,6 +11,7 @@ import (
 
 	"memar/binary"
 	"memar/protocol"
+	"memar/time/duration"
 	time_p "memar/time/protocol"
 	"memar/time/unix"
 )
@@ -20,9 +21,13 @@ type UUID [16]byte
 func (id UUID) UUID() [16]byte { return id }
 func (id UUID) ID() [4]byte    { return id.id() }
 func (id UUID) ExistenceTime() time_p.Time {
-	var time unix.Time
-	time.ChangeTo(unix.SecElapsed(id.secondElapsed()), id.nanoSecondElapsed())
+	var time = id.ExistenceUnixTime()
 	return &time
+}
+
+func (id UUID) ExistenceUnixTime() (time unix.Time) {
+	time.ChangeTo(id.secondElapsed(), id.nanoSecondElapsed())
+	return
 }
 
 //memar:impl memar/string/protocol.Stringer
@@ -73,10 +78,16 @@ func (id *UUID) NewRandom() {
 	}
 }
 
-func (id UUID) id() (rid [4]byte)           { copy(rid[:], id[12:]); return }
-func (id UUID) secondElapsed() int64        { return int64(binary.LittleEndian.Uint64(id[0:])) }
-func (id UUID) nanoSecondElapsed() int32    { return int32(binary.LittleEndian.Uint32(id[8:])) }
-func (id *UUID) setSecondElapsed(sec int64) { binary.LittleEndian.PutUint64(id[0:], uint64(sec)) }
-func (id *UUID) setNanoInSecondElapsed(nsec int32) {
+func (id UUID) id() (rid [4]byte) { copy(rid[:], id[12:]); return }
+func (id UUID) secondElapsed() duration.Second {
+	return duration.Second(binary.LittleEndian.Uint64(id[0:]))
+}
+func (id UUID) nanoSecondElapsed() duration.NanoInSecond {
+	return duration.NanoInSecond(binary.LittleEndian.Uint32(id[8:]))
+}
+func (id *UUID) setSecondElapsed(sec duration.Second) {
+	binary.LittleEndian.PutUint64(id[0:], uint64(sec))
+}
+func (id *UUID) setNanoInSecondElapsed(nsec duration.NanoInSecond) {
 	binary.LittleEndian.PutUint32(id[8:], uint32(nsec))
 }

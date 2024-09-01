@@ -13,6 +13,8 @@ import (
 
 	"memar/binary"
 	"memar/protocol"
+	"memar/time/duration"
+	time_p "memar/time/protocol"
 	"memar/time/unix"
 )
 
@@ -23,9 +25,9 @@ type UID = UUID
 type UUID [32]byte
 
 //memar:impl memar/protocol.UUID_Hash
-func (id UUID) UUID() [32]byte     { return id }
-func (id UUID) ID() protocol.ID    { return id.id() }
-func (id UUID) IDasString() string { return base64.RawURLEncoding.EncodeToString(id[:8]) }
+func (id UUID) UUID() [32]byte          { return id }
+func (id UUID) ID() protocol.DataTypeID { return id.id() }
+func (id UUID) IDasString() string      { return base64.RawURLEncoding.EncodeToString(id[:8]) }
 
 //memar:impl memar/string/protocol.Stringer
 func (id UUID) ToString() (s string, err protocol.Error) {
@@ -40,7 +42,7 @@ func (id *UUID) FromString(s string) (err protocol.Error) {
 //memar:impl memar/protocol.UUID
 func (id UUID) ExistenceTime() time_p.Time {
 	var time unix.Time
-	time.ChangeTo(unix.SecElapsed(id.secondElapsed()), id.nanoSecondElapsed())
+	time.ChangeTo(id.secondElapsed(), id.nanoSecondElapsed())
 	return &time
 }
 
@@ -81,11 +83,19 @@ func (id *UUID) NewRandom() {
 	}
 }
 
-func (id UUID) id() protocol.ID             { return protocol.ID(binary.LittleEndian.Uint64(id[0:])) }
-func (id UUID) secondElapsed() int64        { return int64(binary.LittleEndian.Uint64(id[0:])) }
-func (id UUID) nanoSecondElapsed() int32    { return int32(binary.LittleEndian.Uint32(id[8:])) }
-func (id *UUID) setSecondElapsed(sec int64) { binary.LittleEndian.PutUint64(id[0:], uint64(sec)) }
-func (id *UUID) setNanoInSecondElapsed(nsec int32) {
+func (id UUID) id() protocol.DataTypeID {
+	return protocol.DataTypeID(binary.LittleEndian.Uint64(id[0:]))
+}
+func (id UUID) secondElapsed() duration.Second {
+	return duration.Second(binary.LittleEndian.Uint64(id[0:]))
+}
+func (id UUID) nanoSecondElapsed() duration.NanoInSecond {
+	return duration.NanoInSecond(binary.LittleEndian.Uint32(id[8:]))
+}
+func (id *UUID) setSecondElapsed(sec duration.Second) {
+	binary.LittleEndian.PutUint64(id[0:], uint64(sec))
+}
+func (id *UUID) setNanoInSecondElapsed(nsec duration.NanoInSecond) {
 	binary.LittleEndian.PutUint32(id[8:], uint32(nsec))
 }
 

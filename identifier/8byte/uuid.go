@@ -11,6 +11,7 @@ import (
 
 	"memar/binary"
 	"memar/protocol"
+	"memar/time/duration"
 	time_p "memar/time/protocol"
 	"memar/time/unix"
 )
@@ -22,7 +23,7 @@ func (id UUID) ID() [3]byte        { return id.id() }
 func (id UUID) IDasString() string { return base64.RawURLEncoding.EncodeToString(id[:8]) }
 func (id UUID) ExistenceTime() time_p.Time {
 	var time unix.Time
-	time.ChangeTo(unix.SecElapsed(id.secondElapsed()), 0)
+	time.ChangeTo(id.secondElapsed(), 0)
 	return &time
 }
 
@@ -73,11 +74,11 @@ func (id *UUID) NewRandom() {
 }
 
 func (id UUID) id() (rid [3]byte) { copy(rid[:], id[5:]); return }
-func (id UUID) secondElapsed() int64 {
+func (id UUID) secondElapsed() duration.Second {
 	var sec [8]byte
 	copy(sec[:], id[:])
-	return int64(binary.LittleEndian.Uint64(id[0:])) >> (64 - 40)
+	return duration.Second(binary.LittleEndian.Uint64(id[0:])) >> (64 - 40)
 }
-func (id *UUID) setSecondElapsed(sec int64) {
+func (id *UUID) setSecondElapsed(sec duration.Second) {
 	binary.LittleEndian.PutUint64(id[0:], (uint64(sec) << (64 - 40)))
 }

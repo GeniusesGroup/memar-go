@@ -6,7 +6,7 @@ import "memar/protocol"
 
 type Generated struct {
 	UID
-	id         protocol.ID
+	id         protocol.DataTypeID
 	idAsString string
 }
 
@@ -16,5 +16,5 @@ func (g *Generated) NewHashString(data string) {
 	g.idAsString = g.UID.IDasString()
 }
 
-func (g *Generated) ID() protocol.ID    { return g.id }
-func (g *Generated) IDasString() string { return g.idAsString }
+func (g *Generated) ID() protocol.DataTypeID { return g.id }
+func (g *Generated) IDasString() string      { return g.idAsString }
