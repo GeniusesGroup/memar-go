@@ -26,7 +26,7 @@ func ToCLA(object protocol.Object) (arguments []string, err protocol.Error) {
 	arguments = make([]string, 0, ln)
 	for i := 0; i < ln; i++ {
 		var field = fields[i]
-		var fieldValue = field.ToString()
+		var fieldValue, _ = field.ToString()
 		if fieldValue == "" {
 			continue
 		}

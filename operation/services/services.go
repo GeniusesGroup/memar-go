@@ -11,25 +11,25 @@ import (
 func Register(s protocol.Service) (err protocol.Error) { return services.Register(s) }
 func Delete(s protocol.Service) (err protocol.Error)   { return services.Delete(s) }
 func Services() []protocol.Service                     { return services.Services() }
-func GetByID(sID protocol.ServiceID) (ser protocol.Service, err protocol.Error) {
+func GetByID(sID service_p.ServiceID) (ser protocol.Service, err protocol.Error) {
 	return services.GetByID(sID)
 }
 func GetByMediaType(mt string) (ser protocol.Service, err protocol.Error) {
 	return services.GetByMediaType(mt)
 }
 
-	// TODO::: decide about poolSize by hardware
+// TODO::: decide about poolSize by hardware
 const poolSizes = 512
 
 var services = services_{
 	poolByRegisterTime: make([]protocol.Service, poolSizes),
-	poolByID : make(map[protocol.ServiceID]protocol.Service, poolSizes),
-	poolByMediaType: make(map[string]protocol.Service, poolSizes),
+	poolByID:           make(map[service_p.ServiceID]protocol.Service, poolSizes),
+	poolByMediaType:    make(map[string]protocol.Service, poolSizes),
 }
 
 type services_ struct {
 	poolByRegisterTime []protocol.Service
-	poolByID           map[protocol.ServiceID]protocol.Service
+	poolByID           map[service_p.ServiceID]protocol.Service
 	poolByMediaType    map[string]protocol.Service
 }
 
@@ -39,7 +39,7 @@ type services_ struct {
 //
 //memar:impl memar/protocol.Services
 func (ss *services_) Register(s protocol.Service) (err protocol.Error) {
-	if s.ID() == 0 {
+	if s.ServiceID() == 0 {
 		err = &errs.ErrServiceNotProvideIdentifier
 		return
 	}
@@ -57,7 +57,7 @@ func (ss *services_) Services() []protocol.Service { return ss.poolByRegisterTim
 // GetServiceByID use to get specific service handler by service ID
 //
 //memar:impl memar/protocol.Services
-func (ss *services_) GetByID(sID protocol.ServiceID) (ser protocol.Service, err protocol.Error) {
+func (ss *services_) GetByID(sID service_p.ServiceID) (ser protocol.Service, err protocol.Error) {
 	ser = ss.poolByID[sID]
 	if ser == nil {
 		err = &errs.ErrNotFound
@@ -78,14 +78,14 @@ func (ss *services_) GetByMediaType(mt string) (ser protocol.Service, err protoc
 
 // DeleteService use to delete specific service in services list.
 func (ss *services_) Delete(s protocol.Service) (err protocol.Error) {
-	delete(ss.poolByID, s.ID())
+	delete(ss.poolByID, s.ServiceID())
 	delete(ss.poolByMediaType, s.MediaType())
 	// TODO::: delete from ss.poolByRegisterTime
 	return
 }
 
 func (ss *services_) registerServiceByMediaType(s protocol.Service) (err protocol.Error) {
-	var serviceID = s.ID()
+	var serviceID = s.ServiceID()
 	var exitingServiceByID, _ = ss.GetByID(serviceID)
 	if exitingServiceByID != nil {
 		err = &errs.ErrServiceDuplicateIdentifier

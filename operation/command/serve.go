@@ -6,7 +6,8 @@ import (
 	"fmt"
 	"os"
 
-	errs "memar/command/errors"
+	errs "memar/operation/command/errors"
+	command_p "memar/operation/command/protocol"
 	"memar/protocol"
 )
 
@@ -49,7 +50,7 @@ func ServeCLA(c protocol.Command, arguments []string) (err protocol.Error) {
 }
 
 // Root finds root command. or return nil if it is the root
-func Root(c protocol.Command) (root protocol.Command) {
+func Root(c command_p.Command) (root command_p.Command) {
 	for {
 		if root.Parent() != nil {
 			root = root.Parent()
@@ -61,7 +62,7 @@ func Root(c protocol.Command) (root protocol.Command) {
 }
 
 // CommandPath returns the full path to this command exclude itself.
-func CommandPath(command protocol.Command) (fullName string) {
+func CommandPath(command command_p.Command) (fullName string) {
 	for {
 		fullName = command.Name() + " " + fullName
 		command = command.Parent()

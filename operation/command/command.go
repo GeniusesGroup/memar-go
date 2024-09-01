@@ -3,32 +3,36 @@
 package cmd
 
 import (
-	errs "memar/command/errors"
+	errs "memar/operation/command/errors"
+	command_p "memar/operation/command/protocol"
 	"memar/protocol"
 )
 
+// Command
+//
+//memar:impl memar/operation/command/protocol.Command
 type Command struct {
 	// parent is a parent command for this command.
-	parent protocol.Command
+	parent command_p.Command
 	// Commands lists the available commands and help topics.
 	// The order here is the order in which they are printed by 'go help'.
 	// Note that subcommands are in general best avoided.
-	subCommands []protocol.Command
+	subCommands []command_p.Command
 }
 
 //memar:impl memar/protocol.ObjectLifeCycle
-func (c *Command) Init(parent protocol.Command, cmd ...protocol.Command) (err protocol.Error) {
+func (c *Command) Init(parent command_p.Command, cmd ...command_p.Command) (err protocol.Error) {
 	c.parent = parent
 	// TODO::: check duplicate name usage
 	c.subCommands = append(c.subCommands, cmd...)
 	return
 }
 
-//memar:impl memar/protocol.Command
-func (c *Command) Runnable() bool                  { return false }
-func (c *Command) Parent() protocol.Command        { return c.parent }
-func (c *Command) SubCommands() []protocol.Command { return c.subCommands }
-func (c *Command) SubCommand(name string) protocol.Command {
+//memar:impl memar/operation/command/protocol.Command
+func (c *Command) Runnable() bool                   { return false }
+func (c *Command) Parent() command_p.Command        { return c.parent }
+func (c *Command) SubCommands() []command_p.Command { return c.subCommands }
+func (c *Command) SubCommand(name string) command_p.Command {
 	// TODO::: intelligent suggestion or correction
 	for _, cmd := range c.subCommands {
 		var cmdName = cmd.Name()

@@ -13,7 +13,7 @@ func (req *InitReq) Name() string { return req.name }
 func (req *InitReq) Fields() []protocol.DataType   { return ... }
 func (req *InitReq) Methods() []protocol.DataType_Method { return ... }
 
-//memar:impl memar/protocol.CommandLineArguments
+//memar:impl memar/operation/command/protocol.CommandLineArguments
 func (req *InitReq) FromCLA(arguments []string) (remaining []string, err protocol.Error) {
 	remaining, err = cmd.FromCLA(req, arguments)
 	return
@@ -51,7 +51,7 @@ type InitReq struct {
 	name string
 }
 
-//memar:impl memar/protocol.CommandLineArguments
+//memar:impl memar/operation/command/protocol.CommandLineArguments
 func (req *InitReq) FromCLA(arguments []string) (remaining []string, err protocol.Error) {
 	var flagSet flag.FlagSet
 	// flagSet.Init("module.InitReq", flag.ContinueOnError)

@@ -5,7 +5,8 @@ package cmd
 import (
 	"strings"
 
-	errs "memar/command/errors"
+	"memar/math/boolean"
+	errs "memar/operation/command/errors"
 	"memar/protocol"
 )
 
@@ -203,8 +204,8 @@ func (f *FlagSet) checkAndSet(name, value string) (err protocol.Error) {
 			return &errs.ErrFlagNotFound
 		}
 
-		var pf, ok = flag.(protocol.DataType_Primitive)
-		if ok && pf.Primitive() == protocol.DataType_PrimitiveKind_Boolean { // special case: doesn't need an arg
+		var _, ok = flag.(protocol.DataType_Equal[boolean.Boolean])
+		if ok { // special case: doesn't need an arg
 			value = "true"
 		} else if len(f.args) > 0 { // It must have a value, which might be the next argument.
 			// value is the next arg
