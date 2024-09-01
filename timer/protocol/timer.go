@@ -4,6 +4,7 @@ package timer_p
 
 import (
 	"memar/protocol"
+	"memar/time/duration"
 	time_p "memar/time/protocol"
 )
 
@@ -12,7 +13,7 @@ import (
 // many other type than async timer can be implemented by libraries,
 // like channel-based sync one that provide e.g. Signal() <-chan struct{}
 // client use Signal() to block until timeout occur.
-type Timer[DUR time_p.Duration, TIME time_p.Time, ST TimerStatus] interface {
+type Timer[ /*DUR time_p.Duration,*/ TIME time_p.Time, ST TimerStatus] interface {
 	// Init initialize the Timer with given callback function.
 	// - **NOTE**: each time calling callback() in the timer goroutine, so callback must be
 	// a well-behaved function and not block. If callback need blocking operation it must do its logic in new thread(goroutine).
@@ -24,9 +25,9 @@ type Timer[DUR time_p.Duration, TIME time_p.Time, ST TimerStatus] interface {
 	// ObjectLifeCycle
 
 	// Start will add timer to default timing mechanism like TimingHeap, TimingWheel, ...
-	Start(d DUR) (err protocol.Error)
+	Start(d duration.NanoSecond) (err protocol.Error)
 
-	Reset(d DUR) (err protocol.Error)
+	Reset(d duration.NanoSecond) (err protocol.Error)
 
 	// Client must call Stop(), otherwise **"leaks"** occur, specially in Tick()
 	Stop() (err protocol.Error)
