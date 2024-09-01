@@ -1,20 +1,23 @@
 /* For license and copyright information please see the LEGAL file in the code repository */
 
-package buffer
+package queue
 
-import "memar/protocol"
+import (
+	adt_p "memar/adt/protocol"
+	"memar/protocol"
+)
 
 // Concurrent safe
 type Queue struct {
 	// queue    []ringBuf
 	head     *ringBuf
 	tail     *ringBuf
-	totalLen int
-	totalCap int
+	totalLen adt_p.NumberOfElement
+	totalCap adt_p.NumberOfElement
 }
 
 //memar:impl memar/protocol.ObjectLifeCycle
-func (q *Queue) Init(initCap int) (err protocol.Error) {
+func (q *Queue) Init(initCap adt_p.NumberOfElement) (err protocol.Error) {
 	q.totalCap = initCap
 	// TODO:::
 	return
