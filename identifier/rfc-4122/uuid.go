@@ -51,7 +51,7 @@ func (uuid UUID) Equal(uuid2 UUID) bool {
 
 // encode/parse by RFC4122
 //
-//memar:impl memar/protocol.Stringer
+//memar:impl memar/string/protocol.Stringer
 func (uuid UUID) ToString() (s string, err protocol.Error) {
 	s = uuid.String()
 	return

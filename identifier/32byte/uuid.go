@@ -27,7 +27,7 @@ func (id UUID) UUID() [32]byte     { return id }
 func (id UUID) ID() protocol.ID    { return id.id() }
 func (id UUID) IDasString() string { return base64.RawURLEncoding.EncodeToString(id[:8]) }
 
-//memar:impl memar/protocol.Stringer
+//memar:impl memar/string/protocol.Stringer
 func (id UUID) ToString() (s string, err protocol.Error) {
 	s = base64.RawURLEncoding.EncodeToString(id[:])
 	return
@@ -38,7 +38,7 @@ func (id *UUID) FromString(s string) (err protocol.Error) {
 }
 
 //memar:impl memar/protocol.UUID
-func (id UUID) ExistenceTime() protocol.Time {
+func (id UUID) ExistenceTime() time_p.Time {
 	var time unix.Time
 	time.ChangeTo(unix.SecElapsed(id.secondElapsed()), id.nanoSecondElapsed())
 	return &time
@@ -57,7 +57,7 @@ func (id *UUID) New() {
 	// Set time to UUID
 	var now = unix.Now()
 	id.setSecondElapsed(now.SecondElapsed())
-	id.setNanoSecondElapsed(now.NanoSecondElapsed())
+	id.setNanoInSecondElapsed(now.NanoInSecondElapsed())
 }
 
 // NewHash generate 32 byte incremental by time + hash of data UUID
@@ -85,7 +85,7 @@ func (id UUID) id() protocol.ID             { return protocol.ID(binary.LittleEn
 func (id UUID) secondElapsed() int64        { return int64(binary.LittleEndian.Uint64(id[0:])) }
 func (id UUID) nanoSecondElapsed() int32    { return int32(binary.LittleEndian.Uint32(id[8:])) }
 func (id *UUID) setSecondElapsed(sec int64) { binary.LittleEndian.PutUint64(id[0:], uint64(sec)) }
-func (id *UUID) setNanoSecondElapsed(nsec int32) {
+func (id *UUID) setNanoInSecondElapsed(nsec int32) {
 	binary.LittleEndian.PutUint32(id[8:], uint32(nsec))
 }
 
