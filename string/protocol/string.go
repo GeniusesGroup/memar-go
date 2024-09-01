@@ -1,6 +1,11 @@
 /* For license and copyright information please see the LEGAL file in the code repository */
 
-package protocol
+package string_p
+
+import (
+	adt_p "memar/adt/protocol"
+	"memar/protocol"
+)
 
 // In computer programming, a string is traditionally a sequence of characters,
 // either as a literal constant or as some kind of variable.
@@ -12,35 +17,23 @@ package protocol
 type String interface {
 	CharacterEncoding() CharacterEncoding
 
-	Array_Dynamic[Character]
+	adt_p.Array_Dynamic[Character]
 
-	ADT_Compare[String]
-	ADT_Concat[String]
-	ADT_Split_Element[String, Character]
-	ADT_Split_Offset[String, Character]
+	adt_p.Compare[String]
+	adt_p.Concat[String]
+	// Join[String]
+	adt_p.Split_Element[String, Character]
+	adt_p.Split_Offset[String, Character]
 
 	// If source is a `Split` result, no copy action need and just increase buffer write index.
-	DataType_Clone[String]
-	DataType_Copy[String]
-}
-
-// Stringer code the data to/from human readable format. It can be any other format like JSON(not recommended).
-type Stringer[STRING String] interface {
-	Stringer_To[STRING]
-	Stringer_From[STRING]
-}
-
-type Stringer_To[STRING String] interface {
-	ToString() (str STRING, err Error)
-}
-type Stringer_From[STRING String] interface {
-	FromString(str STRING) (err Error)
+	protocol.DataType_Clone[String]
+	protocol.DataType_Copy[String]
 }
 
 // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/join
-// ADT_Concat is an operation
-type ADT_Join[STRING String] interface {
+// Join is an operation
+type Join[STR String] interface {
 	// The join() method of Array instances creates and returns a new string by concatenating all of the elements in this array,
 	// separated by commas or a specified separator string.
-	Join(sep STRING) (s STRING, err Error)
+	Join(sep STR, con ...STR) (s STR, err protocol.Error)
 }
