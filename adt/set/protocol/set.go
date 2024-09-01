@@ -1,5 +1,5 @@
 /* For license and copyright information please see the LEGAL file in the code repository */
 
-package protocol
+package set_p
 
-// https://en.wikipedia.org/wiki/Priority_queue
+// https://en.wikipedia.org/wiki/Set_(abstract_data_type)

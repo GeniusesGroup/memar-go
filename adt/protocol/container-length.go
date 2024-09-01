@@ -1,6 +1,10 @@
 /* For license and copyright information please see the LEGAL file in the code repository */
 
-package protocol
+package adt_p
+
+import (
+	"memar/protocol"
+)
 
 // Length is a measure of distance. In the International System of Quantities, length is a quantity with dimension distance.
 // In most systems of measurement a base unit for length is chosen, from which all other units are derived.
@@ -26,7 +30,13 @@ type AvailableLength interface {
 	AvailableLength() NumberOfElement
 }
 
-type ADT_Count[ELEMENT any] interface {
+// ExpectedLength indicate min and max expected length.
+type ExpectedLength interface {
+	MinLength() NumberOfElement
+	MaxLength() NumberOfElement
+}
+
+type Count[ELEMENT Element] interface {
 	// Count return the NumberOfElement of given element that exist in the container.
-	Count(el ELEMENT) (ne NumberOfElement, err Error)
+	Count(el ELEMENT) (ne NumberOfElement, err protocol.Error)
 }

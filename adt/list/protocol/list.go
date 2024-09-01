@@ -1,6 +1,11 @@
 /* For license and copyright information please see the LEGAL file in the code repository */
 
-package protocol
+package list_p
+
+import (
+	adt_p "memar/adt/protocol"
+	"memar/protocol"
+)
 
 // list or sequence is an abstract data type that represents a finite number of ordered values,
 // where the same value may occur more than once.
@@ -9,20 +14,22 @@ package protocol
 // Lists are a basic example of containers, as they contain other values.
 // If the same value occurs multiple times, each occurrence is considered a distinct item.
 // https://en.wikipedia.org/wiki/List_(abstract_data_type)
-type List[ELEMENT any] interface {
-	ADT_Head[ELEMENT]
-	ADT_Tail[ELEMENT]
+// Other Languages:
+// - https://docs.python.org/3/tutorial/datastructures.html
+type List[ELEMENT adt_p.Element] interface {
+	Head[ELEMENT]
+	Tail[ELEMENT]
 
-	Container[ELEMENT]
+	adt_p.Container[ELEMENT]
 }
 
-type ADT_Head[ELEMENT any] interface {
+type Head[ELEMENT adt_p.Element] interface {
 	// Head will return first element of the container.
-	Head() (el ELEMENT, err Error)
+	Head() (el ELEMENT, err protocol.Error)
 }
 
-type ADT_Tail[ELEMENT any] interface {
+type Tail[ELEMENT adt_p.Element] interface {
 	// Tail will return last element of the container.
 	// an operation for referring to the list consisting of all the components of a list except for its first (this is called the "tail" of the list.)
-	Tail() (el ELEMENT, err Error)
+	Tail() (el ELEMENT, err protocol.Error)
 }

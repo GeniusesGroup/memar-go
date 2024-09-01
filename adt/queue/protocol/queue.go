@@ -1,26 +1,31 @@
 /* For license and copyright information please see the LEGAL file in the code repository */
 
-package protocol
+package queue_p
+
+import (
+	adt_p "memar/adt/protocol"
+	"memar/protocol"
+)
 
 // Queue is queue data structure.
 // https://en.wikipedia.org/wiki/Queue_(abstract_data_type)
-type Queue[ELEMENT any] interface {
-	ADT_Dequeue[ELEMENT]
-	ADT_Enqueue[ELEMENT]
+type Queue[ELEMENT adt_p.Element] interface {
+	Dequeue[ELEMENT]
+	Enqueue[ELEMENT]
 }
 
-// ADT_Enqueue is an element operation
+// Enqueue is an element operation
 // https://en.wikipedia.org/wiki/Queue_(abstract_data_type)
-type ADT_Enqueue[ELEMENT any] interface {
+type Enqueue[ELEMENT adt_p.Element] interface {
 	// Enqueue adding an element to the rear of the queue.
 	// NOT RECOMMENDED but implementation CAN just call `Prepend()`
-	Enqueue(el ELEMENT) (err Error)
+	Enqueue(el ELEMENT) (err protocol.Error)
 }
 
-// ADT_Dequeue is an element operation
+// Dequeue is an element operation
 // https://en.wikipedia.org/wiki/Queue_(abstract_data_type)
-type ADT_Dequeue[ELEMENT any] interface {
+type Dequeue[ELEMENT adt_p.Element] interface {
 	// Dequeue removing an element from the front of queue and return it.
 	// NOT RECOMMENDED but implementation CAN just call `Pop()`
-	Dequeue() (el ELEMENT, err Error)
+	Dequeue() (el ELEMENT, err protocol.Error)
 }
