@@ -2,6 +2,11 @@
 
 package gui_p
 
+import (
+	picture_p "memar/picture/protocol"
+	"memar/protocol"
+)
+
 type Pages interface {
 	RegisterPage(page Page)
 	GetPageByPath(path string) (page Page)
@@ -12,7 +17,7 @@ type Pages interface {
 type Page interface {
 	// "all", "noindex", "nofollow", "none", "noarchive", "nosnippet", "notranslate", "noimageindex", "unavailable_after: [RFC-850 date/time]"
 	Robots() string
-	Icon() Image
+	Icon() picture_p.Image
 	Info() Information // It is locale info
 	// think about a page that show a user medical records, doctor need to know user birthday, so /user page must ready to reach by doctor
 	// or doctor need to know other doctors visits to know any advice from them for this user.
@@ -38,7 +43,7 @@ type Page interface {
 	// it is raw version of the page templates DOM e.g. products-template-card.html
 	// template(name string) DOM
 
-	MediaType
+	protocol.MediaType
 }
 
 type Page_DefaultConditions interface {

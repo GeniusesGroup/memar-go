@@ -2,23 +2,21 @@
 
 package gui
 
-import (
-	"libgo/protocol"
-)
+import gui_p "memar/gui/protocol"
 
-// Pages implements protocol.GUI_Pages interface
+// Pages implements gui_p.Pages interface
 type Pages struct {
-	poolByTimeAdded []protocol.GUI_Page
-	poolByPath      map[string]protocol.GUI_Page
+	poolByTimeAdded []gui_p.Page
+	poolByPath      map[string]gui_p.Page
 }
 
-func (p *Pages) RegisterPage(page protocol.GUI_Page) {
+func (p *Pages) RegisterPage(page gui_p.Page) {
 	p.poolByTimeAdded = append(p.poolByTimeAdded, page)
 	p.poolByPath[page.Path()] = page
 }
-func (p *Pages) GetPageByPath(path string) (page protocol.GUI_Page) {
+func (p *Pages) GetPageByPath(path string) (page gui_p.Page) {
 	return p.poolByPath[path]
 }
-func (p *Pages) Pages() (pages []protocol.GUI_Page) {
+func (p *Pages) Pages() (pages []gui_p.Page) {
 	return p.poolByTimeAdded
 }
