@@ -6,6 +6,7 @@ import (
 	"memar/protocol"
 	string_p "memar/string/protocol"
 	"memar/time/duration"
+	"memar/time/earth"
 	time_p "memar/time/protocol"
 )
 
@@ -18,12 +19,12 @@ type Time struct {
 	nsec duration.NanoInSecond
 }
 
-//memar:impl memar/time/protocol.Time
+//memar:impl memar/time/time_p.Time
 func (t *Time) Epoch() time_p.Epoch                        { return &Epoch }
 func (t *Time) SecondElapsed() duration.Second             { return t.sec }
 func (t *Time) NanoInSecondElapsed() duration.NanoInSecond { return t.nsec }
 
-//memar:impl memar/protocol.Stringer
+//memar:impl memar/string/protocol.Stringer
 func (t *Time) ToString() (str string_p.String, err protocol.Error) {
 	// TODO:::
 	return
@@ -80,12 +81,11 @@ func (t Time) MilliElapsed() (d duration.MilliSecond) {
 
 // fast way: unix.Now().SecElapsed()		|| Go way: time.Now().Unix()
 func (t Time) SecElapsed() duration.Second { return t.sec }
+func (t Time) HourElapsed() (h earth.Hour) { h.FromSecond(t.sec); return }
+func (t Time) DayElapsed() (day earth.Day) { day.FromSecond(t.sec); return }
 
-func (t Time) HourElapsed() HourElapsed { return HourElapsed(t.sec / (60 * 60)) }
-func (t Time) DayElapsed() DayElapsed   { return DayElapsed(t.sec / (24 * 60 * 60)) }
-
-// ElapsedByDuration returns the result of rounding t to the nearest multiple of d.
-func (t Time) ElapsedByDuration(d duration.NanoSecond) (period int64) {
+// ElapsedByNanoSecond returns the result of rounding t to the nearest multiple of d.
+func (t Time) ElapsedByNanoSecond(d duration.NanoSecond) (period int64) {
 	if d < 0 {
 		return
 	}
@@ -102,5 +102,18 @@ func (t Time) ElapsedByDuration(d duration.NanoSecond) (period int64) {
 		period = int64(duration.NanoSecond(t.sec)*duration.OneSecond) / int64(nsec)
 		period += int64(t.nsec / nsec)
 	}
+	return
+}
+
+// ElapsedBySecond returns the result of rounding t to the nearest multiple of d.
+func (t Time) ElapsedBySecond(d duration.Second) (period int64) {
+	if d < 0 {
+		return
+	}
+	if d == 0 {
+		return int64(t.NanoElapsed())
+	}
+
+	period = int64(t.sec / d)
 	return
 }
