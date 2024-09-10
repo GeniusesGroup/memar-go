@@ -11,3 +11,7 @@ type Stack interface {
 	// In Go USUALLY fill by `debug.Stack()`
 	RuntimeStack() string_p.String
 }
+
+type Existence interface {
+	Heap() bool // Pointer
+}

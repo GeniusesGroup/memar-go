@@ -5,7 +5,7 @@ package crypto_p
 import (
 	buffer_p "memar/buffer/protocol"
 	codec_p "memar/codec/protocol"
-	"memar/protocol"
+	error_p "memar/error/protocol"
 )
 
 // Cipher represents an implementation for a cipher
@@ -25,11 +25,11 @@ type BlockCipher interface {
 
 	// Encrypt encrypts the first block in src into dst.
 	// Dst and src must overlap entirely or not at all.
-	Encrypt(dst, src buffer_p.Buffer) (err protocol.Error)
+	Encrypt(dst, src buffer_p.Buffer) (err error_p.Error)
 
 	// Decrypt decrypts the first block in src into dst.
 	// Dst and src must overlap entirely or not at all.
-	Decrypt(dst, src buffer_p.Buffer) (err protocol.Error)
+	Decrypt(dst, src buffer_p.Buffer) (err error_p.Error)
 }
 
 // A Stream represents a stream cipher.
@@ -44,5 +44,5 @@ type StreamCipher interface {
 	// Multiple calls to XORKeyStream behave as if the concatenation of
 	// the src buffers was passed in a single run. That is, Stream
 	// maintains state and does not reset at each XORKeyStream call.
-	XORKeyStream(dst, src buffer_p.Buffer) (err protocol.Error)
+	XORKeyStream(dst, src buffer_p.Buffer) (err error_p.Error)
 }

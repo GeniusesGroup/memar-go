@@ -3,7 +3,7 @@
 package adt_p
 
 import (
-	"memar/protocol"
+	error_p "memar/error/protocol"
 )
 
 // Length is a measure of distance. In the International System of Quantities, length is a quantity with dimension distance.
@@ -38,5 +38,5 @@ type ExpectedLength interface {
 
 type Count[ELEMENT Element] interface {
 	// Count return the NumberOfElement of given element that exist in the container.
-	Count(el ELEMENT) (ne NumberOfElement, err protocol.Error)
+	Count(el ELEMENT) (ne NumberOfElement, err error_p.Error)
 }

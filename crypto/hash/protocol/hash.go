@@ -3,8 +3,10 @@
 package hash_p
 
 import (
+	adt_p "memar/adt/protocol"
 	buffer_p "memar/buffer/protocol"
-	"memar/protocol"
+	object_p "memar/computer/language/object/protocol"
+	error_p "memar/error/protocol"
 )
 
 // Hash is the common interface implemented by all hash functions.
@@ -16,11 +18,14 @@ import (
 // later, without having to re-write the data previously written to the hash.
 // The hash state may contain portions of the input in its original form,
 // which users are expected to handle for any possible security implications.
+//
+// Some other languages:
+// - https://doc.rust-lang.org/stable/std/hash/trait.Hasher.html
 type Hash interface {
-	protocol.ObjectLifeCycle
+	object_p.LifeCycle
 	// Init(source Buffer) Error
 	// Reinit resets the Hash to its initial state.
-	Reinit(source buffer_p.Buffer) protocol.Error
+	Reinit(source buffer_p.Buffer) error_p.Error
 
 	// Sum returns the resulting hash slice with `HashLength()` length.
 	// It does not change the underlying hash state.

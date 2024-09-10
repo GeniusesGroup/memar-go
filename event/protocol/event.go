@@ -3,7 +3,8 @@
 package event_p
 
 import (
-	"memar/protocol"
+	datatype_p "memar/datatype/protocol"
+	error_p "memar/error/protocol"
 	time_p "memar/time/protocol"
 )
 
@@ -12,7 +13,7 @@ import (
 // https://developer.mozilla.org/en-US/docs/Web/API/Event
 // https://developer.mozilla.org/en-US/docs/Web/Events
 type Event interface {
-	Domain() protocol.DataType
+	Domain() datatype_p.DataType
 	Time() time_p.Time
 
 	// Returns true or false depending on how event was initialized. Its return value does not always carry meaning,
@@ -28,5 +29,5 @@ type Event interface {
 type Event_Methods interface {
 	// If invoked when the cancelable attribute value is true, and while executing a listener for the event with passive set to false,
 	// signals to the operation that caused event to be dispatched that it needs to be canceled.
-	PreventDefault() (err protocol.Error)
+	PreventDefault() (err error_p.Error)
 }

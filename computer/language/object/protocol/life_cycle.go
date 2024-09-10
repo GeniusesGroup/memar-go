@@ -1,8 +1,12 @@
 /* For license and copyright information please see the LEGAL file in the code repository */
 
-package protocol
+package object_p
 
-type ObjectLifeCycle interface {
+import (
+	error_p "memar/error/protocol"
+)
+
+type LifeCycle interface {
 	// new call to allocate the object and initialize it.
 	// It must be called on pointer to the struct not direct use e.g. `t *embed`.
 	// New()
@@ -20,7 +24,7 @@ type ObjectLifeCycle interface {
 	// TODO::: how let custom reinitialize and get some args??
 	// Reinit() (err Error)
 
-	Deinit() (err Error)
+	Deinit() (err error_p.Error)
 
 	// Deallocate()
 

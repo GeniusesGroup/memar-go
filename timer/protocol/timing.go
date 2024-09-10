@@ -3,7 +3,7 @@
 package timer_p
 
 import (
-	"memar/protocol"
+	error_p "memar/error/protocol"
 	time_p "memar/time/protocol"
 )
 
@@ -13,5 +13,5 @@ import (
 // Packages can also break Init() methods of Timer or Ticker if they can't provide default Timing mechanism e.g. on TimingWheel
 type Timing[ /*DUR time_p.Duration,*/ TIME time_p.Time, ST TimerStatus] interface {
 	// Depend on implementation but in most cases t can be a Ticker too.
-	AddTimer(t Timer[ /*DUR,*/ TIME, ST]) (err protocol.Error)
+	AddTimer(t Timer[ /*DUR,*/ TIME, ST]) (err error_p.Error)
 }

@@ -1,6 +1,13 @@
 /* For license and copyright information please see the LEGAL file in the code repository */
 
-package protocol
+package net_p
+
+import (
+	object_p "memar/computer/language/object/protocol"
+	error_p "memar/error/protocol"
+	operation_p "memar/operation/protocol"
+	service_p "memar/operation/service/protocol"
+)
 
 /*
 **********************************************************************************
@@ -10,12 +17,12 @@ Application (OSI Layer 7: Application)
 
 // OSI_Application usually use to save state and release thread(goroutine) in waiting state
 type OSI_Application interface {
-	Service() Service //
-	Request() any     // Codec
-	Response() any    // Codec
-	Error() Error     // just indicate peer error that receive by response of the request.
+	Service() service_p.Service //
+	Request() any               // Codec
+	Response() any              // Codec
+	Error() error_p.Error       // just indicate peer error that receive by response of the request.
 
-	ObjectLifeCycle
+	object_p.LifeCycle
 	OSI_Application_LowLevelAPIs
 }
 
@@ -23,12 +30,12 @@ type OSI_Application interface {
 type OSI_Application_LowLevelAPIs interface {
 	// Below Set methods must call just once,
 	// But some protocol like http allow to change it after first set in a reusable socket like IP/TCP.
-	SetService(ser Service)
+	SetService(ser service_p.Service)
 	SetRequest(req any)
 	SetResponse(res any)
-	SetError(err Error)
+	SetError(err error_p.Error)
 
-	OperationImportance // base on the connection and the service priority and weight
+	operation_p.Importance // base on the connection and the service priority and weight
 	OSI_Application_Handler
 	// Stringer_To[String] // e.g. "http", ...
 }
@@ -39,11 +46,11 @@ type OSI_Application_Handler interface {
 	ScheduleProcessingSocket()
 
 	// HandleIncomeRequest must check socket status
-	HandleIncomeRequest(sk Socket) (err Error)
+	HandleIncomeRequest(sk Socket) (err error_p.Error)
 
 	// SendBidirectionalRequest()
 	// SendUnidirectionalRequest()
 	// Due to each application handler wants its signature, implement it as a pure function inside each package.
-	// srpc.SendBidirectionalRequest(sk Socket, sr Service, req Codec) (res Codec, err Error)
-	// http.SendBidirectionalRequest(sk Socket, sr Service, httpReq *Request) (httpRes *Response, err Error) {
+	// srpc.SendBidirectionalRequest(sk Socket, sr Service, req Codec) (res Codec, err error_p.Error)
+	// http.SendBidirectionalRequest(sk Socket, sr Service, httpReq *Request) (httpRes *Response, err error_p.Error) {
 }

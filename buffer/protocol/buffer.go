@@ -4,7 +4,8 @@ package buffer_p
 
 import (
 	adt_p "memar/adt/protocol"
-	"memar/protocol"
+	object_p "memar/computer/language/object/protocol"
+	primitive_p "memar/computer/language/primitive/protocol"
 )
 
 // In computer science, a data buffer (or just buffer) is a region of a memory used to store data temporarily
@@ -14,7 +15,7 @@ import (
 type Buffer interface {
 	BufferType() Type
 
-	protocol.ObjectLifeCycle
+	object_p.LifeCycle
 	// Init(opt BufferOptions)
 
 	Buffer_Index
@@ -30,8 +31,8 @@ type Buffer interface {
 	adt_p.Split_Offset[Buffer, byte]
 
 	// If source is a `Split` result, no copy action need and just increase buffer write index.
-	protocol.DataType_Clone[Buffer]
-	protocol.DataType_Copy[Buffer]
+	primitive_p.Clone[Buffer]
+	primitive_p.Copy[Buffer]
 }
 
 // BufferOptions:

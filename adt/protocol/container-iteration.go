@@ -3,13 +3,13 @@
 package adt_p
 
 import (
-	"memar/protocol"
+	error_p "memar/error/protocol"
 )
 
 // https://github.com/golang/go/discussions/54245
 
 type Iteration[ELEMENT Element] interface {
-	Iterate(startIndex ElementIndex, iterator Iterate[ELEMENT]) (err protocol.Error)
+	Iterate(startIndex ElementIndex, iterator Iterate[ELEMENT]) (err error_p.Error)
 
 	// TODO::: Stop() or return (breaking bool)??
 	// Stop() // break the iterate function
@@ -18,5 +18,5 @@ type Iteration[ELEMENT Element] interface {
 type Iterate[ELEMENT Element] interface {
 	// Iterate or traverse
 	// In each iteration if err != nil, iteration will be stopped
-	Iterate(index ElementIndex, el ELEMENT) (err protocol.Error)
+	Iterate(index ElementIndex, el ELEMENT) (err error_p.Error)
 }

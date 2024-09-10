@@ -3,7 +3,7 @@
 package adt_p
 
 import (
-	"memar/protocol"
+	error_p "memar/error/protocol"
 )
 
 // In computer science, an associative array, map, symbol table, or dictionary is an abstract data type that
@@ -24,34 +24,34 @@ type Array_Associative[KEY comparable, VALUE any] interface {
 }
 
 type Iteration_KV[K, V any] interface {
-	Iterate_KV(startIndex ElementIndex, iterator Iterate_KV[K, V]) (err protocol.Error)
+	Iterate_KV(startIndex ElementIndex, iterator Iterate_KV[K, V]) (err error_p.Error)
 }
 
 type Iterate_KV[K, V any] interface {
 	// Iterate or traverse
 	// In each iteration if err != nil, iteration will be stopped
-	Iterate(index ElementIndex, key K, value V) (err protocol.Error)
+	Iterate(index ElementIndex, key K, value V) (err error_p.Error)
 }
 
 type ADT_Put[KEY, VALUE any] interface {
 	// Put or Insert()
-	Put(key KEY, value VALUE) (err protocol.Error)
+	Put(key KEY, value VALUE) (err error_p.Error)
 }
 
 type ADT_Lookup[KEY comparable, VALUE any] interface {
-	Lookup(key KEY) (value VALUE, err protocol.Error)
+	Lookup(key KEY) (value VALUE, err error_p.Error)
 }
 
 type ADT_Remove[KEY comparable] interface {
-	Remove(key KEY) (err protocol.Error)
+	Remove(key KEY) (err error_p.Error)
 }
 
 type ADT_Keys[KEY any] interface {
 	// Keys return all keys
-	Keys() (keys []KEY, err protocol.Error)
+	Keys() (keys []KEY, err error_p.Error)
 }
 
 type ADT_Values[VALUE any] interface {
 	// Values return all values
-	Values() (values []VALUE, err protocol.Error)
+	Values() (values []VALUE, err error_p.Error)
 }

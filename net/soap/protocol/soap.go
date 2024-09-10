@@ -1,28 +1,33 @@
 /* For license and copyright information please see the LEGAL file in the code repository */
 
-package net_p
+package soap_p
 
-type SOAP_Handler interface {
+import (
+	error_p "memar/error/protocol"
+	net_p "memar/net/protocol"
+)
+
+type Handler interface {
 	Action() string
-	ServeSOAP(sk Socket, req SOAP_Message, res SOAP_Message) (err Error)
+	ServeSOAP(sk net_p.Socket, req Message, res Message) (err error_p.Error)
 }
 
-type SOAP_Message interface {
-	Header() SOAP_Message_Header
-	Body() SOAP_Message_Body
+type Message interface {
+	Header() Message_Header
+	Body() Message_Body
 }
 
-type SOAP_Message_Header interface {
+type Message_Header interface {
 }
 
-type SOAP_Message_Body interface {
+type Message_Body interface {
 	// XMLName xml.Name    `xml:"soap:Body"`
 	Payload() interface{}
 	Action() string
-	Fault() SOAP_Message_Fault
+	Fault() Message_Fault
 }
 
-type SOAP_Message_Fault interface {
+type Message_Fault interface {
 	// XMLName xml.Name `xml:"soap:Fault"`
 	// Code    string   `xml:"Code"`
 	// Reason  string   `xml:"Reason"`

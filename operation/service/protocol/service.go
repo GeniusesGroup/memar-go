@@ -3,12 +3,15 @@
 package service_p
 
 import (
+	object_p "memar/computer/language/object/protocol"
+	datatype_p "memar/datatype/protocol"
+	error_p "memar/error/protocol"
+	mediatype_p "memar/mediatype/protocol"
 	operation_p "memar/operation/protocol"
-	"memar/protocol"
 	user_p "memar/user/protocol"
 )
 
-type ServiceID = protocol.DataTypeID
+type ServiceID = datatype_p.ID
 
 // Service is the interface that must implement by any struct to be a service.
 type Service interface {
@@ -18,20 +21,20 @@ type Service interface {
 	Service_Authorization
 	operation_p.Importance
 	Service_Details
-	protocol.ObjectLifeCycle
+	object_p.LifeCycle
 
-	protocol.DataType
-	protocol.MediaType
+	datatype_p.DataType
+	mediatype_p.MediaType
 }
 
 // ServiceHandlers is just test (approver) interface and MUST NOT use directly in any signature.
 // Due to Golang import cycle problem we can't use `net_p.Socket`
-type ServiceHandlers[SK any /*net_p.Socket*/, ReqT, ResT protocol.DataType] interface {
+type ServiceHandlers[SK any /*net_p.Socket*/, ReqT, ResT datatype_p.DataType] interface {
 	// Call service locally by import service package to other one
-	Process(sk SK, req ReqT) (res ResT, err protocol.Error)
+	Process(sk SK, req ReqT) (res ResT, err error_p.Error)
 	//
 	// Call service remotely by preferred(SDK generator choose) protocol.
-	Do(req ReqT) (res ResT, err protocol.Error)
+	Do(req ReqT) (res ResT, err error_p.Error)
 }
 
 // Service authorization to authorize incoming service request
@@ -41,6 +44,6 @@ type Service_Authorization interface {
 }
 
 type Service_Details /*[REQ, RES DataType]*/ interface {
-	Request() protocol.DataType
-	Response() protocol.DataType
+	Request() datatype_p.DataType
+	Response() datatype_p.DataType
 }

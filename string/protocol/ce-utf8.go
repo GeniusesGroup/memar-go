@@ -3,7 +3,7 @@
 package string_p
 
 import (
-	"memar/protocol"
+	error_p "memar/error/protocol"
 )
 
 // UTF-8 is a variable-length character encoding standard used for electronic communication.
@@ -18,6 +18,6 @@ type UTF8 interface {
 
 // Stringer_UTF8 code the data to/from human readable format.
 type Stringer_UTF8 interface {
-	ToUTF8() (str UTF8, err protocol.Error)
-	FromUTF8(str UTF8) (err protocol.Error)
+	ToUTF8() (str UTF8, err error_p.Error)
+	FromUTF8(str UTF8) (err error_p.Error)
 }

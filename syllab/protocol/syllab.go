@@ -5,7 +5,7 @@ package syllab_p
 import (
 	adt_p "memar/adt/protocol"
 	buffer_p "memar/buffer/protocol"
-	"memar/protocol"
+	error_p "memar/error/protocol"
 )
 
 // Syllab is the interface that must implement by any struct to be a Syllab object transmittable over networks.
@@ -17,7 +17,7 @@ type Syllab interface {
 
 type SyllabUnmarshaler interface {
 	// CheckSyllab usually just check LenOfSyllabStack not greater than len of given payload. and call just before decode payload.
-	CheckSyllab(source buffer_p.Buffer) (err protocol.Error)
+	CheckSyllab(source buffer_p.Buffer) (err error_p.Error)
 
 	// FromSyllab ready given payload for get accessors methods.
 	// - Due to strongly suggest to use fields get accessors methods, below method just change under hood buffer if it isn't struct.

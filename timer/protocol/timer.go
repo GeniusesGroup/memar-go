@@ -3,7 +3,7 @@
 package timer_p
 
 import (
-	"memar/protocol"
+	error_p "memar/error/protocol"
 	"memar/time/duration"
 	time_p "memar/time/protocol"
 )
@@ -18,19 +18,19 @@ type Timer[ /*DUR time_p.Duration,*/ TIME time_p.Time, ST TimerStatus] interface
 	// - **NOTE**: each time calling callback() in the timer goroutine, so callback must be
 	// a well-behaved function and not block. If callback need blocking operation it must do its logic in new thread(goroutine).
 	// - Be aware that given function must not be closure and must not block the caller.
-	Init(callback TimerListener) (err protocol.Error)
+	Init(callback TimerListener) (err error_p.Error)
 
-	// TODO::: instead of Init we must force ObjectLifeCycle methods but
+	// TODO::: instead of Init we must force object_p.LifeCycle methods but
 	// we have problem with optional args for method interface that Go not support like ECMA-script
-	// ObjectLifeCycle
+	// object_p.LifeCycle
 
 	// Start will add timer to default timing mechanism like TimingHeap, TimingWheel, ...
-	Start(d duration.NanoSecond) (err protocol.Error)
+	Start(d duration.NanoSecond) (err error_p.Error)
 
-	Reset(d duration.NanoSecond) (err protocol.Error)
+	Reset(d duration.NanoSecond) (err error_p.Error)
 
 	// Client must call Stop(), otherwise **"leaks"** occur, specially in Tick()
-	Stop() (err protocol.Error)
+	Stop() (err error_p.Error)
 
 	When() TIME
 

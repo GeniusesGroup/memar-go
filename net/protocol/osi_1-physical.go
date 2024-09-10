@@ -1,6 +1,12 @@
 /* For license and copyright information please see the LEGAL file in the code repository */
 
-package protocol
+package net_p
+
+import (
+	object_p "memar/computer/language/object/protocol"
+	datatype_p "memar/datatype/protocol"
+	error_p "memar/error/protocol"
+)
 
 /*
 **********************************************************************************
@@ -15,7 +21,7 @@ https://en.wikipedia.org/wiki/Physical_layer
 // and receiving data packets. However, there are exceptions to this rule,
 // and some logical network interface doesn't feature any physical packet transmission;
 // the most known examples are the shaper and eql interfaces.
-// This article shows how such ``virtual'' interfaces attach to the kernel and to the packet transmission mechanism.
+// This article shows how such “virtual” interfaces attach to the kernel and to the packet transmission mechanism.
 // From the kernel's point of view, a network interface is a software object that can process outgoing packets,
 // and the actual transmission mechanism remains hidden inside the interface driver.
 type OSI_Physical interface {
@@ -24,14 +30,14 @@ type OSI_Physical interface {
 	// A situation might be occur that the port available when a packet queued but when the time to send is come,
 	// the port broken and sender don't know about this.
 	// Due to speed matters in link layer, and it is very rare situation, it is better to ignore suddenly port unavailability.
-	Send(packet Network_Packet) (err Error)
+	Send(packet Packet) (err error_p.Error)
 
-	ObjectLifeCycle
-	DataType
-	Network_Framer
+	object_p.LifeCycle
+	datatype_p.DataType
+	Framer
 	NetworkMTU
 	// NetworkAddress
-	Network_FrameWriter
+	FrameWriter
 }
 
 // NetworkMTU

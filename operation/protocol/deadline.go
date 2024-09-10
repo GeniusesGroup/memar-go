@@ -3,7 +3,7 @@
 package operation_p
 
 import (
-	"memar/protocol"
+	error_p "memar/error/protocol"
 	time_p "memar/time/protocol"
 )
 
@@ -11,14 +11,14 @@ import (
 type Deadline interface {
 	// SetDeadline sets the read and write deadlines associated with the connection.
 	// It is equivalent to calling both SetReadDeadline and SetWriteDeadline.
-	SetDeadline(t time_p.Time) protocol.Error
+	SetDeadline(t time_p.Time) error_p.Error
 
 	Deadline_Read
 	Deadline_Write
 }
 type Deadline_Read interface {
-	SetReadDeadline(t time_p.Time) protocol.Error
+	SetReadDeadline(t time_p.Time) error_p.Error
 }
 type Deadline_Write interface {
-	SetWriteDeadline(t time_p.Time) protocol.Error
+	SetWriteDeadline(t time_p.Time) error_p.Error
 }

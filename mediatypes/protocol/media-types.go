@@ -3,12 +3,13 @@
 package mts_p
 
 import (
-	"memar/protocol"
+	error_p "memar/error/protocol"
+	mediatype_p "memar/mediatype/protocol"
 	string_p "memar/string/protocol"
 )
 
 type MediaTypes interface {
-	Register(mt protocol.MediaType) (err protocol.Error)
-	GetByMediaType(mediaType string_p.String) (mt protocol.MediaType, err protocol.Error)
-	GetByFileExtension(ex string_p.String) (mt protocol.MediaType, err protocol.Error)
+	Register(mt mediatype_p.MediaType) (err error_p.Error)
+	GetByMediaType(mediaType string_p.String) (mt mediatype_p.MediaType, err error_p.Error)
+	GetByFileExtension(ex string_p.String) (mt mediatype_p.MediaType, err error_p.Error)
 }

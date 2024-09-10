@@ -1,6 +1,6 @@
 /* For license and copyright information please see the LEGAL file in the code repository */
 
-package protocol
+package net_p
 
 /*
 **********************************************************************************
@@ -17,7 +17,7 @@ https://en.wikipedia.org/wiki/Presentation_layer
 // although it can be done on the application, session, transport, or network layers, each having its own advantages and disadvantages.
 // For example, when logging on to bank account sites the presentation layer will decrypt the data as it is received.
 type OSI_Presentation interface {
-	Network_Framer
+	Framer
 
 	OSI_Presentation_LowLevelAPIs
 }

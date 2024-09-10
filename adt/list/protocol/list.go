@@ -4,7 +4,6 @@ package list_p
 
 import (
 	adt_p "memar/adt/protocol"
-	"memar/protocol"
 )
 
 // list or sequence is an abstract data type that represents a finite number of ordered values,
@@ -25,11 +24,11 @@ type List[ELEMENT adt_p.Element] interface {
 
 type Head[ELEMENT adt_p.Element] interface {
 	// Head will return first element of the container.
-	Head() (el ELEMENT, err protocol.Error)
+	Head() (el ELEMENT, err error_p.Error)
 }
 
 type Tail[ELEMENT adt_p.Element] interface {
 	// Tail will return last element of the container.
 	// an operation for referring to the list consisting of all the components of a list except for its first (this is called the "tail" of the list.)
-	Tail() (el ELEMENT, err protocol.Error)
+	Tail() (el ELEMENT, err error_p.Error)
 }

@@ -3,7 +3,7 @@
 package timer_p
 
 import (
-	"memar/protocol"
+	error_p "memar/error/protocol"
 	"memar/time/duration"
 )
 
@@ -13,5 +13,5 @@ import (
 // Reset() just change the interval not first tick duration.
 type Ticker /*[DUR time_p.Duration]*/ interface {
 	// Tick will add timer to default timing mechanism like TimingHeap, TimingWheel, ...
-	Tick(first, interval duration.NanoSecond) (err protocol.Error)
+	Tick(first, interval duration.NanoSecond) (err error_p.Error)
 }

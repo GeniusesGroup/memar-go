@@ -4,7 +4,8 @@ package string_p
 
 import (
 	adt_p "memar/adt/protocol"
-	"memar/protocol"
+	primitive_p "memar/computer/language/primitive/protocol"
+	error_p "memar/error/protocol"
 )
 
 // In computer programming, a string is traditionally a sequence of characters,
@@ -26,8 +27,8 @@ type String interface {
 	adt_p.Split_Offset[String, Character]
 
 	// If source is a `Split` result, no copy action need and just increase buffer write index.
-	protocol.DataType_Clone[String]
-	protocol.DataType_Copy[String]
+	primitive_p.Clone[String]
+	primitive_p.Copy[String]
 }
 
 // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/join
@@ -35,5 +36,5 @@ type String interface {
 type Join[STR String] interface {
 	// The join() method of Array instances creates and returns a new string by concatenating all of the elements in this array,
 	// separated by commas or a specified separator string.
-	Join(sep STR, con ...STR) (s STR, err protocol.Error)
+	Join(sep STR, con ...STR) (s STR, err error_p.Error)
 }

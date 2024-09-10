@@ -1,17 +1,21 @@
 /* For license and copyright information please see the LEGAL file in the code repository */
 
-package protocol
+package function_p
 
-// DataType_Function
-type DataType_Function interface {
+import (
+	datatype_p "memar/datatype/protocol"
+)
+
+// Function
+type Function interface {
 	// We believe fields MUST always access from inside the object,
 	// So we MUST have this method just in methods not fields.
-	Access() DataType_Access
+	Access() Access
 
 	WhenToExecuted() // runtime, compile time
 
 	Blocking() bool // TODO::: be method or as type??
 	// TODO::: add more
 
-	DataType
+	datatype_p.DataType
 }

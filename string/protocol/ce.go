@@ -3,8 +3,8 @@
 package string_p
 
 import (
-	"memar/protocol"
+	datatype_p "memar/datatype/protocol"
 )
 
 // character encoding used for electronic communication.
-type CharacterEncoding protocol.DataTypeID
+type CharacterEncoding datatype_p.ID

@@ -3,8 +3,9 @@
 package json_p
 
 import (
+	adt_p "memar/adt/protocol"
 	buffer_p "memar/buffer/protocol"
-	"memar/protocol"
+	error_p "memar/error/protocol"
 )
 
 // JSON is the interface that must implement by any struct that can be a JSON object.
@@ -25,11 +26,11 @@ type JSON interface {
 
 type Decoder interface {
 	// FromJSON decode JSON to the desire structure. API is same as `codec.Decode()`
-	FromJSON(source buffer_p.Buffer) (err protocol.Error)
+	FromJSON(source buffer_p.Buffer) (err error_p.Error)
 }
 type Encoder interface {
 	// FromJSON encode the structure to JSON format. API is same as `codec.Encoder()`
-	ToJSON(destination buffer_p.Buffer) (err protocol.Error)
+	ToJSON(destination buffer_p.Buffer) (err error_p.Error)
 
 	Length
 }
@@ -38,14 +39,14 @@ type Encoder interface {
 // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/JSON/stringify
 type Unmarshaler interface {
 	// UnmarshalFromJSON like `FromJSON()` decode JSON to the desire structure. API is same as `codec.Unmarshal()`
-	UnmarshalFromJSON(source []byte) (n adt_p.NumberOfElement, err protocol.Error)
+	UnmarshalFromJSON(source []byte) (n adt_p.NumberOfElement, err error_p.Error)
 }
 
 // Marshaler is the interface implemented by types that can marshal themselves into valid JSON.
 // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/JSON/parse
 type Marshaler interface {
 	// MarshalToJSON is same as `ToJSON()` encode the data to JSON format. API is same as `codec.Marshal()`
-	MarshalToJSON(destination []byte) (n adt_p.NumberOfElement, err protocol.Error)
+	MarshalToJSON(destination []byte) (n adt_p.NumberOfElement, err error_p.Error)
 
 	Length
 }

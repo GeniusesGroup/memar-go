@@ -3,8 +3,10 @@
 package command_p
 
 import (
+	datatype_p "memar/datatype/protocol"
+	error_p "memar/error/protocol"
+	mediatype_p "memar/mediatype/protocol"
 	service_p "memar/operation/service/protocol"
-	"memar/protocol"
 )
 
 // Command is the interface that must implement by any struct to be a command service
@@ -24,8 +26,8 @@ type Command interface {
 	// Note that subcommands are in general best avoided.
 	SubCommands() []Command
 
-	protocol.DataType
-	protocol.MediaType
+	datatype_p.DataType
+	mediatype_p.MediaType
 
 	CommandHandler
 	service_p.Service_Details
@@ -35,13 +37,13 @@ type Command interface {
 type CommandHandler interface {
 	// ServeCLA or serve by command-line arguments might block the caller
 	// Arguments list not include the command name.
-	ServeCLA(arguments []string) (err protocol.Error)
+	ServeCLA(arguments []string) (err error_p.Error)
 
 	// read and write to e.g. os.Stdin, os.Stdout, and os.Stderr files
-	// ServeCLI() (err protocol.Error)
+	// ServeCLI() (err error_p.Error)
 }
 
 type CommandLineArguments interface {
-	FromCLA(arguments []string) (remaining []string, err protocol.Error)
-	ToCLA() (arguments []string, err protocol.Error)
+	FromCLA(arguments []string) (remaining []string, err error_p.Error)
+	ToCLA() (arguments []string, err error_p.Error)
 }

@@ -3,32 +3,32 @@
 package adt_p
 
 import (
-	"memar/protocol"
+	error_p "memar/error/protocol"
 )
 
 // Clear is an operation
 type Clear interface {
 	// Clear will remove all elements.
-	Clear() (err protocol.Error)
+	Clear() (err error_p.Error)
 }
 
 // Reversed is a container level operation.
 type Reversed interface {
 	// Reversed is an operation that reverse the container.
 	// Copy the CONTAINER if you need the original one.
-	Reversed() (err protocol.Error)
+	Reversed() (err error_p.Error)
 }
 
 // Sorted is a container level operation.
 type Sorted interface {
 	// Reversed is an operation that sort the container elements.
 	// Copy the CONTAINER if you need the original one.
-	Sorted() (err protocol.Error)
+	Sorted() (err error_p.Error)
 }
 
 // Growth factor
 type Resize interface {
-	Resize(ln NumberOfElement) protocol.Error
+	Resize(ln NumberOfElement) error_p.Error
 	Resized() bool
 	// Resizable returns true if the container(buffer, ...) can be resized, or false if not.
 	Resizable() bool
@@ -53,13 +53,13 @@ type Compare[CONTAINER any] interface {
 type Concat[CONTAINER any] interface {
 	// Concat is like `Append()` and `Prepend()` add given containers in order to end of the CONTAINER,
 	// and return new CONTAINER.
-	Concat(con ...CONTAINER) (new CONTAINER, err protocol.Error)
+	Concat(con ...CONTAINER) (new CONTAINER, err error_p.Error)
 }
 
 type Replace_Elements[CONTAINER any] interface {
 	// Replace_Elements is like `Replace()` but in container level.
 	// Copy the CONTAINER if you need the original one.
-	Replace_Elements(old, new CONTAINER, nl NumberOfElement) (err protocol.Error)
+	Replace_Elements(old, new CONTAINER, nl NumberOfElement) (err error_p.Error)
 }
 
 /*
@@ -72,12 +72,12 @@ type Replace_Elements[CONTAINER any] interface {
 type Split_Element[CONTAINER, ELEMENT Element] interface {
 	// Split is an operation that MOVE the container elements after first given ELEMENT index to new container.
 	// Copy the CONTAINER if you need the original one.
-	SplitByElement(el ELEMENT) (after CONTAINER, err protocol.Error)
+	SplitByElement(el ELEMENT) (after CONTAINER, err error_p.Error)
 }
 
 type Split_Offset[CONTAINER, ELEMENT Element] interface {
 	// When `Get` returns limit > len(p), it returns a non-nil error explaining why more bytes were not returned.
-	SplitByOffset(offset ElementIndex, limit NumberOfElement) (split CONTAINER, err protocol.Error)
+	SplitByOffset(offset ElementIndex, limit NumberOfElement) (split CONTAINER, err error_p.Error)
 }
 
 // Trim
@@ -91,13 +91,13 @@ type Split_Offset[CONTAINER, ELEMENT Element] interface {
 type GetElement[ELEMENT Element] interface {
 	// When `Get` returns limit > len(p), it returns a non-nil error explaining why more bytes were not returned.
 	// GetElement like `GetByte()` provides an efficient interface for byte-at-time processing.
-	GetElement(offset ElementIndex) (el ELEMENT, err protocol.Error)
+	GetElement(offset ElementIndex) (el ELEMENT, err error_p.Error)
 }
 
 type SetElements[ELEMENT Element] interface {
 	// Set will copy element to the container at given offset.
 	// Clients can execute parallel `Set` calls on the same destination if the ranges do not overlap.
-	SetElements(offset ElementIndex, el ...ELEMENT) (nAdd NumberOfElement, err protocol.Error)
+	SetElements(offset ElementIndex, el ...ELEMENT) (nAdd NumberOfElement, err error_p.Error)
 }
 
 // Push is an element operation
@@ -105,7 +105,7 @@ type SetElements[ELEMENT Element] interface {
 // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/push
 type Push[ELEMENT Element] interface {
 	// Push adds an element to the end of the container
-	Push(el ELEMENT) (err protocol.Error)
+	Push(el ELEMENT) (err error_p.Error)
 }
 
 // Pop is an element operation
@@ -113,7 +113,7 @@ type Push[ELEMENT Element] interface {
 // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/pop
 type Pop[ELEMENT Element] interface {
 	// Pop, which removes the most recently added element and return it.
-	Pop() (el ELEMENT, err protocol.Error)
+	Pop() (el ELEMENT, err error_p.Error)
 }
 
 // Peek is an element operation
@@ -122,7 +122,7 @@ type Peek[ELEMENT Element] interface {
 	// Peek or `Top()` or `GetLast()` is an operation on certain abstract data types,
 	// specifically sequential collections such as stacks and queues,
 	// which returns the value of the top ("front") of the collection without removing the element from the collection.
-	Peek() (el ELEMENT, err protocol.Error)
+	Peek() (el ELEMENT, err error_p.Error)
 }
 
 // Shift is an element operation
@@ -131,37 +131,37 @@ type Shift[ELEMENT Element] interface {
 	// The shift() method removes the element at the zeroth index and shifts the values at consecutive indexes down,
 	// then returns the removed value.
 	// The Pop() method has similar behavior to shift(), but applied to the last element in a container.
-	Shift() (el ELEMENT, err protocol.Error)
+	Shift() (el ELEMENT, err error_p.Error)
 }
 
 // Insert is an element operation
 type Insert[ELEMENT Element] interface {
 	// Insert will insert the given elements in the offset of the container by move elements after offset to `offset+len(el)`.
-	Insert(offset ElementIndex, el ...ELEMENT) (nAdd NumberOfElement, err protocol.Error)
+	Insert(offset ElementIndex, el ...ELEMENT) (nAdd NumberOfElement, err error_p.Error)
 }
 
 // Add is an element operation
 type Add[ELEMENT Element] interface {
 	// Add will add the given elements to the container in a location decided by the container logic.
-	Add(el ELEMENT) (nAdd NumberOfElement, err protocol.Error)
+	Add(el ELEMENT) (nAdd NumberOfElement, err error_p.Error)
 }
 
 // Append is an element operation
 type Append[ELEMENT Element] interface {
 	// Append will adds the given elements to the end of the container.
-	Append(el ...ELEMENT) (nAdd NumberOfElement, err protocol.Error)
+	Append(el ...ELEMENT) (nAdd NumberOfElement, err error_p.Error)
 }
 
 // Prepend is an element operation
 // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/unshift
 type Prepend[ELEMENT Element] interface {
 	// Prepend will adds the given elements to the beginning of the container.
-	Prepend(el ...ELEMENT) (nAdd NumberOfElement, err protocol.Error)
+	Prepend(el ...ELEMENT) (nAdd NumberOfElement, err error_p.Error)
 }
 
 type Replace[ELEMENT Element] interface {
 	//
-	Replace(old, new ELEMENT, nl NumberOfElement) (err protocol.Error)
+	Replace(old, new ELEMENT, nl NumberOfElement) (err error_p.Error)
 }
 
 type Contain[ELEMENT Element] interface {

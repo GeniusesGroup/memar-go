@@ -3,7 +3,7 @@
 package runtime_p
 
 import (
-	"memar/protocol"
+	error_p "memar/error/protocol"
 )
 
 type Thread interface {
@@ -16,9 +16,9 @@ type Thread interface {
 }
 
 type Thread_SchedulerWaiting interface {
-	AddToWaitList(id int) (err protocol.Error)
-	NotifyWaitList(id int) (err protocol.Error)
-	Wait() (id int, er protocol.Error)
+	AddToWaitList(id int) (err error_p.Error)
+	NotifyWaitList(id int) (err error_p.Error)
+	Wait() (id int, er error_p.Error)
 }
 
 // Even when a package uses panic internally, its external API still presents explicit error return values.

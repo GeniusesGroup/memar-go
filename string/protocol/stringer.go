@@ -3,7 +3,7 @@
 package string_p
 
 import (
-	"memar/protocol"
+	error_p "memar/error/protocol"
 )
 
 // Stringer code the data to/from human readable format. It can be any other format like JSON(not recommended).
@@ -13,10 +13,10 @@ type Stringer[STR String] interface {
 }
 
 type Stringer_To[STR String] interface {
-	ToString() (str STR, err protocol.Error)
+	ToString() (str STR, err error_p.Error)
 }
 type Stringer_From[STR String] interface {
-	FromString(str STR) (err protocol.Error)
+	FromString(str STR) (err error_p.Error)
 }
 
 // Stringer_GO is same as `fmt.Stringer`

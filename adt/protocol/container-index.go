@@ -3,7 +3,7 @@
 package adt_p
 
 import (
-	"memar/protocol"
+	error_p "memar/error/protocol"
 )
 
 // ElementIndex is related to `NumberOfElement`
@@ -17,10 +17,10 @@ type LastElementIndex interface {
 
 type Index[ELEMENT Element] interface {
 	// Index return the location of given element in the container.
-	Index(el ELEMENT) (ei ElementIndex, err protocol.Error)
+	Index(el ELEMENT) (ei ElementIndex, err error_p.Error)
 }
 
 type LastIndex[ELEMENT Element] interface {
 	// LastIndex return the location of given element in the container from end of container.
-	LastIndex(el ELEMENT) (ei ElementIndex, err protocol.Error)
+	LastIndex(el ELEMENT) (ei ElementIndex, err error_p.Error)
 }

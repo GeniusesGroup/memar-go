@@ -4,7 +4,7 @@ package queue_p
 
 import (
 	adt_p "memar/adt/protocol"
-	"memar/protocol"
+	error_p "memar/error/protocol"
 )
 
 // Queue is queue data structure.
@@ -19,7 +19,7 @@ type Queue[ELEMENT adt_p.Element] interface {
 type Enqueue[ELEMENT adt_p.Element] interface {
 	// Enqueue adding an element to the rear of the queue.
 	// NOT RECOMMENDED but implementation CAN just call `Prepend()`
-	Enqueue(el ELEMENT) (err protocol.Error)
+	Enqueue(el ELEMENT) (err error_p.Error)
 }
 
 // Dequeue is an element operation
@@ -27,5 +27,5 @@ type Enqueue[ELEMENT adt_p.Element] interface {
 type Dequeue[ELEMENT adt_p.Element] interface {
 	// Dequeue removing an element from the front of queue and return it.
 	// NOT RECOMMENDED but implementation CAN just call `Pop()`
-	Dequeue() (el ELEMENT, err protocol.Error)
+	Dequeue() (el ELEMENT, err error_p.Error)
 }

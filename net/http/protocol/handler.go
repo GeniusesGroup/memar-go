@@ -3,9 +3,9 @@
 package http_p
 
 import (
+	error_p "memar/error/protocol"
 	net_p "memar/net/protocol"
 	uri_p "memar/net/uri/protocol"
-	"memar/protocol"
 	string_p "memar/string/protocol"
 )
 
@@ -22,8 +22,8 @@ type Handler[HTTP_REQ Request /*[STR]*/, HTTP_RES Response /*[STR]*/, STR string
 	// ** NOTE: Due to reuse underling buffer If caller need to keep any data from httpReq or httpRes it must make a copy and
 	// ** prevent from keep a reference to any data get from these two interface after return.
 	// **
-	ServeHTTP(sk net_p.Socket, req Request, res Response) (err protocol.Error)
+	ServeHTTP(sk net_p.Socket, req Request, res Response) (err error_p.Error)
 
 	// Call service remotely by HTTP protocol
-	// doHTTP(req REQ) (res RES, err Error)
+	// doHTTP(req REQ) (res RES, err error_p.Error)
 }

@@ -5,7 +5,8 @@ package codec_p
 import (
 	adt_p "memar/adt/protocol"
 	buffer_p "memar/buffer/protocol"
-	"memar/protocol"
+	datatype_p "memar/datatype/protocol"
+	error_p "memar/error/protocol"
 )
 
 // Codec wraps some other interfaces that need an data structure be a codec.
@@ -16,21 +17,21 @@ type Codec /*[BUF Buffer]*/ interface {
 	Decoder /*[BUF]*/
 	Encoder /*[BUF]*/
 
-	protocol.DataType
+	datatype_p.DataType
 }
 
 // Decoder is the interface that wraps the Decode method.
 type Decoder /*[BUF Buffer]*/ interface {
 	// Decode read and decode data until end of needed data or occur error.
 	// Unlike io.ReadFrom() it isn't read until EOF and just read needed data.
-	Decode(source buffer_p.Buffer) (err protocol.Error)
+	Decode(source buffer_p.Buffer) (err error_p.Error)
 }
 
 // Encoder is the interface that wraps the Encode & CodecLength methods.
 type Encoder /*[BUF Buffer]*/ interface {
 	// Encode writes serialized(encoded) data to destination until there's no more data to write.
 	// Return any error that occur in buffer logic e.g. timeout error in socket, ...
-	Encode(destination buffer_p.Buffer) (err protocol.Error)
+	Encode(destination buffer_p.Buffer) (err error_p.Error)
 
 	CodecLength
 }
@@ -42,13 +43,13 @@ type Encoder /*[BUF Buffer]*/ interface {
 // Unmarshaler is the interface that wraps the Unmarshal method.
 type Unmarshaler interface {
 	// Unmarshal reads and decode data from given slice until end of needed data or occur error.
-	Unmarshal(source []byte) (n adt_p.NumberOfElement, err protocol.Error)
+	Unmarshal(source []byte) (n adt_p.NumberOfElement, err error_p.Error)
 }
 
 // Marshaler is the interface that wraps the Marshal & CodecLength methods.
 type Marshaler interface {
 	// Marshal write serialized(encoded) data to given slice from len to max cap and save marshal state for future call.
-	Marshal(destination []byte) (n adt_p.NumberOfElement, err protocol.Error)
+	Marshal(destination []byte) (n adt_p.NumberOfElement, err error_p.Error)
 
 	CodecLength
 }

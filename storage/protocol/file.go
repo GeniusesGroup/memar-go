@@ -3,9 +3,10 @@
 package storage_p
 
 import (
+	adt_p "memar/adt/protocol"
 	buffer_p "memar/buffer/protocol"
+	error_p "memar/error/protocol"
 	uri_p "memar/net/uri/protocol"
-	"memar/protocol"
 	string_p "memar/string/protocol"
 	time_p "memar/time/protocol"
 )
@@ -63,7 +64,7 @@ type FileExtension interface {
 
 type File_Methods interface {
 	// Depend on OS, file data can be cache on ram until Save() called.
-	Save() (err protocol.Error)
+	Save() (err error_p.Error)
 
 	Rename(newName string)
 }

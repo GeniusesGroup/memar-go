@@ -3,7 +3,7 @@
 package event_p
 
 import (
-	"memar/protocol"
+	error_p "memar/error/protocol"
 )
 
 // EventTarget is a interface implemented to receive events and may have listeners for them.
@@ -14,11 +14,11 @@ type EventTarget[E Event, OPTs any] interface {
 	// The callback argument sets the callback that will be invoked when the event is dispatched.
 	// The event listener is appended to target's event listener list and is not appended if it has the same type, callback, and capture.
 	// https://developer.mozilla.org/en-US/docs/Web/API/EventTarget/addEventListener
-	AddEventListener(callback EventListener[E], options OPTs) (err protocol.Error)
+	AddEventListener(callback EventListener[E], options OPTs) (err error_p.Error)
 
 	// Removes the event listener in target's event listener list with the same type, callback, and options.
 	// https://developer.mozilla.org/en-US/docs/Web/API/EventTarget/removeEventListener
-	RemoveEventListener(callback EventListener[E], options OPTs) (err protocol.Error)
+	RemoveEventListener(callback EventListener[E], options OPTs) (err error_p.Error)
 
 	// DispatchEvent() or Raise() invokes event handlers synchronously(immediately).
 	// All applicable event handlers are called and return before DispatchEvent() returns.
@@ -26,8 +26,8 @@ type EventTarget[E Event, OPTs any] interface {
 	// Unlike web APIs, developers can check event.DefaultPrevented() after return, we don't return any data.
 	// https://developer.mozilla.org/en-US/docs/Web/API/EventTarget/dispatchEvent
 	//
-	// Raise[T Event](event T) (err Error)
-	DispatchEvent(event E) (err protocol.Error)
+	// Raise[T Event](event T) (err error_p.Error)
+	DispatchEvent(event E) (err error_p.Error)
 
 	// EventListeners() []EventListener[E] // Due to security problem, can't expose listeners to others
 }

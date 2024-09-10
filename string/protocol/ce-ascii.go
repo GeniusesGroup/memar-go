@@ -3,7 +3,7 @@
 package string_p
 
 import (
-	"memar/protocol"
+	error_p "memar/error/protocol"
 )
 
 // ASCII abbreviated from American Standard Code for Information Interchange,
@@ -23,10 +23,10 @@ type Stringer_ASCII interface {
 
 // Stringer_ASCII code the data to human readable format.
 type Stringer_To_ASCII interface {
-	ToASCII() (str ASCII, err protocol.Error)
+	ToASCII() (str ASCII, err error_p.Error)
 }
 
 // Stringer_From_ASCII code the data from human readable format.
 type Stringer_From_ASCII interface {
-	FromASCII(str ASCII) (err protocol.Error)
+	FromASCII(str ASCII) (err error_p.Error)
 }

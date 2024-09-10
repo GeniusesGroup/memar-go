@@ -1,6 +1,11 @@
 /* For license and copyright information please see the LEGAL file in the code repository */
 
-package protocol
+package net_p
+
+import (
+	buffer_p "memar/buffer/protocol"
+	operation_p "memar/operation/protocol"
+)
 
 // Socket term in many textbooks refers to an entity that is uniquely identified by the socket number.
 // In the original definition of socket given in RFC 147,[2] as it was related to the ARPA network in 1971,
@@ -17,10 +22,9 @@ type Socket interface {
 	// due to the Unix philosophy that "everything is a file", and the analogies between sockets and files.
 	// Both have functions to read, write, open, and close
 
-	Socket_LowLevelAPIs
 	NetworkAddress // string form of full address of socket to dial any time later.
-	Network_Status //
-	Timeout
+
+	Socket_LowLevelAPIs
 }
 
 // Socket_LowLevelAPIs is low level APIs, don't use them in the services layer, if you don't know how it can be effect the application.
@@ -34,10 +38,12 @@ type Socket_LowLevelAPIs interface {
 	PresentationLayer() OSI_Presentation
 	ApplicationLayer() OSI_Application
 
+	Socket_Status
 	Socket_Buffer
+	operation_p.Timeout
 }
 
 type Socket_Buffer interface {
-	SendBuffer() Buffer
-	ReceiveBuffer() Buffer
+	SendBuffer() buffer_p.Buffer
+	ReceiveBuffer() buffer_p.Buffer
 }

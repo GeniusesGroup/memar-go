@@ -3,7 +3,7 @@
 package operation_p
 
 import (
-	"memar/protocol"
+	error_p "memar/error/protocol"
 	"memar/time/duration"
 )
 
@@ -11,14 +11,14 @@ import (
 type Timeout interface {
 	// SetTimeout sets the read and write deadlines associated with the connection.
 	// It is equivalent to calling both SetReadTimeout and SetWriteTimeout.
-	SetTimeout(d duration.NanoSecond) protocol.Error
+	SetTimeout(d duration.NanoSecond) error_p.Error
 
 	Timeout_Read
 	Timeout_Write
 }
 type Timeout_Read interface {
-	SetReadTimeout(d duration.NanoSecond) protocol.Error
+	SetReadTimeout(d duration.NanoSecond) error_p.Error
 }
 type Timeout_Write interface {
-	SetWriteTimeout(d duration.NanoSecond) protocol.Error
+	SetWriteTimeout(d duration.NanoSecond) error_p.Error
 }

@@ -1,6 +1,6 @@
 /* For license and copyright information please see the LEGAL file in the code repository */
 
-package protocol
+package datatype_p
 
 // Detail is some piece of information that write for humans to understand some thing.
 //
