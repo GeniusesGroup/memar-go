@@ -3,41 +3,33 @@
 package error
 
 import (
-	"memar/protocol"
+	error_p "memar/error/protocol"
 )
 
+// PastChain unwrap an error and return last chain of error.
+func PastChain(err error_p.Error) (last error_p.Error) {
+	var chainedError, ok = err.(error_p.Chain)
+	if ok {
+		return chainedError.PastChain()
+	}
+	return
+}
+
 // NewChain wrap an error and additional information usually use in logging to save more details about error.
-func NewChain(err *Error, info string) (ce *ChainError) {
-	if err == nil {
+func NewChain(err error_p.Error, chain error_p.Error) (ce *ChainError) {
+	if err == nil || chain == nil {
 		return
 	}
 	return &ChainError{
-		Err:  err,
-		info: info,
+		Error: err,
+		chain: chain,
 	}
 }
 
 // ChainError is a extended implementation of Error to carry custom details along error.
 type ChainError struct {
-	*Err
-	info string
+	error_p.Error
+	chain error_p.Error
 }
 
-func (ce *ChainError) PastChain() protocol.Error { return ce.Err }
-
-//memar:impl memar/protocol.Stringer
-func (ce *ChainError) ToString() string {
-	return "\n" + ce.Err.ToString() + "\n	Chain Info: " + ce.info
-}
-func (ce *ChainError) FromString(s string) (err protocol.Error) {
-	// TODO:::
-	return
-}
-
-// Go compatibility methods. Unwrap provides compatibility for Go 1.13 error chains.
-func (ce *ChainError) Error() string { return ce.ToString() }
-func (ce *ChainError) Cause() error  { return ce.Err }
-func (ce *ChainError) Unwrap() error { return ce.Err }
-
-// func (ce *ChainError) Is(error) bool
-// func (ce *ChainError) As(any) bool
+func (ce *ChainError) PastChain() error_p.Error { return ce.chain }

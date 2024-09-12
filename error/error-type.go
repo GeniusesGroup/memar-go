@@ -3,21 +3,23 @@
 package error
 
 import (
-	"memar/protocol"
+	error_p "memar/error/protocol"
 )
 
-type ErrorType protocol.ErrorType
-
-func (et *ErrorType) Set(errorType protocol.ErrorType)   { *et |= ErrorType(errorType) }
-func (et *ErrorType) Unset(errorType protocol.ErrorType) { *et &= ^ErrorType(errorType) }
-func (et ErrorType) Check(errorType protocol.ErrorType) bool {
-	return errorType&protocol.ErrorType(et) == errorType
+//memar:impl memar/error/protocol.Internal
+func IsInternal(err error_p.Error) bool {
+	var interErr, ok = err.(error_p.Internal)
+	return ok && interErr.Internal()
 }
 
-func (et Error) Internal() bool  { return et.Check(protocol.ErrorType_Internal) }
-func (et Error) Temporary() bool { return et.Check(protocol.ErrorType_Temporary) }
-func (et Error) Timeout() bool   { return et.Check(protocol.ErrorType_Timeout) }
+//memar:impl memar/error/protocol.Temporary
+func IsTemporary(err error_p.Error) bool {
+	var tempErr, ok = err.(error_p.Temporary)
+	return ok && tempErr.Temporary()
+}
 
-func (et *Error) SetInternal()  { et.Set(protocol.ErrorType_Internal) }
-func (et *Error) SetTemporary() { et.Set(protocol.ErrorType_Temporary) }
-func (et *Error) SetTimeout()   { et.Set(protocol.ErrorType_Timeout) }
+//memar:impl memar/error/protocol.Timeout
+func IsTimeout(err error_p.Error) bool {
+	var timeErr, ok = err.(error_p.Timeout)
+	return ok && timeErr.Timeout()
+}

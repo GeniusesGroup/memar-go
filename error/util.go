@@ -3,20 +3,17 @@
 package error
 
 import (
-	"memar/protocol"
+	error_p "memar/error/protocol"
 )
 
-func ToGoError(err protocol.Error) error {
+func ToGoError(err error_p.Error) error {
 	if err == nil {
 		return nil
 	}
 
-	var exErr = err.(*Error)
-	if exErr != nil {
-		return exErr
-	}
-
-	return &errorString{msg: err.ToString()}
+	var errStr errorString
+	errStr.msg = err.Summary()
+	return &errStr
 }
 
 // errorString is a trivial implementation of error.
@@ -26,15 +23,16 @@ type errorString struct {
 
 func (e *errorString) Error() string { return e.msg }
 
-func ToError(err error) protocol.Error {
+func ToError(err error) error_p.Error {
 	if err == nil {
 		return nil
 	}
 
-	var exErr = err.(*Error)
+	var exErr = err.(error_p.Error)
 	if exErr != nil {
 		return exErr
 	}
+
 	// TODO:::
 	return nil
 }
