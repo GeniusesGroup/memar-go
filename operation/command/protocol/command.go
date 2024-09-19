@@ -30,20 +30,20 @@ type Command interface {
 	mediatype_p.MediaType
 
 	CommandHandler
-	service_p.Service_Details
+	service_p.Details
 }
 
 // CommandHandler introduce CLI (command-line interface) service handler.
 type CommandHandler interface {
 	// ServeCLA or serve by command-line arguments might block the caller
 	// Arguments list not include the command name.
-	ServeCLA(arguments []string) (err error_p.Error)
+	ServeCLA(args Arguments) (err error_p.Error)
 
 	// read and write to e.g. os.Stdin, os.Stdout, and os.Stderr files
 	// ServeCLI() (err error_p.Error)
 }
 
 type CommandLineArguments interface {
-	FromCLA(arguments []string) (remaining []string, err error_p.Error)
-	ToCLA() (arguments []string, err error_p.Error)
+	FromCLA(args Arguments) (remaining Arguments, err error_p.Error)
+	ToCLA() (args Arguments, err error_p.Error)
 }

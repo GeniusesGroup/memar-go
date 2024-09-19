@@ -16,6 +16,6 @@ type Services interface {
 	Delete(s service_p.Service) (err error_p.Error)
 
 	Services() []service_p.Service
-	GetByID(sID service_p.ServiceID) (ser service_p.Service, err error_p.Error)
+	GetByID(sID service_p.ID) (ser service_p.Service, err error_p.Error)
 	GetByMediaType(mt string) (ser service_p.Service, err error_p.Error)
 }
