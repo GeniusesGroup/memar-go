@@ -3,7 +3,7 @@
 package tcp
 
 import (
-	"memar/protocol"
+	error_p "memar/error/protocol"
 )
 
 type synAck struct {
@@ -11,15 +11,15 @@ type synAck struct {
 	retrySynAck    uint8
 }
 
-func (s *synAck) Init() (err protocol.Error) {
+func (s *synAck) Init() (err error_p.Error) {
 	s.maxSynAckRetry = CNF_SynAck_Retries
 	return
 }
-func (s *synAck) Reinit() (err protocol.Error) {
+func (s *synAck) Reinit() (err error_p.Error) {
 	s.maxSynAckRetry = CNF_SynAck_Retries
 	return
 }
-func (s *synAck) Deinit() (err protocol.Error) {
+func (s *synAck) Deinit() (err error_p.Error) {
 	return
 }
 

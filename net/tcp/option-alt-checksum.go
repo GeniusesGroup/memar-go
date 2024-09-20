@@ -4,7 +4,7 @@ package tcp
 
 import (
 	"memar/binary"
-	"memar/protocol"
+	error_p "memar/error/protocol"
 )
 
 type optionAltChecksum []byte
@@ -13,6 +13,6 @@ func (o optionAltChecksum) Length() byte        { return o[0] }
 func (o optionAltChecksum) AltChecksum() uint16 { return binary.BigEndian(o[1:]).Uint16() }
 func (o optionAltChecksum) NextOption() []byte  { return o[3:] }
 
-func (o optionAltChecksum) Process(s *Stream) (err protocol.Error) {
+func (o optionAltChecksum) Process(s *Stream) (err error_p.Error) {
 	return
 }

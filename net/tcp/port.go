@@ -3,7 +3,7 @@
 package tcp
 
 import (
-	"memar/protocol"
+	error_p "memar/error/protocol"
 )
 
 type port struct {
@@ -13,18 +13,18 @@ type port struct {
 
 // Init use to initialize the stream after allocation in both server or client
 //
-//memar:impl memar/protocol.ObjectLifeCycle
-func (p *port) Init(sourcePort, destinationPort PortNumber) (err protocol.Error) {
+//memar:impl memar/computer/language/object/protocol.LifeCycle
+func (p *port) Init(sourcePort, destinationPort PortNumber) (err error_p.Error) {
 	p.sourcePort = sourcePort
 	p.destinationPort = destinationPort
 	return
 }
-func (p *port) Reinit(sourcePort, destinationPort PortNumber) (err protocol.Error) {
+func (p *port) Reinit(sourcePort, destinationPort PortNumber) (err error_p.Error) {
 	p.sourcePort = sourcePort
 	p.destinationPort = destinationPort
 	return
 }
-func (p *port) Deinit() (err protocol.Error) { return }
+func (p *port) Deinit() (err error_p.Error) { return }
 
 func (p *port) SourcePort() PortNumber      { return p.sourcePort }
 func (p *port) DestinationPort() PortNumber { return p.destinationPort }

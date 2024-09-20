@@ -3,10 +3,10 @@
 package tcp
 
 import (
-	"memar/protocol"
+	error_p "memar/error/protocol"
 )
 
-func (s *Stream) checkPushFlag() (err protocol.Error) {
+func (s *Stream) checkPushFlag() (err error_p.Error) {
 	// TODO:::
 	return
 }

@@ -4,7 +4,8 @@ package tcp
 
 import (
 	"memar/binary"
-	"memar/protocol"
+	error_p "memar/error/protocol"
+	errs "memar/net/tcp/errors"
 )
 
 // Segment implement all methods to Get||Set data to a segment as a byte slice with 0-alloc
@@ -13,13 +14,13 @@ type Segment []byte
 
 // CheckSegment will check segment for any bad situation.
 // Always check segment before use any other segment methods otherwise panic occur.
-func (s Segment) CheckSegment() protocol.Error {
+func (s Segment) CheckSegment() error_p.Error {
 	var segmentLen = len(s)
 	if segmentLen < CNF_Segment_MinSize {
-		return &ErrSegmentTooShort
+		return &errs.SegmentTooShort
 	}
 	if segmentLen < int(s.DataOffset()) {
-		return &ErrSegmentWrongLength
+		return &errs.SegmentWrongLength
 	}
 	return nil
 }

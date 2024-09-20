@@ -3,7 +3,8 @@
 package tcp
 
 import (
-	"memar/protocol"
+	error_p "memar/error/protocol"
+	"memar/time/duration"
 	"memar/time/monotonic"
 )
 
@@ -11,29 +12,29 @@ type delayedAcknowledgment struct {
 	enable bool
 	// The duration of the delayed-acknowledgement (and persist timers) depends
 	// on the measured round trip time of the connection
-	interval  protocol.Duration
+	interval  duration.NanoSecond
 	nextCheck monotonic.Time
 }
 
-//memar:impl memar/protocol.ObjectLifeCycle
-func (da *delayedAcknowledgment) Init(now monotonic.Time) (next protocol.Duration, err protocol.Error) {
+// memar/computer/language/object/protocol.LifeCycle
+func (da *delayedAcknowledgment) Init(now monotonic.Time) (next duration.NanoSecond, err error_p.Error) {
 	da.enable = true
 	da.interval = CNF_DelayedAcknowledgment_Timeout
 	now.Add(CNF_DelayedAcknowledgment_Timeout)
 	da.nextCheck = now
 	return
 }
-func (da *delayedAcknowledgment) Reinit() (err protocol.Error) {
+func (da *delayedAcknowledgment) Reinit() (err error_p.Error) {
 	return
 }
-func (da *delayedAcknowledgment) Deinit() (err protocol.Error) {
+func (da *delayedAcknowledgment) Deinit() (err error_p.Error) {
 	return
 }
 
 func (da *delayedAcknowledgment) Enabled() bool { return da.enable }
 
 // Don't block the caller
-func (da *delayedAcknowledgment) CheckInterval(s *Stream, now monotonic.Time) (next protocol.Duration) {
+func (da *delayedAcknowledgment) CheckInterval(s *Stream, now monotonic.Time) (next duration.NanoSecond) {
 	if !da.enable {
 		return -1
 	}
@@ -51,7 +52,7 @@ func (da *delayedAcknowledgment) CheckInterval(s *Stream, now monotonic.Time) (n
 }
 
 // d can be negative that show ka.CheckInterval called with some delay
-func (da *delayedAcknowledgment) next(now monotonic.Time) (d protocol.Duration) {
+func (da *delayedAcknowledgment) next(now monotonic.Time) (d duration.NanoSecond) {
 	d = da.nextCheck.Until(now)
 	return
 }

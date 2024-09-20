@@ -3,7 +3,8 @@
 package tcp
 
 import (
-	"memar/protocol"
+	error_p "memar/error/protocol"
+	"memar/time/duration"
 	"memar/time/monotonic"
 	"memar/timer"
 )
@@ -17,15 +18,15 @@ type timing struct {
 	de delayedAcknowledgment
 }
 
-//memar:impl memar/protocol.ObjectLifeCycle
-func (t *timing) Init(st *Stream) (err protocol.Error) {
+// memar/computer/language/object/protocol.LifeCycle
+func (t *timing) Init(st *Stream) (err error_p.Error) {
 	var now = monotonic.Now()
-	var next protocol.Duration
+	var next duration.NanoSecond
 
 	t.st = st
 
 	if CNF_KeepAlive {
-		var nxt protocol.Duration
+		var nxt duration.NanoSecond
 		nxt, err = t.ka.Init(now)
 		if nxt > 0 && nxt < next {
 			next = nxt
@@ -33,7 +34,7 @@ func (t *timing) Init(st *Stream) (err protocol.Error) {
 	}
 
 	if CNF_DelayedAcknowledgment {
-		var nxt protocol.Duration
+		var nxt duration.NanoSecond
 		nxt, err = t.de.Init(now)
 		if err != nil {
 			return
@@ -49,7 +50,7 @@ func (t *timing) Init(st *Stream) (err protocol.Error) {
 	}
 	return
 }
-func (t *timing) Reinit() (err protocol.Error) {
+func (t *timing) Reinit() (err error_p.Error) {
 	if CNF_KeepAlive {
 		err = t.ka.Reinit()
 		if err != nil {
@@ -65,7 +66,7 @@ func (t *timing) Reinit() (err protocol.Error) {
 	err = t.streamTimer.Stop()
 	return
 }
-func (t *timing) Deinit() (err protocol.Error) {
+func (t *timing) Deinit() (err error_p.Error) {
 	if CNF_KeepAlive {
 		err = t.ka.Deinit()
 		if err != nil {
@@ -84,7 +85,7 @@ func (t *timing) Deinit() (err protocol.Error) {
 
 // Don't block the caller
 func (t *timing) TimerHandler() {
-	var next protocol.Duration
+	var next duration.NanoSecond
 	var now = monotonic.Now()
 	var st = t.st
 
@@ -105,6 +106,6 @@ func (t *timing) TimerHandler() {
 	// TODO::: add more handler
 
 	if next > 0 {
-		t.streamTimer.Reset(protocol.Duration(next))
+		t.streamTimer.Reset(duration.NanoSecond(next))
 	}
 }

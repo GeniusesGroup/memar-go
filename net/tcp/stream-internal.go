@@ -5,17 +5,23 @@ package tcp
 import (
 	// "syscall"
 
-	"memar/protocol"
+	adt_p "memar/adt/protocol"
+	error_p "memar/error/protocol"
 )
 
-func (s *Stream) checkStream() (err protocol.Error) {
+func (s *Stream) checkStream() (err error_p.Error) {
 	if s != nil {
 		// err = syscall.EINVAL
 	}
 	return
 }
 
-func (s *Stream) incomeSegmentOnListenState(segment Segment) (err protocol.Error) {
+func (s *Stream) checkSegmentFlags(segment Segment) (err error_p.Error) {
+	// TODO:::
+	return
+}
+
+func (s *Stream) incomeSegmentOnListenState(segment Segment) (err error_p.Error) {
 	if segment.FlagSYN() {
 		// err = s.sendSYNandACK()
 		s.status.Store(StreamStatus_SynReceived)
@@ -32,7 +38,7 @@ func (s *Stream) incomeSegmentOnListenState(segment Segment) (err protocol.Error
 	return
 }
 
-func (s *Stream) incomeSegmentOnSynSentState(segment Segment) (err protocol.Error) {
+func (s *Stream) incomeSegmentOnSynSentState(segment Segment) (err error_p.Error) {
 	if segment.FlagSYN() && segment.FlagACK() {
 		s.status.Store(StreamStatus_Established)
 		// TODO::: anything else??
@@ -43,19 +49,19 @@ func (s *Stream) incomeSegmentOnSynSentState(segment Segment) (err protocol.Erro
 	return
 }
 
-func (s *Stream) incomeSegmentOnSynReceivedState(segment Segment) (err protocol.Error) {
+func (s *Stream) incomeSegmentOnSynReceivedState(segment Segment) (err error_p.Error) {
 
 	return
 }
 
-func (s *Stream) incomeSegmentOnEstablishedState(segment Segment) (err protocol.Error) {
+func (s *Stream) incomeSegmentOnEstablishedState(segment Segment) (err error_p.Error) {
 	var payload = segment.Payload()
 	var sn = segment.SequenceNumber()
 	var exceptedNext = s.recv.next
 	if sn == exceptedNext {
 		s.sendACK()
 
-		_, err = s.sk.Unmarshal(payload)
+		_, err = s.sk.ReceiveBuffer().Append(payload...)
 
 		// TODO::: Due to CongestionControlAlgorithm, if a segment with push flag not send again
 		if segment.FlagPSH() {
@@ -66,7 +72,7 @@ func (s *Stream) incomeSegmentOnEstablishedState(segment Segment) (err protocol.
 
 			// TODO:::
 			// s.recv.sendFlagSignal(flag_PSH)
-			s.sk.ScheduleProcessingSocket()
+			s.sk.ApplicationLayer().ScheduleProcessingSocket()
 		}
 	} else {
 		err = s.validateSequence(segment)
@@ -74,42 +80,42 @@ func (s *Stream) incomeSegmentOnEstablishedState(segment Segment) (err protocol.
 	return
 }
 
-func (s *Stream) incomeSegmentOnFinWait1State(segment Segment) (err protocol.Error) {
+func (s *Stream) incomeSegmentOnFinWait1State(segment Segment) (err error_p.Error) {
 
 	return
 }
 
-func (s *Stream) incomeSegmentOnFinWait2State(segment Segment) (err protocol.Error) {
+func (s *Stream) incomeSegmentOnFinWait2State(segment Segment) (err error_p.Error) {
 
 	return
 }
 
-func (s *Stream) incomeSegmentOnCloseState(segment Segment) (err protocol.Error) {
+func (s *Stream) incomeSegmentOnCloseState(segment Segment) (err error_p.Error) {
 
 	return
 }
 
-func (s *Stream) incomeSegmentOnCloseWaitState(segment Segment) (err protocol.Error) {
+func (s *Stream) incomeSegmentOnCloseWaitState(segment Segment) (err error_p.Error) {
 
 	return
 }
 
-func (s *Stream) incomeSegmentOnClosingState(segment Segment) (err protocol.Error) {
+func (s *Stream) incomeSegmentOnClosingState(segment Segment) (err error_p.Error) {
 
 	return
 }
 
-func (s *Stream) incomeSegmentOnLastAckState(segment Segment) (err protocol.Error) {
+func (s *Stream) incomeSegmentOnLastAckState(segment Segment) (err error_p.Error) {
 
 	return
 }
 
-func (s *Stream) incomeSegmentOnTimeWaitState(segment Segment) (err protocol.Error) {
+func (s *Stream) incomeSegmentOnTimeWaitState(segment Segment) (err error_p.Error) {
 
 	return
 }
 
-func (s *Stream) handleOptions(opts []byte) (err protocol.Error) {
+func (s *Stream) handleOptions(opts []byte) (err error_p.Error) {
 	for len(opts) > 0 {
 		var options = Options(opts)
 		var optionsKind = options.Kind()
@@ -139,7 +145,7 @@ func (s *Stream) reset() {
 	// TODO:::
 }
 
-func (s *Stream) close() (err protocol.Error) {
+func (s *Stream) close() (err error_p.Error) {
 	// TODO:::
 	err = s.sendFIN()
 	if err != nil {
@@ -150,17 +156,16 @@ func (s *Stream) close() (err protocol.Error) {
 }
 
 // sendSYN sending a segment with SYN flag on
-func (s *Stream) sendSYN() (err protocol.Error) {
+func (s *Stream) sendSYN() (err error_p.Error) {
 	// TODO:::
 	return
 }
 
 // sendACK sending ACKs in SYN-RECV and TIME-WAIT states
-func (s *Stream) sendACK() (err protocol.Error) {
+func (s *Stream) sendACK() (err error_p.Error) {
 	s.recv.next++
-	// TODO:::
 	if CNF_DelayedAcknowledgment && s.timing.de.Enabled() {
-		// go to queue
+		// TODO::: go to queue
 	} else {
 		s.sendQuickACK()
 	}
@@ -168,32 +173,32 @@ func (s *Stream) sendACK() (err protocol.Error) {
 }
 
 // sendQuickACK sending ACKs in SYN-RECV and TIME-WAIT states without respect CNF_DelayedAcknowledgment.
-func (s *Stream) sendQuickACK() (err protocol.Error) {
+func (s *Stream) sendQuickACK() (err error_p.Error) {
 	// TODO:::
 	return
 }
 
 // sendRST sending RST flag on segment to other side of the stream
-func (s *Stream) sendRST() (err protocol.Error) {
+func (s *Stream) sendRST() (err error_p.Error) {
 	// TODO:::
 	return
 }
 
 // sendFIN sending FIN flag on segment to other side of the stream
-func (s *Stream) sendFIN() (err protocol.Error) {
+func (s *Stream) sendFIN() (err error_p.Error) {
 	// TODO:::
 	return
 }
 
 // ValidateSequence: validates sequence number of the segment
 // Return: TRUE if acceptable, FALSE if not acceptable
-func (s *Stream) validateSequence(segment Segment) (err protocol.Error) {
+func (s *Stream) validateSequence(segment Segment) (err error_p.Error) {
 	// TODO::: Change func args if no more data need
 	var payload = segment.Payload()
 	var sn = segment.SequenceNumber()
 	var exceptedNext = s.recv.next
 	// TODO::: Due to CongestionControlAlgorithm make a decision to change next
-	_, err = s.sk.Buffer().WriteAt(payload, int64(sn - exceptedNext))
+	_, err = s.sk.ReceiveBuffer().Insert(adt_p.ElementIndex(sn-exceptedNext), payload...)
 	return
 }
 

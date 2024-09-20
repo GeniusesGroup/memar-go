@@ -3,7 +3,7 @@
 package tcp
 
 import (
-	"memar/protocol"
+	error_p "memar/error/protocol"
 )
 
 type optionPartialOrderConnectionPermitted []byte
@@ -15,6 +15,6 @@ func (o optionPartialOrderConnectionPermitted) Length() byte { return o[0] }
 //	}
 func (o optionPartialOrderConnectionPermitted) NextOption() []byte { return o[3:] }
 
-func (o optionPartialOrderConnectionPermitted) Process(s *Stream) (err protocol.Error) {
+func (o optionPartialOrderConnectionPermitted) Process(s *Stream) (err error_p.Error) {
 	return
 }

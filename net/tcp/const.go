@@ -3,7 +3,7 @@
 package tcp
 
 import (
-	"memar/timer"
+	"memar/time/duration"
 )
 
 // ATTENTION:::: Don't changed below settings without any good reason
@@ -98,7 +98,7 @@ const (
 	CNF_DelayedAcknowledgment = true
 	// CNF_DelayedAcknowledgment_PerStream indicate that in init phase of each stream package must enable DelayedAcknowledgment.
 	CNF_DelayedAcknowledgment_PerStream = true
-	CNF_DelayedAcknowledgment_Timeout   = 500 * timer.Millisecond
+	CNF_DelayedAcknowledgment_Timeout   = 500 * duration.OneMillisecond
 )
 
 // Keep alive config values
@@ -113,9 +113,9 @@ const (
 	// The time (in seconds) the connection needs to remain idle before TCP starts sending keepalive probes.
 	// terminated after approximately an additional CNF_KeepAlive_Probes*CNF_KeepAlive_Interval e.g.
 	// 9 probes an interval of 75 seconds apart be 11 minutes.
-	CNF_KeepAlive_Idle = 7200 * timer.Second // (2 hours)
+	CNF_KeepAlive_Idle = 7200 * duration.OneSecond // (2 hours)
 	// The number of seconds between TCP keep-alive probes.
-	CNF_KeepAlive_Interval = 75 * timer.Second
+	CNF_KeepAlive_Interval = 75 * duration.OneSecond
 	// The maximum number of TCP keep-alive probes to send before giving up and
 	// killing the socket connection if no response is obtained from the other end.
 	CNF_KeepAlive_Probes = 9
@@ -132,8 +132,8 @@ const (
 	// CNF_UserTimeout_PerStream indicate that in init phase of each stream package must enable UserTimeout.
 	CNF_UserTimeout_PerStream      = true
 	CNF_UserTimeout_Retransmission = 3
-	CNF_UserTimeout_Idle           = 100 * timer.Second
-	CNF_UserTimeout_SynIdle        = 180 * timer.Second // (3 minutes)
+	CNF_UserTimeout_Idle           = 100 * duration.OneSecond
+	CNF_UserTimeout_SynIdle        = 180 * duration.OneSecond // (3 minutes)
 )
 
 // timeout config values
@@ -190,7 +190,7 @@ const (
 	// required to prevent denial-of-service attacks.  In Linux
 	// 2.2, the default value was 180.
 	//  This option should not be used in code intended to be portable.
-	CNF_FinTimeout = 60 * timer.Second
+	CNF_FinTimeout = 60 * duration.OneSecond
 )
 
 // segment config values

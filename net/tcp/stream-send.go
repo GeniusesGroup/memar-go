@@ -3,7 +3,7 @@
 package tcp
 
 import (
-	"memar/protocol"
+	error_p "memar/error/protocol"
 )
 
 // send as Send Sequence Space
@@ -18,16 +18,16 @@ type send struct {
 	// buf    []byte Don't need it, because we don't need to copy buffer between kernel and user-space
 }
 
-//memar:impl memar/protocol.ObjectLifeCycle
-func (s *send) Init() (err protocol.Error) {
+// memar/computer/language/object/protocol.LifeCycle
+func (s *send) Init() (err error_p.Error) {
 	// TODO:::
 	return
 }
-func (s *send) Reinit() (err protocol.Error) {
+func (s *send) Reinit() (err error_p.Error) {
 	// TODO:::
 	return
 }
-func (s *send) Deinit() (err protocol.Error) {
+func (s *send) Deinit() (err error_p.Error) {
 	// TODO:::
 	return
 }

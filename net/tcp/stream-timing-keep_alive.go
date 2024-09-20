@@ -3,21 +3,22 @@
 package tcp
 
 import (
-	"memar/protocol"
+	error_p "memar/error/protocol"
+	"memar/time/duration"
 	"memar/time/monotonic"
 )
 
 type timingKeepAlive struct {
 	enable     bool
-	idle       protocol.Duration
-	interval   protocol.Duration
+	idle       duration.NanoSecond
+	interval   duration.NanoSecond
 	lastUse    monotonic.Time
 	nextCheck  monotonic.Time
 	retryCount int
 }
 
-//memar:impl memar/protocol.ObjectLifeCycle
-func (ka *timingKeepAlive) Init(now monotonic.Time) (next protocol.Duration, err protocol.Error) {
+// memar/computer/language/object/protocol.LifeCycle
+func (ka *timingKeepAlive) Init(now monotonic.Time) (next duration.NanoSecond, err error_p.Error) {
 	ka.enable = CNF_KeepAlive_PerStream
 	ka.idle = CNF_KeepAlive_Idle
 	ka.interval = CNF_KeepAlive_Interval
@@ -27,20 +28,20 @@ func (ka *timingKeepAlive) Init(now monotonic.Time) (next protocol.Duration, err
 	next = CNF_KeepAlive_Idle
 	return
 }
-func (ka *timingKeepAlive) Reinit() (err protocol.Error) {
+func (ka *timingKeepAlive) Reinit() (err error_p.Error) {
 	ka.enable = CNF_KeepAlive_PerStream
 	ka.interval = 0
 	ka.nextCheck = 0
 	ka.retryCount = 0
 	return
 }
-func (ka *timingKeepAlive) Deinit() (err protocol.Error) {
+func (ka *timingKeepAlive) Deinit() (err error_p.Error) {
 	return
 }
 
-func (ka *timingKeepAlive) Enable() bool                { return ka.enable }
-func (ka *timingKeepAlive) Idle() protocol.Duration     { return ka.idle }
-func (ka *timingKeepAlive) Interval() protocol.Duration { return ka.interval }
+func (ka *timingKeepAlive) Enable() bool                  { return ka.enable }
+func (ka *timingKeepAlive) Idle() duration.NanoSecond     { return ka.idle }
+func (ka *timingKeepAlive) Interval() duration.NanoSecond { return ka.interval }
 
 func (ka *timingKeepAlive) SetEnable(keepalive bool) {
 	// TODO::: rfc: uncomment below??
@@ -49,15 +50,15 @@ func (ka *timingKeepAlive) SetEnable(keepalive bool) {
 	// ka.nextCheck = now
 	ka.enable = keepalive
 }
-func (ka *timingKeepAlive) SetIdle(d protocol.Duration) {
+func (ka *timingKeepAlive) SetIdle(d duration.NanoSecond) {
 	// TODO::: atomic or normal access??
 }
-func (ka *timingKeepAlive) SetInterval(d protocol.Duration) {
+func (ka *timingKeepAlive) SetInterval(d duration.NanoSecond) {
 	// TODO::: atomic or normal access??
 }
 
 // Don't block the caller
-func (ka *timingKeepAlive) CheckInterval(st *Stream, now monotonic.Time) (next protocol.Duration) {
+func (ka *timingKeepAlive) CheckInterval(st *Stream, now monotonic.Time) (next duration.NanoSecond) {
 	if !ka.enable {
 		return -1
 	}

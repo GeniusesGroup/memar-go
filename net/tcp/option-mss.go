@@ -4,7 +4,7 @@ package tcp
 
 import (
 	"memar/binary"
-	"memar/protocol"
+	error_p "memar/error/protocol"
 )
 
 /*
@@ -19,6 +19,6 @@ func (o optionMSS) Length() byte       { return o[0] }
 func (o optionMSS) MSS() uint16        { return binary.BigEndian(o[1:]).Uint16() }
 func (o optionMSS) NextOption() []byte { return o[3:] }
 
-func (o optionMSS) Process(s *Stream) (err protocol.Error) {
+func (o optionMSS) Process(s *Stream) (err error_p.Error) {
 	return
 }

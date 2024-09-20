@@ -3,7 +3,10 @@
 package tcp
 
 import (
-	"memar/protocol"
+	error_p "memar/error/protocol"
+	net_p "memar/net/protocol"
+	operation_p "memar/operation/protocol"
+	"memar/time/duration"
 	"memar/time/monotonic"
 )
 
@@ -11,7 +14,7 @@ import (
 // Because each stream methods just call by a fixed worker on same CPU core in sync order, don't need to lock or changed atomic any field
 type Stream struct {
 	// connection      protocol.Connection
-	sk  protocol.Socket
+	sk  net_p.Socket
 	mtu int
 	mss int // Max Segment Length
 
@@ -33,10 +36,10 @@ type Stream struct {
 	id PortNumber
 
 	/* State */
-	err protocol.Error // Decode||Encode by ErrorID
-	// state        protocol.NetworkStatus      // States locate in const of this file.
-	// stateChannel chan protocol.NetworkStatus // States locate in const of this file.
-	weight protocol.Weight // 16 queue for priority weight of the streams exist.
+	err error_p.Error // Decode||Encode by ErrorID
+	// state        net_p.Status      // States locate in const of this file.
+	// stateChannel chan net_p.Status // States locate in const of this file.
+	weight operation_p.Weight // 16 queue for priority weight of the streams exist.
 
 	status
 	StreamMetrics
@@ -44,8 +47,8 @@ type Stream struct {
 
 // Init use to initialize the stream after allocation in both server or client
 //
-//memar:impl memar/protocol.ObjectLifeCycle
-func (s *Stream) Init(timeout protocol.Duration, cca CCA) (err protocol.Error) {
+// memar/computer/language/object/protocol.LifeCycle
+func (s *Stream) Init(timeout duration.NanoSecond, cca CCA) (err error_p.Error) {
 	// TODO:::
 	s.mss = CNF_Segment_MaxSize
 	s.status.Init(StreamStatus_Listen)
@@ -65,11 +68,11 @@ func (s *Stream) Init(timeout protocol.Duration, cca CCA) (err protocol.Error) {
 	err = s.send.Init()
 	return
 }
-func (s *Stream) Reinit() (err protocol.Error) {
+func (s *Stream) Reinit() (err error_p.Error) {
 	// TODO:::
 	return
 }
-func (s *Stream) Deinit() (err protocol.Error) {
+func (s *Stream) Deinit() (err error_p.Error) {
 	// TODO:::
 	err = s.timing.Deinit()
 	if err != nil {
@@ -84,7 +87,7 @@ func (s *Stream) Deinit() (err protocol.Error) {
 }
 
 // Reset use to reset the stream to store in a sync.Pool to reuse in near future before 2 GC period to dealloc forever
-func (s *Stream) Reset() (err protocol.Error) {
+func (s *Stream) Reset() (err error_p.Error) {
 	// TODO:::
 	err = s.Reinit()
 	// TODO:::
@@ -92,7 +95,7 @@ func (s *Stream) Reset() (err protocol.Error) {
 }
 
 // Open call when a client want to open the stream on the client side.
-func (s *Stream) Open() (err protocol.Error) {
+func (s *Stream) Open() (err error_p.Error) {
 	err = s.sendSYN()
 	s.status.Store(StreamStatus_SynSent)
 	// TODO::: timer, retry, change status, block on status change until StreamStatus_Established
@@ -100,7 +103,7 @@ func (s *Stream) Open() (err protocol.Error) {
 }
 
 // CloseSending close the sending side of a stream. Much like close except that we don't receive shut down
-func (s *Stream) CloseSending() (err protocol.Error) {
+func (s *Stream) CloseSending() (err error_p.Error) {
 	return
 }
 
@@ -108,13 +111,18 @@ func (s *Stream) CloseSending() (err protocol.Error) {
 // It must be non blocking and just route packet not to wait for anything else.
 // for each stream upper layer must call by same CPU(core), so we don't need implement any locking mechanism.
 // https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/tree/net/ipv4/tcp_ipv4.c#n1965
-func (s *Stream) Receive(segment Segment) (err protocol.Error) {
+func (s *Stream) Receive(segment Segment) (err error_p.Error) {
 	err = segment.CheckSegment()
 	if err != nil {
 		return
 	}
 
 	// TODO:::
+
+	err = s.checkSegmentFlags(segment)
+	if err != nil {
+		return
+	}
 
 	switch s.status.Load() {
 	case StreamStatus_Listen:

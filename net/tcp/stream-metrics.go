@@ -3,7 +3,8 @@
 package tcp
 
 import (
-	"memar/protocol"
+	error_p "memar/error/protocol"
+	"memar/time/duration"
 )
 
 type StreamMetrics struct {
@@ -13,14 +14,14 @@ type StreamMetrics struct {
 	PacketDropCount uint8  // Count drop packets to prevent some attacks type!
 }
 
-//memar:impl memar/protocol.ObjectLifeCycle
-func (sm *StreamMetrics) Init(timeout protocol.Duration) (err protocol.Error) {
+// memar/computer/language/object/protocol.LifeCycle
+func (sm *StreamMetrics) Init(timeout duration.NanoSecond) (err error_p.Error) {
 	return
 }
-func (sm *StreamMetrics) Reinit() (err protocol.Error) {
+func (sm *StreamMetrics) Reinit() (err error_p.Error) {
 	// TODO:::
 	return
 }
-func (sm *StreamMetrics) Deinit() (err protocol.Error) {
+func (sm *StreamMetrics) Deinit() (err error_p.Error) {
 	return
 }

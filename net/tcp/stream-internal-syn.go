@@ -3,7 +3,7 @@
 package tcp
 
 import (
-	"memar/protocol"
+	error_p "memar/error/protocol"
 )
 
 var maxSynBacklog int
@@ -20,15 +20,15 @@ type syn struct {
 	retrySyn    uint8
 }
 
-func (s *syn) Init() (err protocol.Error) {
+func (s *syn) Init() (err error_p.Error) {
 	s.maxSynRetry = CNF_SynRetries
 	return
 }
-func (s *syn) Reinit() (err protocol.Error) {
+func (s *syn) Reinit() (err error_p.Error) {
 	s.maxSynRetry = CNF_SynRetries
 	return
 }
-func (s *syn) Deinit() (err protocol.Error) {
+func (s *syn) Deinit() (err error_p.Error) {
 	return
 }
 

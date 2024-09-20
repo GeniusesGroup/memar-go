@@ -3,28 +3,30 @@
 package tcp
 
 import (
-	"memar/protocol"
+	error_p "memar/error/protocol"
 )
 
 // recv is receive sequence space
 type recv struct {
-	next uint32 // receive next
-	wnd  uint16 // receive window
-	up   bool   // receive urgent pointer
-	irs  uint32 // initial receive sequence number
+	next         uint32 // receive next
+	wnd          uint16 // receive window
+	up           bool   // receive urgent pointer
+	irs          uint32 // initial receive sequence number
+	recvPushFlag bool
+	recvUrgFlag  bool
 	// TODO::: not in order segments
 }
 
-//memar:impl memar/protocol.ObjectLifeCycle
-func (r *recv) Init() (err protocol.Error) {
+// memar/computer/language/object/protocol.LifeCycle
+func (r *recv) Init() (err error_p.Error) {
 	// TODO:::
 	return
 }
-func (r *recv) Reinit() (err protocol.Error) {
+func (r *recv) Reinit() (err error_p.Error) {
 	// TODO:::
 	return
 }
-func (r *recv) Deinit() (err protocol.Error) {
+func (r *recv) Deinit() (err error_p.Error) {
 	// TODO:::
 	return
 }

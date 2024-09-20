@@ -5,7 +5,7 @@ package tcp
 import (
 	"sync/atomic"
 
-	"memar/protocol"
+	error_p "memar/error/protocol"
 )
 
 // streamStatus use to indicate stream state.
@@ -50,8 +50,8 @@ type status struct {
 	ssChan chan streamStatus
 }
 
-//memar:impl memar/protocol.ObjectLifeCycle
-func (s *status) Init(is streamStatus) (err protocol.Error) {
+// memar/computer/language/object/protocol.LifeCycle
+func (s *status) Init(is streamStatus) (err error_p.Error) {
 	s.ssChan = make(chan streamStatus)
 	s.ss.Store(uint32(is))
 	// s.stateChan <- is

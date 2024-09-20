@@ -4,7 +4,7 @@ package tcp
 
 import (
 	"memar/binary"
-	"memar/protocol"
+	error_p "memar/error/protocol"
 )
 
 /*
@@ -26,6 +26,6 @@ func (o optionPartialOrderServiceProfile) PartialOrderServiceProfile() uint16 {
 }
 func (o optionPartialOrderServiceProfile) NextOption() []byte { return o[3:] }
 
-func (o optionPartialOrderServiceProfile) Process(s *Stream) (err protocol.Error) {
+func (o optionPartialOrderServiceProfile) Process(s *Stream) (err error_p.Error) {
 	return
 }
