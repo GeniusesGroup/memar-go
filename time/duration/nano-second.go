@@ -8,18 +8,23 @@ package duration
 // The representation limits the largest representable duration to approximately 290 earth years.
 type NanoSecond int64
 
+// Common durations.
+const (
+	OneNanosecond NanoSecond = 1
+)
+
 func (d NanoSecond) ToSecAndNano() (sec Second, nsec NanoInSecond) {
-	sec = Second(d / OneSecond)
+	sec.FromNanoSecond(d)
 	// TODO::: Is it worth to uncomment below logic?
 	// if sec == 0 {
 	// 	nsec = NanoInSecond(d)
 	// 	return
 	// }
-	var secPass = NanoSecond(sec) * OneSecond
-	nsec = NanoInSecond(d % secPass)
+	var secPass = sec.ToNanoSecond()
+	nsec = NanoInSecond(d - secPass)
 	return
 }
 
 func (d *NanoSecond) FromSecAndNano(sec Second, nsec NanoInSecond) {
-	*d = (NanoSecond(sec) * OneSecond) + NanoSecond(nsec)
+	*d = sec.ToNanoSecond() + NanoSecond(nsec)
 }

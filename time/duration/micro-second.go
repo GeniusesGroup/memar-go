@@ -6,6 +6,13 @@ package duration
 // The representation limits the largest representable duration to approximately 290 earth years.
 type MicroSecond int64
 
+// Common durations.
+const (
+	OneMicroSecond MicroSecond = 1
+
+	NanoSecondInMicroSecond NanoSecond = coefficientUnit_1000 * OneNanosecond // 1e3
+)
+
 func (d *MicroSecond) FromSecAndNano(sec Second, nsec NanoInSecond) {
 	*d = (MicroSecond(sec) * 1e6) + MicroSecond(nsec/1e3)
 }

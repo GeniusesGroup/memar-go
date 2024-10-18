@@ -2,10 +2,9 @@
 
 package duration
 
-// Common durations.
 const (
-	OneNanosecond  NanoSecond = 1
-	OneMicrosecond            = 1000 * OneNanosecond  // 1e3
-	OneMillisecond            = 1000 * OneMicrosecond // 1e6
-	OneSecond                 = 1000 * OneMillisecond // 1e9
+	// coefficientUnit_1000 is the metric base unit for many unit of measure such as mass, length, ...
+	coefficientUnit_1000 = 1000
+	coefficientUnit_100  = 100
+	coefficientUnit_10   = 10
 )
