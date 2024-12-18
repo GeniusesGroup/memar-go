@@ -8,4 +8,4 @@ import (
 
 // Logger is default global  like window.console.log global variable in browsers.
 // As suggested in protocol.Logger document, You can listen to notify about any log events occur.
-var Logger event.EventTarget[*Event]
+var Logger event.Target[*Event]

@@ -30,4 +30,4 @@ import (
 // We can't accept all data in below post and proposal, just add to more details.
 // https://docs.google.com/document/d/1nFRxQ5SJVPpIBWTFHV-q5lBYiwGrfCMkESFGNzsrvBU/
 // https://dave.cheney.net/2015/11/05/lets-talk-about-logging
-type Logger[LE Event] event_p.EventTarget[LE]
+type Logger[LE Event] event_p.Target[LE]
