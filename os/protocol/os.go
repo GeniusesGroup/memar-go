@@ -6,7 +6,6 @@ package os_p
 type OperatingSystem interface {
 	Screens() []GUIScreen
 
-	OperatingSystem_User
 	OperatingSystem_Storage
 	net_p.PacketTarget
 }
