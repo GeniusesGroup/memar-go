@@ -6,7 +6,7 @@ import (
 	datatype_p "memar/datatype/protocol"
 	error_p "memar/error/protocol"
 	mediatype_p "memar/mediatype/protocol"
-	service_p "memar/operation/service/protocol"
+	operation_p "memar/operation/protocol"
 )
 
 // Command is the interface that must implement by any struct to be a command service
@@ -26,11 +26,13 @@ type Command interface {
 	// Note that subcommands are in general best avoided.
 	SubCommands() []Command
 
+	CommandHandler
+
 	datatype_p.DataType
 	mediatype_p.MediaType
 
-	CommandHandler
-	service_p.Details
+	operation_p.Request
+	operation_p.Response
 }
 
 // CommandHandler introduce CLI (command-line interface) service handler.

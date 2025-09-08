@@ -3,13 +3,13 @@
 package service_p
 
 import (
-	datatype_p "memar/datatype/protocol"
 	error_p "memar/error/protocol"
+	operation_p "memar/operation/protocol"
 )
 
 // Handlers is just test (approver) interface and MUST NOT use directly in any signature.
 // Due to Golang import cycle problem we can't use `net_p.Socket`
-type Handlers[SK any /*net_p.Socket*/, ReqT, ResT datatype_p.DataType] interface {
+type Handlers[SK any /*net_p.Socket*/, ReqT operation_p.Request, ResT operation_p.Response] interface {
 	// Call service locally by import service package to other one
 	Process(sk SK, req ReqT) (res ResT, err error_p.Error)
 	//

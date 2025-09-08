@@ -6,12 +6,12 @@ import (
 	"fmt"
 	"os"
 
+	error_p "memar/error/protocol"
 	errs "memar/operation/command/errors"
 	command_p "memar/operation/command/protocol"
-	"memar/protocol"
 )
 
-func ServeCLA(c protocol.Command, arguments []string) (err protocol.Error) {
+func ServeCLA(c command_p.Command, arguments []string) (err error_p.Error) {
 	var serviceName string
 	if len(arguments) > 0 {
 		serviceName = arguments[0]
@@ -20,7 +20,7 @@ func ServeCLA(c protocol.Command, arguments []string) (err protocol.Error) {
 	}
 
 	// Also check for finding help command to check any custom help command
-	var command protocol.Command = c.SubCommand(serviceName)
+	var command command_p.Command = c.SubCommand(serviceName)
 	if command == nil {
 		// We don't find any related command even custom help, so print auto generated help.
 		if serviceName == "help" || serviceName == "-h" || serviceName == "--help" {

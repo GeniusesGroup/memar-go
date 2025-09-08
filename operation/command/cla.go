@@ -3,11 +3,13 @@
 package cmd
 
 import (
-	"memar/protocol"
+	capsule_p "memar/computer/capsule/protocol"
+	datatype_p "memar/datatype/protocol"
+	error_p "memar/error/protocol"
 )
 
 // These functions are helper to implement memar/protocol.CommandLineArguments easier.
-func FromCLA(object protocol.Object, arguments []string) (remaining []string, err protocol.Error) {
+func FromCLA(object capsule_p.Capsule, arguments []string) (remaining []string, err error_p.Error) {
 	var flagSet FlagSet
 	flagSet.Init(object, arguments)
 	err = flagSet.Parse()
@@ -15,8 +17,8 @@ func FromCLA(object protocol.Object, arguments []string) (remaining []string, er
 	return
 
 }
-func ToCLA(object protocol.Object) (arguments []string, err protocol.Error) {
-	var fields []protocol.DataType = object.Fields()
+func ToCLA(object capsule_p.Capsule) (arguments []string, err error_p.Error) {
+	var fields []datatype_p.DataType = object.Fields()
 	var ln = len(fields)
 	if ln < 1 {
 		// err =

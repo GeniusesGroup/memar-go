@@ -3,9 +3,9 @@
 package cmd
 
 import (
+	error_p "memar/error/protocol"
 	errs "memar/operation/command/errors"
 	command_p "memar/operation/command/protocol"
-	"memar/protocol"
 )
 
 // Command
@@ -20,8 +20,8 @@ type Command struct {
 	subCommands []command_p.Command
 }
 
-//memar:impl memar/protocol.ObjectLifeCycle
-func (c *Command) Init(parent command_p.Command, cmd ...command_p.Command) (err protocol.Error) {
+//memar:impl memar/computer/capsule/protocol.LifeCycle
+func (c *Command) Init(parent command_p.Command, cmd ...command_p.Command) (err error_p.Error) {
 	c.parent = parent
 	// TODO::: check duplicate name usage
 	c.subCommands = append(c.subCommands, cmd...)
@@ -54,7 +54,7 @@ func (c *Command) SubCommand(name string) command_p.Command {
 }
 
 // ServeCLI read and write to os.Stdin, os.Stdout, and os.Stderr files
-func (c *Command) ServeCLI() (err protocol.Error) {
+func (c *Command) ServeCLI() (err error_p.Error) {
 	err = &errs.ErrServiceNotAcceptCLI
 	return
 }

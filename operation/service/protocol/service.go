@@ -3,34 +3,28 @@
 package service_p
 
 import (
-	object_p "memar/computer/language/object/protocol"
+	capsule_p "memar/computer/capsule/protocol"
 	datatype_p "memar/datatype/protocol"
 	mediatype_p "memar/mediatype/protocol"
 	operation_p "memar/operation/protocol"
-	user_p "memar/user/protocol"
 )
+
+type Field_Service interface {
+	Service() Service
+}
 
 // Service is the interface that must implement by any struct to be a service.
 type Service interface {
-	Field_ServiceID
+	capsule_p.LifeCycle
 
-	Authorization
-	Details
-
+	operation_p.Field_OperationID
+	operation_p.Field_ActionType
+	operation_p.Field_Request
+	operation_p.Field_Response
+	
 	operation_p.Importance
-	object_p.LifeCycle
+	operation_p.Authorize
 
 	datatype_p.DataType
 	mediatype_p.MediaType
-}
-
-// Service authorization to authorize incoming service request
-type Authorization interface {
-	operation_p.Field_ActionType
-	user_p.Field_UserType
-}
-
-type Details /*[REQ, RES DataType]*/ interface {
-	Request() datatype_p.DataType
-	Response() datatype_p.DataType
 }

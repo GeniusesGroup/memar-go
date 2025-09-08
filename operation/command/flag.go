@@ -5,16 +5,19 @@ package cmd
 import (
 	"strings"
 
+	capsule_p "memar/computer/capsule/protocol"
+	datatype_p "memar/datatype/protocol"
+	error_p "memar/error/protocol"
 	"memar/math/boolean"
+	boolean_p "memar/math/boolean/protocol"
 	errs "memar/operation/command/errors"
-	"memar/protocol"
 )
 
 // A FlagSet represents a set of defined fields
 type FlagSet struct {
-	object protocol.Object
-	fields []protocol.DataType
-	parsed []protocol.DataType
+	object capsule_p.Capsule
+	fields []datatype_p.DataType
+	parsed []datatype_p.DataType
 	args   []string // arguments after flags
 }
 
@@ -23,8 +26,8 @@ type FlagSet struct {
 // field names must be unique within a FlagSet. An attempt to define a flag whose
 // name is already in use will cause panic.
 //
-//memar:impl memar/protocol.ObjectLifeCycle
-func (f *FlagSet) Init(ob protocol.Object, arguments []string) (err protocol.Error) {
+//memar:impl memar/computer/capsule/protocol.LifeCycle
+func (f *FlagSet) Init(ob capsule_p.Capsule, arguments []string) (err error_p.Error) {
 	f.object = ob
 	f.fields = ob.Fields()
 	err = f.checkFields()
@@ -32,24 +35,24 @@ func (f *FlagSet) Init(ob protocol.Object, arguments []string) (err protocol.Err
 		return
 	}
 	if f.parsed == nil {
-		f.parsed = make([]protocol.DataType, 0, len(f.fields))
+		f.parsed = make([]datatype_p.DataType, 0, len(f.fields))
 	}
 	f.args = arguments
 	return
 }
-func (f *FlagSet) Reinit() (err protocol.Error) {
+func (f *FlagSet) Reinit() (err error_p.Error) {
 	f.fields = nil
 	f.parsed = f.parsed[:0]
 	f.args = nil
 	return
 }
-func (f *FlagSet) Deinit() (err protocol.Error) {
+func (f *FlagSet) Deinit() (err error_p.Error) {
 	return
 }
 
 // Parse parses flag definitions from f.args.
 // It Must be called after Init called and before flags are accessed by the program.
-func (f *FlagSet) Parse() (err protocol.Error) {
+func (f *FlagSet) Parse() (err error_p.Error) {
 	for len(f.args) > 0 {
 		err = f.parseOne()
 		if err != nil {
@@ -80,7 +83,7 @@ func (f *FlagSet) Arg(i int) string {
 
 // VisitAll visits the flags in given order, calling fn for each.
 // It visits all flags, even those not set.
-func (f *FlagSet) VisitAll(fn func(protocol.DataType) (breaking bool)) {
+func (f *FlagSet) VisitAll(fn func(datatype_p.DataType) (breaking bool)) {
 	for _, flag := range f.fields {
 		var br = fn(flag)
 		if br {
@@ -91,7 +94,7 @@ func (f *FlagSet) VisitAll(fn func(protocol.DataType) (breaking bool)) {
 
 // Visit visits the flags in given order, calling fn for each.
 // It visits only those flags that have been set.
-func (f *FlagSet) Visit(fn func(protocol.DataType) (breaking bool)) {
+func (f *FlagSet) Visit(fn func(datatype_p.DataType) (breaking bool)) {
 	for _, field := range f.parsed {
 		var br = fn(field)
 		if br {
@@ -101,7 +104,7 @@ func (f *FlagSet) Visit(fn func(protocol.DataType) (breaking bool)) {
 }
 
 // Lookup returns the Field of the named flag, returning nil if none exists.
-func (f *FlagSet) Lookup(name string) protocol.DataType {
+func (f *FlagSet) Lookup(name string) datatype_p.DataType {
 	for _, field := range f.fields {
 		if field.Name() == name || field.Abbreviation() == name {
 			return field
@@ -111,7 +114,7 @@ func (f *FlagSet) Lookup(name string) protocol.DataType {
 }
 
 // Set sets the value of the named flag.
-func (f *FlagSet) Set(name, value string) (err protocol.Error) {
+func (f *FlagSet) Set(name, value string) (err error_p.Error) {
 	var flag = f.Lookup(name)
 	if flag == nil {
 		return &errs.ErrFlagNotFound
@@ -125,7 +128,7 @@ func (f *FlagSet) Set(name, value string) (err protocol.Error) {
 	return
 }
 
-func (f *FlagSet) checkFields() (err protocol.Error) {
+func (f *FlagSet) checkFields() (err error_p.Error) {
 	var fieldsName = make([]string, 0, len(f.fields))
 
 	for _, field := range f.fields {
@@ -158,7 +161,7 @@ func (f *FlagSet) checkFields() (err protocol.Error) {
 }
 
 // parseOne parses one flag
-func (f *FlagSet) parseOne() (err protocol.Error) {
+func (f *FlagSet) parseOne() (err error_p.Error) {
 	if len(f.args) == 0 {
 		return nil
 	}
@@ -196,7 +199,7 @@ func (f *FlagSet) parseOne() (err protocol.Error) {
 }
 
 // checkAndSet check given value is correct or get from f, and sets the value of the named flag.
-func (f *FlagSet) checkAndSet(name, value string) (err protocol.Error) {
+func (f *FlagSet) checkAndSet(name, value string) (err error_p.Error) {
 	var hasValue = len(value) > 0
 	if !hasValue {
 		var flag = f.Lookup(name)
@@ -204,7 +207,7 @@ func (f *FlagSet) checkAndSet(name, value string) (err protocol.Error) {
 			return &errs.ErrFlagNotFound
 		}
 
-		var _, ok = flag.(protocol.DataType_Equal[boolean.Boolean])
+		var _, ok = flag.(boolean_p.Boolean[boolean.Boolean])
 		if ok { // special case: doesn't need an arg
 			value = "true"
 		} else if len(f.args) > 0 { // It must have a value, which might be the next argument.

@@ -9,24 +9,24 @@ type InitReq struct {
 //memar:impl protocol.Init_Request
 func (req *InitReq) Name() string { return req.name }
 
-//memar:impl memar/protocol.Object
-func (req *InitReq) Fields() []protocol.DataType   { return ... }
-func (req *InitReq) Methods() []protocol.DataType_Method { return ... }
+//memar:impl memar/operation/command/protocol.Object
+func (req *InitReq) Fields() []datatype_p.DataType   { return ... }
+func (req *InitReq) Methods() []function_p.Method { return ... }
 
 //memar:impl memar/operation/command/protocol.CommandLineArguments
-func (req *InitReq) FromCLA(arguments []string) (remaining []string, err protocol.Error) {
+func (req *InitReq) FromCLA(arguments []string) (remaining []string, err error_p.Error) {
 	remaining, err = cmd.FromCLA(req, arguments)
 	return
 
 }
-func (req *InitReq) ToCLA() (arguments []string, err protocol.Error) {
+func (req *InitReq) ToCLA() (arguments []string, err error_p.Error) {
 	arguments, err = cmd.ToCLA(req)
 	return
 }
 
 type service struct {}
 
-func (ser *service) ServeCLA(arguments []string) (err protocol.Error) {
+func (ser *service) ServeCLA(arguments []string) (err error_p.Error) {
 	var req InitReq
 	_, err = req.FromCLA(arguments)
 	if err != nil {
@@ -52,7 +52,7 @@ type InitReq struct {
 }
 
 //memar:impl memar/operation/command/protocol.CommandLineArguments
-func (req *InitReq) FromCLA(arguments []string) (remaining []string, err protocol.Error) {
+func (req *InitReq) FromCLA(arguments []string) (remaining []string, err error_p.Error) {
 	var flagSet flag.FlagSet
 	// flagSet.Init("module.InitReq", flag.ContinueOnError)
 
@@ -65,5 +65,5 @@ func (req *InitReq) FromCLA(arguments []string) (remaining []string, err protoco
 	remaining = flagSet.Args()
 	return
 }
-func (req *InitReq) ToCLA() (arguments []string, err protocol.Error) { return }
+func (req *InitReq) ToCLA() (arguments []string, err error_p.Error) { return }
 ```

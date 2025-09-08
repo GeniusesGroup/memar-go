@@ -5,14 +5,13 @@ package errs
 import (
 	er "memar/error"
 	"memar/errors"
-	"memar/protocol"
 )
 
 var ErrServiceNotAcceptCLI errServiceNotAcceptCLI
 
 type errServiceNotAcceptCLI struct{ er.Err }
 
-func (dt *errServiceNotAcceptCLI) Init() (err protocol.Error) {
+func (dt *errServiceNotAcceptCLI) Init() (err error_p.Error) {
 	err = dt.Err.Init("domain/memar.scm.geniuses.group; package=command; type=error; name=service-not-accept-cli")
 	if err != nil {
 		return

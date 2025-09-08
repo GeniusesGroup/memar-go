@@ -5,14 +5,13 @@ package errs
 import (
 	er "memar/error"
 	"memar/errors"
-	"memar/protocol"
 )
 
 var ErrServiceNotFound errServiceNotFound
 
 type errServiceNotFound struct{ er.Err }
 
-func (dt *errServiceNotFound) Init() (err protocol.Error) {
+func (dt *errServiceNotFound) Init() (err error_p.Error) {
 	err = dt.Err.Init("domain/memar.scm.geniuses.group; package=command; type=error; name=service-not-found")
 	if err != nil {
 		return

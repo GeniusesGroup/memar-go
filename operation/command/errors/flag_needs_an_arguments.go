@@ -5,14 +5,13 @@ package errs
 import (
 	er "memar/error"
 	"memar/errors"
-	"memar/protocol"
 )
 
 var ErrFlagNeedsAnArgument errFlagNeedsAnArgument
 
 type errFlagNeedsAnArgument struct{ er.Err }
 
-func (dt *errFlagNeedsAnArgument) Init() (err protocol.Error) {
+func (dt *errFlagNeedsAnArgument) Init() (err error_p.Error) {
 	err = dt.Err.Init("domain/memar.scm.geniuses.group; package=command; type=error; name=flag_needs_an_arguments")
 	if err != nil {
 		return
