@@ -3,20 +3,20 @@
 package net_p
 
 type Socket_Status interface {
-	Status() NetworkStatus     // return last socket status
-	State() chan NetworkStatus // return status channel to listen to new socket status. for more than one listener use channel hub(repeater)
+	Status() SocketStatus     // return last socket status
+	State() chan SocketStatus // return status channel to listen to new socket status. for more than one listener use channel hub(repeater)
 
 	// SetStatus is low level API that must use very carefully and usually in not services layer.
 	// It is Non-Blocking operation. Change status of socket and send notification on socket StateChannel.
-	SetStatus(ns NetworkStatus)
+	SetStatus(ns SocketStatus)
 }
 
-// NetworkStatus indicate socket state
-type NetworkStatus uint32
+// SocketStatus indicate socket state
+type SocketStatus uint64
 
 // Connection States
 const (
-	Status_Unset NetworkStatus = iota // State not set yet
+	Status_Unset SocketStatus = iota // State not set yet
 
 	Status_New          // means socket session not saved yet to storage
 	Status_Loaded       // means socket session load from storage

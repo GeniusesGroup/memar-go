@@ -3,6 +3,7 @@
 package net_p
 
 import (
+	request_p "memar/audit/request/protocol"
 	capsule_p "memar/computer/capsule/protocol"
 	error_p "memar/error/protocol"
 	operation_p "memar/operation/protocol"
@@ -17,12 +18,17 @@ Application (OSI Layer 7: Application)
 
 // OSI_Application usually use to save state and release thread(goroutine) in waiting state
 type OSI_Application interface {
-	Service() service_p.Service //
-	Request() any               // Codec
-	Response() any              // Codec
-	Error() error_p.Error       // just indicate peer error that receive by response of the request.
-
 	capsule_p.LifeCycle
+
+	request_p.Field_RequestID
+	service_p.Field_Service
+	
+	operation_p.Field_Request
+	operation_p.Field_Response
+
+	// just indicate peer error that receive by response of the request.
+	error_p.Field_Error
+
 	OSI_Application_LowLevelAPIs
 }
 
@@ -31,8 +37,8 @@ type OSI_Application_LowLevelAPIs interface {
 	// Below Set methods must call just once,
 	// But some protocol like http allow to change it after first set in a reusable socket like IP/TCP.
 	SetService(ser service_p.Service)
-	SetRequest(req any)
-	SetResponse(res any)
+	SetRequest(req operation_p.Request)
+	SetResponse(res operation_p.Response)
 	SetError(err error_p.Error)
 
 	operation_p.Importance // base on the connection and the service priority and weight

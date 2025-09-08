@@ -9,6 +9,6 @@ import (
 // Addr represents a network end point address.
 // They can be any layer 2 or 3 or even 4.
 type NetworkAddress interface {
-	LocalAddr() string_p.Stringer[string_p.String]
-	RemoteAddr() string_p.Stringer[string_p.String]
+	LocalAddr() string_p.Stringer
+	RemoteAddr() string_p.Stringer
 }

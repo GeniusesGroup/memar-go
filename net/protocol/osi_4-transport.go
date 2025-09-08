@@ -21,7 +21,7 @@ https://en.wikipedia.org/wiki/Transport_layer
 type OSI_Transport interface {
 	capsule_p.LifeCycle
 	Framer
-	NetworkAddress // string form of address (for example, "tcp://443", "srpc://1254872653")
+	NetworkAddress // string form of address e.g. `PortID`, `StreamID` (for example, "tcp://443", "srpc://1254872653")
 
 	OSI_Transport_LowLevelAPIs
 }
