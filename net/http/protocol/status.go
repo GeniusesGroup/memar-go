@@ -6,17 +6,17 @@ import (
 	string_p "memar/string/protocol"
 )
 
-type Status[STR string_p.String] interface {
-	StatusCode() STR
+type Status /*[STR string_p.String]*/ interface {
+	StatusCode() string_p.String
 
 	// The Reason-Phrase is indeed optional.
 	// HTTP/2 and HTTP/3 even dropped it entirely.
-	ReasonPhrase() STR
+	ReasonPhrase() string_p.String
 
 	// TODO::: How can we made reasonPhrase optional? below is good?
 	// If pass just one status, it means status code.
 	// If pass two args, means code and phrase.
 	// It will ignore more than two args.
 	// SetStatus(status ...STR)
-	SetStatus(statusCode, reasonPhrase STR)
+	SetStatus(statusCode, reasonPhrase string_p.String)
 }

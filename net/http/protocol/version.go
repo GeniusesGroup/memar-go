@@ -6,6 +6,6 @@ import (
 	string_p "memar/string/protocol"
 )
 
-type Version[STR string_p.String] interface {
-	Version() STR
+type Version /*[STR string_p.String]*/ interface {
+	Version() string_p.String
 }

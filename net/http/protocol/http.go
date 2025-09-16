@@ -2,24 +2,26 @@
 
 package http_p
 
-import (
-	string_p "memar/string/protocol"
-)
-
-// Other languages:
+// Other frameworks:
 // - https://www.php-fig.org/psr/psr-7/
 // - https://nodejs.org/api/http.html#requestgetheaders
 
 // Request indicate HTTP request semantic.
+// 
+// Other frameworks:
+// https://developer.mozilla.org/en-US/docs/Web/API/Request
 type Request /*[STR String]*/ interface {
-	PseudoHeader_Request[string_p.String]
-	Header[string_p.String]
-	Body
+	PseudoHeader_Request
+	Header
+	Field_Body
 }
 
 // Response indicate HTTP response semantic.
+// 
+// Other frameworks:
+// https://developer.mozilla.org/en-US/docs/Web/API/Response
 type Response /*[STR String]*/ interface {
-	PseudoHeader_Response[string_p.String]
-	Header[string_p.String]
-	Body
+	PseudoHeader_Response
+	Header
+	Field_Body
 }

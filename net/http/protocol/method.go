@@ -6,6 +6,6 @@ import (
 	string_p "memar/string/protocol"
 )
 
-type Method[STR string_p.String] interface {
-	Method() STR
+type Method /*[STR string_p.String]*/ interface {
+	Method() string_p.String
 }

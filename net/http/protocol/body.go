@@ -8,7 +8,11 @@ import (
 
 // HTTP Body Semantic that USUALLY use in responses.
 // In requests ALMOST ALWAYS each service HTTPHandler use [SK Socket] Buffer to decode to desire data type.
+type Field_Body interface {
+	Body() Body
+	SetBody(codec Body)
+}
+
 type Body interface {
-	Body() codec_p.Codec
-	SetBody(codec codec_p.Codec)
+	codec_p.Codec
 }
