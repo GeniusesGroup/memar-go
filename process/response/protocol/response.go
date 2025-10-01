@@ -1,17 +1,19 @@
 /* For license and copyright information please see the LEGAL file in the code repository */
 
-package operation_p
+package response_p
 
 import (
-	datatype_p "memar/datatype/protocol"
+	codec_p "memar/codec/protocol"
+	datatype_p "memar/computer/datatype/protocol"
 )
 
 // Field_Response ...
 type Field_Response/*[RES Response]*/ interface {
-	Response() datatype_p.DataType
+	Response() Response
 }
 
 // Response indicate response type that MUST use by any other types.
 type Response interface {
-	datatype_p.DataType
+	datatype_p.DataType   
+	codec_p.Codec
 }
