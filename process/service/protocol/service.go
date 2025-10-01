@@ -4,9 +4,11 @@ package service_p
 
 import (
 	capsule_p "memar/computer/capsule/protocol"
-	datatype_p "memar/datatype/protocol"
-	mediatype_p "memar/mediatype/protocol"
-	operation_p "memar/operation/protocol"
+	datatype_p "memar/computer/datatype/protocol"
+	mediatype_p "memar/identifier/mediatype/protocol"
+	operation_p "memar/process/operation/protocol"
+	request_p "memar/process/request/protocol"
+	response_p "memar/process/response/protocol"
 )
 
 type Field_Service interface {
@@ -19,11 +21,11 @@ type Service interface {
 
 	operation_p.Field_OperationID
 	operation_p.Field_ActionType
-	operation_p.Field_Request
-	operation_p.Field_Response
-	
 	operation_p.Importance
 	operation_p.Authorize
+
+	request_p.Field_Request
+	response_p.Field_Response
 
 	datatype_p.DataType
 	mediatype_p.MediaType

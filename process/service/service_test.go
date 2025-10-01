@@ -3,7 +3,7 @@
 package service
 
 import (
-	service_p "memar/operation/service/protocol"
+	service_p "memar/process/service/protocol"
 )
 
 var _ service_p.Service = &Service{}
