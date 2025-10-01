@@ -1,4 +1,7 @@
-# Operation
+# Process
+Process is a sequence or layers of procedures/operations/practice/events that is consisted of people, machines, materials, methods and governing policies.
+
+## Operation
 we categorize service, command, and query as items in the operation category.
 
 Here's a breakdown of why:
@@ -7,3 +10,5 @@ Here's a breakdown of why:
 - Query: A query is a request for information or data from a system.
 
 All of these terms imply a specific action or request being performed, which aligns with the concept of an operation. Therefore, they can be effectively categorized under the operation category.
+
+## Audit
