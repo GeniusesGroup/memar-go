@@ -1,12 +1,15 @@
 /* For license and copyright information please see the LEGAL file in the code repository */
 
-package runtime_p
+package thread_p
 
 import (
-	error_p "memar/error/protocol"
+	error_p "memar/process/error/protocol"
+	"memar/time/duration"
 )
 
 type Thread interface {
+	Sleep(d duration.NanoSecond)
+
 	// Defer(where ??, v any)
 
 	// Thread_Execution_Exception
