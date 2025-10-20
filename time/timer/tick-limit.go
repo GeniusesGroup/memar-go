@@ -3,12 +3,12 @@
 package timer
 
 import (
-	"memar/protocol"
+	error_p "memar/process/error/protocol"
 	"memar/time/duration"
-	errs "memar/timer/errors"
+	errs "memar/time/timer/errors"
 )
 
-func NewLimitTicker(first, interval duration.NanoSecond, periodNumber int64) (t *LimitTicker, err protocol.Error) {
+func NewLimitTicker(first, interval duration.NanoSecond, periodNumber int64) (t *LimitTicker, err error_p.Error) {
 	if periodNumber < 1 {
 		err = &errs.ErrNegativePeriodNumber
 		return
@@ -30,28 +30,28 @@ type LimitTicker struct {
 	Sync
 }
 
-//memar:impl memar/protocol.Timer
-func (t *LimitTicker) Init() (err protocol.Error) {
+//memar:impl memar/time/timer/protocol.Timer
+func (self *LimitTicker) Init() (err error_p.Error) {
 	// Give the channel a 1-element buffer.
 	// If the client falls behind while reading, we drop ticks
 	// on the floor until the client catches up.
-	t.signal = make(chan struct{}, 1)
-	err = t.Async.Init(t)
+	self.signal = make(chan struct{}, 1)
+	err = self.Async.Init(self)
 	return
 }
 
-func (t *LimitTicker) RemainingNumber() int64 { return t.periodNumber }
+func (self *LimitTicker) RemainingNumber() int64 { return self.periodNumber }
 
 // TimerHandler or NotifyChannel does a non-blocking send the signal on t.signal
-func (t *LimitTicker) TimerHandler() {
+func (self *LimitTicker) TimerHandler() {
 	select {
-	case t.signal <- struct{}{}:
+	case self.signal <- struct{}{}:
 	default:
 	}
 
-	if t.periodNumber > 0 {
-		t.periodNumber--
+	if self.periodNumber > 0 {
+		self.periodNumber--
 	} else {
-		t.Stop()
+		self.Stop()
 	}
 }

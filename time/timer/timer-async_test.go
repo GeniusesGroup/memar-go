@@ -3,7 +3,8 @@
 package timer
 
 import (
-	"memar/protocol"
+	"memar/time/monotonic"
+	timer_p "memar/time/timer/protocol"
 )
 
-var _ protocol.Timer = &Async{}
+var _ timer_p.Timer[monotonic.Time, Status] = &Async{}

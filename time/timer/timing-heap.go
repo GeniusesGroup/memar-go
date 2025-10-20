@@ -3,12 +3,13 @@
 package timer
 
 import (
-	"memar/protocol"
+	container_p "memar/adt/container/protocol"
+	error_p "memar/process/error/protocol"
 )
 
 // Active timers live in the timers field as heap structure.
 // Inactive timers live there too temporarily, until they are removed.
-// Balancing a heap is done by th.siftUp or th.siftDown methods
+// Balancing a heap is done by timingHeap.siftUp() or timingHeap.siftDown() methods
 //
 // Normally access the timers while running on same CPU core,
 // but the scheduler can also do it from a different CPU core,
@@ -19,50 +20,50 @@ type timingHeap struct {
 	timers []timerBucketHeap
 }
 
-//memar:impl memar/protocol.SoftwareLifeCycle
-func (th *timingHeap) Init() (err protocol.Error) {
+//memar:impl memar/computer/capsule/protocol.LifeCycle
+func (self *timingHeap) Init() (err error_p.Error) {
 	// TODO::: let application flow choose timers init cap or force it?
-	// th.timers = make([]timerBucketHeap, 1024)
+	// self.timers = make([]timerBucketHeap, 1024)
 	return
 }
-func (th *timingHeap) Reinit() (err protocol.Error) {
+func (self *timingHeap) Reinit() (err error_p.Error) {
 	// TODO::: Do timers??
-	th.timers = th.timers[:0]
+	self.timers = self.timers[:0]
 	return
 }
-func (th *timingHeap) Deinit() (err protocol.Error) {
-	// th.timers = nil
+func (self *timingHeap) Deinit() (err error_p.Error) {
+	// self.timers = nil
 	return
 }
 
-//memar:impl memar/protocol.ADT_LastElementIndex
-func (th *timingHeap) LastElementIndex() protocol.ElementIndex {
-	return protocol.ElementIndex(th.OccupiedLength() - 1)
+//memar:impl memar/adt/container/protocol.LastElementIndex
+func (self *timingHeap) LastElementIndex() container_p.ElementIndex {
+	return container_p.ElementIndex(self.OccupiedLength() - 1)
 }
 
-//memar:impl memar/protocol.OccupiedLength
-func (th *timingHeap) OccupiedLength() int { return len(th.timers) }
+//memar:impl memar/adt/protocol.OccupiedLength
+func (self *timingHeap) OccupiedLength() int /* container_p.NumberOfElement */ { return len(self.timers) }
 
-func (th *timingHeap) Append(b timerBucketHeap) { th.timers = append(th.timers, b) }
+func (self *timingHeap) Append(b timerBucketHeap) { self.timers = append(self.timers, b) }
 
 // DeleteTimer removes timer i from the timers heap.
 // It returns the smallest changed index in the timingHeap
-func (th *timingHeap) DeleteTimer(i int) (smallestChanged int) {
-	th.timers[i].timer.timing = nil
+func (self *timingHeap) DeleteTimer(i int) (smallestChanged int) {
+	self.timers[i].timer.timing = nil
 
-	var last = int(th.LastElementIndex())
+	var last = int(self.LastElementIndex())
 	if i != last {
-		th.timers[i] = th.timers[last]
+		self.timers[i] = self.timers[last]
 	}
-	th.timers[last].timer = nil
-	th.timers = th.timers[:last]
+	self.timers[last].timer = nil
+	self.timers = self.timers[:last]
 
 	smallestChanged = i
 	if i != last {
 		// Moving to i may have moved the last timer to a new parent,
 		// so sift up to preserve the heap guarantee.
-		smallestChanged = th.SiftUpTimer(i)
-		th.SiftDownTimer(i)
+		smallestChanged = self.SiftUpTimer(i)
+		self.SiftDownTimer(i)
 	}
 
 	return
@@ -70,25 +71,25 @@ func (th *timingHeap) DeleteTimer(i int) (smallestChanged int) {
 
 // DeleteTimer0 removes timer 0 from the timers heap.
 // It reports whether it saw no problems due to races.
-func (th *timingHeap) DeleteTimer0() {
-	th.timers[0].timer.timing = nil
+func (self *timingHeap) DeleteTimer0() {
+	self.timers[0].timer.timing = nil
 
-	var last = th.LastElementIndex()
+	var last = self.LastElementIndex()
 	if last > 0 {
-		th.timers[0] = th.timers[last]
+		self.timers[0] = self.timers[last]
 	}
-	th.timers[last].timer = nil
-	th.timers = th.timers[:last]
+	self.timers[last].timer = nil
+	self.timers = self.timers[:last]
 	if last > 0 {
-		th.SiftDownTimer(0)
+		self.SiftDownTimer(0)
 	}
 }
 
 // SiftUpTimer puts the timer at position i in the right place
 // in the heap by moving it up toward the top of the heap.
 // It returns the smallest changed index.
-func (th *timingHeap) SiftUpTimer(i int) int {
-	var timers = th.timers
+func (self *timingHeap) SiftUpTimer(i int) int {
+	var timers = self.timers
 	var timerWhen = timers[i].when
 
 	var tmp = timers[i]
@@ -108,8 +109,8 @@ func (th *timingHeap) SiftUpTimer(i int) int {
 
 // SiftDownTimer puts the timer at position i in the right place
 // in the heap by moving it down toward the bottom of the heap.
-func (th *timingHeap) SiftDownTimer(i int) {
-	var timers = th.timers
+func (self *timingHeap) SiftDownTimer(i int) {
+	var timers = self.timers
 	var timersLen = len(timers)
 	var timerWhen = timers[i].when
 

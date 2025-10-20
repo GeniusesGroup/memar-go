@@ -3,22 +3,19 @@
 package timer
 
 import (
-	"unsafe"
-
-	"memar/math/integer"
-	"memar/protocol"
-	"memar/runtime/race"
-	"memar/runtime/scheduler"
+	error_p "memar/process/error/protocol"
+	"memar/process/race"
+	"memar/computer/runtime/scheduler"
 	"memar/time/duration"
 	"memar/time/monotonic"
-	errs "memar/timer/errors"
-	timer_p "memar/timer/protocol"
+	timer_errs "memar/time/timer/errors"
+	timer_p "memar/time/timer/protocol"
 )
 
 // NewAsync waits for the duration to elapse and then calls callback.
 // If callback need blocking operation it must do its logic in new thread(goroutine).
 // It returns a Timer that can be used to cancel the call using its Stop method.
-func NewAsync(d duration.NanoSecond, callback timer_p.TimerListener) (t *Async, err protocol.Error) {
+func NewAsync(d duration.NanoSecond, callback timer_p.TimerListener) (t *Async, err error_p.Error) {
 	var timer Async
 	timer.Init(callback)
 	err = timer.Start(d)
@@ -49,105 +46,105 @@ type Async struct {
 
 // Init initialize the timer with given callback.
 //
-//memar:impl memar/protocol.Timer
-func (t *Async) Init(callback timer_p.TimerListener) (err protocol.Error) {
-	if t.callback != nil {
-		err = &errs.ErrTimerAlreadyInit
+//memar:impl memar/time/timer/protocol.Timer
+func (self *Async) Init(callback timer_p.TimerListener) (err error_p.Error) {
+	if self.callback != nil {
+		err = &timer_errs.ErrTimerAlreadyInit
 		return
 	}
 
-	t.callback = callback
+	self.callback = callback
 	return
 }
 
-//memar:impl memar/protocol.SoftwareLifeCycle
-func (t *Async) Reinit(callback timer_p.TimerListener) (err protocol.Error) {
-	// var status = t.status.Load()
+//memar:impl memar/computer/capsule/protocol.LifeCycle
+func (self *Async) Reinit(callback timer_p.TimerListener) (err error_p.Error) {
+	// var status = self.status.Load()
 	// if !(status == Status_Unset || status == Status_Deleted) {
 	// 	panic("timer: Reinit called with non stopped timer")
 	// }
-	err = t.Stop()
+	err = self.Stop()
 	if err != nil {
 		return
 	}
-	t.callback = callback
-	t.timing = nil
+	self.callback = callback
+	self.timing = nil
 	return
 }
-func (t *Async) Deinit() (err protocol.Error) {
-	err = t.Stop()
+func (self *Async) Deinit() (err error_p.Error) {
+	err = self.Stop()
 	// TODO::: Can we remove t from related timing heap?
 	return
 }
 
-//memar:impl memar/protocol.Timer
-func (t *Async) Status() (activeStatus Status) { return t.status.Load() }
-func (t *Async) When() monotonic.Time          { return t.when }
+//memar:impl memar/time/timer/protocol.Timer
+func (self *Async) Status() (activeStatus Status) { return self.status.Load() }
+func (self *Async) When() monotonic.Time          { return self.when }
 
 // Start adds the timer to the running cpu core timing.
 // This should only be called with a newly created timer.
 // That avoids the risk of changing the when field of a timer in some P's heap,
 // which could cause the heap to become unsorted.
 //
-//memar:impl memar/protocol.Timer
-func (t *Async) Start(d duration.NanoSecond) (err protocol.Error) {
-	if t.callback == nil {
-		err = &errs.ErrTimerNotInit
+//memar:impl memar/time/timer/protocol.Timer
+func (self *Async) Start(d duration.NanoSecond) (err error_p.Error) {
+	if self.callback == nil {
+		err = &timer_errs.ErrTimerNotInit
 		return
 	}
 	// when must be positive. A negative value will cause ts.runTimer to
 	// overflow during its delta calculation and never expire other runtime timing.
 	// Zero will cause checkTimers to fail to notice the timer.
 	if d < 1 {
-		err = &errs.ErrNegativeDuration
+		err = &timer_errs.ErrNegativeDuration
 		return
 	}
-	var activeStatus = t.status.Load()
-	if activeStatus != Status_Unset || t.timing != nil {
-		err = &errs.ErrTimerAlreadyStarted
+	var activeStatus = self.status.Load()
+	if activeStatus != Status_Unset || self.timing != nil {
+		err = &timer_errs.ErrTimerAlreadyStarted
 		return
 	}
 
-	if !t.status.CompareAndSwap(Status_Unset, Status_Waiting) {
-		err = &errs.ErrTimerRacyAccess
+	if !self.status.CompareAndSwap(Status_Unset, Status_Waiting) {
+		err = &timer_errs.ErrTimerRacyAccess
 		return
 	}
 
 	if race.DetectorEnabled {
-		race.Release(unsafe.Pointer(t))
+		race.Release(self)
 	}
 
-	t.when = when(d)
-	t.timing = getActiveTiming()
-	t.timing.AddTimer(t)
+	self.when = when(d)
+	self.timing = getActiveTiming()
+	self.timing.AddTimer(self)
 	return
 }
 
-// Stop deletes the timer t. We can't actually remove it from the timing heap.
+// Stop deletes the timer. We can't actually remove it from the timing heap.
 // We can only mark it as deleted. It will be removed in due course by the timing whose heap it is on.
 // Reports whether the timer was removed before it was run.
 //
-//memar:impl memar/protocol.Timer
-func (t *Async) Stop() (err protocol.Error) {
-	if t.callback == nil {
-		err = &errs.ErrTimerNotInit
+//memar:impl memar/time/timer/protocol.Timer
+func (self *Async) Stop() (err error_p.Error) {
+	if self.callback == nil {
+		err = &timer_errs.ErrTimerNotInit
 		return
 	}
 
 	var activeStatus Status
 	for {
-		activeStatus = t.status.Load()
+		activeStatus = self.status.Load()
 		switch activeStatus {
 		case Status_Unset:
-			err = &errs.ErrTimerNotInit
+			err = &timer_errs.ErrTimerNotInit
 			return
 		case Status_Waiting, Status_ModifiedLater, Status_ModifiedEarlier:
-			// Must fetch t.timing before changing status,
-			// due to ts.cleanTimers in another goroutine can clear t.timing of timing in Status_Deleted status.
-			var timing = t.timing
+			// Must fetch self.timing before changing status,
+			// due to ts.cleanTimers in another goroutine can clear self.timing of timing in Status_Deleted status.
+			var timing = self.timing
 
 			// Timer was not yet run.
-			if t.status.CompareAndSwap(activeStatus, Status_Deleted) {
+			if self.status.CompareAndSwap(activeStatus, Status_Deleted) {
 				timing.deletedTimersCount.Add(1)
 				return
 			}
@@ -161,7 +158,7 @@ func (t *Async) Stop() (err protocol.Error) {
 			// Simultaneous calls to Reset(). Wait for the other call to complete.
 			scheduler.Yield(scheduler.Thread_WaitReason_Preempted)
 		default:
-			err = &errs.ErrTimerBadStatus
+			err = &timer_errs.ErrTimerBadStatus
 			return
 		}
 	}
@@ -171,44 +168,44 @@ func (t *Async) Stop() (err protocol.Error) {
 // It's OK to call Reset() on a newly allocated Timer.
 // Reports whether the timer was modified before it was run.
 //
-//memar:impl memar/protocol.Timer
-func (t *Async) Reset(d duration.NanoSecond) (err protocol.Error) {
+//memar:impl memar/time/timer/protocol.Timer
+func (self *Async) Reset(d duration.NanoSecond) (err error_p.Error) {
 	// when must be positive. A negative value will cause ts.runTimer to
 	// overflow during its delta calculation and never expire other runtime timing.
 	// Zero will cause checkTimers to fail to notice the timer.
 	if d < 1 {
-		err = &errs.ErrNegativeDuration
+		err = &timer_errs.ErrNegativeDuration
 		return
 	}
-	if t.callback == nil {
-		err = &errs.ErrTimerNotInit
+	if self.callback == nil {
+		err = &timer_errs.ErrTimerNotInit
 		return
 	}
 
 	if race.DetectorEnabled {
-		race.Release(unsafe.Pointer(t))
+		race.Release(t)
 	}
 
 	var wasRemovedFromTiming = false
 	var activeStatus Status
 loop:
 	for {
-		activeStatus = t.status.Load()
+		activeStatus = self.status.Load()
 		switch activeStatus {
 		case Status_Waiting, Status_ModifiedEarlier, Status_ModifiedLater:
-			if t.status.CompareAndSwap(activeStatus, Status_Modifying) {
+			if self.status.CompareAndSwap(activeStatus, Status_Modifying) {
 				break loop
 			}
 		case Status_Unset, Status_Removed:
 			// Timer was already run and t is no longer in a timing.
 			// Act like AddTimer.
-			if t.status.CompareAndSwap(activeStatus, Status_Modifying) {
+			if self.status.CompareAndSwap(activeStatus, Status_Modifying) {
 				wasRemovedFromTiming = true
 				break loop
 			}
 		case Status_Deleted:
-			if t.status.CompareAndSwap(activeStatus, Status_Modifying) {
-				t.timing.deletedTimersCount.Add(-1)
+			if self.status.CompareAndSwap(activeStatus, Status_Modifying) {
+				self.timing.deletedTimersCount.Add(-1)
 				break loop
 			}
 		case Status_Running, Status_Removing, Status_Moving:
@@ -220,22 +217,22 @@ loop:
 			// Wait for the other call to complete.
 			scheduler.Yield(scheduler.Thread_WaitReason_Preempted)
 		default:
-			err = &errs.ErrTimerBadStatus
+			err = &timer_errs.ErrTimerBadStatus
 			return
 		}
 	}
 
-	var timerOldWhen = t.when
+	var timerOldWhen = self.when
 	var timerNewWhen = when(d)
-	t.when = timerNewWhen
-	if t.period != 0 {
-		t.period = d
+	self.when = timerNewWhen
+	if self.period != 0 {
+		self.period = d
 	}
 	if wasRemovedFromTiming {
-		t.timing = getActiveTiming()
-		t.timing.AddTimer(t)
-		if !t.status.CompareAndSwap(Status_Modifying, Status_Waiting) {
-			err = &errs.ErrTimerRacyAccess
+		self.timing = getActiveTiming()
+		self.timing.AddTimer(self)
+		if !self.status.CompareAndSwap(Status_Modifying, Status_Waiting) {
+			err = &timer_errs.ErrTimerRacyAccess
 			// TODO::: Easily just return??
 			return
 		}
@@ -246,12 +243,12 @@ loop:
 		var newStatus = Status_ModifiedLater
 		if timerNewWhen < timerOldWhen {
 			newStatus = Status_ModifiedEarlier
-			t.timing.updateTimerModifiedEarliest(timerNewWhen)
+			self.timing.updateTimerModifiedEarliest(timerNewWhen)
 		}
 
 		// Set the new status of the timer.
-		if !t.status.CompareAndSwap(Status_Modifying, newStatus) {
-			err = &errs.ErrTimerRacyAccess
+		if !self.status.CompareAndSwap(Status_Modifying, newStatus) {
+			err = &timer_errs.ErrTimerRacyAccess
 			// TODO::: Easily just return??
 			return
 		}
@@ -260,31 +257,31 @@ loop:
 	return
 }
 
-// Tick will call the t.callback.TimerHandler() after each tick on initialized Timer.
+// Tick will call the self.callback.TimerHandler() after each tick on initialized Timer.
 // The period of the ticks is specified by the duration arguments.
 // The ticker will adjust the time interval or drop ticks to make up for slow receivers.
 // The durations must be greater than zero; if not, Tick() will panic.
 // Stop the ticker to release associated resources.
 //
-//memar:impl memar/protocol.Ticker
-func (t *Async) Tick(first, interval duration.NanoSecond) (err protocol.Error) {
+//memar:impl memar/time/timer/protocol.Ticker
+func (self *Async) Tick(first, interval duration.NanoSecond) (err error_p.Error) {
 	if first < 1 || interval < 1 {
-		err = &errs.ErrNegativeDuration
+		err = &timer_errs.ErrNegativeDuration
 		return
 	}
-	t.period = interval
-	err = t.Start(first)
+	self.period = interval
+	err = self.Start(first)
 	return
 }
 
-//memar:impl memar/protocol.Stringer
-func (t *Async) ToString() (str string, err protocol.Error) {
-	var until = t.when.UntilNow()
-	var untilSecond = until / duration.OneSecond
-	var untilSecondINT = integer.S64(untilSecond)
-	var untilSecondString string
-	untilSecondString, err = untilSecondINT.ToString()
-	str = "Timer sleep for " + untilSecondString + " seconds"
+//memar:impl memar/codec/string/protocol.Stringer
+func (self *Async) ToString() (str string, err error_p.Error) {
+	var until = self.when.UntilNow()
+	var untilSecond, untilNanoSecond = until.ToSecAndNano()
+	var untilSecondString, untilNanoSecondString string
+	untilSecondString, err = untilSecond.ToString()
+	untilNanoSecondString, err = untilNanoSecond.ToString()
+	str = "Timer awake after " + untilSecondString + " seconds and" + untilNanoSecondString + "nano-second"
 	return
 }
-func (t *Async) FromString(str string) (err protocol.Error) { return }
+func (self *Async) FromString(str string) (err error_p.Error) { return }

@@ -3,7 +3,7 @@
 package timer
 
 import (
-	"memar/protocol"
+	error_p "memar/process/error/protocol"
 	"memar/time/monotonic"
 )
 
@@ -15,7 +15,7 @@ type timerBucketHeap struct {
 	when monotonic.Time
 }
 
-//memar:impl memar/protocol.SoftwareLifeCycle
-func (tb *timerBucketHeap) Init() (err protocol.Error)   { return }
-func (tb *timerBucketHeap) Reinit() (err protocol.Error) { return }
-func (tb *timerBucketHeap) Deinit() (err protocol.Error) { tb.timer = nil; tb.when = 0; return }
+//memar:impl memar/computer/capsule/protocol.LifeCycle
+func (self *timerBucketHeap) Init() (err error_p.Error)   { return }
+func (self *timerBucketHeap) Reinit() (err error_p.Error) { return }
+func (self *timerBucketHeap) Deinit() (err error_p.Error) { self.timer = nil; self.when = 0; return }

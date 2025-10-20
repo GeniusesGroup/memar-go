@@ -3,8 +3,9 @@
 package timer
 
 import (
-	"memar/cpu"
 	"runtime"
+	
+	"memar/hardware/cpu"
 )
 
 var poolByCores = make(timing, cpu.LogicalCount())
@@ -21,5 +22,7 @@ func getActiveTiming() *Timing { return poolByCores.activeTiming() }
 type timing []Timing
 
 func (tg timing) activeTiming() *Timing {
-	return &tg[cpu.ActiveCoreID()]
+	var callerCoreID cpu.CoreID
+	callerCoreID.Active()
+	return &tg[callerCoreID]
 }
