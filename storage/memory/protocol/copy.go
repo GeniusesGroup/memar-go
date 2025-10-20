@@ -3,7 +3,7 @@
 package memory_p
 
 import (
-	error_p "memar/error/protocol"
+	error_p "memar/process/error/protocol"
 )
 
 // Copy is implicit, inexpensive, and cannot be re-implemented (memcpy).
@@ -18,17 +18,4 @@ type Copy[T any] interface {
 	CopyFrom(source T) (err error_p.Error)
 	// Performs copy-assignment to destination
 	CopyTo(destination T) (err error_p.Error)
-}
-
-// Clone is explicit, may be expensive, and may be re-implement arbitrarily.
-// Clone is designed for arbitrary duplications:
-// a Clone implementation for a type T can do arbitrarily complicated operations required to create a new T.
-// It is a normal trait (other than being in the prelude), and so requires being used like a normal trait, with method calls, etc.
-type Clone[T any] interface {
-	// Returns a clone of the itself
-	Clone() (c T, err error_p.Error)
-	// Performs clone-assignment from source
-	CloneFrom(source T) (err error_p.Error)
-	// Performs clone-assignment to destination
-	CloneTo(destination T) (err error_p.Error)
 }
