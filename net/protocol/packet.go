@@ -4,7 +4,7 @@ package net_p
 
 import (
 	buffer_p "memar/buffer/protocol"
-	error_p "memar/error/protocol"
+	error_p "memar/process/error/protocol"
 )
 
 // Receiver must release Packet and don't use it after return.

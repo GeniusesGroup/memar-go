@@ -4,7 +4,7 @@ package net_p
 
 import (
 	container_p "memar/adt/container/protocol"
-	error_p "memar/error/protocol"
+	error_p "memar/process/error/protocol"
 )
 
 type Frame interface {
@@ -20,9 +20,6 @@ type Frame interface {
 	Do(sk Socket) (err error_p.Error)
 }
 
-type Framer interface {
-	FrameType() FrameType
-}
 type FrameWriter interface {
 	WriteFrame(packet Packet) (n container_p.NumberOfElement, err error_p.Error)
 }

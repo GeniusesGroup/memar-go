@@ -3,7 +3,7 @@
 package net_p
 
 import (
-	datatype_p "memar/datatype/protocol"
+	datatype_p "memar/computer/datatype/protocol"
 )
 
 type Field_DialogueType interface {

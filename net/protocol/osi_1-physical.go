@@ -4,8 +4,8 @@ package net_p
 
 import (
 	capsule_p "memar/computer/capsule/protocol"
-	datatype_p "memar/datatype/protocol"
-	error_p "memar/error/protocol"
+	datatype_p "memar/computer/datatype/protocol"
+	error_p "memar/process/error/protocol"
 )
 
 /*
@@ -34,9 +34,9 @@ type OSI_Physical interface {
 
 	capsule_p.LifeCycle
 	datatype_p.DataType
-	Framer
 	NetworkMTU
-	// NetworkAddress
+	// Field_NetworkAddresses
+	Field_FrameType
 	FrameWriter
 }
 

@@ -3,11 +3,12 @@
 package net_p
 
 import (
-	request_p "memar/audit/request/protocol"
 	capsule_p "memar/computer/capsule/protocol"
-	error_p "memar/error/protocol"
-	operation_p "memar/operation/protocol"
-	service_p "memar/operation/service/protocol"
+	error_p "memar/process/error/protocol"
+	operation_p "memar/process/operation/protocol"
+	service_p "memar/process/service/protocol"
+	request_p "memar/process/request/protocol"
+	response_p "memar/process/response/protocol"
 )
 
 /*
@@ -23,8 +24,8 @@ type OSI_Application interface {
 	request_p.Field_RequestID
 	service_p.Field_Service
 	
-	operation_p.Field_Request
-	operation_p.Field_Response
+	request_p.Field_Request
+	response_p.Field_Response
 
 	// just indicate peer error that receive by response of the request.
 	error_p.Field_Error
@@ -37,12 +38,13 @@ type OSI_Application_LowLevelAPIs interface {
 	// Below Set methods must call just once,
 	// But some protocol like http allow to change it after first set in a reusable socket like IP/TCP.
 	SetService(ser service_p.Service)
-	SetRequest(req operation_p.Request)
-	SetResponse(res operation_p.Response)
+	SetRequest(req request_p.Request)
+	SetResponse(res response_p.Response)
 	SetError(err error_p.Error)
 
 	operation_p.Importance // base on the connection and the service priority and weight
 	OSI_Application_Handler
+	// OSI_Application_Client
 	// Stringer_To[String] // e.g. "http", ...
 }
 
@@ -53,10 +55,15 @@ type OSI_Application_Handler interface {
 
 	// HandleIncomeRequest must check socket status
 	HandleIncomeRequest(sk Socket) (err error_p.Error)
+}
 
+type OSI_Application_Client interface {
 	// SendBidirectionalRequest()
 	// SendUnidirectionalRequest()
+
 	// Due to each application handler wants its signature, implement it as a pure function inside each package.
-	// srpc.SendBidirectionalRequest(sk Socket, sr Service, req Codec) (res Codec, err error_p.Error)
-	// http.SendBidirectionalRequest(sk Socket, sr Service, httpReq *Request) (httpRes *Response, err error_p.Error) {
+	// srpc.Client.SendBidirectionalRequest(sk Socket, sr Service, req Codec) (res Codec, err error_p.Error)
+	// http.Client.SendBidirectionalRequest(sk Socket, sr Service, httpReq *Request) (httpRes *Response, err error_p.Error)
+
+	operation_p.Timeout
 }

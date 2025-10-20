@@ -4,7 +4,7 @@ package net_p
 
 import (
 	capsule_p "memar/computer/capsule/protocol"
-	error_p "memar/error/protocol"
+	error_p "memar/process/error/protocol"
 )
 
 /*
@@ -27,7 +27,7 @@ type OSI_Session interface {
 
 	OSI_Session_LowLevelAPIs
 
-	Framer
+	Field_FrameType
 }
 
 // Session_LowLevelAPIs is low level APIs, don't use them in the services layer, if you don't know how it can be effect the application.

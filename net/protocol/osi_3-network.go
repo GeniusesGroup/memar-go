@@ -18,8 +18,8 @@ https://en.wikipedia.org/wiki/Network_layer
 // from a source to a destination host via one or more networks.
 type OSI_Network interface {
 	capsule_p.LifeCycle
-	Framer
-	NetworkAddress // string form of address (for example, "ipv4://192.0.2.1", "ipv6://[2001:db8::1]")
+	Field_FrameType
+	Field_NetworkAddresses // string form of address (for example, "ipv4://192.0.2.1", "ipv6://[2001:db8::1]")
 
 	OSI_Network_LowLevelAPIs
 }

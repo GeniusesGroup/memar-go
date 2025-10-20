@@ -4,7 +4,7 @@ package net_p
 
 import (
 	buffer_p "memar/buffer/protocol"
-	operation_p "memar/operation/protocol"
+	operation_p "memar/process/operation/protocol"
 )
 
 // Socket term in many textbooks refers to an entity that is uniquely identified by the socket number.
@@ -22,7 +22,7 @@ type Socket interface {
 	// due to the Unix philosophy that "everything is a file", and the analogies between sockets and files.
 	// Both have functions to read, write, open, and close
 
-	NetworkAddress // string form of full address of socket to dial any time later.
+	Field_NetworkAddresses // string form of full address of socket to dial any time later.
 
 	Socket_LowLevelAPIs
 }

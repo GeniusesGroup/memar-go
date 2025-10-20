@@ -4,7 +4,7 @@ package net_p
 
 import (
 	capsule_p "memar/computer/capsule/protocol"
-	error_p "memar/error/protocol"
+	error_p "memar/process/error/protocol"
 	"memar/time/duration"
 )
 
@@ -20,8 +20,8 @@ https://en.wikipedia.org/wiki/Transport_layer
 // It must also implement chunks managing like sRPC, QUIC, TCP, UDP, ...
 type OSI_Transport interface {
 	capsule_p.LifeCycle
-	Framer
-	NetworkAddress // string form of address e.g. `PortID`, `StreamID` (for example, "tcp://443", "srpc://1254872653")
+	Field_FrameType
+	Field_NetworkAddresses // string form of address e.g. `PortID`, `StreamID` (for example, "tcp://443", "srpc://1254872653")
 
 	OSI_Transport_LowLevelAPIs
 }

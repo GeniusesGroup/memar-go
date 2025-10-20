@@ -2,6 +2,10 @@
 
 package net_p
 
+type Field_FrameType interface {
+	FrameType() FrameType
+}
+
 const (
 	FrameType_Length = 1 // byte get on byte space
 )
