@@ -1,39 +1,34 @@
 /* For license and copyright information please see the LEGAL file in the code repository */
 
-package ht_p
+package hashTable_p
 
 import (
-	array_p "memar/adt/array/protocol"
 	container_p "memar/adt/container/protocol"
 	adt_p "memar/adt/protocol"
+	capsule_p "memar/computer/capsule/protocol"
 	hash_p "memar/crypto/hash/protocol"
-	error_p "memar/error/protocol"
 	logic_p "memar/math/logic/protocol"
+	error_p "memar/process/error/protocol"
+	storage_p "memar/storage/memory/protocol"
 )
 
-// func New[K Key, V Value](capacity uint64) *HashTable[K, V]
+// func New[K Key, V Value](capacity container_p.NumberOfElement) *HashTable[K, V]
 
 type HashTable[K Key[K], V Value] interface {
-	Init(capacity uint64) (err error_p.Error)
+	capsule_p.LifeCycle
+	Init(capacity container_p.NumberOfElement) (err error_p.Error)
 
-	Get(key K) (value V, err error_p.Error) // err return more than exist(bool)
-	Put(key K, value V) (err error_p.Error)
-	Remove(key K) (err error_p.Error)
-
-	Clear() (err error_p.Error)
-	Copy() (new HashTable[K, V], err error_p.Error)
-	Iterate(array_p.Iterate_KV[K, V]) (err error_p.Error)
+	Accessor[K, V]
+	AtomicAccessor[K, V]
+	Iteration[K, V]
 
 	adt_p.ADT
 	container_p.Capacity
 	container_p.OccupiedLength
-}
+	container_p.Clear
 
-type AtomicAccessor[K Key[any], V Value] interface {
-	Load(key K) (value V, err error_p.Error)
-	Store(key K, value V) (err error_p.Error)
-	Swap(key K, value V) (old V, err error_p.Error)
-	CompareAndSwap(key K, old, new V) (err error_p.Error) // err return more than swapped(bool)
+	memory_p.Copy[HashTable[K, V]]
+	memory_p.Clone[HashTable[K, V]]
 }
 
 type Key[T any] interface {
