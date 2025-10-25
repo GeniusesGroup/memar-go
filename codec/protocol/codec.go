@@ -3,10 +3,9 @@
 package codec_p
 
 import (
-	container_p "memar/adt/container/protocol"
 	buffer_p "memar/buffer/protocol"
-	datatype_p "memar/datatype/protocol"
-	error_p "memar/error/protocol"
+	datatype_p "memar/computer/datatype/protocol"
+	error_p "memar/process/error/protocol"
 )
 
 // Codec wraps some other interfaces that need an data structure be a codec.
@@ -27,18 +26,11 @@ type Decoder /*[BUF Buffer]*/ interface {
 	Decode(source buffer_p.Buffer) (err error_p.Error)
 }
 
-// Encoder is the interface that wraps the Encode & CodecLength methods.
+// Encoder is the interface that wraps the Encode & Field_Length methods.
 type Encoder /*[BUF Buffer]*/ interface {
 	// Encode writes serialized(encoded) data to destination until there's no more data to write.
 	// Return any error that occur in buffer logic e.g. timeout error in socket, ...
 	Encode(destination buffer_p.Buffer) (err error_p.Error)
 
-	CodecLength
-}
-
-type CodecLength interface {
-	// SerializationLength return value ln, that is the max number of bytes that will written as encode data by Encode()||Marshal()
-	// 0 means no data and -1 means can't tell until full write.
-	// Due to prevent performance penalty, Implementors can return max number instead of actual number of length.
-	SerializationLength() (ln container_p.NumberOfElement)
+	Field_Length
 }

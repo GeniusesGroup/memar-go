@@ -3,9 +3,8 @@
 package codec_p
 
 import (
-	container_p "memar/adt/container/protocol"
-	datatype_p "memar/datatype/protocol"
-	error_p "memar/error/protocol"
+	datatype_p "memar/computer/datatype/protocol"
+	error_p "memar/process/error/protocol"
 )
 
 type Marshalling interface {
@@ -22,13 +21,13 @@ type Marshalling interface {
 // Unmarshaler is the interface that wraps the Unmarshal method.
 type Unmarshaler interface {
 	// Unmarshal reads and decode data from given slice until end of needed data or occur error.
-	Unmarshal(source []byte) (n container_p.NumberOfElement, err error_p.Error)
+	Unmarshal(source []byte) (n Length, err error_p.Error)
 }
 
-// Marshaler is the interface that wraps the Marshal & CodecLength methods.
+// Marshaler is the interface that wraps the Marshal & Field_Length methods.
 type Marshaler interface {
 	// Marshal write serialized(encoded) data to given slice from len to max cap and save marshal state for future call.
-	Marshal(destination []byte) (n container_p.NumberOfElement, err error_p.Error)
+	Marshal(destination []byte) (n Length, err error_p.Error)
 
-	CodecLength
+	Field_Length
 }
