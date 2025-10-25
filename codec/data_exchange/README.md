@@ -1,0 +1,2 @@
+# Data exchange
+[Data exchange](https://en.wikipedia.org/wiki/Data_exchange) is the process of moving data from one information system to another. It often involves transforming data that is native to the source system into a form that is consumable by the target system or to a standardized form that is consumable by any compatible system. In particular, data exchange allows data to be shared between computer programs.
