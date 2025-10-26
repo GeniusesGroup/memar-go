@@ -5,7 +5,7 @@ package buffer_p
 import (
 	container_p "memar/adt/container/protocol"
 	capsule_p "memar/computer/capsule/protocol"
-	datatype_p "memar/datatype/protocol"
+	datatype_p "memar/computer/datatype/protocol"
 	memory_p "memar/storage/memory/protocol"
 )
 
@@ -13,14 +13,18 @@ import (
 // while it is being moved from one place to another.
 //
 // https://en.wikipedia.org/wiki/Data_buffer
+//
+// Other frameworks:
+// https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/ArrayBuffer
 type Buffer interface {
 	datatype_p.Field_ID
 
 	capsule_p.LifeCycle
 	// Init(opt BufferOptions)
 
-	Index
-	Sizer
+	Field_Indexes
+	Method_Indexes
+	Field_Lengths
 
 	container_p.Container[byte]
 
@@ -43,7 +47,7 @@ type Buffer interface {
 // 		OR:::
 // 		If some data is available but not as `limit`, `Get` conventionally
 // 		returns what is available instead of waiting for more.
-// `ln NumberOfElement`:
+// `ln Length`:
 //
 // `Resizable bool`:
 //
@@ -54,16 +58,3 @@ type Buffer interface {
 // space during the call. If some data is available but not len(p) bytes,
 // ReadAt blocks until either all the data is available or an error occurs.
 // In this respect ReadAt is different from Read.
-
-type Index interface {
-	ReadIndex() container_p.ElementIndex
-	WriteIndex() container_p.ElementIndex
-
-	SetReadIndex(di container_p.ElementIndex)
-	SetWriteIndex(di container_p.ElementIndex)
-}
-
-type Sizer interface {
-	// UnreadLength returns how many bytes are not read(ReadIndex to WriteIndex) in the buffer.
-	UnreadLength() container_p.NumberOfElement
-}
