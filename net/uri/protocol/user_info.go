@@ -6,10 +6,8 @@ import (
 	string_p "memar/codec/string/protocol"
 )
 
-type Field_Query interface {
-	Query() Query
-}
-
-type Query interface {
-	string_p.String
+// URI Userinfo >> "username[:password]"
+type Field_UserInfo interface {
+	Field_Username
+	Field_Password
 }

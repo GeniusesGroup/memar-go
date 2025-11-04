@@ -6,10 +6,10 @@ import (
 	string_p "memar/codec/string/protocol"
 )
 
-type Field_Query interface {
-	Query() Query
+type Field_Password interface {
+	Password() Password
 }
 
-type Query interface {
+type Password interface {
 	string_p.String
 }

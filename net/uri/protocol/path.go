@@ -3,9 +3,13 @@
 package uri_p
 
 import (
-	string_p "memar/string/protocol"
+	string_p "memar/codec/string/protocol"
 )
 
-type Path[STR string_p.String] interface {
-	Path() STR
+type Field_Path interface {
+	Path() Path
+}
+
+type Path interface {
+	string_p.String
 }

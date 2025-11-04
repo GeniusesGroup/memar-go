@@ -3,9 +3,13 @@
 package uri_p
 
 import (
-	string_p "memar/string/protocol"
+	string_p "memar/codec/string/protocol"
 )
 
-type Scheme[STR string_p.String] interface {
-	Scheme() STR
+type Field_Scheme interface {
+	Scheme() Scheme
+}
+
+type Scheme interface {
+	string_p.String
 }

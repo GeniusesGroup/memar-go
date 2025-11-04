@@ -3,9 +3,13 @@
 package uri_p
 
 import (
-	string_p "memar/string/protocol"
+	string_p "memar/codec/string/protocol"
 )
 
-type Fragment[STR string_p.String] interface {
-	Fragment() STR
+type Field_Fragment interface {
+	Fragment() Fragment
+}
+
+type Fragment interface {
+	string_p.String
 }

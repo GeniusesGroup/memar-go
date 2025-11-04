@@ -3,21 +3,12 @@
 package uri_p
 
 import (
-	string_p "memar/string/protocol"
+	string_p "memar/codec/string/protocol"
 )
 
-type Username[STR string_p.String] interface {
-	Username() STR
-}
-
-type Password[STR string_p.String] interface {
-	Password() STR
-}
-
-type Host[STR string_p.String] interface {
-	Host() STR
-}
-
-type Port[STR string_p.String] interface {
-	Port() STR
+// URI Authority >> [ userinfo "@" ] host [ ":" port ]
+type Field_Authority interface {
+	Field_UserInfo
+	Field_Host
+	Field_Port
 }

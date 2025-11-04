@@ -2,21 +2,10 @@
 
 package uri_p
 
-import (
-	string_p "memar/string/protocol"
-)
-
-type Parsed[STR string_p.String] interface {
-	Scheme[STR]
-
-	// URI Authority >> [ userinfo "@" ] host [ ":" port ]
-	// URI Userinfo >> "username[:password]"
-	Username[STR]
-	Password[STR]
-	Host[STR]
-	Port[STR]
-
-	Path[STR]
-	Query[STR]
-	Fragment[STR]
+type Field_Parsed interface {
+	Field_Scheme
+	Field_Authority
+	Field_Path
+	Field_Query
+	Field_Fragment
 }

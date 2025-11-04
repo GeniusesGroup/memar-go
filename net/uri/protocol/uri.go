@@ -3,8 +3,13 @@
 package uri_p
 
 import (
-	string_p "memar/string/protocol"
+	string_p "memar/codec/string/protocol"
 )
+
+type Field_URI interface {
+	// URI Return full URI e.g. HTTP-URL
+	URI() URI
+}
 
 // URI indicate "Uniform Resource Identifier".
 // Although many URI schemes are named after protocols, this does not
@@ -24,7 +29,6 @@ import (
 //
 // / \ /                        \
 // urn:example:animal:ferret:nose
-type URI[STR string_p.String] interface {
-	// URI Return full URI e.g. HTTP-URL
-	URI() STR
+type URI interface {
+	string_p.String
 }

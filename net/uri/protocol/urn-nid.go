@@ -6,10 +6,11 @@ import (
 	string_p "memar/codec/string/protocol"
 )
 
-type Field_Query interface {
-	Query() Query
+type Field_URN_NID interface {
+	NID() URN_NID
 }
 
-type Query interface {
+// NID is the namespace identifier e.g. "isbn"
+type URN_NID interface {
 	string_p.String
 }
