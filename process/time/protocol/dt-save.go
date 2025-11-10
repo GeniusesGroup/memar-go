@@ -6,7 +6,7 @@ import (
 	time_p "memar/time/protocol"
 )
 
-// Request time or save Time of the request not the created record by this record.
-type Field_SaveTime interface {
-	SaveTime() time_p.Time
+// Time of the data is saved
+type Field_Save interface {
+	SaveAt() time_p.Time
 }
