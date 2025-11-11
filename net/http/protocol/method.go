@@ -3,9 +3,9 @@
 package http_p
 
 import (
-	string_p "memar/string/protocol"
+	string_p "memar/codec/string/protocol"
 )
 
-type Method /*[STR string_p.String]*/ interface {
+type Field_Method /*[STR string_p.String]*/ interface {
 	Method() string_p.String
 }

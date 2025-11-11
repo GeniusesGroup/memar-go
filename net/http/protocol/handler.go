@@ -3,7 +3,7 @@
 package http_p
 
 import (
-	error_p "memar/error/protocol"
+	error_p "memar/process/error/protocol"
 	net_p "memar/net/protocol"
 	uri_p "memar/net/uri/protocol"
 )
@@ -20,7 +20,7 @@ type Handler /*[HTTP_REQ Request, HTTP_RES Response, STR string_p.String]*/ inte
 	// - As describe here https://www.rfc-editor.org/rfc/rfc6570
 	// 	JUST use simple immutable path and DO NOT variable data included in path.
 	// 	e.g. "/product?id=1" instead of "/product/1/"
-	uri_p.Path
+	uri_p.Field_Path
 
 	// ** NOTE: Due to reuse underling buffer If caller need to keep any data from httpReq or httpRes it must make a copy and
 	// ** prevent from keep a reference to any data get from these two interface after return.
@@ -28,5 +28,5 @@ type Handler /*[HTTP_REQ Request, HTTP_RES Response, STR string_p.String]*/ inte
 	ServeHTTP(sk net_p.Socket, req Request, res Response) (err error_p.Error)
 
 	// Call service remotely by HTTP protocol
-	// doHTTP[REQ operation_p.Request, RES operation_p.Response](req REQ) (res RES, err error_p.Error)
+	// doHTTP[REQ request_p.Request, RES response_p.Response](req REQ) (res RES, err error_p.Error)
 }

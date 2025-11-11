@@ -4,7 +4,7 @@ package http_p
 
 import (
 	array_p "memar/adt/array/protocol"
-	string_p "memar/string/protocol"
+	string_p "memar/codec/string/protocol"
 )
 
 type Field_Header interface {

@@ -13,7 +13,9 @@ package http_p
 type Request /*[STR String]*/ interface {
 	PseudoHeader_Request
 	Header
+
 	Field_Body
+	Method_Body
 }
 
 // Response indicate HTTP response semantic.
@@ -23,5 +25,7 @@ type Request /*[STR String]*/ interface {
 type Response /*[STR String]*/ interface {
 	PseudoHeader_Response
 	Header
+
 	Field_Body
+	Method_Body
 }

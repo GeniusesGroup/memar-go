@@ -3,9 +3,9 @@
 package http_p
 
 import (
-	string_p "memar/string/protocol"
+	string_p "memar/codec/string/protocol"
 )
 
-type Version /*[STR string_p.String]*/ interface {
+type Field_Version /*[STR string_p.String]*/ interface {
 	Version() string_p.String
 }
