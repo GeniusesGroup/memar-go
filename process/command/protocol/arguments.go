@@ -2,5 +2,9 @@
 
 package command_p
 
+// Argument
+// TODO::: change to `string_p.String` instead of `string`
+type Argument string
+
 // Arguments
-type Arguments []string
+type Arguments []Argument

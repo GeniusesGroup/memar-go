@@ -3,22 +3,27 @@
 package command_p
 
 import (
-	datatype_p "memar/datatype/protocol"
-	error_p "memar/error/protocol"
-	mediatype_p "memar/mediatype/protocol"
-	operation_p "memar/operation/protocol"
+	datatype_p "memar/computer/datatype/protocol"
+	error_p "memar/process/error/protocol"
+	mediatype_p "memar/identifier/mediatype/protocol"
+	request_p "memar/process/request/protocol"
+	response_p "memar/process/response/protocol"
 )
 
 // Command is the interface that must implement by any struct to be a command service
+// It is old user interface, In `uni-kernel` and `Graphic UI` it is useless because there is no `terminal` and `shell`.
+// TODO::: Deprecate in favor of service??
+// 
+// https://en.wikipedia.org/wiki/Command-line_interface
 type Command interface {
 	// Init(parent Command, subCommands ...Command)
 
-	// Runnable reports whether the command can be run; otherwise it is a documentation pseudo-command
-	Runnable() bool
+	// RunnableCommand reports whether the command can be run; otherwise it is a documentation pseudo-command
+	RunnableCommand() bool
 
-	// parent is the parent command for this command.
+	// ParentCommand return the parent command for this command.
 	// It can be nill for the root command.
-	Parent() Command
+	ParentCommand() Command
 	// SubCommand return a sub command by its name or alias that must use intelligent suggestion
 	SubCommand(name string) Command
 	// Commands lists the available commands and help topics.
@@ -26,26 +31,21 @@ type Command interface {
 	// Note that subcommands are in general best avoided.
 	SubCommands() []Command
 
-	CommandHandler
+	Handler
 
 	datatype_p.DataType
 	mediatype_p.MediaType
 
-	operation_p.Request
-	operation_p.Response
+	request_p.Request
+	response_p.Response
 }
 
-// CommandHandler introduce CLI (command-line interface) service handler.
-type CommandHandler interface {
+// Handler introduce CLI (command-line interface) service handler.
+type Handler interface {
 	// ServeCLA or serve by command-line arguments might block the caller
 	// Arguments list not include the command name.
 	ServeCLA(args Arguments) (err error_p.Error)
 
 	// read and write to e.g. os.Stdin, os.Stdout, and os.Stderr files
 	// ServeCLI() (err error_p.Error)
-}
-
-type CommandLineArguments interface {
-	FromCLA(args Arguments) (remaining Arguments, err error_p.Error)
-	ToCLA() (args Arguments, err error_p.Error)
 }
