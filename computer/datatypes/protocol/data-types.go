@@ -3,8 +3,8 @@
 package protocol
 
 import (
-	datatype_p "memar/datatype/protocol"
-	error_p "memar/error/protocol"
+	datatype_p "memar/computer/datatype/protocol"
+	error_p "memar/process/error/protocol"
 )
 
 type DataTypes interface {
