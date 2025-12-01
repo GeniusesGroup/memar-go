@@ -4,7 +4,7 @@ package capsule_p
 
 import (
 	function_p "memar/computer/function/protocol"
-	datatype_p "memar/datatype/protocol"
+	datatype_p "memar/computer/datatype/protocol"
 )
 
 type Capsule interface {
