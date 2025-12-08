@@ -3,13 +3,18 @@
 package container_p
 
 import (
-	error_p "memar/error/protocol"
+	error_p "memar/process/error/protocol"
 )
 
 // https://github.com/golang/go/discussions/54245
 
+// Iteration or Iterable
+// 
+// Other protocols:::
+// https://www.typescriptlang.org/docs/handbook/symbols.html#symboliterator
 type Iteration[ELEMENT Element] interface {
-	Iterate(startIndex ElementIndex, iterator Iterate[ELEMENT]) (err error_p.Error)
+	// It can return `Iterate` errors or internal `Iteration` errors.
+	Iteration(startIndex ElementIndex, iterator Iterate[ELEMENT]) (err error_p.Error)
 
 	// TODO::: Stop() or return (breaking bool)??
 	// Stop() // break the iterate function

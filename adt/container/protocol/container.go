@@ -10,6 +10,9 @@ import (
 // In other words, they store objects in an organized way that follows specific access rules.
 // https://en.wikipedia.org/wiki/Container_(abstract_data_type)
 // https://en.wikipedia.org/wiki/Collection_(abstract_data_type)
+// 
+// Other frameworks:
+// https://learn.microsoft.com/en-us/dotnet/api/system.componentmodel.icontainer
 type Container[ELEMENT Element] interface {
 	adt_p.ADT
 
@@ -24,6 +27,15 @@ type Container[ELEMENT Element] interface {
 	OccupiedLength
 	AvailableLength
 	// ExpectedLength
+}
+
+type Container_READONLY[ELEMENT Element] interface {
+	OccupiedLength
+	Iteration[ELEMENT]
+	Count[ELEMENT]
+	Contain[ELEMENT]
+	Compare[ELEMENT]
+	GetElement[ELEMENT]
 }
 
 // Accessor is the interface that wraps the Accessor methods.

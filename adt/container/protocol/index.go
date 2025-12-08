@@ -3,14 +3,14 @@
 package container_p
 
 import (
-	error_p "memar/error/protocol"
+	error_p "memar/process/error/protocol"
 )
 
 // ElementIndex is related to `NumberOfElement`
 // ElementIndex can refer to any location of memory blocks in byte or 8bit number.
 type ElementIndex int
 
-type LastElementIndex interface {
+type Field_LastElementIndex interface {
 	// LastElementIndex return the location of last element in the container.
 	LastElementIndex() ElementIndex
 }

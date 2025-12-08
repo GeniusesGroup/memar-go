@@ -3,4 +3,6 @@
 package container_p
 
 // Element is describe
-type Element any
+type Element interface {
+	// TODO:::
+}

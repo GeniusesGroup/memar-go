@@ -3,7 +3,7 @@
 package container_p
 
 import (
-	error_p "memar/error/protocol"
+	error_p "memar/process/error/protocol"
 )
 
 // Clear is an operation

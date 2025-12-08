@@ -3,10 +3,11 @@
 package container_p
 
 import (
-	error_p "memar/error/protocol"
+	error_p "memar/process/error/protocol"
 )
 
-// Length is a measure of distance. In the International System of Quantities, length is a quantity with dimension distance.
+// NumberOfElement or Length is a measure of distance.
+// In the International System of Quantities, length is a quantity with dimension distance.
 // In most systems of measurement a base unit for length is chosen, from which all other units are derived.
 // https://en.wikipedia.org/wiki/Length
 //
@@ -15,23 +16,23 @@ import (
 type NumberOfElement int
 
 // Capacity in (computer science) the amount of information (in bytes) that can be stored.
-type Capacity interface {
+type Field_Capacity interface {
 	// Capacity return a length that underlying implementor can store desire elements such as byte.
 	Capacity() NumberOfElement
 }
 
-type OccupiedLength interface {
+type Field_OccupiedLength interface {
 	// OccupiedLength return a length that occupied in the container before this method call.
 	OccupiedLength() NumberOfElement
 }
 
-type AvailableLength interface {
+type Field_AvailableLength interface {
 	// AvailableLength or EmptyLength() or RemainingLength() returns how a length that are unused or can be set.
 	AvailableLength() NumberOfElement
 }
 
 // ExpectedLength indicate min and max expected length.
-type ExpectedLength interface {
+type Field_ExpectedLength interface {
 	MinLength() NumberOfElement
 	MaxLength() NumberOfElement
 }
