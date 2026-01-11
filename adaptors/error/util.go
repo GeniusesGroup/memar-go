@@ -1,18 +1,18 @@
 /* For license and copyright information please see the LEGAL file in the code repository */
 
-package error
+package error_adaptor
 
 import (
-	error_p "memar/error/protocol"
+	error_p "memar/process/error/protocol"
 )
 
-func ToGoError(err error_p.Error) error {
-	if err == nil {
+func ToGoError(memarErr error_p.Error) error {
+	if memarErr == nil {
 		return nil
 	}
 
 	var errStr errorString
-	errStr.msg = err.Summary()
+	errStr.msg = memarErr.Summary()
 	return &errStr
 }
 
@@ -21,7 +21,7 @@ type errorString struct {
 	msg string
 }
 
-func (e *errorString) Error() string { return e.msg }
+func (self *errorString) Error() string { return self.msg }
 
 func ToError(err error) error_p.Error {
 	if err == nil {
