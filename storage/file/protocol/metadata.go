@@ -4,7 +4,7 @@ package file_p
 
 import (
 	container_p "memar/adt/container/protocol"
-	string_p "memar/codec/string/protocol"
+	error_p "memar/process/error/protocol"
 	audit_time_p "memar/process/time/protocol"
 )
 

@@ -3,8 +3,8 @@
 package file_p
 
 import (
-	uri_p "memar/net/uri/protocol"
 	string_p "memar/codec/string/protocol"
+	error_p "memar/process/error/protocol"
 )
 
 type Name interface {

@@ -4,6 +4,7 @@ package file_p
 
 import (
 	buffer_p "memar/buffer/protocol"
+	error_p "memar/process/error/protocol"
 )
 
 type Data interface {

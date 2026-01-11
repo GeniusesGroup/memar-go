@@ -4,7 +4,6 @@ package file_p
 
 import (
 	string_p "memar/codec/string/protocol"
-	uri_p "memar/net/uri/protocol"
 )
 
 // A filename extension, file name extension or file extension is
