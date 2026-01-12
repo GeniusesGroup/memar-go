@@ -3,8 +3,9 @@
 package srpc
 
 import (
-	"memar/protocol"
-	"memar/syllab"
+	"memar/codec/data_exchange/syllab"
+	net_p "memar/net/protocol"
+	error_p "memar/process/error/protocol"
 )
 
 /*
@@ -18,11 +19,11 @@ registerStreamSignature
 */
 type DataSignatureFrame []byte
 
-func (f DataSignatureFrame) ID() int64 { return syllab.GetInt64(f, 0) }
+func (self DataSignatureFrame) ID() int64 { return syllab.GetInt64(self, 0) }
 
 //memar:impl memar/protocol.Network_Frame
-func (f DataSignatureFrame) NextFrame() []byte { return f[8:] }
+func (self DataSignatureFrame) NextFrame() []byte { return self[8:] }
 
-func (f DataSignatureFrame) Do(sk protocol.Socket) (err protocol.Error) {
+func (self DataSignatureFrame) Do(sk net_p.Socket) (err error_p.Error) {
 	return
 }

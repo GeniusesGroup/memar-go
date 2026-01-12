@@ -3,7 +3,12 @@
 package srpc
 
 import (
-	"memar/protocol"
+	buffer_p "memar/buffer/protocol"
+	codec_p "memar/codec/protocol"
+	error_p "memar/process/error/protocol"
+	net_p "memar/net/protocol"
+	srpc_p "memar/net/srpc/protocol"
+	service_p "memar/process/service/protocol"
 )
 
 // Handler ...
@@ -11,24 +16,20 @@ import (
 type Handler struct{}
 
 // HandleIncomeRequest handle incoming sRPC request streams.
-func (h *Handler) HandleIncomeRequest(sk protocol.Socket) (err protocol.Error) {
-	var service = sk.ApplicationLayer().Service()
+func (h *Handler) HandleIncomeRequest(sk net_p.Socket) (err error_p.Error) {
+	var service = sk.OSI_ApplicationLayer().Service()
 	if service == nil {
 		// TODO:::
 		return
 	}
 
 	// TODO::: can't easily call service and must schedule it by its weight.
-	var ser, ok = service.(protocol.SRPCHandler)
+	var ser, ok = service.(srpc_p.Handler)
 	if ok {
-		var res protocol.Codec
-		res, err = ser.ServeSRPC(sk, sk)
+		err = ser.ServeSRPC(sk)
 		if err != nil {
-			sk.ApplicationLayer().SetError(err)
-			return
+			sk.OSI_ApplicationLayer().SetError(err)
 		}
-		sk.ApplicationLayer().SetResponse(res)
-		sk.Decode(res)
 	} else {
 		// TODO:::
 	}
@@ -38,22 +39,22 @@ func (h *Handler) HandleIncomeRequest(sk protocol.Socket) (err protocol.Error) {
 // SendBidirectionalRequest use to send outcoming sRPC request.
 // It block caller until get response or error.
 // Caller must pool sk or close it.
-func SendBidirectionalRequest(sk protocol.Socket, service protocol.Service, req protocol.Codec) (res protocol.Codec, err protocol.Error) {
+func SendBidirectionalRequest(sk net_p.Socket, service service_p.Service, req codec_p.Codec) (res buffer_p.Buffer, err error_p.Error) {
 	// TODO::: send service frame first
 
 	// stream.SendRequest(syllab.NewCodec(req))
-	_, err = sk.Decode(req)
+	err = req.Encode(sk.SendBuffer())
 	if err != nil {
 		return
 	}
 
 	for status := range sk.State() {
 		switch status {
-		case protocol.NetworkStatus_Timeout:
+		case net_p.Status_Timeout_Read, net_p.Status_Timeout_Write:
 			// err =
-		case protocol.NetworkStatus_ReceivedCompletely:
-			res = sk
-			err = sk.ApplicationLayer().Error()
+		case net_p.Status_ReceivedCompletely:
+			res = sk.ReceiveBuffer()
+			err = sk.OSI_ApplicationLayer().Error()
 		default:
 			continue
 		}
@@ -65,20 +66,20 @@ func SendBidirectionalRequest(sk protocol.Socket, service protocol.Service, req 
 // SendUnidirectionalRequest use to send outcoming HTTP request and don't expect any response.
 // It block caller until request send successfully or return error
 // Caller must pool sk or close it.
-func SendUnidirectionalRequest(sk protocol.Socket, service protocol.Service, req protocol.Codec) (err protocol.Error) {
+func SendUnidirectionalRequest(sk net_p.Socket, service service_p.Service, req codec_p.Codec) (err error_p.Error) {
 	// TODO::: send service frame first
 
 	// stream.SendRequest(syllab.NewCodec(req))
-	_, err = sk.Decode(req)
+	err = req.Encode(sk.SendBuffer())
 	if err != nil {
 		return
 	}
 
 	for status := range sk.State() {
 		switch status {
-		case protocol.NetworkStatus_Timeout:
+		case net_p.Status_Timeout_Read, net_p.Status_Timeout_Write:
 			// err =
-		case protocol.NetworkStatus_SentCompletely:
+		case net_p.Status_SentCompletely:
 			// Nothing to do. Just let execution go to stream.Close() and break the loop
 		default:
 			continue

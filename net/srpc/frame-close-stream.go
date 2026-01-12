@@ -3,7 +3,7 @@
 package srpc
 
 import (
-	"memar/protocol"
+	net_p "memar/net/protocol"
 )
 
 // var closeStreamService = service.Service{
@@ -14,15 +14,15 @@ import (
 // 	ExpiryDate:         0,
 // 	ExpireInFavorOfURN: "",
 // 	ExpireInFavorOfID:  0,
-// 	Status:             protocol.Software_PreAlpha,
+// 	Status:             datatype_p.LifeCycle_PreAlpha,
 
 // 	Authorization: authorization.Service{
-// 		CRUD:     authorization.CRUDCreate,
-// 		UserType: protocol.UserType_All,
+// 		ActionType:     operation_p.ActionType_Create,
+// 		UserType: user_p.Type_All,
 // 	},
 
-// 	Detail: map[protocol.LanguageID]service.ServiceDetail{
-// 		protocol.LanguageEnglish: {
+// 	Detail: map[lang_p.LanguageID]service.ServiceDetail{
+// 		lang_p.LanguageEnglish: {
 // 			Name:        "Close Stream",
 // 			Description: `use by peer to close unwanted active StreamID on other party due to MaxConcurrentStreams restriction.`,
 // 			TAGS:        []string{},
@@ -33,7 +33,7 @@ import (
 // }
 
 // CloseStream use by peer to close unwanted active StreamID on other party due to MaxConcurrentStreams restriction.
-func CloseStream(sk protocol.Socket) {
+func CloseStream(sk net_p.Socket) {
 }
 
 type closeStreamReq struct {

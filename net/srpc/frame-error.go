@@ -3,8 +3,11 @@
 package srpc
 
 import (
-	"memar/protocol"
-	"memar/syllab"
+	"memar/codec/data_exchange/syllab"
+	datatype_p "memar/computer/datatype/protocol"
+	net_p "memar/net/protocol"
+	error_p "memar/process/error/protocol"
+	"memar/process/errors"
 )
 
 /*
@@ -15,22 +18,22 @@ import (
 */
 type ErrorFrame []byte
 
-func (f ErrorFrame) StreamID() uint64 { return syllab.GetUInt64(f, 0) }
-func (f ErrorFrame) ErrorID() uint64  { return syllab.GetUInt64(f, 8) }
+func (self ErrorFrame) StreamID() uint64 { return syllab.GetUInt64(self, 0) }
+func (self ErrorFrame) ErrorID() uint64  { return syllab.GetUInt64(self, 8) }
 
 //memar:impl memar/protocol.Network_Frame
-func (f ErrorFrame) NextFrame() []byte { return f[16:] }
+func (self ErrorFrame) NextFrame() []byte { return self[16:] }
 
-func (f ErrorFrame) Do(sk protocol.Socket) (err protocol.Error) {
-	var al = sk.ApplicationLayer()
+func (self ErrorFrame) Do(sk net_p.Socket) (err error_p.Error) {
+	var al = sk.OSI_ApplicationLayer()
 	if al == nil {
 		// conn.StreamFailed()
 		// Send response or just ignore stream
 		// TODO::: DDOS!!??
 		return
 	}
-	var peerErrorID uint64 = f.ErrorID()
-	var peerError = protocol.App.GetErrorByID(protocol.ID(peerErrorID))
+	var peerErrorID uint64 = self.ErrorID()
+	var peerError = errors.GetByID(datatype_p.ID(peerErrorID))
 	al.SetError(peerError)
 	return
 }

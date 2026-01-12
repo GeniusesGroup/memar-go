@@ -3,8 +3,8 @@
 package srpc_p
 
 import (
-	error_p "memar/error/protocol"
 	net_p "memar/net/protocol"
+	error_p "memar/process/error/protocol"
 )
 
 // Handler is any object to be sRPC service handler.

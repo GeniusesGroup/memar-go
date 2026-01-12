@@ -3,8 +3,11 @@
 package srpc
 
 import (
-	"memar/binary"
-	"memar/protocol"
+	"memar/codec/binary"
+	net_p "memar/net/protocol"
+	error_p "memar/process/error/protocol"
+	operation_p "memar/process/operation/protocol"
+	"memar/process/services"
 )
 
 /*
@@ -13,28 +16,28 @@ import (
 		ServiceID   uint64
 		CompressID  uint64
 		DataLength  uint64
-		Weight      protocol.Weight
+		Weight      operation_p.Weight
 	}
 
 TotalPacket uint32 // Expected packets count that send over this stream.
 */
 type OpenStreamFrame []byte
 
-func (f OpenStreamFrame) HandlerID() uint64       { return binary.LittleEndian(f[0:]).Uint64() }
-func (f OpenStreamFrame) ServiceID() uint64       { return binary.LittleEndian(f[2:]).Uint64() }
-func (f OpenStreamFrame) CompressID() uint64      { return binary.LittleEndian(f[10:]).Uint64() }
-func (f OpenStreamFrame) DataLength() uint64      { return binary.LittleEndian(f[18:]).Uint64() }
-func (f OpenStreamFrame) Weight() protocol.Weight { return protocol.Weight(f[24]) }
+func (self OpenStreamFrame) HandlerID() uint64          { return binary.LittleEndian(self[0:]).Uint64() }
+func (self OpenStreamFrame) ServiceID() uint64          { return binary.LittleEndian(self[2:]).Uint64() }
+func (self OpenStreamFrame) CompressID() uint64         { return binary.LittleEndian(self[10:]).Uint64() }
+func (self OpenStreamFrame) DataLength() uint64         { return binary.LittleEndian(self[18:]).Uint64() }
+func (self OpenStreamFrame) Weight() operation_p.Weight { return operation_p.Weight(self[24]) }
 
 //memar:impl memar/protocol.Network_Frame
-func (f OpenStreamFrame) NextFrame() []byte { return f[25:] }
+func (self OpenStreamFrame) NextFrame() []byte { return self[25:] }
 
-func (f OpenStreamFrame) Do(sk protocol.Socket) (err protocol.Error) {
+func (self OpenStreamFrame) Do(sk net_p.Socket) (err error_p.Error) {
 	// TODO::: allow multiple settings set??
 
 	// Check server supported requested protocol
-	var serviceID = protocol.ServiceID(f.ServiceID())
-	_, err = protocol.App.GetServiceByID(serviceID)
+	var serviceID = operation_p.ID(self.ServiceID())
+	_, err = services.GetByID(serviceID)
 	if err != nil {
 		// Send response or just ignore packet
 		// TODO::: DDOS!!??
