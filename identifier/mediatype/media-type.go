@@ -2,62 +2,10 @@
 
 package mediatype
 
-import (
-	"strings"
+// MediaType implement mediatype_p.MediaType interface
+// MediaType embed to provide the interface methods when not need to implement by others.
+// MT uses when embed in other struct to solve field & method same name problem(MediaType struct and MediaType() method) to satisfy interfaces.
+type MT struct{}
 
-	"libgo/protocol"
-	uuid "libgo/uuid/32byte"
-)
-
-// MT is the same as the MediaType.
-// Use this type when embed in other struct to solve field & method same name problem(MediaType struct and MediaType() method) to satisfy interfaces.
-type MT = MediaType
-
-// MediaType implement protocol.MediaType interface
-// type "/" [tree "."] subtype ["+" suffix]* [";" parameter]
-// https://datatracker.ietf.org/doc/html/rfc2046
-type MediaType struct {
-	uuid.Generated
-
-	mediaType  string
-	mainType   string
-	tree       string
-	subType    string
-	suffix     string
-	parameters []string
-}
-
-func (mt *MediaType) Init(mediatype string) (err protocol.Error) {
-	mt.mediaType = mediatype
-	err = mt.parse()
-
-	mt.Generated.NewHashString(mediatype)
-	return
-}
-
-//libgo:impl libgo/protocol.MediaType
-func (mt *MediaType) MediaType() string                   { return mt.mediaType }
-func (mt *MediaType) MainType() string                    { return mt.mainType }
-func (mt *MediaType) Tree() string                        { return mt.tree }
-func (mt *MediaType) SubType() string                     { return mt.subType }
-func (mt *MediaType) Suffix() string                      { return mt.suffix }
-func (mt *MediaType) Parameters() []string                { return mt.parameters }
-func (mt *MediaType) FileExtension() string               { return "" }
-
-//libgo:impl libgo/protocol.Stringer
-func (mt *MediaType) ToString() string                         { return mt.mediaType }
-func (mt *MediaType) FromString(s string) (err protocol.Error) { return mt.Init(s) }
-
-// TODO::: complete extraction
-func (mt *MediaType) parse() (err protocol.Error) {
-	var mediatype = mt.mediaType
-
-	var i = strings.IndexByte(mediatype, '/')
-	if i < 0 {
-		panic("Mediatype isn't in good shape to parse it. Please check it.")
-	}
-	mt.mainType = mediatype[:i]
-	// TODO:::
-	mt.subType = mediatype[i+1:]
-	return
-}
+//memar:impl memar/protocol.MediaType
+func (mt *MT) MediaType() string { return "ERROR::: MediaType not indicated by developers" }
