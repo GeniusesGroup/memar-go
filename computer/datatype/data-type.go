@@ -3,28 +3,21 @@
 package datatype
 
 import (
-	"memar/protocol"
+	datatype_p "memar/computer/datatype/protocol"
 )
 
-// DataType embed to provide some methods when not need to implement by others!
-type DataType struct{}
+// DataType embed to provide some methods when not need to implement by others.
+// Usually JUST embed `Detail` and let the capsule implement below methods.
+type DataType struct {
+	Identifiers
+	Detail
+}
 
-//memar:impl memar/protocol.DataType_Details
-func (dt *DataType) Status() protocol.SoftwareStatus    { return protocol.Software_Unset }
-func (dt *DataType) ReferenceURI() string               { return "" }
-func (dt *DataType) IssueDate() protocol.Time           { return nil }
-func (dt *DataType) ExpiryDate() protocol.Time          { return nil }
-func (dt *DataType) ExpireInFavorOf() protocol.DataType { return nil }
+//memar:impl memar/datatype/protocol.Field_LifeCycle
+func (self *DataType) LifeCycle() datatype_p.LifeCycle { return datatype_p.LifeCycle_Unset }
 
-//memar:impl memar/protocol.Detail
-func (dt *DataType) Domain() string   { return "" }
-func (dt *DataType) Summary() string  { return "" }
-func (dt *DataType) Overview() string { return "" }
-func (dt *DataType) UserNote() string { return "" }
-func (dt *DataType) DevNote() string  { return "" }
-func (dt *DataType) TAGS() []string   { return []string{} }
-
-//memar:impl memar/protocol.Quiddity
-func (dt *DataType) Name() string         { return "" }
-func (dt *DataType) Abbreviation() string { return "" }
-func (dt *DataType) Aliases() []string    { return []string{} }
+//memar:impl memar/datatype/protocol.Details
+func (self *DataType) ReferenceURI() string                 { return "" }
+func (self *DataType) IssueDate() string                    { return "" }
+func (self *DataType) ExpiryDate() string                   { return "" }
+func (self *DataType) ExpireInFavorOf() datatype_p.DataType { return nil }

@@ -10,3 +10,7 @@ type Field_ID interface {
 // It MUST fill by any UUID mechanism that guaranty it will be globally unique.
 // Suggest use first 64bit of Hash of MediaType()
 type ID uint64
+
+type Field_ID_Base64 interface {
+	DataTypeID_Base64() string // Base64 of ID
+}
