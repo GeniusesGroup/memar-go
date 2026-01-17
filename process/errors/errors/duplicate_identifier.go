@@ -1,23 +1,27 @@
 /* For license and copyright information please see the LEGAL file in the code repository */
 
-package errors
+package errors_errs
 
 import (
-	er "memar/error"
-	"memar/protocol"
+	"memar/computer/datatype"
+	error_p "memar/process/error/protocol"
 )
 
-var ErrDuplicateIdentifier errDuplicateIdentifier
+var DuplicateIdentifier duplicateIdentifier
 
-type errDuplicateIdentifier struct{ er.Err }
+type duplicateIdentifier struct {
+	datatype.DataType
+}
 
-func (dt *errDuplicateIdentifier) Init() (err protocol.Error) {
-	err = dt.Err.Init("domain/memar.scm.geniuses.group; package=errors; type=error; name=duplicate_identifier")
-	if err != nil {
-		return
-	}
-	err = Register(dt)
+func (self *duplicateIdentifier) Init() (err error_p.Error) {
+	// CANn't import `errors` package here due to import cycle problems.
+	// err = Register(dt)
 	return
+}
+
+//memar:impl memar/identifier/mediatype/protocol.Field_MediaType
+func (self *duplicateIdentifier) MediaType() string {
+	return domainBaseMediatype + "duplicate_identifier"
 }
 
 // This condition will just be true in the dev phase.

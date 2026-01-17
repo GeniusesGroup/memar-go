@@ -2,11 +2,14 @@
 
 package errors
 
-func init() {
-	ErrNotFound.Init()
-	ErrNotExist.Init()
+import (
+	errors_errs "memar/process/errors/errors"
+)
 
-	// This conditions must be true just in the dev phase.
-	ErrNotProvideIdentifier.Init()
-	ErrDuplicateIdentifier.Init()
+func init() {
+	Register(&errors_errs.NotFound)
+	Register(&errors_errs.NotExist)
+
+	Register(&errors_errs.NotProvideIdentifier)
+	Register(&errors_errs.DuplicateIdentifier)
 }

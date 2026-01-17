@@ -2,7 +2,7 @@
 
 /* For license and copyright information please see the LEGAL file in the code repository */
 
-package errors
+package errors_errs
 
 //memar:impl memar/protocol.Detail
 func (d *errNotExist) Domain() string   { return domainEnglish }

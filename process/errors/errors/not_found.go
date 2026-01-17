@@ -1,23 +1,27 @@
 /* For license and copyright information please see the LEGAL file in the code repository */
 
-package errors
+package errors_errs
 
 import (
-	er "memar/error"
-	"memar/protocol"
+	"memar/computer/datatype"
+	error_p "memar/process/error/protocol"
 )
 
 var (
 	ErrNotFound errNotFound
 )
 
-type errNotFound struct{ er.Err }
+type errNotFound struct {
+	datatype.DataType
+}
 
-func (dt *errNotFound) Init() (err protocol.Error) {
-	err = dt.Err.Init("domain/memar.scm.geniuses.group; package=errors; type=error; name=not_found")
-	if err != nil {
-		return
-	}
-	err = Register(dt)
+func (dt *errNotFound) Init() (err error_p.Error) {
+	// CANn't import `errors` package here due to import cycle problems.
+	// err = Register(dt)
 	return
+}
+
+//memar:impl memar/identifier/mediatype/protocol.Field_MediaType
+func (dt *errNotFound) MediaType() string {
+	return domainBaseMediatype + "not_found"
 }

@@ -3,68 +3,71 @@
 package errors
 
 import (
-	"memar/protocol"
+	datatype_p "memar/computer/datatype/protocol"
+	error_p "memar/process/error/protocol"
+	errors_errs "memar/process/errors/errors"
+	"memar/process/log"
 )
 
-func Register(er protocol.Error) (err protocol.Error)      { return errors.Register(er) }
-func UnRegister(er protocol.Error) (err protocol.Error)    { return errors.UnRegister(er) }
-func GetByID(id protocol.MediaTypeID) (err protocol.Error) { return errors.GetByID(id) }
-func GetByMediaType(mt string) (err protocol.Error)        { return errors.GetByMediaType(mt) }
+func Register(er error_p.Error) (err error_p.Error)   { return errors.Register(er) }
+func UnRegister(er error_p.Error) (err error_p.Error) { return errors.UnRegister(er) }
+func GetByID(id datatype_p.ID) (err error_p.Error)    { return errors.GetByID(id) }
+func GetByMediaType(mt string) (err error_p.Error)    { return errors.GetByMediaType(mt) }
 
-var errors = errors_{
-	poolByID: make(map[protocol.MediaTypeID]protocol.Error, 256),
-	poolByMediaType: make(map[string]protocol.Error, 256),
+var errors = errorsPool{
+	poolByID:        make(map[datatype_p.ID]error_p.Error, 256),
+	poolByMediaType: make(map[string]error_p.Error, 256),
 }
 
-type errors_ struct {
-	poolByID        map[protocol.MediaTypeID]protocol.Error
-	poolByMediaType map[string]protocol.Error
+type errorsPool struct {
+	poolByID        map[datatype_p.ID]error_p.Error
+	poolByMediaType map[string]error_p.Error
 }
 
-func (e *errors_) Register(errorToRegister protocol.Error) (err protocol.Error) {
-	var errID = errorToRegister.ID()
+func (self *errorsPool) Register(errorToRegister error_p.Error) (err error_p.Error) {
+	var errID = errorToRegister.DataTypeID()
 
-	if protocol.AppMode_Dev {
+	if log.CNF_DevelopingMode {
 		if errID == 0 {
-			err = &ErrNotProvideIdentifier
+			err = &errors_errs.NotProvideIdentifier
 			return
 		}
-		if e.poolByID[errID] != nil {
-			err = &ErrDuplicateIdentifier
+		if self.poolByID[errID] != nil {
+			err = &errors_errs.DuplicateIdentifier
 			return
 		}
 	}
 
-	e.poolByID[errID] = errorToRegister
-	e.poolByMediaType[errorToRegister.ToString()] = errorToRegister
+	self.poolByID[errID] = errorToRegister
+	self.poolByMediaType[errorToRegister.MediaType()] = errorToRegister
 	return
 }
 
-func (e *errors_) UnRegister(er protocol.Error) (err protocol.Error) {
-	delete(e.poolByID, er.ID())
-	delete(e.poolByMediaType, er.ToString())
+func (self *errorsPool) UnRegister(er error_p.Error) (err error_p.Error) {
+	delete(self.poolByID, er.DataTypeID())
+	delete(self.poolByMediaType, er.MediaType())
 	return
 }
 
 // GetErrorByID returns desire error if exist or ErrNotFound!
-func (e *errors_) GetByID(id protocol.MediaTypeID) (err protocol.Error) {
+func (self *errorsPool) GetByID(id datatype_p.ID) (err error_p.Error) {
 	if id == 0 {
 		return
 	}
 	var ok bool
-	err, ok = e.poolByID[id]
+	err, ok = self.poolByID[id]
 	if !ok {
-		err = &ErrNotFound
+		err = &errors_errs.ErrNotFound
 	}
 	return
 }
 
 // GetErrorByMediaType returns desire error if exist or ErrNotFound!
-func (e *errors_) GetByMediaType(mt string) (err protocol.Error) {
+func (self *errorsPool) GetByMediaType(mt string) (err error_p.Error) {
 	var ok bool
-	err, ok = e.poolByMediaType[mt]
+	err, ok = self.poolByMediaType[mt]
 	if !ok {
-		err = &ErrNotFound
+		err = &errors_errs.ErrNotFound
 	}
 	return
 }

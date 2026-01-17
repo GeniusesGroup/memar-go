@@ -3,7 +3,7 @@
 package errors
 
 import (
-	"memar/protocol"
+	errors_p "memar/process/errors/protocol"
 )
 
-var _ protocol.Errors = &errors
+var _ errors_p.Errors = &errors

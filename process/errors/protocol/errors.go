@@ -3,8 +3,8 @@
 package errors_p
 
 import (
-	datatype_p "memar/datatype/protocol"
-	error_p "memar/error/protocol"
+	datatype_p "memar/computer/datatype/protocol"
+	error_p "memar/process/error/protocol"
 )
 
 // Errors use to register errors to get them in a desire way e.g. ErrorID in http headers.
