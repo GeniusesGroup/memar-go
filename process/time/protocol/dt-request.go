@@ -6,7 +6,10 @@ import (
 	time_p "memar/time/protocol"
 )
 
-// Time of the request not the save time of relation records.
+// Time of the request called.
+// request CAN be in many layer:
+// - In storage layer, it is the save time of relation records.
+// - In business layer, It is the time user call related service.
 type Field_Request interface {
 	RequestedAt() time_p.Time
 }
