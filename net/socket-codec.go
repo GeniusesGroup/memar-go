@@ -3,19 +3,22 @@
 package net
 
 import (
-	"memar/protocol"
+	container_p "memar/computer/adt/container/protocol"
+	buffer_p "memar/computer/buffer/protocol"
+	error_p "memar/process/error/protocol"
+	mediatype_p "memar/identifier/mediatype/protocol"
 )
 
-//memar:impl memar/protocol.Codec
-func (sk *Socket) MediaType() protocol.MediaType       { return nil }
-func (sk *Socket) CompressType() protocol.CompressType { return nil }
-func (sk *Socket) Decode(source protocol.Codec) (n int, err protocol.Error) {
-	return source.Encode(sk)
+//memar:impl memar/codec/protocol.Codec
+func (sk *Socket[BUF]) MediaType() mediatype_p.MediaType { return nil }
+
+func (sk *Socket[BUF]) Decode(source buffer_p.Buffer) (err error_p.Error) {
+	return source.Encode(sk.Buffer())
 }
-func (sk *Socket) Encode(destination protocol.Codec) (n int, err protocol.Error) {
+func (sk *Socket[BUF]) Encode(destination buffer_p.Buffer) (err error_p.Error) {
 	return destination.Decode(sk)
 }
-func (sk *Socket) Marshal() (data []byte, err protocol.Error) {
+func (sk *Socket[BUF]) Marshal() (data []byte, err error_p.Error) {
 	err = sk.Check()
 	if err != nil {
 		return
@@ -27,42 +30,31 @@ func (sk *Socket) Marshal() (data []byte, err protocol.Error) {
 	// TODO::: check and wrap above error?
 	return sk.buf.Marshal()
 }
-func (sk *Socket) MarshalTo(data []byte) (added []byte, err protocol.Error) {
-	err = sk.Check()
-	if err != nil {
-		return
-	}
-
-	if !sk.buf.Full() {
-		err = sk.blockInSelect()
-	}
-	// TODO::: check and wrap above error?
-	return sk.buf.MarshalTo(data)
-}
-func (sk *Socket) Unmarshal(data []byte) (n int, err protocol.Error) {
-	for len(data) > 0 {
+func (sk *Socket[BUF]) Unmarshal(source []byte) (n container_p.NumberOfElement, err error_p.Error) {
+	for len(source) > 0 {
 		err = sk.Check()
 		if err != nil {
 			return
 		}
 
-		var sendNumber int
-		sendNumber, err = sk.sendPayload(data)
+		var sendNumber container_p.NumberOfElement
+		sendNumber, err = sk.sendPayload(source)
 		if err != nil {
 			return
 		}
 		n += sendNumber
-		data = data[sendNumber:]
+		source = source[sendNumber:]
 	}
 	return
 }
-func (sk *Socket) UnmarshalFrom(data []byte) (remaining []byte, err protocol.Error) {
-	return
+
+//memar:impl memar/codec/protocol.Field_Length
+func (sk *Socket[BUF]) SerializationLength() (ln container_p.NumberOfElement) {
+	return sk.buf.SerializationLength()
 }
-func (sk *Socket) Len() (ln int) { return sk.buf.Len() }
 
 // BlockInSelect waits for something to happen, which is one of the following conditions in the function body.
-func (sk *Socket) blockInSelect() (err protocol.Error) {
+func (sk *Socket[BUF]) blockInSelect() (err error_p.Error) {
 	// TODO::: check auto scheduling or block??
 
 loop:
@@ -72,7 +64,7 @@ loop:
 		// I think we must send custom package level flag here when process last segment change buffer state to full.
 		case state := <-sk.State():
 			switch state {
-			case protocol.NetworkStatus_ReceivedCompletely:
+			case net_p.Status_ReceivedCompletely:
 				sk.socketTimer.Stop()
 				break loop
 			default:
@@ -84,6 +76,6 @@ loop:
 	return
 }
 
-func (sk *Socket) sendPayload(b []byte) (n int, err protocol.Error) {
+func (sk *Socket[BUF]) sendPayload(b []byte) (n int, err error_p.Error) {
 	return
 }
