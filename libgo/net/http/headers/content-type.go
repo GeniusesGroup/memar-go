@@ -1,19 +1,20 @@
 /* For license and copyright information please see the LEGAL file in the code repository */
 
-package http
+package headers
 
 import (
-	"memar/protocol"
+	container_p "memar/computer/adt/container/protocol"
+	error_p "memar/process/error/protocol"
 )
 
 // ContentType read all value about content in header
-func (h *Header) ContentType() (c ContentType) {
-	var contentType = h.Header_Get(HeaderKey_ContentType)
+func (h *Header[STR]) ContentType() (c ContentType) {
+	var contentType = h.Header_Get(Key_ContentType)
 	c.FromString(contentType)
 	return
 }
-func (h *Header) AddContentType(ct string) {
-	h.Header_Add(HeaderKey_ContentType, ct)
+func (h *Header[STR]) AddContentType(ct string) {
+	h.Header_Add(Key_ContentType, ct)
 }
 
 // ContentType store
@@ -25,8 +26,8 @@ type ContentType struct {
 	Boundary string
 }
 
-//memar:impl memar/protocol.Stringer_From
-func (ct *ContentType) FromString(contentType string) (err protocol.Error) {
+//memar:impl memar/codec/string/protocol.Stringer_From
+func (ct *ContentType) FromString(contentType string) (dl container_p.NumberOfElement, err error_p.Error) {
 	var mediaTypeFirst, mediaTypeSecond string
 	var index int
 	for i := 0; i < len(contentType); i++ {
