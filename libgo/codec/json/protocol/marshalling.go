@@ -3,7 +3,6 @@
 package json_p
 
 import (
-	container_p "memar/adt/container/protocol"
 	error_p "memar/process/error/protocol"
 )
 
@@ -27,14 +26,14 @@ type Marshalling interface {
 // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/JSON/stringify
 type Unmarshaler interface {
 	// UnmarshalFromJSON like `FromJSON()` decode JSON to the desire structure. API is same as `codec.Unmarshal()`
-	UnmarshalFromJSON(source []byte) (n container_p.NumberOfElement, err error_p.Error)
+	UnmarshalFromJSON(source []byte) (n Length, err error_p.Error)
 }
 
 // Marshaler is the interface implemented by types that can marshal themselves into valid JSON.
 // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/JSON/parse
 type Marshaler interface {
 	// MarshalToJSON is same as `ToJSON()` encode the data to JSON format. API is same as `codec.Marshal()`
-	MarshalToJSON(destination []byte) (n container_p.NumberOfElement, err error_p.Error)
+	MarshalToJSON(destination []byte) (n Length, err error_p.Error)
 
 	Field_Length
 }

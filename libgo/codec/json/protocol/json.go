@@ -3,7 +3,7 @@
 package json_p
 
 import (
-	buffer_p "memar/buffer/protocol"
+	buffer_p "memar/computer/buffer/protocol"
 	error_p "memar/process/error/protocol"
 )
 
