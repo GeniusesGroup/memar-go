@@ -5,22 +5,21 @@ package uri
 import (
 	"strings"
 
-	"libgo/protocol"
-	"libgo/utf8"
+	error_p "memar/process/error/protocol"
+	string_p "memar/codec/string/protocol"
+	"memar/codec/string/utf8"
 )
 
-type AU = Authority
-
-// Authority store authority part of an URI.
-type Authority struct {
-	authority       string // host [ ":" port ]
-	UserInformation        //
-	host            string // host without port if any exist in authority
-	port            string //
+// AU store authority part of an URI.
+type AU[STR string_p.String] struct {
+	authority       STR // host [ ":" port ]
+	UserInformation     //
+	host            STR // host without port if any exist in authority
+	port            STR //
 }
 
-//libgo:impl libgo/protocol.ObjectLifeCycle
-func (a *Authority) Init(au string) (err protocol.Error) {
+//memar:impl memar/computer/capsule/protocol.LifeCycle
+func (a *AU[STR]) Init(au string) (err error_p.Error) {
 	if au == "" {
 		return
 	}
@@ -36,21 +35,21 @@ func (a *Authority) Init(au string) (err protocol.Error) {
 	a.host, a.port, _ = utf8.CutByte(au, sign_Colon)
 	return
 }
-func (a *Authority) Reinit() (err protocol.Error) {
+func (a *AU[STR]) Reinit() (err error_p.Error) {
 	a.authority = ""
 	a.UserInformation.Reinit()
 	a.host = ""
 	a.port = ""
 	return
 }
-func (a *Authority) Deinit() (err protocol.Error) {
+func (a *AU[STR]) Deinit() (err error_p.Error) {
 	return
 }
 
-func (a *Authority) Authority() string { return a.authority }
-func (a *Authority) Host() string      { return a.host }
-func (a *Authority) Port() string      { return a.port }
+func (a *AU[STR]) Authority() string_p.String { return a.authority }
+func (a *AU[STR]) Host() string_p.String      { return a.host }
+func (a *AU[STR]) Port() string_p.String      { return a.port }
 
-func (a *Authority) SetAuthority(au string) { a.authority = au }
-func (a *Authority) SetHost(h string)       { a.host = h }
-func (a *Authority) SetPort(p string)       { a.port = p }
+func (a *AU[STR]) SetAuthority(au string) { a.authority = au }
+func (a *AU[STR]) SetHost(h string)       { a.host = h }
+func (a *AU[STR]) SetPort(p string)       { a.port = p }

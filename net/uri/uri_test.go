@@ -3,29 +3,30 @@
 package uri
 
 import (
-	"libgo/protocol"
 	"testing"
+
+	"memar/computer/buffer"
+	error_p "memar/process/error/protocol"
+	"memar/codec/string/ascii"
 )
 
 type uriTest struct {
 	name       string
-	raw        string
 	encoded    string
-	uri        URI // expected parse
-	out        URI // parsed one
-	wantURIEnd int
-	wantError  protocol.Error
+	uri        URI[ascii.STR[buffer.String]] // expected parse
+	out        URI[ascii.STR[buffer.String]] // parsed one
+	wantURIEnd container_p.NumberOfElement
+	wantError  error_p.Error
 }
 
 var uriTests = []uriTest{
 	{
 		name:    "asterisk-form",
-		raw:     "* ",
 		encoded: "*",
-		uri: URI{
-			uri:    "*",
+		uri: URI[ascii.STR[buffer.String]]{
+			raw:    "*",
 			scheme: "",
-			AU: Authority{
+			AU: AU{
 				authority: "",
 			},
 			path:     "",
@@ -35,12 +36,11 @@ var uriTests = []uriTest{
 		wantURIEnd: 1,
 	}, {
 		name:    "simple path",
-		raw:     "/ ",
 		encoded: "/",
 		uri: URI{
-			uri:    "/",
+			raw:    "/",
 			scheme: "",
-			AU: Authority{
+			AU: AU{
 				authority: "",
 			},
 			path:     "/",
@@ -50,12 +50,11 @@ var uriTests = []uriTest{
 		wantURIEnd: 1,
 	}, {
 		name:    "origin-form1",
-		raw:     "/m?2586547852#api ",
 		encoded: "/m?2586547852",
 		uri: URI{
-			uri:    "/m?2586547852#api",
+			raw:    "/m?2586547852#api",
 			scheme: "",
-			AU: Authority{
+			AU: AU{
 				authority: "",
 			},
 			path:     "/m",
@@ -65,12 +64,11 @@ var uriTests = []uriTest{
 		wantURIEnd: 17,
 	}, {
 		name:    "origin-form2",
-		raw:     "/action/do/show/411?2586547852#Test ",
 		encoded: "/action/do/show/411?2586547852",
 		uri: URI{
-			uri:    "/action/do/show/411?2586547852#Test",
+			raw:    "/action/do/show/411?2586547852#Test",
 			scheme: "",
-			AU: Authority{
+			AU: AU{
 				authority: "",
 			},
 			path:     "/action/do/show/411",
@@ -80,12 +78,11 @@ var uriTests = []uriTest{
 		wantURIEnd: 35,
 	}, {
 		name:    "absolute-URI1",
-		raw:     "https://tools.ietf.org/html/rfc2616#section-3.2 ",
 		encoded: "https://tools.ietf.org/html/rfc2616",
 		uri: URI{
-			uri:    "https://tools.ietf.org/html/rfc2616#section-3.2",
+			raw:    "https://tools.ietf.org/html/rfc2616#section-3.2",
 			scheme: "https",
-			AU: Authority{
+			AU: AU{
 				authority: "tools.ietf.org",
 			},
 			path:     "/html/rfc2616",
@@ -95,12 +92,11 @@ var uriTests = []uriTest{
 		wantURIEnd: 47,
 	}, {
 		name:    "absolute-URI2",
-		raw:     "http://www.sabz.city/#file%20one%26two ",
 		encoded: "http://www.sabz.city/",
 		uri: URI{
-			uri:    "http://www.sabz.city/#file%20one%26two",
+			raw:    "http://www.sabz.city/#file%20one%26two",
 			scheme: "http",
-			AU: Authority{
+			AU: AU{
 				authority: "www.sabz.city",
 			},
 			path:     "/",
@@ -110,12 +106,11 @@ var uriTests = []uriTest{
 		wantURIEnd: 38,
 	}, {
 		name:    "absolute-URI3",
-		raw:     "https://www.sabz.city/pub/WWW/TheProject.html ",
 		encoded: "https://www.sabz.city/pub/WWW/TheProject.html",
 		uri: URI{
-			uri:    "https://www.sabz.city/pub/WWW/TheProject.html",
+			raw:    "https://www.sabz.city/pub/WWW/TheProject.html",
 			scheme: "https",
-			AU: Authority{
+			AU: AU{
 				authority: "www.sabz.city",
 			},
 			path:     "/pub/WWW/TheProject.html",
@@ -125,12 +120,11 @@ var uriTests = []uriTest{
 		wantURIEnd: 45,
 	}, {
 		name:    "absolute-URI4",
-		raw:     "www.sabz.city/m?2586547852#api ",
 		encoded: "www.sabz.city/m?2586547852",
 		uri: URI{
-			uri:    "www.sabz.city/m?2586547852#api",
+			raw:    "www.sabz.city/m?2586547852#api",
 			scheme: "",
-			AU: Authority{
+			AU: AU{
 				authority: "www.sabz.city",
 			},
 			path:     "/m",
@@ -140,12 +134,11 @@ var uriTests = []uriTest{
 		wantURIEnd: 30,
 	}, {
 		name:    "ftp1",
-		raw:     "ftp://webmaster@www.sabz.city/ ",
 		encoded: "ftp://webmaster@www.sabz.city/",
 		uri: URI{
-			uri:    "ftp://webmaster@www.sabz.city/",
+			raw:    "ftp://webmaster@www.sabz.city/",
 			scheme: "ftp",
-			AU: Authority{
+			AU: AU{
 				authority: "webmaster@www.sabz.city",
 			},
 			path:     "/",
@@ -155,12 +148,11 @@ var uriTests = []uriTest{
 		wantURIEnd: 30,
 	}, {
 		name:    "empty query",
-		raw:     "http://www.sabz.city/? ",
 		encoded: "http://www.sabz.city/",
 		uri: URI{
-			uri:    "http://www.sabz.city/?",
+			raw:    "http://www.sabz.city/?",
 			scheme: "http",
-			AU: Authority{
+			AU: AU{
 				authority: "www.sabz.city",
 			},
 			path:     "/",
@@ -170,16 +162,15 @@ var uriTests = []uriTest{
 		wantURIEnd: 22,
 	}, {
 		name:    "embed uri in query",
-		raw:     "http://www.sabz.city/repo?n=libgo&m=modules/app/ ",
-		encoded: "http://www.sabz.city/repo?n=libgo&m=modules/app/",
+		encoded: "http://www.sabz.city/repo?n=memar&m=modules/app/",
 		uri: URI{
-			uri:    "http://www.sabz.city/repo?n=libgo&m=modules/app/",
+			raw:    "http://www.sabz.city/repo?n=memar&m=modules/app/",
 			scheme: "http",
-			AU: Authority{
+			AU: AU{
 				authority: "www.sabz.city",
 			},
 			path:     "/repo",
-			query:    "n=libgo&m=modules/app/",
+			query:    "n=memar&m=modules/app/",
 			fragment: "",
 		},
 		wantURIEnd: 48,
@@ -189,7 +180,7 @@ var uriTests = []uriTest{
 func TestURI_Unmarshal(t *testing.T) {
 	for _, tt := range uriTests {
 		t.Run(tt.name, func(t *testing.T) {
-			var gotURIEnd, err = tt.out.UnmarshalFromString(tt.raw)
+			var gotURIEnd, err = tt.out.FromString(tt.uri.raw)
 			if err != tt.wantError {
 				t.Errorf("URI.Unmarshal(%q) = %v, want %v", tt.name, err, tt.wantError)
 			}
@@ -208,7 +199,12 @@ func TestURI_Marshal(t *testing.T) {
 		var uriTest = uriTests[i]
 		uriTest.uri.Set(uriTest.uri.scheme, uriTest.uri.authority, uriTest.uri.path, uriTest.uri.query, uriTest.uri.fragment)
 		t.Run(uriTest.name, func(t *testing.T) {
-			var httpPacket = uriTest.uri.Marshal()
+			var httpPacket = make([]byte, 0, uriTest.uri.SerializationLength())
+			var n, err = uriTest.uri.Marshal(httpPacket)
+			httpPacket = httpPacket[:n]
+			if err != nil {
+				t.Errorf("URI.Unmarshal():\n\tgot Error %v\n", err)
+			}
 			if uriTest.encoded != string(httpPacket) {
 				t.Errorf("URI.Unmarshal():\n\tgot  %v\n\twant %v\n", string(httpPacket), uriTest.encoded)
 			}
