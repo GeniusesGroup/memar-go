@@ -5,7 +5,8 @@ package json
 import (
 	"encoding/json"
 
-	"libgo/protocol"
+	// json_errs "memar/codec/data_exchange/json/errors"
+	error_p "memar/process/error/protocol"
 )
 
 /*
@@ -32,27 +33,29 @@ Field int `json:"-,"`               // Field appears in JSON as key "-".
 */
 
 // Marshal encodes the value of s to the payload buffer in runtime.
-func Marshal(s any) (p []byte, err protocol.Error) {
+func Marshal(s any) (p []byte, err error_p.Error) {
 	// TODO::: make better algorithm instead of below
 	var goErr error
 	p, goErr = json.Marshal(s)
 	if goErr != nil {
-		return nil, &ErrEncodedCorrupted
+		// err = &json_errs.EncodedCorrupted
+		return
 	}
 	return
 }
 
 // Unmarshal decode payload and stores the result in the value pointed to by s in runtime.
-func Unmarshal(p []byte, s any) (err protocol.Error) {
+func Unmarshal(p []byte, s any) (err error_p.Error) {
 	// TODO::: make better algorithm instead of below
 	var goErr error = json.Unmarshal(p, s)
 	if goErr != nil {
-		return &ErrEncodedCorrupted
+		// err = &json_errs.EncodedCorrupted
+		return
 	}
 	return
 }
 
-// RunTimeCodec is a wrapper to use anywhere need protocol.Codec interface instead of protocol.JSON interface
+// RunTimeCodec is a wrapper to use anywhere need codec_p.Codec interface instead of json_p.JSON interface
 type RunTimeCodec struct {
 	t       any
 	decoder any
@@ -63,7 +66,7 @@ type RunTimeCodec struct {
 func NewRunTimeCodec(t any) (codec *RunTimeCodec) {
 	codec = &RunTimeCodec{
 		t: t,
-		// len: json.LenAsJSON(),
+		// len: json.JSON_Length(),
 	}
 	// codec.encoder.buf = make([]byte, 0, codec.len)
 	return

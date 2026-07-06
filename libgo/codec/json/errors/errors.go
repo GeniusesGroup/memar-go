@@ -1,19 +1,18 @@
 /* For license and copyright information please see the LEGAL file in the code repository */
 
-package json
+package json_errs
 
-import (
-	er "libgo/error"
-)
+// import (
+// 	er "memar/process/error"
+// )
 
-// Declare package errors
-var (
-	ErrEncodedIncludeNotDefinedKey er.Error
-	ErrEncodedCorrupted            er.Error
-	ErrEncodedIntegerCorrupted     er.Error
-	ErrEncodedStringCorrupted      er.Error
-	ErrEncodedArrayCorrupted       er.Error
-	ErrEncodedSliceCorrupted       er.Error
+// var (
+// 	EncodedIncludeNotDefinedKey er.Error
+// 	EncodedCorrupted            er.Error
+// 	EncodedIntegerCorrupted     er.Error
+// 	EncodedStringCorrupted      er.Error
+// 	EncodedArrayCorrupted       er.Error
+// 	EncodedSliceCorrupted       er.Error
 
 // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Errors/JSON_bad_parse
 
@@ -49,14 +48,14 @@ var (
 // SyntaxError: JSON.parse: expected property name or '}'
 // SyntaxError: JSON.parse: unexpected character
 // SyntaxError: JSON.parse: unexpected non-whitespace character after JSON data
-)
+// )
 
 // TODO::: use json.ietf.org or ??
-func init() {
-	ErrEncodedIncludeNotDefinedKey.Init("domain/json.ecma-international.org; type=error; name=encoded-include-not-defined-key")
-	ErrEncodedCorrupted.Init("domain/json.ecma-international.org; type=error; name=encoded-corrupted")
-	ErrEncodedIntegerCorrupted.Init("domain/json.ecma-international.org; type=error; name=encoded-integer-corrupted")
-	ErrEncodedStringCorrupted.Init("domain/json.ecma-international.org; type=error; name=encoded-string-corrupted")
-	ErrEncodedArrayCorrupted.Init("domain/json.ecma-international.org; type=error; name=encoded-array-corrupted")
-	ErrEncodedSliceCorrupted.Init("domain/json.ecma-international.org; type=error; name=encoded-slice-corrupted")
-}
+// func init() {
+// 	EncodedIncludeNotDefinedKey.Init("domain/json.ecma-international.org; type=error; name=encoded-include-not-defined-key")
+// 	EncodedCorrupted.Init("domain/json.ecma-international.org; type=error; name=encoded-corrupted")
+// 	EncodedIntegerCorrupted.Init("domain/json.ecma-international.org; type=error; name=encoded-integer-corrupted")
+// 	EncodedStringCorrupted.Init("domain/json.ecma-international.org; type=error; name=encoded-string-corrupted")
+// 	EncodedArrayCorrupted.Init("domain/json.ecma-international.org; type=error; name=encoded-array-corrupted")
+// 	EncodedSliceCorrupted.Init("domain/json.ecma-international.org; type=error; name=encoded-slice-corrupted")
+// }

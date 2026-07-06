@@ -3,24 +3,32 @@
 package json
 
 import (
-	"bytes"
-
-	"libgo/convert"
-	"libgo/protocol"
+	buffer_p "memar/computer/buffer/protocol"
+	"memar/computer/buffer/byteslice/convert"
+	error_p "memar/process/error/protocol"
 )
 
 // DecoderUnsafeMinified store data to decode data by each method.
-type DecoderUnsafeMinified struct {
-	DecoderMinified
+type DecoderUnsafeMinified[BUF buffer_p.Buffer] struct {
+	DecoderMinified[BUF]
+}
+
+// DecodeKey return json key. pass d.buf start from after {||, and receive from after :
+func (d *DecoderUnsafeMinified[BUF]) DecodeKey() string {
+	d.Offset(2)
+	var loc, _ = d.buf.Index('"')
+	var slice []byte = d.buf[:loc]
+	d.Offset(loc + 2) // +2 due to have '":' after key name end.
+	return convert.UnsafeByteSliceToString(slice)
 }
 
 // DecodeString return string. pass d.buf start from after " and receive from from after "
-func (d *DecoderUnsafeMinified) DecodeString() (s string, err protocol.Error) {
+func (d *DecoderUnsafeMinified[BUF]) DecodeString() (s string, err error_p.Error) {
 	d.Offset(1) // due to have " at start
 
-	var loc = bytes.IndexByte(d.buf, '"')
+	var loc = d.buf.Index('"')
 	if loc < 0 {
-		err = &ErrEncodedStringCorrupted
+		// err = &errs.EncodedStringCorrupted
 		return
 	}
 

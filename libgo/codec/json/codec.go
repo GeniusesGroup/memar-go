@@ -3,92 +3,52 @@
 package json
 
 import (
-	"libgo/buffer"
-	"libgo/protocol"
+	container_p "memar/computer/adt/container/protocol"
+	buffer_p "memar/computer/buffer/protocol"
+	json_p "memar/codec/data_exchange/json/protocol"
+	error_p "memar/process/error/protocol"
 )
 
-func NewCodec(json protocol.JSON) (codec Codec) {
+func NewCodec(json json_p.Codec) (codec Codec) {
 	codec.Init(json)
 	return
 }
 
-// Codec is a wrapper to use anywhere need protocol.Codec interface instead of protocol.JSON interface
+// Codec is a wrapper to use anywhere need codec_p.Codec interface instead of json_p.JSON interface
 type Codec struct {
-	json    protocol.JSON
-	payload []byte
-	len     int
+	json json_p.Codec
 }
 
-//libgo:impl libgo/protocol.ObjectLifeCycle
-func (c *Codec) Init(json protocol.JSON) {
+//memar:impl memar/computer/capsule/protocol.LifeCycle
+func (c *Codec) Init(json json_p.Codec) (err error_p.Error) {
 	c.json = json
-	c.len = json.LenAsJSON()
+	return
 }
-func (c *Codec) Reinit() {}
-func (c *Codec) Deinit() {}
+func (c *Codec) Reinit(json json_p.Codec) (err error_p.Error) {
+	c.json = json
+	return
+}
+func (c *Codec) Deinit() (err error_p.Error) {
+	return
+}
 
 // https://www.iana.org/assignments/media-types/application/json
 //
-//libgo:impl libgo/protocol.Codec
-func (c *Codec) MediaType() protocol.MediaType       { return &MediaType }
-func (c *Codec) CompressType() protocol.CompressType { return nil }
+//memar:impl memar/codec/protocol.Codec
+// func (c *Codec) MediaType() mediatype_p.MediaType    { return &DT }
+// func (c *Codec) CompressType() compress_p.CompressType { return nil }
 
-//libgo:impl libgo/protocol.Decoder
-func (c *Codec) Decode(source protocol.Codec) (n int, err protocol.Error) {
-	c.payload, err = source.Marshal()
-	if err != nil {
-		return
-	}
-	_, err = c.json.FromJSON(c.payload)
+//memar:impl memar/protocol.Decoder
+func (c *Codec) Decode(source buffer_p.Buffer) (err error_p.Error) {
+	err = c.json.FromJSON(source)
 	return
 }
 
-//libgo:impl libgo/protocol.Encoder
-func (c *Codec) Encode(destination protocol.Codec) (n int, err protocol.Error) {
-	n, err = destination.Decode(c)
-	return
-}
-func (c *Codec) Len() int { return c.len }
-
-//libgo:impl libgo/protocol.Unmarshaler
-func (c *Codec) Unmarshal(data []byte) (n int, err protocol.Error) {
-	_, err = c.json.FromJSON(data)
-	c.payload = data
-	return
-}
-func (c *Codec) UnmarshalFrom(data []byte) (remaining []byte, err protocol.Error) {
-	// TODO:::
+//memar:impl memar/protocol.Encoder
+func (c *Codec) Encode(destination buffer_p.Buffer) (err error_p.Error) {
+	err = c.json.ToJSON(destination)
 	return
 }
 
-func (c *Codec) Marshal() (data []byte, err protocol.Error) {
-	if c.payload == nil {
-		c.payload = make([]byte, 0, c.len)
-		c.payload, err = c.json.ToJSON(c.payload)
-	}
-	return c.payload, nil
-}
-
-func (c *Codec) MarshalTo(data []byte) (added []byte, err protocol.Error) {
-	return c.json.ToJSON(data)
-}
-
-//libgo:impl libgo/protocol.Buffer
-func (c *Codec) ReadFrom(reader protocol.Reader) (n int, err protocol.Error) {
-	var buf buffer.Flat
-	n, err = buf.ReadFrom(reader)
-	if err != nil {
-		return
-	}
-	c.payload = buf.Bytes()
-	_, err = c.json.FromJSON(c.payload)
-	return
-}
-
-func (c *Codec) WriteTo(writer protocol.Writer) (n int, err protocol.Error) {
-	if c.payload == nil {
-		c.Marshal()
-	}
-	n, err = writer.Write(c.payload)
-	return
-}
+//memar:impl memar/codec/protocol.Field_Length
+func (c *Codec) SerializationLength() container_p.NumberOfElement { return c.json.JSON_Length() }

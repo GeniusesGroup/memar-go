@@ -3,30 +3,25 @@
 package json
 
 import (
-	"libgo/detail"
-	"libgo/mediatype"
-	"libgo/protocol"
+	"memar/computer/datatype"
+	datatype_p "memar/computer/datatype/protocol"
 )
 
-var MediaType mediaType
+var DT domainType
 
-func init() {
-	MediaType.Init("application/json")
+type domainType struct {
+	datatype.DataType
 }
 
-type mediaType struct {
-	detail.DS
-	mediatype.MT
-}
+//memar:impl memar/identifier/mediatype/protocol.Field_MediaType
+func (s *domainType) MediaType() string { return "application/json" }
 
-//libgo:impl libgo/protocol.MediaType
-func (s *mediaType) FileExtension() string               { return "json" }
-func (s *mediaType) Status() protocol.SoftwareStatus     { return protocol.Software_StableRelease }
-func (s *mediaType) ReferenceURI() string                { return "" }
-func (s *mediaType) IssueDate() protocol.Time            { return nil }
-func (s *mediaType) ExpiryDate() protocol.Time           { return nil }
-func (s *mediaType) ExpireInFavorOf() protocol.MediaType { return nil }
+//memar:impl memar/storage/protocol.FileExtension
+func (s *domainType) FileExtension() string { return "json" }
 
-//libgo:impl libgo/protocol.Object
-func (s *mediaType) Fields() []protocol.Object_Member_Field   { return nil }
-func (s *mediaType) Methods() []protocol.Object_Member_Method { return nil }
+//memar:impl memar/datatype/protocol.DataType_Details
+func (s *domainType) LifeCycle() datatype_p.LifeCycle      { return datatype_p.LifeCycle_StableRelease }
+func (s *domainType) ReferenceURI() string                 { return "" }
+func (s *domainType) IssueDate() string                    { return "" }
+func (s *domainType) ExpiryDate() string                   { return "" }
+func (s *domainType) ExpireInFavorOf() datatype_p.DataType { return nil }
