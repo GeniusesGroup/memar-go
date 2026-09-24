@@ -1,3 +1,6 @@
+> [!IMPORTANT]
+> **Archived implementation snapshot.** This repository is preserved for possible future resumption, not production readiness. Known build and migration issues remain intentionally unresolved. Transferring architecture ideas is a separate workflow and is not part of this archive. The project may be resumed later, including by an automated development agent.
+
 # Memar - Golang version
 [![GoDoc](https://pkg.go.dev/badge/github.com/GeniusesGroup/memar-go)](https://pkg.go.dev/github.com/GeniusesGroup/memar-go)
 [![Go Report](https://goreportcard.com/badge/github.com/GeniusesGroup/memar-go)](https://goreportcard.com/report/github.com/GeniusesGroup/memar-go)
