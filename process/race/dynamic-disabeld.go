@@ -6,11 +6,12 @@ package race
 
 import (
 	error_p "memar/process/error/protocol"
+	memory_p "memar/storage/memory/protocol"
 )
 
 const DetectorEnabled = false
 
-type Dynamic struct {}
+type Dynamic struct{}
 
 // Init will initialize the capsule.
 //

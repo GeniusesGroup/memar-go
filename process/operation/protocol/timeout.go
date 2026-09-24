@@ -3,7 +3,7 @@
 package operation_p
 
 import (
-	error_p "memar/error/protocol"
+	error_p "memar/process/error/protocol"
 	"memar/time/duration"
 )
 

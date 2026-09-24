@@ -7,9 +7,9 @@ import (
 )
 
 func init() {
-	Register(&errors_errs.NotFound)
-	Register(&errors_errs.NotExist)
+	Register(&errors_errs.ErrNotFound)
+	Register(&errors_errs.ErrNotExist)
 
-	Register(&errors_errs.NotProvideIdentifier)
-	Register(&errors_errs.DuplicateIdentifier)
+	Register(&errors_errs.ErrNotProvideIdentifier)
+	Register(&errors_errs.ErrDuplicateIdentifier)
 }

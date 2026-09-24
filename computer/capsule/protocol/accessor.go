@@ -2,10 +2,6 @@
 
 package capsule_p
 
-import (
-	error_p "memar/process/error/protocol"
-)
-
 type Accessor[T any] interface {
 	Get() T
 

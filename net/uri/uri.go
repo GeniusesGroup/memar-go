@@ -12,7 +12,7 @@ import (
 )
 
 // Parsed use to FIX `URI` name with its method as `URI()` when embed to other capsule.
-type Parsed = URI[string_p.String]
+type Parsed = URI
 
 // URI store http URI parts.
 // https://tools.ietf.org/html/rfc3986
@@ -20,56 +20,56 @@ type Parsed = URI[string_p.String]
 // https://tools.ietf.org/html/rfc2616#section-5.1.2
 // Request-URI = "*" | absoluteURI | abs_path | authority
 // http_URL = "http:" "//" host [ ":" port ] [ abs_path [ "?" query ]]
-type URI[STR string_p.String] struct {
+type URI struct {
 	datatype.DataType
 
-	raw STR
+	raw string
 
-	scheme STR // = ALPHA *( ALPHA / DIGIT / "+" / "-" / "." )
-	AU[STR]
-	path     STR //
-	query    STR // encoded query values, without '?'
-	fragment STR // fragment for references, without '#'
+	scheme string // = ALPHA *( ALPHA / DIGIT / "+" / "-" / "." )
+	AU
+	path     string //
+	query    string // encoded query values, without '?'
+	fragment string // fragment for references, without '#'
 }
 
 //memar:impl memar/computer/capsule/protocol.LifeCycle
-func (u *URI[STR]) Init(uri STR) (err error_p.Error) {
+func (u *URI) Init(uri string) (err error_p.Error) {
 	_, err = u.FromString(uri)
 	return
 }
-func (u *URI[STR]) Reinit(uri STR) (err error_p.Error) {
+func (u *URI) Reinit(uri string) (err error_p.Error) {
 	_, err = u.FromString(uri)
 	return
 }
-func (u *URI[STR]) Deinit() (err error_p.Error) {
+func (u *URI) Deinit() (err error_p.Error) {
 	return
 }
 
-func (u *URI[STR]) Set(scheme, authority, path, query, fragment STR) {
+func (u *URI) Set(scheme, authority, path, query, fragment string) {
 	u.discardRaw()
 	u.scheme, u.authority, u.path, u.query, u.fragment = scheme, authority, path, query, fragment
 }
 
-func (u *URI[STR]) URI() string_p.String      { return u.raw }
-func (u *URI[STR]) Scheme() string_p.String   { return u.scheme }
-func (u *URI[STR]) Path() string_p.String     { return u.path }
-func (u *URI[STR]) Query() string_p.String    { return u.query }
-func (u *URI[STR]) Fragment() string_p.String { return u.fragment }
+func (u *URI) URI() string      { return u.raw }
+func (u *URI) Scheme() string   { return u.scheme }
+func (u *URI) Path() string     { return u.path }
+func (u *URI) Query() string    { return u.query }
+func (u *URI) Fragment() string { return u.fragment }
 
-func (u *URI[STR]) SetURI(uri STR)    { u.discardRaw(); u.raw = uri }
-func (u *URI[STR]) SetScheme(s STR)   { u.discardRaw(); u.scheme = s }
-func (u *URI[STR]) SetPath(p STR)     { u.discardRaw(); u.path = p }
-func (u *URI[STR]) SetQuery(q STR)    { u.discardRaw(); u.query = q }
-func (u *URI[STR]) SetFragment(f STR) { u.discardRaw(); u.fragment = f }
+func (u *URI) SetURI(uri string)    { u.discardRaw(); u.raw = uri }
+func (u *URI) SetScheme(s string)   { u.discardRaw(); u.scheme = s }
+func (u *URI) SetPath(p string)     { u.discardRaw(); u.path = p }
+func (u *URI) SetQuery(q string)    { u.discardRaw(); u.query = q }
+func (u *URI) SetFragment(f string) { u.discardRaw(); u.fragment = f }
 
-func (u *URI[STR]) ParseQuery() (q Query) { q.Init(u.query); return }
+func (u *URI) ParseQuery() (q Query) { q.Init(u.query); return }
 
 // IsAbs reports whether the URL is absolute.
 // Absolute means that it has a non-empty scheme.
-func (u *URI[STR]) IsAbs() bool { return u.scheme.OccupiedLength() > 0 }
+func (u *URI) IsAbs() bool { return u.scheme.OccupiedLength() > 0 }
 
 //memar:impl memar/codec/protocol.Field_Length
-func (u *URI[STR]) SerializationLength() (ln container_p.NumberOfElement) {
+func (u *URI) SerializationLength() (ln container_p.NumberOfElement) {
 	ln = u.raw.OccupiedLength()
 	if ln == 0 {
 		ln = u.serializationLength()
@@ -78,7 +78,7 @@ func (u *URI[STR]) SerializationLength() (ln container_p.NumberOfElement) {
 }
 
 //memar:impl memar/protocol.Decoder
-func (u *URI[STR]) Decode(source buffer_p.Buffer) (err error_p.Error) {
+func (u *URI) Decode(source buffer_p.Buffer) (err error_p.Error) {
 	var char, _ = source.Peek()
 	if char == sign_Asterisk {
 		u.raw = sign_Asterisk_String
@@ -147,7 +147,7 @@ func (u *URI[STR]) Decode(source buffer_p.Buffer) (err error_p.Error) {
 }
 
 //memar:impl memar/protocol.Encoder
-func (u *URI[STR]) Encode(destination buffer_p.Buffer) (err error_p.Error) {
+func (u *URI) Encode(destination buffer_p.Buffer) (err error_p.Error) {
 	if !u.raw.IsEmpty() {
 		_, err = destination.Concat(u.raw)
 	} else {
@@ -201,7 +201,7 @@ func (u *URI[STR]) Encode(destination buffer_p.Buffer) (err error_p.Error) {
 }
 
 // Marshal encode URI data and return it.
-func (u *URI[STR]) Marshal(destination []byte) (n container_p.NumberOfElement, err error_p.Error) {
+func (u *URI) Marshal(destination []byte) (n container_p.NumberOfElement, err error_p.Error) {
 	n = u.SerializationLength()
 	var desCap = cap(destination) - len(destination)
 	if n > container_p.NumberOfElement(desCap) {
@@ -218,13 +218,13 @@ func (u *URI[STR]) Marshal(destination []byte) (n container_p.NumberOfElement, e
 }
 
 // Unmarshal use to parse and decode given URI to u
-func (u *URI[STR]) Unmarshal(source []byte) (n container_p.NumberOfElement, err error_p.Error) {
+func (u *URI) Unmarshal(source []byte) (n container_p.NumberOfElement, err error_p.Error) {
 	n, err = u.FromString(convert.UnsafeByteSliceToString(source))
 	return
 }
 
 // FromString use to parse and decode given URI to u
-func (u *URI[STR]) FromString(s string) (uriEnd container_p.NumberOfElement, err error_p.Error) {
+func (u *URI) FromString(s string) (uriEnd container_p.NumberOfElement, err error_p.Error) {
 	if s[0] == sign_Asterisk {
 		uriEnd = 1
 	} else {
@@ -292,7 +292,7 @@ func (u *URI[STR]) FromString(s string) (uriEnd container_p.NumberOfElement, err
 	return
 }
 
-func (u *URI[STR]) marshalTo(httpPacket []byte) []byte {
+func (u *URI) marshalTo(httpPacket []byte) []byte {
 	var uriStart = len(httpPacket)
 	if u.scheme != "" {
 		httpPacket = append(httpPacket, u.scheme...)
@@ -314,7 +314,7 @@ func (u *URI[STR]) marshalTo(httpPacket []byte) []byte {
 	return httpPacket
 }
 
-func (u *URI[STR]) serializationLength() (ln container_p.NumberOfElement) {
+func (u *URI) serializationLength() (ln container_p.NumberOfElement) {
 	ln = 4 // 4 == len("://")+len("?")
 	ln += container_p.NumberOfElement(len(u.scheme) + len(u.authority) + len(u.path) + len(u.query) + len(u.fragment))
 	return
@@ -322,6 +322,6 @@ func (u *URI[STR]) serializationLength() (ln container_p.NumberOfElement) {
 
 // Discard any exciting data in raw uri.
 // It is use when any part of uri want to change after Init()
-func (u *URI[STR]) discardRaw() {
+func (u *URI) discardRaw() {
 	u.raw = ""
 }

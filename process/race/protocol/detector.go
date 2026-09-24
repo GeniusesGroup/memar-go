@@ -3,16 +3,16 @@
 package race_p
 
 import (
-	event_p "memar/process/event/protocol"
 	error_p "memar/process/error/protocol"
+	event_p "memar/process/event/protocol"
 )
 
 type Detector interface {
-	event_p.Target[Report_Event]
+	event_p.Target[Event]
 }
 
 // Static means when something is done not at Runtime but could be done anytime e.g. commit, PR, pre-compile, compile, ...
-// 
+//
 // https://en.wikipedia.org/wiki/Static_program_analysis
 type Detector_Static interface {
 	Detector
@@ -25,7 +25,7 @@ type Detector_Static interface {
 }
 
 // Dynamic means when something is done at Runtime
-// 
+//
 // https://en.wikipedia.org/wiki/Dynamic_program_analysis
 type Detector_Dynamic interface {
 	Detector

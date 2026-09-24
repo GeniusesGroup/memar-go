@@ -3,7 +3,7 @@
 package gp
 
 import (
-	"memar/protocol"
+	net_p "memar/net/protocol"
 )
 
-var _ protocol.Network_Frame = &Frame{}
+var _ net_p.Frame = &Frame{}

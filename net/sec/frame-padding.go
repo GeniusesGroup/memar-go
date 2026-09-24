@@ -3,19 +3,19 @@
 package sec
 
 import (
-	"memar/binary"
+	"memar/codec/binary"
 )
 
 /*
 	type PaddingFrame struct {
-		Length  [2]byte // including the header fields
-		Padding []byte
+		FrameLength [2]byte // including the header fields
+		Padding     []byte
 	}
 */
 type PaddingFrame []byte
 
-func (f PaddingFrame) Length() uint16  { return binary.BigEndian(f[0:]).Uint16() }
-func (f PaddingFrame) Payload() []byte { return f[2:f.Length()] }
+func (f PaddingFrame) FrameLength() uint16 { return binary.BigEndian(f[0:]).Uint16() }
+func (f PaddingFrame) Payload() []byte     { return f[2:f.FrameLength()] }
 
 //memar:impl memar/protocol.Network_Frame
-func (f PaddingFrame) NextFrame() []byte { return f[f.Length():] }
+func (f PaddingFrame) NextFrame() []byte { return f[f.FrameLength():] }

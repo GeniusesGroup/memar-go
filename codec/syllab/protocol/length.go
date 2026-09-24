@@ -3,10 +3,10 @@
 package syllab_p
 
 import (
-	container_p "memar/adt/container/protocol"
+	container_p "memar/computer/adt/container/protocol"
 )
 
-// Field_Lengths is same as CodecLength
+// Field_Lengths is same as codec_p.Field_Length in many ways
 type Field_Lengths interface {
 	// Syllab_Length return whole calculated length of Syllab encoded of the struct
 	// default is simple as `return (self.Syllab_StackLength() + self.Syllab_HeapLength())`

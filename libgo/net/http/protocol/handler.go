@@ -10,7 +10,7 @@ import (
 
 // Handler is any object to be HTTP service handler.
 // Some other protocol like gRPC, SOAP, ... must implement inside HTTP, If they are use HTTP as a transfer protocol.
-type Handler /*[HTTP_REQ Request, HTTP_RES Response, STR string_p.String]*/ interface {
+type Handler interface {
 	// Fill just if any http handler need route by path instead of ServiceID().
 	//
 	// **ATTENTION**

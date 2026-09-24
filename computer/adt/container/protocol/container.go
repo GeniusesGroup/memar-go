@@ -3,7 +3,7 @@
 package container_p
 
 import (
-	adt_p "memar/adt/protocol"
+	adt_p "memar/computer/adt/protocol"
 )
 
 type Container[ELEMENT Element] interface {

@@ -3,7 +3,7 @@
 package net_p
 
 import (
-	string_p "memar/codec/string/protocol"
+	go_string_p "memar/libgo/codec/string/protocol"
 )
 
 // Addr represents a network end point address.
@@ -11,11 +11,11 @@ import (
 type Field_NetworkAddresses interface {
 	// LocalAddr or Source address
 	LocalAddr() NetworkAddress
-	
+
 	// RemoteAddr or Destination address
 	RemoteAddr() NetworkAddress
 }
 
 type NetworkAddress interface {
-	string_p.Stringer
+	go_string_p.Stringer
 }

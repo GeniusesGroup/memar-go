@@ -9,16 +9,17 @@ type InitReq struct {
 //memar:impl protocol.Init_Request
 func (req *InitReq) Name() string { return req.name }
 
-//memar:impl memar/operation/command/protocol.Object
+//memar:impl memar/process/command/protocol.Object
 func (req *InitReq) Fields() []datatype_p.DataType   { return ... }
 func (req *InitReq) Methods() []function_p.Method { return ... }
 
-//memar:impl memar/operation/command/protocol.CommandLineArguments
+//memar:impl memar/process/command/protocol.Decoder
 func (req *InitReq) FromCLA(arguments []string) (remaining []string, err error_p.Error) {
 	remaining, err = cmd.FromCLA(req, arguments)
 	return
 
 }
+//memar:impl memar/process/command/protocol.Encoder
 func (req *InitReq) ToCLA() (arguments []string, err error_p.Error) {
 	arguments, err = cmd.ToCLA(req)
 	return
@@ -51,7 +52,7 @@ type InitReq struct {
 	name string
 }
 
-//memar:impl memar/operation/command/protocol.CommandLineArguments
+//memar:impl memar/process/command/protocol.Decoder
 func (req *InitReq) FromCLA(arguments []string) (remaining []string, err error_p.Error) {
 	var flagSet flag.FlagSet
 	// flagSet.Init("module.InitReq", flag.ContinueOnError)
@@ -65,5 +66,6 @@ func (req *InitReq) FromCLA(arguments []string) (remaining []string, err error_p
 	remaining = flagSet.Args()
 	return
 }
+//memar:impl memar/process/command/protocol.Encoder
 func (req *InitReq) ToCLA() (arguments []string, err error_p.Error) { return }
 ```

@@ -3,8 +3,16 @@
 package function_p
 
 import (
-	datatype_p "memar/datatype/protocol"
+	datatype_p "memar/computer/datatype/protocol"
 )
+
+type Field_Method interface {
+	Method() Method
+}
+
+type Field_Methods interface {
+	Methods() []Method
+}
 
 // Method
 type Method interface {

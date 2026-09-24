@@ -3,7 +3,7 @@
 package net
 
 import (
-	"memar/protocol"
+	net_p "memar/net/protocol"
 )
 
-var _ protocol.Network_Status = &STATUS{}
+var _ net_p.Field_SocketStatus = &Status{}

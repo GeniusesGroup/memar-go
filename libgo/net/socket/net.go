@@ -7,7 +7,7 @@ import (
 	"net"
 	"time"
 
-	"memar/protocol"
+	"memar/time/duration"
 )
 
 // Non of below methods are concurrent safe. Use just by one goroutine.
@@ -20,8 +20,8 @@ func (sk *Socket) Read(b []byte) (n int, err error) {
 		return
 	}
 
-	if !s.Full() {
-		err = s.blockInSelect()
+	if !sk.Full() {
+		err = sk.blockInSelect()
 	}
 	// TODO::: check and wrap above error?
 	n, err = sk.recv.buf.Read(b)
@@ -84,9 +84,9 @@ func (sk *Socket) SetKeepAlive(keepalive bool) (err error)        { return }
 func (sk *Socket) SetKeepAlivePeriod(d time.Duration) (err error) { return }
 func (sk *Socket) SetNoDelay(noDelay bool) (err error)            { return }
 
-func untilTo(t time.Time) (d protocol.Duration) {
+func untilTo(t time.Time) (d duration.NanoSecond) {
 	if !t.IsZero() {
-		d = protocol.Duration(time.Until(t))
+		d = duration.NanoSecond(time.Until(t))
 		if d == 0 {
 			d = -1 // don't confuse deadline right now with no deadline
 		}

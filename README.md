@@ -1,4 +1,4 @@
-# Memar - Golang version   
+# Memar - Golang version
 [![GoDoc](https://pkg.go.dev/badge/github.com/GeniusesGroup/memar-go)](https://pkg.go.dev/github.com/GeniusesGroup/memar-go)
 [![Go Report](https://goreportcard.com/badge/github.com/GeniusesGroup/memar-go)](https://goreportcard.com/report/github.com/GeniusesGroup/memar-go)
 
@@ -41,7 +41,7 @@ You can get list of all commands and their helps with `memar help`. We just list
 - **Run the app(os image):** `memar app run`
 
 ## Build tags
-- **dev_mode**: first check and change `AppMode_Dev` const in protocol package to desire behavior
+- **dev_mode**: first check and change `log.CNF_DevelopingMode` const in protocol package to desire behavior
 - **tcp_listener**:
 
 ## Code style
@@ -49,3 +49,10 @@ You can get list of all commands and their helps with `memar help`. We just list
 
 ## Contribution Guide
 - [Referencing issues](https://go.dev/doc/contribute#ref_issues)
+
+
+## Alternatives
+## Open Source
+- [django](https://docs.djangoproject.com/)
+
+memar.scm.geniuses.group >ask> scm.geniuses.group >visit> geniuses.group/scm?repo=memar-go

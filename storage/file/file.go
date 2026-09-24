@@ -8,11 +8,11 @@ import (
 	"strings"
 
 	codec_p "memar/codec/protocol"
-	"memar/compress"
-	cts "memar/compress-types"
-	compress_p "memar/compress/protocol"
-	error_p "memar/error/protocol"
-	"memar/minify"
+	"memar/codec/compress"
+	cts "memar/codec/compress-types"
+	compress_p "memar/codec/compress/protocol"
+	error_p "memar/process/error/protocol"
+	"memar/libgo/codec/minify"
 	file_p "memar/storage/file/protocol"
 )
 

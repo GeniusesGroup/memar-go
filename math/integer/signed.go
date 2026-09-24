@@ -5,8 +5,8 @@ package integer
 import (
 	"strconv"
 
+	error_p "memar/process/error/protocol"
 	"memar/math/boolean"
-	"memar/protocol"
 )
 
 // https://en.wikipedia.org/wiki/Integer_(computer_science)
@@ -15,17 +15,17 @@ type Signed struct {
 	bitSize int
 }
 
-//memar:impl memar/protocol.DataType_Equal
+//memar:impl memar/math/logic/protocol.Equivalence
 func (s *Signed) Equal(with Signed) boolean.Boolean {
 	return *s == with
 }
 
-//memar:impl memar/protocol.Stringer
-func (s *Signed) ToString() (str string, err protocol.Error) {
+//memar:impl memar/codec/string/protocol.Stringer
+func (s *Signed) ToString() (str string, err error_p.Error) {
 	str = strconv.FormatInt(int64(s.number), 10)
 	return
 }
-func (s *Signed) FromString(str string) (err protocol.Error) {
+func (s *Signed) FromString(str string) (err error_p.Error) {
 	strconv.ParseInt(str, 10, s.bitSize)
 	return
 }

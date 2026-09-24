@@ -6,6 +6,8 @@ import (
 	error_p "memar/process/error/protocol"
 )
 
+// Lock use to reach strict consistency.
+// Be aware that strict consistency MUST be in all process details not just in storage layer.
 type Locker interface {
 	// Be aware that the requested `thread` which call `Lock()` CAN `yield`!
 	Lock() (err error_p.Error)

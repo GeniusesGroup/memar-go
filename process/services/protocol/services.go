@@ -3,8 +3,9 @@
 package services_p
 
 import (
-	error_p "memar/error/protocol"
-	service_p "memar/operation/service/protocol"
+	error_p "memar/process/error/protocol"
+	operation_p "memar/process/operation/protocol"
+	service_p "memar/process/service/protocol"
 )
 
 // Services use to register services to get them in a desire way e.g. sid in http query.
@@ -16,6 +17,6 @@ type Services interface {
 	Delete(s service_p.Service) (err error_p.Error)
 
 	Services() []service_p.Service
-	GetByID(sID service_p.ID) (ser service_p.Service, err error_p.Error)
+	GetByID(oID operation_p.ID) (ser service_p.Service, err error_p.Error)
 	GetByMediaType(mt string) (ser service_p.Service, err error_p.Error)
 }

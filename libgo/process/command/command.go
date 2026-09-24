@@ -3,14 +3,14 @@
 package cmd
 
 import (
-	error_p "memar/error/protocol"
-	errs "memar/operation/command/errors"
-	command_p "memar/operation/command/protocol"
+	error_p "memar/process/error/protocol"
+	// command_errs "memar/process/command/errors"
+	command_p "memar/process/command/protocol"
 )
 
 // Command
 //
-//memar:impl memar/operation/command/protocol.Command
+//memar:impl memar/process/command/protocol.Command
 type Command struct {
 	// parent is a parent command for this command.
 	parent command_p.Command
@@ -28,9 +28,9 @@ func (c *Command) Init(parent command_p.Command, cmd ...command_p.Command) (err 
 	return
 }
 
-//memar:impl memar/operation/command/protocol.Command
-func (c *Command) Runnable() bool                   { return false }
-func (c *Command) Parent() command_p.Command        { return c.parent }
+//memar:impl memar/process/command/protocol.Command
+func (c *Command) RunnableCommand() bool            { return false }
+func (c *Command) ParentCommand() command_p.Command { return c.parent }
 func (c *Command) SubCommands() []command_p.Command { return c.subCommands }
 func (c *Command) SubCommand(name string) command_p.Command {
 	// TODO::: intelligent suggestion or correction
@@ -55,6 +55,6 @@ func (c *Command) SubCommand(name string) command_p.Command {
 
 // ServeCLI read and write to os.Stdin, os.Stdout, and os.Stderr files
 func (c *Command) ServeCLI() (err error_p.Error) {
-	err = &errs.ErrServiceNotAcceptCLI
+	// err = &command_errs.ErrServiceNotAcceptCLI
 	return
 }

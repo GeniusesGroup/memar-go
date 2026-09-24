@@ -5,5 +5,5 @@ package errs
 const domainBaseMediatype = "domain/memar.scm.geniuses.group; package=compress-types; type=error; name="
 
 func init() {
-	ErrNotFound.Init()
+	// ErrNotFound.Init()
 }

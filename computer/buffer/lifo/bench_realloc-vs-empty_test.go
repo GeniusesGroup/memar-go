@@ -1,4 +1,4 @@
-/* For license and copyright information please see LEGAL file in repository */
+/* For license and copyright information please see the LEGAL file in the code repository */
 
 package pool
 
@@ -27,18 +27,18 @@ BenchmarkEmpty-8     	     508	   2448291 ns/op	   18899 B/op	       0 allocs/op
 const poolLen = 300000
 
 func BenchmarkRealloc(b *testing.B) {
-	var pool1 = make([]interface{}, poolLen/2)
+	var pool1 = make([]any, b.N/2)
 	for n := 0; n < b.N; n++ {
 		var pool2 = pool1
-		pool1 = make([]interface{}, poolLen/2)
+		pool1 = make([]any, n/2)
 		_ = pool1[0]
 		_ = pool2[0]
 	}
 }
 
 func BenchmarkEmpty(b *testing.B) {
-	var pool1 = make([]interface{}, poolLen)
-	var pool2 = make([]interface{}, poolLen)
+	var pool1 = make([]any, b.N)
+	var pool2 = make([]any, b.N)
 	for n := 0; n < b.N; n++ {
 		copy(pool2, pool1)
 		for i := 0; i < poolLen/2; i++ {

@@ -7,13 +7,13 @@ package mediatype_p
 // Means not all DataType need to implements MediaType
 // It also implement our RFC details on https://github.com/GeniusesGroup/memar/blob/main/media-type.md
 // https://en.wikipedia.org/wiki/Media_type
-type Parsed /*[STR string_p.String]*/ interface {
+type Parsed interface {
 	Field_MediaType
 
 	// Below names are case-insensitive.
-	MainType() string     // STR    // must
-	Tree() string         // STR    // if any
-	SubType() string      // STR    // must
-	Suffix() string       // STR    // if any
-	Parameters() []string // STR    // if any
+	MainType() string     // must
+	Tree() string         // if any
+	SubType() string      // must
+	Suffix() string       // if any
+	Parameters() []string // if any
 }

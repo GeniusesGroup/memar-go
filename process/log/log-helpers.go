@@ -3,9 +3,9 @@
 package log
 
 import (
-	log_p "memar/audit/log/protocol"
-	datatype_p "memar/datatype/protocol"
-	error_p "memar/error/protocol"
+	log_p "memar/process/log/protocol"
+	datatype_p "memar/computer/datatype/protocol"
+	error_p "memar/process/error/protocol"
 )
 
 // TODO::: Can't force compiler to inline below functions, Delete file to force developers use this way:

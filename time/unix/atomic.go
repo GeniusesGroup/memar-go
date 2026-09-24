@@ -5,7 +5,7 @@ package unix
 import (
 	"sync/atomic"
 
-	error_p "memar/error/protocol"
+	error_p "memar/process/error/protocol"
 	"memar/time/duration"
 	time_p "memar/time/protocol"
 )
@@ -65,7 +65,7 @@ func (a *Atomic) Add(d duration.NanoSecond) {
 	a.nsec.Add(int32(nsec))
 }
 
-//memar:impl memar/string/protocol.Stringer
+//memar:impl memar/codec/string/protocol.Stringer
 func (a *Atomic) ToString() (str string, err error_p.Error) {
 	// TODO:::
 	return

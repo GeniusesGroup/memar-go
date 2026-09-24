@@ -8,5 +8,5 @@ package error_p
 // But strongly suggest DON'T think in this way and just use `Log` concept
 type GUI interface {
 	// Notify error to user by graphic, sound and vibration (Haptic Feedback)
-	Notify()
+	Notify() (err Error)
 }

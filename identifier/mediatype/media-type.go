@@ -7,5 +7,5 @@ package mediatype
 // MT uses when embed in other struct to solve field & method same name problem(MediaType struct and MediaType() method) to satisfy interfaces.
 type MT struct{}
 
-//memar:impl memar/protocol.MediaType
+//memar:impl memar/identifier/mediatype/protocol.Field_MediaType
 func (mt *MT) MediaType() string { return "ERROR::: MediaType not indicated by developers" }

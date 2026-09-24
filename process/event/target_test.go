@@ -3,7 +3,7 @@
 package event
 
 import (
-	event_p "memar/event/protocol"
+	event_p "memar/process/event/protocol"
 )
 
 var _ event_p.Target[*Event] = &Target[*Event]{}

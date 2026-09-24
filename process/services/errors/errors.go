@@ -2,21 +2,21 @@
 
 package errs
 
-import (
-	er "memar/error"
-)
+// import (
+// 	er "memar/process/error"
+// )
 
-var (
-	ErrNotFound er.Error
+// var (
+// 	NotFound er.Error
 
-	// This conditions must be checked just in the dev phase.
-	ErrServiceNotProvideIdentifier er.Error
-	ErrServiceDuplicateIdentifier  er.Error
-)
+// 	// This conditions must be checked just in the dev phase.
+// 	ServiceNotProvideIdentifier er.Error
+// 	ServiceDuplicateIdentifier  er.Error
+// )
 
-func init() {
-	ErrNotFound.Init("domain/memar.scm.geniuses.group; type=error; package=service; name=not_found")
+// func init() {
+// 	NotFound.Init("domain/memar.scm.geniuses.group; type=error; package=service; name=not_found")
 
-	ErrServiceNotProvideIdentifier.Init("domain/memar.scm.geniuses.group; type=error; package=service; name=service_not_provide_identifier")
-	ErrServiceDuplicateIdentifier.Init("domain/memar.scm.geniuses.group; type=error; package=service; name=service_duplicate_identifier")
-}
+// 	ServiceNotProvideIdentifier.Init("domain/memar.scm.geniuses.group; type=error; package=service; name=service_not_provide_identifier")
+// 	ServiceDuplicateIdentifier.Init("domain/memar.scm.geniuses.group; type=error; package=service; name=service_duplicate_identifier")
+// }

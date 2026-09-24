@@ -9,12 +9,12 @@ import (
 // PseudoHeader_Request indicate request pseudo header.
 // "message start-line" in HTTP/1.x or "pseudo-header fields" in HTTP/2.x||HTTP/3.x
 // STR MUST just include ASCII characters.
-type PseudoHeader_Request /*[STR string_p.String]*/ interface {
+type PseudoHeader_Request interface {
 	Field_Method
 
 	// https://datatracker.ietf.org/doc/html/rfc2616#section-3.2
 	// http_URL = "http:" "//" host [ ":" port ] [ abs_path [ "?" query ]]
-	// URI() URI[String]
+	// URI() URI
 	uri_p.Field_Scheme // always return "http" or "https"
 	uri_p.Field_Host
 	uri_p.Field_Port
@@ -27,7 +27,7 @@ type PseudoHeader_Request /*[STR string_p.String]*/ interface {
 // PseudoHeader_Response indicate response pseudo header.
 // "message start-line" in HTTP/1.x or "pseudo-header fields" in HTTP/2.x||HTTP/3.x
 // STR MUST just include ASCII characters.
-type PseudoHeader_Response /*[STR string_p.String]*/ interface {
+type PseudoHeader_Response interface {
 	Field_Version
 	Field_Status
 	Method_Status

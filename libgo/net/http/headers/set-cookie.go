@@ -1,6 +1,6 @@
 /* For license and copyright information please see the LEGAL file in the code repository */
 
-package http
+package http_headers
 
 import (
 	"net"
@@ -8,34 +8,36 @@ import (
 	"strings"
 	"time"
 
-	"memar/convert"
-	errs "memar/net/http/errors"
-	"memar/protocol"
+	"memar/computer/buffer/byteslice/convert"
+	errs "memar/libgo/net/http/errors"
+	http_p "memar/libgo/net/http/protocol"
+	error_p "memar/process/error/protocol"
 )
-
-// SetCookies returns the Set-Cookie headers.
-// By related RFC must exist just one Set-Cookie in each line of header.
-// https://tools.ietf.org/html/rfc6265#section-4.1.1
-func (h *Header) SetCookies() SetCookies { return SetCookies{0, h} }
 
 // AddSetCookie will marshal and add given Set-Cookies to the Set-Cookie header.
 // By related RFC must exist just one Set-Cookie in each line of header.
 // https://tools.ietf.org/html/rfc6265#section-4.1.1
-func (h *Header) AddSetCookie(setCookies ...SetCookie) {
+func AddSetCookie(h http_p.Header, setCookies ...SetCookie) {
 	var ln = len(setCookies)
 	for i := 0; i < ln; i++ {
-		h.Header_Add(HeaderKey_SetCookie, setCookies[i].Marshal())
+		h.Header_Add(Key_SetCookie, setCookies[i].Marshal())
 	}
 }
 
 // SetCookies store the header index
+// By related RFC must exist just one Set-Cookie in each line of header.
+// https://tools.ietf.org/html/rfc6265#section-4.1.1
 type SetCookies struct {
 	startIndex int
-	headers    *Header
+	headers    http_p.Header
+}
+
+func (self *SetCookies) Init(h http_p.Header) {
+	self.headers = h
 }
 
 func (scs *SetCookies) Next() (setCookie SetCookie, exist bool) {
-	var sc, sci = scs.headers.Header_Find(scs.startIndex, HeaderKey_SetCookie)
+	var sc, sci = scs.headers.Header_Find(scs.startIndex, Key_SetCookie)
 	if sc == "" {
 		exist = false
 	} else {
@@ -70,7 +72,7 @@ type SetCookie struct {
 }
 
 // CheckAndSanitize use to check if the set-cookie is in standard by related RFCs.
-func (sc *SetCookie) CheckAndSanitize() (err protocol.Error) {
+func (sc *SetCookie) CheckAndSanitize() (err error_p.Error) {
 	sc.Name, err = sanitizeCookieName(sc.Name)
 	if err != nil {
 		return
@@ -283,7 +285,7 @@ func (sc *SetCookie) Unmarshal(setCookie string) {
 // path-av           = "Path=" path-value
 // path-value        = <any CHAR except CTLs or ";">
 // Don't check for ; due to Unmarshal will panic for bad cookie!!
-func sanitizeCookiePath(v string) (path string, err protocol.Error) {
+func sanitizeCookiePath(v string) (path string, err error_p.Error) {
 	var ln = len(v)
 	var buf = make([]byte, 0, ln)
 	var b byte
@@ -292,7 +294,7 @@ func sanitizeCookiePath(v string) (path string, err protocol.Error) {
 		if 0x20 <= b && b < 0x7f {
 			buf = append(buf, b)
 		} else {
-			err = &errs.ErrCookieBadPath
+			// err = &errs.ErrCookieBadPath
 		}
 	}
 	path = convert.UnsafeByteSliceToString(buf)
@@ -301,7 +303,7 @@ func sanitizeCookiePath(v string) (path string, err protocol.Error) {
 
 // A sc.Domain containing illegal characters is not sanitized but simply dropped which turns the cookie
 // into a host-only cookie. A leading dot is okay but won't be sent.
-func sanitizeCookieDomain(d string) (domain string, err protocol.Error) {
+func sanitizeCookieDomain(d string) (domain string, err error_p.Error) {
 	var ln = len(d)
 	if ln == 0 || ln > 255 {
 		return domain, &errs.ErrCookieBadDomain

@@ -3,7 +3,7 @@
 package operation_p
 
 type Importance interface {
-	// TODO::: need both of below items??!!
-	Priority() Priority // Use to queue requests by its priority
-	Weight() Weight     // Use to queue requests by its weights in the same priority
+	// We need both of below items to queue in more specific manner.
+	Field_Priority
+	Field_Weight
 }

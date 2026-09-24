@@ -1,10 +1,10 @@
 /* For license and copyright information please see the LEGAL file in the code repository */
 
-package string_p
+package utf8_p
 
 import (
-	error_p "memar/error/protocol"
-	string_p "memar/string/protocol"
+	error_p "memar/process/error/protocol"
+	string_p "memar/codec/string/protocol"
 )
 
 // UTF-8 is a variable-length character encoding standard used for electronic communication.

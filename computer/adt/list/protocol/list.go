@@ -3,8 +3,8 @@
 package list_p
 
 import (
-	container_p "memar/adt/container/protocol"
-	error_p "memar/error/protocol"
+	container_p "memar/computer/adt/container/protocol"
+	error_p "memar/process/error/protocol"
 )
 
 // list or sequence is an abstract data type that represents a finite number of ordered values,

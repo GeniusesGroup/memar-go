@@ -3,15 +3,14 @@
 package memory_p
 
 import (
-	string_p "memar/codec/string/protocol"
+	error_p "memar/process/error/protocol"
+	logic_p "memar/math/logic/protocol"
 )
 
-// 
 type Field_MemoryAddress interface {
 	MemoryAddress() MemoryAddress
 }
 
-// 
 type Method_SetMemoryAddress interface {
 	// SetMemoryAddress is unsafe method and it is better to use in rare cases.
 	// Conversion of a T1 to Pointer to T2.
@@ -19,5 +18,7 @@ type Method_SetMemoryAddress interface {
 }
 
 type MemoryAddress interface {
-	string_p.Stringer
+	logic_p.Equivalence[MemoryAddress]
+
+	// string_p.Stringer
 }

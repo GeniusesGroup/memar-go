@@ -3,11 +3,11 @@
 package log_p
 
 import (
-	event_p "memar/event/protocol"
+	event_p "memar/process/event/protocol"
 )
 
 // Logger provide logging mechanism to dispatch events about runtime events
-// to check by developers to fix bugs or develope better features.
+// to check by developers to fix bugs or develop better features.
 //
 // `Logger` and `Event` are local data structures.
 // Distributed log listener mechanism usually implement on some kind of services that:

@@ -3,10 +3,11 @@
 package minify
 
 import (
-	"memar/protocol"
+	codec_p "memar/codec/protocol"
+	error_p "memar/process/error/protocol"
 
-	tcss "github.com/tdewolff/minify/css"
-	"github.com/tdewolff/parse/buffer"
+	tcss "github.com/tdewolff/minify/v2/css"
+	"github.com/tdewolff/parse/v2/buffer"
 )
 
 var CSS css
@@ -16,9 +17,9 @@ type css struct {
 }
 
 // Minify replace file data with minify of them.
-func (css *css) Minify(data protocol.Codec) (err protocol.Error) {
+func (css *css) Minify(data codec_p.Codec) (err error_p.Error) {
 	var rawData []byte
-	rawData, err = data.Marshal()
+	rawData, err = data.Encode()
 	if err != nil {
 		return
 	}
@@ -34,7 +35,7 @@ func (css *css) Minify(data protocol.Codec) (err protocol.Error) {
 }
 
 // MinifyBytes replace file data with minify of them.
-func (css *css) MinifyBytes(data []byte) (minifiedData []byte, err protocol.Error) {
+func (css *css) MinifyBytes(data []byte) (minifiedData []byte, err error_p.Error) {
 	var minifiedWriter = buffer.NewWriter(make([]byte, 0, len(data)))
 	var goErr = css.Minifier.Minify(minifier, minifiedWriter, buffer.NewReader(data), nil)
 	if goErr != nil {

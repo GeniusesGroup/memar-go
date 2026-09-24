@@ -3,8 +3,9 @@
 package codec_p
 
 import (
-	buffer_p "memar/buffer/protocol"
+	buffer_p "memar/computer/buffer/protocol"
 	datatype_p "memar/computer/datatype/protocol"
+	mediatype_p "memar/identifier/mediatype/protocol"
 	error_p "memar/process/error/protocol"
 )
 
@@ -12,22 +13,23 @@ import (
 // Protocols that have just one specific logic NEED to implement this interface e.g. HTTP, MP3, AVI, ...
 // Others can implement other Codec e.g. Syllab, JSON, XML, HTML, CSS, ...
 // https://en.wikipedia.org/wiki/Codec
-type Codec /*[BUF Buffer]*/ interface {
-	Decoder /*[BUF]*/
-	Encoder /*[BUF]*/
+type Codec interface {
+	Decoder
+	Encoder
 
 	datatype_p.DataType
+	mediatype_p.Field_MediaType
 }
 
 // Decoder is the interface that wraps the Decode method.
-type Decoder /*[BUF Buffer]*/ interface {
+type Decoder interface {
 	// Decode read and decode data until end of needed data or occur error.
 	// Unlike io.ReadFrom() it isn't read until EOF and just read needed data.
 	Decode(source buffer_p.Buffer) (err error_p.Error)
 }
 
 // Encoder is the interface that wraps the Encode & Field_Length methods.
-type Encoder /*[BUF Buffer]*/ interface {
+type Encoder interface {
 	// Encode writes serialized(encoded) data to destination until there's no more data to write.
 	// Return any error that occur in buffer logic e.g. timeout error in socket, ...
 	Encode(destination buffer_p.Buffer) (err error_p.Error)

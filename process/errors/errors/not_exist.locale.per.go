@@ -10,10 +10,10 @@ func (d *errNotExist) Summary() string { return "وجود ندارد" }
 func (d *errNotExist) Overview() string {
 	return "خطایی با آدرس حافظه داده شده یافت نشد"
 }
-func (d *errNotExist) UserNote() string {
+func (d *errNotExist) UserActionNote() string {
 	return "اشکال بوجود آماده بدلیل نقض عملیات توسعه ما می باشد. خواهشمندیم با پشتیبانی نرم افزار برای رفع این مشکل در تماس باشید"
 }
-func (d *errNotExist) DevNote() string {
+func (d *errNotExist) DevActionNote() string {
 	return "خطای بوجود آمده را با استفاده از فعال سازی قابلیت کامپایلر زبان برنامه نویسی خود، منشا خطا ناموجود را پیدا کنید"
 }
 func (d *errNotExist) TAGS() []string { return []string{} }

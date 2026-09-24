@@ -4,6 +4,7 @@ package codec_p
 
 import (
 	datatype_p "memar/computer/datatype/protocol"
+	mediatype_p "memar/identifier/mediatype/protocol"
 	error_p "memar/process/error/protocol"
 )
 
@@ -12,6 +13,7 @@ type Marshalling interface {
 	Marshaler
 
 	datatype_p.DataType
+	mediatype_p.Field_MediaType
 }
 
 // In computer science, marshalling or marshaling (US spelling) is the process of

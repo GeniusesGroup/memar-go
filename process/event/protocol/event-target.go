@@ -3,7 +3,7 @@
 package event_p
 
 import (
-	error_p "memar/error/protocol"
+	error_p "memar/process/error/protocol"
 )
 
 // Target is a interface implemented to receive events and may have listeners for them.

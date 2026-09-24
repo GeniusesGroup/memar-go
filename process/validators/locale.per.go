@@ -5,7 +5,8 @@
 package validators
 
 import (
-	"libgo/protocol"
+	"memar/detail"
+	"memar/protocol"
 )
 
 const domainPersian = "اعتبارسنجی"

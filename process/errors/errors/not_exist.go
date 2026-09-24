@@ -3,14 +3,14 @@
 package errors_errs
 
 import (
-	"memar/computer/datatype"
+	error "memar/process/error"
 	error_p "memar/process/error/protocol"
 )
 
 var ErrNotExist errNotExist
 
 type errNotExist struct {
-	datatype.DataType
+	error.Error
 }
 
 func (dt *errNotExist) Init() (err error_p.Error) {

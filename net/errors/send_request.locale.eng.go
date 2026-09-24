@@ -10,10 +10,10 @@ func (dt *errSendRequest) Summary() string { return "Send Request" }
 func (dt *errSendRequest) Overview() string {
 	return "Send request encounter problem due to temporary or long term problem!"
 }
-func (dt *errSendRequest) UserNote() string {
+func (dt *errSendRequest) UserActionNote() string {
 	return ""
 }
-func (dt *errSendRequest) DevNote() string {
+func (dt *errSendRequest) DevActionNote() string {
 	return ""
 }
 func (dt *errSendRequest) TAGS() []string { return []string{} }

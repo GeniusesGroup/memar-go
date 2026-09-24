@@ -17,7 +17,7 @@ type Field_LastElementIndex interface {
 
 type Index[ELEMENT Element] interface {
 	// Index return the location of given element in the container.
-	Index(el ELEMENT) (ei ElementIndex, err error_p.Error)
+	Index(el ELEMENT, offset Offset, limit Limit) (ei ElementIndex, err error_p.Error)
 }
 
 type LastIndex[ELEMENT Element] interface {

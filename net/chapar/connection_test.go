@@ -3,7 +3,7 @@
 package chapar
 
 import (
-	"memar/protocol"
+	net_p "memar/net/protocol"
 )
 
-var _ protocol.OSI_DataLink = &Connection{}
+var _ net_p.OSI_DataLink = &Connection{}

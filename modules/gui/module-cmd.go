@@ -3,10 +3,15 @@
 package module
 
 import (
-	cmd "memar/command"
-	"memar/mediatype"
+	function_p "memar/computer/function/protocol"
+	"memar/computer/datatype"
+	datatype_p "memar/computer/datatype/protocol"
+	error_p "memar/process/error/protocol"
+	cmd "memar/process/command"
+	command_p "memar/process/command/protocol"
+	operation_p "memar/process/operation/protocol"
+	"memar/process/service"
 	"memar/protocol"
-	"memar/service"
 
 	"memar/modules/module/services/new"
 )
@@ -14,15 +19,15 @@ import (
 var Command command
 
 type command struct {
-	mediatype.MT
+	datatype.DataType
 	service.Service
 	cmd.Command
 }
 
 // Init use to initialize all services and register them in the given parent.
 //
-//libgo:impl memar/protocol.ObjectLifeCycle
-func (s *command) Init(parent protocol.Command) (err protocol.Error) {
+//memar:impl memar/computer/capsule/protocol.LifeCycle
+func (s *command) Init(parent command_p.Command) (err error_p.Error) {
 	// err = s.MT.Init("html.spec.whatwg.org")
 
 	// new.Service.Init(s)
@@ -34,37 +39,36 @@ func (s *command) Init(parent protocol.Command) (err protocol.Error) {
 	return
 }
 
-//libgo:impl memar/protocol.MediaType
-func (s *command) FileExtension() string               { return "" }
-func (s *command) Status() protocol.SoftwareStatus     { return protocol.Software_Unset }
-func (s *command) ReferenceURI() string                { return "" }
-func (s *command) IssueDate() protocol.Time            { return nil }
-func (s *command) ExpiryDate() protocol.Time           { return nil }
-func (s *command) ExpireInFavorOf() protocol.MediaType { return nil }
+//memar:impl memar/protocol.MediaType
+func (s *command) FileExtension() string                  { return "" }
+func (s *command) LifeCycle() datatype_p.LifeCycle        { return datatype_p.LifeCycle_Unset }
+func (s *command) ReferenceURI() string                   { return "" }
+func (s *command) IssueDate() string                      { return "" }
+func (s *command) ExpiryDate() string                     { return "" }
+func (s *command) ExpireInFavorOf() mediatype_p.MediaType { return nil }
 
-//libgo:impl memar/protocol.Object
-func (s *command) Fields() []protocol.DataType         { return nil }
-func (s *command) Methods() []protocol.DataType_Method { return nil }
+//memar:impl memar/process/command/protocol.Object
+func (s *command) Fields() []protocol.DataType  { return nil }
+func (s *command) Methods() []function_p.Method { return nil }
 
-//libgo:impl memar/protocol.Service
-func (s *command) URI() string                 { return "" }
-func (s *command) Priority() protocol.Priority { return protocol.Priority_Unset }
-func (s *command) Weight() protocol.Weight     { return protocol.Weight_Unset }
-func (s *command) CRUDType() protocol.CRUD     { return protocol.CRUD_None }
-func (s *command) UserType() protocol.UserType { return protocol.UserType_Unset }
+//memar:impl memar/protocol.Service
+func (s *command) URI() string                        { return "" }
+func (s *command) Priority() operation_p.Priority     { return operation_p.Priority_Unset }
+func (s *command) Weight() operation_p.Weight         { return operation_p.Weight_Unset }
+func (s *command) ActionType() operation_p.ActionType { return operation_p.ActionType_None }
 
-//libgo:impl memar/protocol.ServiceDetails
+//memar:impl memar/protocol.ServiceDetails
 func (s *command) Request() protocol.DataType  { return nil }
 func (s *command) Response() protocol.DataType { return nil }
 
-//libgo:impl memar/protocol.Quiddity
+//memar:impl memar/protocol.Quiddity
 func (s *command) Name() string         { return "gui" }
 func (c *command) Abbreviation() string { return "" }
 func (s *command) Aliases() []string    { return []string{"ui"} }
 
-//libgo:impl memar/protocol.Command
-func (s *command) Runnable() bool { return false }
-func (s *command) ServeCLA(arguments []string) (err protocol.Error) {
+//memar:impl memar/process/command/protocol.Command
+func (s *command) RunnableCommand() bool { return false }
+func (s *command) ServeCLA(arguments []string) (err error_p.Error) {
 	// err = cmd.ServeCLA(s, arguments)
 	return
 }

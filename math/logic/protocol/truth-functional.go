@@ -43,8 +43,9 @@ type Equivalence[T any] interface {
 	// It is not equal(=) sign
 	// For example, the sentences 0=0 and 32=9 are mathematically but not logically equivalent.
 	Equivalence(with T) bool
+	// TODO::: Equal() or Equals() or Equivalence() or EQV()
 	// Equal(with T) bool
-	// EQV()
+	// EQV(with T) bool
 }
 
 // BiConditional is a relation between two propositions that is true only when both propositions are simultaneously true or false
@@ -52,7 +53,7 @@ type Equivalence[T any] interface {
 // Logical_Connective_Equivalent
 type BiConditional[T any] interface {
 	// BiConditional is represented by ↔
-	// This means that that P↔Q  is either analytically (in an axiom system) or synthetically true ,
+	// This means that that P↔Q  is either analytically (in an axiom system) or synthetically true,
 	// i.e., that P and Q have the same truth value in the given interpretation.
 	BiConditional(with T) bool
 	// BIC()

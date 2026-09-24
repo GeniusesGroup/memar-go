@@ -3,7 +3,7 @@
 package boolean
 
 import (
-	"memar/protocol"
+	error_p "memar/process/error/protocol"
 )
 
 // Boolean algebra is a branch of mathematics that deals with operations on logical values with binary variables.
@@ -13,13 +13,17 @@ import (
 // https://en.wikipedia.org/wiki/Boolean_algebra_(structure)
 type Boolean bool
 
-//memar:impl memar/protocol.DataType_Equal
+//memar:impl memar/math/logic/protocol.Equivalence
 func (b *Boolean) Equal(with Boolean) Boolean {
 	return *b == with
 }
 
-//memar:impl memar/protocol.Stringer
-func (b *Boolean) ToString() (str string, err protocol.Error) {
+//memar:impl memar/codec/string/protocol.Stringer
+func (b *Boolean) ToString() (str string, err error_p.Error) { return b.ToASCII() }
+func (b *Boolean) FromString(str string) (err error_p.Error) { return b.FromASCII(str) }
+
+//memar:impl memar/codec/string/ascii/protocol.Stringer
+func (b *Boolean) ToASCII() (str string, err error_p.Error) {
 	if *b {
 		str = "true"
 	} else {
@@ -27,7 +31,7 @@ func (b *Boolean) ToString() (str string, err protocol.Error) {
 	}
 	return
 }
-func (b *Boolean) FromString(str string) (err protocol.Error) {
+func (b *Boolean) FromASCII(str string) (err error_p.Error) {
 	switch str {
 	case "true", "TRUE", "True":
 		*b = true

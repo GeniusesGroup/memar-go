@@ -5,8 +5,8 @@ package event
 import (
 	"sync"
 
-	error_p "memar/error/protocol"
-	event_p "memar/event/protocol"
+	error_p "memar/process/error/protocol"
+	event_p "memar/process/event/protocol"
 )
 
 // TODO::: Change to use atomic operation instead of sync.
@@ -23,7 +23,7 @@ func (self *Target[E]) Init() (err error_p.Error) {
 	return
 }
 
-//memar:impl memar/event/protocol.Target
+//memar:impl memar/process/event/protocol.Target
 func (self *Target[E]) DispatchEvent(event E) (err error_p.Error) {
 	self.sync.Lock()
 	var ls = self.ls

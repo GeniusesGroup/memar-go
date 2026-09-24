@@ -14,6 +14,10 @@ https://en.wikipedia.org/wiki/Data_link_layer
 **********************************************************************************
 */
 
+type Field_OSI_DataLink interface {
+	OSI_DataLinkLayer() OSI_DataLink
+}
+
 // OSI_DataLink use to network hardware devices in a computers or connect two or more computers.
 type OSI_DataLink interface {
 	capsule_p.LifeCycle

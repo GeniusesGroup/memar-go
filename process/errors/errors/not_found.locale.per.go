@@ -10,10 +10,10 @@ func (d *errNotFound) Summary() string { return "یافت نشد" }
 func (d *errNotFound) Overview() string {
 	return "خطایی رخ داده است ولی جزییات آن خطا برای نمایش به شما ثبت نشده است"
 }
-func (d *errNotFound) UserNote() string {
+func (d *errNotFound) UserActionNote() string {
 	return "اشکال بوجود آماده بدلیل نقض عملیات توسعه ما می باشد. خواهشمندیم با پشتیبانی نرم افزار برای رفع این مشکل در تماس باشید"
 }
-func (d *errNotFound) DevNote() string {
+func (d *errNotFound) DevActionNote() string {
 	return "خطای رخ داده شده را با استفاده از URN آن پیدا کرده و با استفاده از متد ذخیره آن را برای هر نوع استفاده رابط کاربری آماده کنید"
 }
 func (d *errNotFound) TAGS() []string { return []string{} }

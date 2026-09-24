@@ -22,11 +22,11 @@ type Service interface {
 	operation_p.Field_OperationID
 	operation_p.Field_ActionType
 	operation_p.Importance
-	operation_p.Authorize
+	// operation_p.Authorize
 
 	request_p.Field_Request
 	response_p.Field_Response
 
 	datatype_p.DataType
-	mediatype_p.MediaType
+	mediatype_p.Field_MediaType
 }

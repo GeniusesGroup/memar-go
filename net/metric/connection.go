@@ -5,7 +5,7 @@ package net
 import (
 	"sync/atomic"
 
-	"memar/protocol"
+	time_p "memar/time/protocol"
 	"memar/time/unix"
 )
 
@@ -28,8 +28,8 @@ type Metric struct {
 	failedStreamCount           atomic.Uint64 // Count failed services call e.g. data validation failed, ...
 }
 
-//libgo:impl memar/protocol.ConnectionMetrics
-func (m *Metric) LastUsage() protocol.Time            { return &m.lastUsage }
+//memar:impl memar/protocol.ConnectionMetrics
+func (m *Metric) LastUsage() time_p.Time              { return &m.lastUsage }
 func (m *Metric) MaxBandwidth() uint64                { return m.maxBandwidth.Load() }
 func (m *Metric) BytesSent() uint64                   { return m.bytesSent.Load() }
 func (m *Metric) PacketsSent() uint64                 { return m.packetsSent.Load() }

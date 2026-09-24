@@ -1,0 +1,154 @@
+/* For license and copyright information please see the LEGAL file in the code repository */
+
+package chapar
+
+import (
+	"bytes"
+	"libgo/protocol"
+)
+
+// Multiplexer Hardware implementation has some difference from Software(this) implementation:
+// - multiplexers send frames on the connection to other mux not call other functionality
+// - they must provide some congestion mechanism like cache to prevent sender frame.
+// - mux must have some mechanism to drop frames on destination port unavailability (congestion, ...)
+type Multiplexer struct {
+	portNumber byte
+
+	// Ports store all available link port to other physical or logical devices.
+	ports [defaultPortNumber]port
+
+	connections Connections
+}
+
+func (mux *Multiplexer) FrameID() (fID protocol.Network_FrameID) {
+	return protocol.Network_FrameID_Chapar
+}
+
+// Init initializes new Multiplexer object otherwise panic will occur on un-registered port or handler call.
+func (mux *Multiplexer) Init(portNumber byte, pConnection protocol.NetworkInterface, connections Connections) {
+	mux.portNumber = portNumber
+	mux.connections = connections
+
+	var i byte
+	for i = 0; i <= 255; i++ {
+		if i == portNumber {
+			mux.ports[i].Init(portNumber, mux, pConnection)
+		} else {
+			// TODO::: get port info
+			// mux.ports[i].Init(i, ?, ?)
+		}
+	}
+}
+
+// Deinit ready the connection pools to de-allocated.
+func (mux *Multiplexer) Deinit() (err protocol.Error) {
+	err = mux.connections.Deinit()
+	return
+}
+
+// Send send the packet to all ports async.
+func (mux *Multiplexer) Send(frame []byte) (err protocol.Error) {
+	var f = Frame(frame)
+
+	// err = f.CheckFrame()
+	// if err != nil {
+	// 	// TODO::: ???
+	// 	return
+	// }
+
+	if f.IsBroadcastFrame() {
+		err = mux.sendBroadcast(frame)
+	} else {
+		var portNum byte = f.NextPortNum()
+		var port = mux.getPort(portNum)
+		err = port.Send(frame)
+	}
+	return
+}
+
+// SendBroadcast send the payload to all ports async.
+func (mux *Multiplexer) SendBroadcast(payload protocol.Codec) (err protocol.Error) {
+	var payloadLen int = payload.Len()
+	if payloadLen > maxBroadcastPayloadLen {
+		return &ErrMTU
+	}
+
+	var f Frame
+	f.Init(nil, payloadLen)
+	var framePayload = f.Payload()
+	framePayload = framePayload[:0]
+	_, err = payload.MarshalTo(framePayload)
+	if err != nil {
+		return
+	}
+	err = mux.sendBroadcast(f)
+	return
+}
+
+// send the frame to all ports as BroadcastFrame!
+func (mux *Multiplexer) sendBroadcast(frame []byte) (err protocol.Error) {
+	// send the frame to all ports as BroadcastFrame!
+	var portNum byte
+	for portNum = 0; portNum <= 255; portNum++ {
+		err = mux.getPort(portNum).Send(frame)
+	}
+	return
+}
+
+// Receive handles income frame to ports.
+func (mux *Multiplexer) Receive(frame []byte) (err protocol.Error) {
+	var f = Frame(frame)
+
+	err = f.CheckFrame()
+	if err != nil {
+		// TODO::: ???
+		return
+	}
+
+	var lastHop = f.IncrementNextHop(mux.portNumber)
+	if lastHop {
+		if !AcceptLastHop {
+			err = &ErrNotAcceptLastHop
+		} else {
+			var path = f.Path()
+
+			var conn *Connection
+			conn, _ = mux.connections.GetConnectionByPath(path)
+			if conn == nil {
+				var newConn Connection
+				newConn.Init(f, &mux.ports[mux.portNumber])
+				conn = &newConn
+				_ = mux.connections.RegisterConnection(conn)
+			} else if !bytes.Equal(conn.pathFromPeer.Get(), path) {
+				// TODO::: receive frame on alternative path, Any action needed??
+			}
+
+			var payload = f.Payload()
+			mux.getTransportHandler(nextHeader).Receive(conn, payload)
+		}
+		return
+	}
+
+	if f.IsBroadcastFrame() {
+		err = mux.sendBroadcast(frame)
+	} else {
+		var portNum byte = f.NextPortNum()
+		err = mux.getPort(portNum).Receive(frame)
+	}
+	return
+}
+
+func (mux *Multiplexer) getPort(id byte) *port { return &mux.ports[id] }
+
+func (mux *Multiplexer) registerPort(p port) {
+	// TODO::: check port exist already and warn user??
+	mux.ports[p.PortNumber()] = p
+}
+
+func (mux *Multiplexer) unRegisterPort(p port) {
+	mux.removePort(p.PortNumber())
+}
+
+func (mux *Multiplexer) removePort(portNumber byte) {
+	// mux.ports[portNumber].physicalConnection = TODO:::
+}

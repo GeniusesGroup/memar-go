@@ -4,8 +4,8 @@ package command_p
 
 import (
 	datatype_p "memar/computer/datatype/protocol"
-	error_p "memar/process/error/protocol"
 	mediatype_p "memar/identifier/mediatype/protocol"
+	error_p "memar/process/error/protocol"
 	request_p "memar/process/request/protocol"
 	response_p "memar/process/response/protocol"
 )
@@ -13,7 +13,7 @@ import (
 // Command is the interface that must implement by any struct to be a command service
 // It is old user interface, In `uni-kernel` and `Graphic UI` it is useless because there is no `terminal` and `shell`.
 // TODO::: Deprecate in favor of service??
-// 
+//
 // https://en.wikipedia.org/wiki/Command-line_interface
 type Command interface {
 	// Init(parent Command, subCommands ...Command)
@@ -34,7 +34,7 @@ type Command interface {
 	Handler
 
 	datatype_p.DataType
-	mediatype_p.MediaType
+	mediatype_p.Field_MediaType
 
 	request_p.Request
 	response_p.Response

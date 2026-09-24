@@ -1,6 +1,6 @@
 /* For license and copyright information please see the LEGAL file in the code repository */
 
-package headers
+package http_headers
 
 import (
 	container_p "memar/computer/adt/container/protocol"
@@ -8,12 +8,12 @@ import (
 )
 
 // ContentType read all value about content in header
-func (h *Header[STR]) ContentType() (c ContentType) {
+func (h *Header) ContentType() (c ContentType) {
 	var contentType = h.Header_Get(Key_ContentType)
 	c.FromString(contentType)
 	return
 }
-func (h *Header[STR]) AddContentType(ct string) {
+func (h *Header) AddContentType(ct string) {
 	h.Header_Add(Key_ContentType, ct)
 }
 

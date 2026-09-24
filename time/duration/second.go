@@ -3,9 +3,14 @@
 package duration
 
 import (
-	error_p "memar/error/protocol"
+	error_p "memar/process/error/protocol"
 	"memar/math/integer"
 )
+
+type Field_Second interface {
+	// Epoch is not indicate here and MUST indicate by the user.
+	SecondDuration() Second
+}
 
 // A Second duration represents the elapsed time between two instants as an int64 second count.
 // https://en.wikipedia.org/wiki/Second
@@ -33,7 +38,7 @@ func (d *Second) FromNanoSecond(nsec NanoSecond) {
 	// TODO::: return overflow nanosecond??
 }
 
-//memar:impl memar/string/protocol.Stringer
+//memar:impl memar/codec/string/protocol.Stringer
 func (d *Second) ToString() (str string, err error_p.Error) {
 	// Go doesn't support to access derived type methods, So we MUST hack it this way!
 	// var s64 = integer.S64(*d)

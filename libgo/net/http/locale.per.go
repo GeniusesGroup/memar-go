@@ -4,9 +4,4 @@
 
 package http
 
-import (
-	"memar/detail"
-	"memar/protocol"
-)
-
 const domainPersian = "HTTP"

@@ -3,20 +3,20 @@
 package gp
 
 import (
-	"memar/log"
-	"memar/protocol"
+	"memar/process/log"
+	error_p "memar/process/error/protocol"
 )
 
 // must assign before use the package
 var conns Connections
 
-//memar:impl memar/protocol.ObjectLifeCycle
-func Init(cs Connections) (err protocol.Error) {
+//memar:impl memar/computer/capsule/protocol.LifeCycle
+func Init(cs Connections) (err error_p.Error) {
 	if conns != nil {
 		// err =
 		return
 	}
-	log.Info(&Package_MediaType, "GP network begin listening...")
+	log.Info(&domain, "GP network begin listening...")
 	conns = cs
 	return
 }

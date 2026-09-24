@@ -5,26 +5,26 @@ package integer
 import (
 	"strconv"
 
+	error_p "memar/process/error/protocol"
 	"memar/math/boolean"
-	"memar/protocol"
 )
 
 // S8 is signed 8 bit integer
 type S8 int8
 
-//memar:impl memar/protocol.DataType_Equal
+//memar:impl memar/math/logic/protocol.Equivalence
 func (s *S8) Equal(with S8) boolean.Boolean {
 	return *s == with
 }
 
 // TODO::: not efficient enough code
 //
-//memar:impl memar/protocol.Stringer
-func (s *S8) ToString() (str string, err protocol.Error) {
+//memar:impl memar/codec/string/protocol.Stringer
+func (s *S8) ToString() (str string, err error_p.Error) {
 	str = strconv.FormatInt(int64(*s), 10)
 	return
 }
-func (s *S8) FromString(str string) (err protocol.Error) {
+func (s *S8) FromString(str string) (err error_p.Error) {
 	strconv.ParseInt(str, 10, s.bitSize())
 	return
 }

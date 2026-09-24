@@ -3,7 +3,7 @@
 package log
 
 import (
-	log_p "memar/audit/log/protocol"
+	log_p "memar/process/log/protocol"
 )
 
 var _ log_p.Logger[*Event] = &Logger

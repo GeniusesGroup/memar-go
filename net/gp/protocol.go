@@ -3,21 +3,21 @@
 package gp
 
 import (
-	"memar/protocol"
+	capsule_p "memar/computer/capsule/protocol"
+	net_p "memar/net/protocol"
+	error_p "memar/process/error/protocol"
 )
 
 type Connections interface {
-	GetConnectionByPeerAddr(addr Addr) (conn *Connection, err protocol.Error)
+	GetConnectionByPeerAddr(addr Addr) (conn *Connection, err error_p.Error)
 	// A connection can use just by single app node, so user can't use same connection to connect other node before close connection on usage node.
-	GetConnectionByUserIDDelegateUserID(userID, delegateUserID [16]byte) (conn *Connection, err protocol.Error)
-	GetConnectionsByUserID(userID protocol.UserUUID) (conns []*Connection, err protocol.Error)
-	GetConnectionByDomain(domain string) (conn *Connection, err protocol.Error)
+	GetConnectionBySessionID(sID net_p.SessionID) (conn *Connection, err error_p.Error)
 
 	// state=unregistered -> 'register' -> state=registered -> 'deregister' -> state=unregistered.
-	RegisterConnection(conn *Connection) (err protocol.Error)
-	DeregisterConnection(conn *Connection) (err protocol.Error)
-	RevokeConnection(conn *Connection) (err protocol.Error)
+	RegisterConnection(conn *Connection) (err error_p.Error)
+	DeregisterConnection(conn *Connection) (err error_p.Error)
+	RevokeConnection(conn *Connection) (err error_p.Error)
 
 	// Deinit the listener when the application closes or force to closes by not recovered panic.
-	protocol.ObjectLifeCycle
+	capsule_p.LifeCycle
 }

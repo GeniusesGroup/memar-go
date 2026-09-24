@@ -1,13 +1,15 @@
 /* For license and copyright information please see the LEGAL file in the code repository */
 
-package cl
+package logic
 
+// TODO::: We MUST change below logic to interface and methods!
 type Field_Logical_Connective interface {
 	LogicalConnective() Logical_Connective
 }
 
 //
 // https://en.wikipedia.org/wiki/Logical_connective
+// https://en.wikipedia.org/wiki/Operators_in_C_and_C++
 type Logical_Connective uint64
 
 const Logical_Connective_Unset Logical_Connective = 0
@@ -17,6 +19,7 @@ const (
 	Logical_Connective_AND Logical_Connective = (1 << iota)
 
 	// https://en.wikipedia.org/wiki/Logical_biconditional
+	// https://en.wikipedia.org/wiki/Logical_equivalence
 	Logical_Connective_Equivalent
 
 	// It can indicate by NOT(Equivalent) flags.

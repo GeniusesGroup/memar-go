@@ -5,10 +5,10 @@ package file
 import (
 	"path/filepath"
 
-	container_p "memar/adt/container/protocol"
-	"memar/convert"
-	error_p "memar/error/protocol"
-	mediatype_p "memar/mediatype/protocol"
+	container_p "memar/computer/adt/container/protocol"
+	"memar/computer/buffer/byteslice/convert"
+	mediatype_p "memar/identifier/mediatype/protocol"
+	error_p "memar/process/error/protocol"
 )
 
 // URI implement uri_p.URI and file_p.URI interface
@@ -47,7 +47,7 @@ func (uri *URI) Rename(newName string) {
 }
 
 //memar:impl memar/codec/protocol.Codec
-func (uri *URI) MediaType() mediatype_p.MediaType { return &MediaType }
+func (uri *URI) MediaType() mediatype_p.MediaType { return MediaType.MediaType() }
 
 // Marshal encodes and return whole file data.
 func (uri *URI) Marshal() (data []byte, err error_p.Error) {

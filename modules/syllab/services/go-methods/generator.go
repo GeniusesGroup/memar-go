@@ -1,6 +1,6 @@
 /* For license and copyright information please see LEGAL file in repository */
 
-package syllab
+package services
 
 import (
 	"bytes"
@@ -18,37 +18,37 @@ import (
 /*
 Before pass file to CompleteMethods(), dev must add needed methods to desire type by below template!
 Otherwise panic may occur due to improve performance we don't check some bad situation!!
-For just syllabDecoder() method you can omit syllabStackLen() & syllabLen()
+For just syllabDecoder() method you can omit Syllab_StackLength() & Syllab_Length()
 
-func ({{DesireName}} *{{DesireType}}) syllabDecoder(buf []byte) (err error) {
+func (self *{{DesireType}}) syllabDecoder(buf []byte) (err error) {
 	return
 }
 
-func ({{DesireName}} *{{DesireType}}) SyllabDecoder(buf []byte, stackIndex int) {
+func (self *{{DesireType}}) SyllabDecoder(buf []byte, stackIndex int) {
 	return
 }
 
-func ({{DesireName}} *{{DesireType}}) syllabEncoder(buf []byte) {}
+func (self *{{DesireType}}) syllabEncoder(buf []byte) {}
 
-func ({{DesireName}} *{{DesireType}}) syllabEncoder() (buf []byte) {
-	buf = make([]byte, {{DesireName}}.syllabLen())
+func (self *{{DesireType}}) syllabEncoder() (buf []byte) {
+	buf = make([]byte, self.Syllab_Length())
 	return
 }
 
-func ({{DesireName}} *{{DesireType}}) SyllabEncoder(buf []byte, stackIndex, heapIndex uint32) (hi uint32) {
+func (self *{{DesireType}}) SyllabEncoder(buf []byte, stackIndex, heapIndex uint32) (hi uint32) {
 	return heapIndex
 }
 
-func ({{DesireName}} *{{DesireType}}) syllabStackLen() (ln uint32) {
+func (self *{{DesireType}}) Syllab_StackLength() (ln uint32) {
 	return
 }
 
-func ({{DesireName}} *{{DesireType}}) syllabHeapLen() (ln uint32) {
+func (self *{{DesireType}}) Syllab_HeapLength() (ln uint32) {
 	return
 }
 
-func ({{DesireName}} *{{DesireType}}) syllabLen() (ln int) {
-	return int({{DesireName}}.SyllabStackLen() + {{DesireName}}.syllabHeapLen())
+func (self *{{DesireType}}) Syllab_Length() (ln int) {
+	return int(self.Syllab_StackLength() + self.Syllab_HeapLength())
 }
 */
 
@@ -113,25 +113,25 @@ func CompleteMethods(file *assets.File, gos *GenerationOptions) (err error) {
 						Data:  sm.Encoder.String(),
 						Start: int(d.Body.Lbrace),
 						End:   int(d.Body.Rbrace) - 1}) // -1 to not remove end brace
-				} else if d.Name.Name == "syllabStackLen" || d.Name.Name == "SyllabStackLen" {
+				} else if d.Name.Name == "Syllab_StackLength" || d.Name.Name == "Syllab_StackLength" {
 					fileReplaces = append(fileReplaces, assets.ReplaceReq{
-						Data: "\n	return " + sm.getSLIAsString(0) + "\n",
+						Data:  "\n	return " + sm.getSLIAsString(0) + "\n",
 						Start: int(d.Body.Lbrace),
 						End:   int(d.Body.Rbrace) - 1}) // -1 to not remove end brace
-				} else if d.Name.Name == "syllabHeapLen" || d.Name.Name == "SyllabHeapLen" {
+				} else if d.Name.Name == "Syllab_HeapLength" || d.Name.Name == "Syllab_HeapLength" {
 					fileReplaces = append(fileReplaces, assets.ReplaceReq{
 						Data:  sm.HeapSize.String(),
 						Start: int(d.Body.Lbrace),
 						End:   int(d.Body.Rbrace) - 1}) // -1 to not remove end brace
-				} else if d.Name.Name == "syllabLen" || d.Name.Name == "SyllabLen" {
+				} else if d.Name.Name == "Syllab_Length" || d.Name.Name == "Syllab_Length" {
 					fileReplaces = append(fileReplaces, assets.ReplaceReq{
-						Data: "\n	return int(" + sm.RN + ".syllabStackLen() + " + sm.RN + ".syllabHeapLen())\n",
+						Data:  "\n	return int(" + sm.RN + ".Syllab_StackLength() + " + sm.RN + ".Syllab_HeapLength())\n",
 						Start: int(d.Body.Lbrace),
 						End:   int(d.Body.Rbrace) - 1}) // -1 to not remove end brace
 				} else if strings.HasPrefix(d.Name.Name, "get") {
 					// TODO:::
 					// fileReplaces = append(fileReplaces, assets.ReplaceReq{
-					// 	Data: "\n	return " + sm.RN + ".syllabStackLen() + " + sm.RN + ".syllabHeapLen()\n",
+					// 	Data: "\n	return " + sm.RN + ".Syllab_StackLength() + " + sm.RN + ".Syllab_HeapLength()\n",
 					// 	Start: int(d.Body.Lbrace),
 					// 	End:   int(d.Body.Rbrace) - 1}) // -1 to not remove end brace
 				}
@@ -176,14 +176,14 @@ func (sm *syllabMaker) make() (err error) {
 	if sm.LSI == 0 {
 		sm.Decoder.WriteString(
 			"\n	var add, ln uint32\n	// var tempSlice []byte\n\n" +
-				"	if uint32(len(buf)) < " + sm.RN + ".syllabStackLen() {\n" +
+				"	if uint32(len(buf)) < " + sm.RN + ".Syllab_StackLength() {\n" +
 				"		err = syllab.ErrSyllabDecodeSmallSlice\n" +
 				"		return\n" +
 				"	}\n\n")
 
 		sm.Encoder.WriteString(
-			"\n	// buf = make([]byte, " + sm.RN + ".syllabLen()+offset)\n" +
-				"	var hsi uint32 = " + sm.RN + ".syllabStackLen() // Heap start index || Stack size!\n" +
+			"\n	// buf = make([]byte, " + sm.RN + ".Syllab_Length()+offset)\n" +
+				"	var hsi uint32 = " + sm.RN + ".Syllab_StackLength() // Heap start index || Stack size!\n" +
 				"	// var i, ln uint32 // len of strings, slices, maps, ...\n\n")
 
 		sm.HeapSize.WriteString("\n")
@@ -490,15 +490,15 @@ func (sm *syllabMaker) make() (err error) {
 						sm.Encoder.WriteString("	hsi = " + sm.FRN + fieldName + ".syllabEncoder(buf, " + sm.getSLIAsString(0) + ", hsi)\n")
 						sm.Decoder.WriteString("	" + sm.FRN + fieldName + ".syllabDecoder(buf, " + sm.getSLIAsString(0) + ")\n")
 
-						sm.StackSize.WriteString(" +" + sm.FRN + fieldName + ".syllabStackLen()")
-						sm.HeapSize.WriteString("	ln += " + sm.FRN + fieldName + ".syllabHeapLen()\n")
+						sm.StackSize.WriteString(" +" + sm.FRN + fieldName + ".Syllab_StackLength()")
+						sm.HeapSize.WriteString("	ln += " + sm.FRN + fieldName + ".Syllab_HeapLength()\n")
 					}
 				case *ast.SelectorExpr:
 					sm.Encoder.WriteString("	hsi = " + sm.FRN + fieldName + ".SyllabEncoder(buf, " + sm.getSLIAsString(0) + ", hsi)\n")
 					sm.Decoder.WriteString("	" + sm.FRN + fieldName + ".SyllabDecoder(buf," + sm.getSLIAsString(0) + ")\n")
 
-					sm.StackSize.WriteString(" + " + sm.FRN + fieldName + ".SyllabStackLen()")
-					sm.HeapSize.WriteString("	ln += " + sm.FRN + fieldName + ".SyllabHeapLen()\n")
+					sm.StackSize.WriteString(" + " + sm.FRN + fieldName + ".Syllab_StackLength()")
+					sm.HeapSize.WriteString("	ln += " + sm.FRN + fieldName + ".Syllab_HeapLength()\n")
 				case *ast.BasicLit:
 					// log.Info("BasicLit :", t.Kind)
 					// sm.Encoder.WriteString("	syllab.SetUInt32(buf, " + sm.getSLIAsString(0) + ", hsi)\n")

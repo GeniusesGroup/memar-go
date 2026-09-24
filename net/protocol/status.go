@@ -2,10 +2,12 @@
 
 package net_p
 
-type Socket_Status interface {
+type Field_SocketStatus interface {
 	Status() SocketStatus     // return last socket status
 	State() chan SocketStatus // return status channel to listen to new socket status. for more than one listener use channel hub(repeater)
+}
 
+type Method_SocketStatus interface {
 	// SetStatus is low level API that must use very carefully and usually in not services layer.
 	// It is Non-Blocking operation. Change status of socket and send notification on socket StateChannel.
 	SetStatus(ns SocketStatus)

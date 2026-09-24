@@ -5,21 +5,20 @@ package uri
 import (
 	"strings"
 
-	error_p "memar/process/error/protocol"
-	string_p "memar/codec/string/protocol"
 	"memar/codec/string/utf8"
+	error_p "memar/process/error/protocol"
 )
 
 // AU store authority part of an URI.
-type AU[STR string_p.String] struct {
-	authority       STR // host [ ":" port ]
-	UserInformation     //
-	host            STR // host without port if any exist in authority
-	port            STR //
+type AU struct {
+	authority       string // host [ ":" port ]
+	UserInformation        //
+	host            string // host without port if any exist in authority
+	port            string //
 }
 
 //memar:impl memar/computer/capsule/protocol.LifeCycle
-func (a *AU[STR]) Init(au string) (err error_p.Error) {
+func (a *AU) Init(au string) (err error_p.Error) {
 	if au == "" {
 		return
 	}
@@ -35,21 +34,21 @@ func (a *AU[STR]) Init(au string) (err error_p.Error) {
 	a.host, a.port, _ = utf8.CutByte(au, sign_Colon)
 	return
 }
-func (a *AU[STR]) Reinit() (err error_p.Error) {
+func (a *AU) Reinit() (err error_p.Error) {
 	a.authority = ""
 	a.UserInformation.Reinit()
 	a.host = ""
 	a.port = ""
 	return
 }
-func (a *AU[STR]) Deinit() (err error_p.Error) {
+func (a *AU) Deinit() (err error_p.Error) {
 	return
 }
 
-func (a *AU[STR]) Authority() string_p.String { return a.authority }
-func (a *AU[STR]) Host() string_p.String      { return a.host }
-func (a *AU[STR]) Port() string_p.String      { return a.port }
+func (a *AU) Authority() string { return a.authority }
+func (a *AU) Host() string      { return a.host }
+func (a *AU) Port() string      { return a.port }
 
-func (a *AU[STR]) SetAuthority(au string) { a.authority = au }
-func (a *AU[STR]) SetHost(h string)       { a.host = h }
-func (a *AU[STR]) SetPort(p string)       { a.port = p }
+func (a *AU) SetAuthority(au string) { a.authority = au }
+func (a *AU) SetHost(h string)       { a.host = h }
+func (a *AU) SetPort(p string)       { a.port = p }

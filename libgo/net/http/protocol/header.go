@@ -3,8 +3,7 @@
 package http_p
 
 import (
-	array_p "memar/adt/array/protocol"
-	string_p "memar/codec/string/protocol"
+	array_p "memar/computer/adt/array/protocol"
 )
 
 type Field_Header interface {
@@ -16,14 +15,14 @@ type Field_Header interface {
 //
 // Other frameworks:
 // https://developer.mozilla.org/en-US/docs/Web/API/Headers
-type Header /* [STR string_p.String] */ interface {
-	Header_Get(key string_p.String) (value string_p.String)
-	Header_Add(key, value string_p.String)
+type Header interface {
+	Header_Get(key string) (value string)
+	Header_Add(key, value string)
 	// Header_Set is same as Header_Del() >> Header_Add()
-	Header_Set(key, value string_p.String)
-	Header_Del(key string_p.String)
+	Header_Set(key, value string)
+	Header_Del(key string)
 
 	// some header fields such as "Set-Cookie", "WWW-Authenticate", "Proxy-Authenticate" break multiple values
 	// separate by comma and use multi line same key! implementations MUST provide iteration mechanism over all header fields.
-	Header_Iteration() array_p.Iteration_KV[string_p.String, string_p.String]
+	Header_Iteration() array_p.Iteration_KV[string, string]
 }

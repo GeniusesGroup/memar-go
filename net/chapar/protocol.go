@@ -3,14 +3,15 @@
 package chapar
 
 import (
-	"memar/protocol"
+	capsule_p "memar/computer/capsule/protocol"
+	error_p "memar/process/error/protocol"
 )
 
 type Connections interface {
-	GetConnectionByPath(path []byte) (conn *Connection, err protocol.Error)
+	GetConnectionByPath(path []byte) (conn *Connection, err error_p.Error)
 
-	RegisterConnection(conn *Connection) (err protocol.Error)
-	DeregisterConnection(conn *Connection) (err protocol.Error)
+	RegisterConnection(conn *Connection) (err error_p.Error)
+	DeregisterConnection(conn *Connection) (err error_p.Error)
 
-	protocol.ObjectLifeCycle
+	capsule_p.LifeCycle
 }

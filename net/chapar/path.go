@@ -3,7 +3,9 @@
 package chapar
 
 import (
-	"memar/protocol"
+	container_p "memar/computer/adt/container/protocol"
+	buffer_p "memar/computer/buffer/protocol"
+	error_p "memar/process/error/protocol"
 )
 
 // Path indicate Chapar switch route plan!
@@ -47,29 +49,39 @@ func (p *Path) CopyReverseTo(reverse *Path) {
 	return
 }
 
-//memar:impl memar/protocol.Stringer
-func (p *Path) ToString() string {
+//memar:impl memar/codec/string/protocol.Stringer
+func (p *Path) ToString() (str string, err error_p.Error) {
 	// TODO::: ??
-	return string(p.path[:p.len])
+	str = string(p.path[:p.len])
+	return
 }
-func (p *Path) FromString(s string) (err protocol.Error) {
+func (p *Path) FromString(str string) (err error_p.Error) {
 	// TODO:::
 	return
 }
 
-//memar:impl memar/protocol.Codec
-func (p *Path) MediaType() protocol.MediaType       { return nil }
-func (p *Path) CompressType() protocol.CompressType { return nil }
-func (p *Path) Len() int                            { return int(p.len) }
-func (p *Path) Decode(source protocol.Codec) (n int, err protocol.Error) {
+//memar:impl memar/codec/protocol.Codec
+// func (p *Path) MediaType() mediatype_p.MediaType    { return nil }
+// func (p *Path) CompressType() compress_p.CompressType { return nil }
+
+//memar:impl memar/codec/protocol.Field_Length
+func (p *Path) SerializationLength() container_p.NumberOfElement {
+	return container_p.NumberOfElement(p.len)
+}
+
+//memar:impl memar/protocol.Decoder
+func (p *Path) Decode(source buffer_p.Buffer) (err error_p.Error) {
 	// TODO:::
 	return
 }
-func (p *Path) Encode(destination protocol.Codec) (n int, err protocol.Error) {
+
+//memar:impl memar/protocol.Encoder
+func (p *Path) Encode(destination buffer_p.Buffer) (err error_p.Error) {
 	// TODO:::
 	return
 }
-func (p *Path) Unmarshal(path []byte) (err protocol.Error) {
+
+func (p *Path) Unmarshal(path []byte) (err error_p.Error) {
 	if len(path) == 0 {
 		// err = &
 		return

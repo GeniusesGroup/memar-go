@@ -7,10 +7,10 @@ type Field_ID interface {
 }
 
 // ID use as a way to distinguish data-types as domains.
-// It MUST fill by any UUID mechanism that guaranty it will be globally unique.
-// Suggest use first 64bit of Hash of MediaType()
+// Use first 64bit of `datatype_p.UUID`
 type ID uint64
 
 type Field_ID_Base64 interface {
-	DataTypeID_Base64() string // Base64 of ID
+	// DataTypeID_Base64 return Base64 of ID
+	DataTypeID_Base64() string
 }

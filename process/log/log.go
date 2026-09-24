@@ -3,7 +3,7 @@
 package log
 
 import (
-	"memar/event"
+	"memar/process/event"
 )
 
 // Logger is default global  like window.console.log global variable in browsers.

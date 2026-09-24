@@ -10,10 +10,10 @@ func (d *errNotFound) Summary() string { return "Not Found" }
 func (d *errNotFound) Overview() string {
 	return "An error occurred but it is not registered yet to show more detail to you!"
 }
-func (d *errNotFound) UserNote() string {
+func (d *errNotFound) UserActionNote() string {
 	return "Sorry it's us not your fault! Contact administrator of platform!"
 }
-func (d *errNotFound) DevNote() string {
+func (d *errNotFound) DevActionNote() string {
 	return "Find error by its URN and save it for further use by any UserInterfaces"
 }
 func (d *errNotFound) TAGS() []string { return []string{} }

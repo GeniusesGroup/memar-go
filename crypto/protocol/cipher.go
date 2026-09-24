@@ -3,9 +3,9 @@
 package crypto_p
 
 import (
-	buffer_p "memar/buffer/protocol"
+	buffer_p "memar/computer/buffer/protocol"
 	codec_p "memar/codec/protocol"
-	error_p "memar/error/protocol"
+	error_p "memar/process/error/protocol"
 )
 
 // Cipher represents an implementation for a cipher

@@ -1,32 +1,35 @@
 /* For license and copyright information please see the LEGAL file in the code repository */
 
-package http
+package http_headers
 
-import "strings"
+import (
+	http_p "memar/libgo/net/http/protocol"
+	"strings"
+)
 
-// ContentEncoding return content encoding and notify if multiple exist
-// To read multiple just call this method in a loop to get multiple became false
+func AddContentEncoding(h http_p.Header, contentEncodings string) {
+	h.Header_Add(Key_ContentEncoding, contentEncodings)
+}
+
+// ContentEncodings return content encodings
 // https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Encoding
-func (h *Header) ContentEncoding() ContentEncodings {
-	var contentEncodings = h.Header_Get(HeaderKey_ContentEncoding)
-	return ContentEncodings(contentEncodings)
-}
-
-func (h *Header) AddContentEncoding(contentEncodings string) {
-	h.Header_Add(HeaderKey_ContentEncoding, contentEncodings)
-}
-
 type ContentEncodings string
 
+func (self *ContentEncodings) Init(h http_p.Header) {
+	var contentEncodings = h.Header_Get(Key_ContentEncoding)
+	self = ContentEncodings(contentEncodings)
+}
+
 // Last return last ContentEncoding and remove it from ContentEncodings.
+// To read multiple just call this method in a loop to get multiple became false
 //
 // https://www.rfc-editor.org/rfc/rfc9110.html#section-8.4
 // If one or more encodings have been applied to a representation,
 // the sender that applied the encodings MUST generate a Content-Encoding header field
 // that lists the content codings in the order in which they were applied.
 // In other words, decode in the reverse order to the order in the header.
-func (c *ContentEncodings) Last() (contentEncoding string, exist bool) {
-	var ce = string(*c)
+func (self *ContentEncodings) Last() (contentEncoding string, exist bool) {
+	var ce = string(*self)
 
 	if len(ce) == 0 {
 		exist = false
@@ -36,9 +39,9 @@ func (c *ContentEncodings) Last() (contentEncoding string, exist bool) {
 	var commaIndex int = strings.LastIndexByte(ce, Comma)
 	if commaIndex == -1 {
 		commaIndex = 0
-		*c = ""
+		*self = ""
 	} else {
-		*c = ContentEncodings(ce[:commaIndex-1])
+		*self = ContentEncodings(ce[:commaIndex-1])
 	}
 	contentEncoding = ce[commaIndex+1:]
 	exist = true

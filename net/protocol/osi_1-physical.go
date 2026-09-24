@@ -16,6 +16,10 @@ https://en.wikipedia.org/wiki/Physical_layer
 **********************************************************************************
 */
 
+type Field_OSI_Physical interface {
+	OSI_PhysicalLayer() OSI_Physical
+}
+
 // OSI_Physical or NetworkInterface or NetworkPhysical_Connection or Hardware2Hardware_Connection
 // In Linux (or Unix) world, most network interfaces, such as eth0 and ppp0, are associated to a physical device that is in charge or transmitting
 // and receiving data packets. However, there are exceptions to this rule,

@@ -9,12 +9,12 @@ import (
 )
 
 // DecoderUnsafe store data to decode data by each method!
-type DecoderUnsafe[BUF buffer_p.Buffer] struct {
-	Decoder[BUF]
+type DecoderUnsafe struct {
+	Decoder
 }
 
 // DecodeString return string. pass d.buf start from after " and receive from from after "
-func (d *DecoderUnsafe[BUF]) DecodeString() (s string, err error_p.Error) {
+func (d *DecoderUnsafe) DecodeString() (s string, err error_p.Error) {
 	if d.CheckNullValue() {
 		return
 	}

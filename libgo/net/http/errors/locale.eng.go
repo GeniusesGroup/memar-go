@@ -12,46 +12,46 @@ import (
 const domainEnglish = "HTTP"
 
 func init() {
-	ErrNoConnection.SetDetail(protocol.LanguageEnglish, domainEnglish,
+	ErrNoConnection.SetDetail(lang_p.LanguageEnglish, domainEnglish,
 		"No Connection",
 		"There is no connection to peer(server or client) to process request",
 		"",
 		"",
 		nil)
 
-	ErrPacketTooShort.SetDetail(protocol.LanguageEnglish, domainEnglish,
+	ErrPacketTooShort.SetDetail(lang_p.LanguageEnglish, domainEnglish,
 		"Packet Too Short",
 		"Received HTTP packet size is shorter than expected and can't use",
 		"",
 		"",
 		nil)
 
-	ErrPacketTooLong.SetDetail(protocol.LanguageEnglish, domainEnglish,
+	ErrPacketTooLong.SetDetail(lang_p.LanguageEnglish, domainEnglish,
 		"Packet Too Long",
 		"Received HTTP packet size is larger than expected and can't use",
 		"",
 		"",
 		nil)
 	
-	ErrParseMethod.SetDetail(protocol.LanguageEnglish, domainEnglish,
+	ErrParseMethod.SetDetail(lang_p.LanguageEnglish, domainEnglish,
 		"Parse Method",
 		"Parsing received HTTP packet encounter unknown situation in Method part",
 		"",
 		"",
 		nil)
-	ErrParseVersion.SetDetail(protocol.LanguageEnglish, domainEnglish,
+	ErrParseVersion.SetDetail(lang_p.LanguageEnglish, domainEnglish,
 		"Parse Version",
 		"Parsing received HTTP packet encounter unknown situation in Version part",
 		"",
 		"",
 		nil)
-	ErrParseStatusCode.SetDetail(protocol.LanguageEnglish, domainEnglish,
+	ErrParseStatusCode.SetDetail(lang_p.LanguageEnglish, domainEnglish,
 		"Parse Status Code",
 		"Parsing received HTTP packet encounter unknown situation in StatusCode part",
 		"",
 		"",
 		nil)
-	ErrParseReasonPhrase.SetDetail(protocol.LanguageEnglish, domainEnglish,
+	ErrParseReasonPhrase.SetDetail(lang_p.LanguageEnglish, domainEnglish,
 		"Parse Reason Phrase",
 		"Parsing received HTTP packet encounter unknown situation in ReasonPhrase part",
 		"",
@@ -63,39 +63,39 @@ func init() {
 			// responding to them and hanging up
 			// while they're still writing their
 			// request. Undefined behavior.
-	ErrParseHeaderTooLarge.SetDetail(protocol.LanguageEnglish, domainEnglish,
+	ErrParseHeaderTooLarge.SetDetail(lang_p.LanguageEnglish, domainEnglish,
 		"Parse Header Too Large",
 		"Parsing received HTTP packet encounter situation that header part of http packet is larger than expected",
 		"",
 		"",
 		nil)
 
-	ErrCookieBadName.SetDetail(protocol.LanguageEnglish, domainEnglish,
+	ErrCookieBadName.SetDetail(lang_p.LanguageEnglish, domainEnglish,
 		"Cookie Bad Name",
-		"Cookie name include illegal charecter by related RFC",
+		"Cookie name include illegal character by related RFC",
 		"",
 		"",
 		nil)
-	ErrCookieBadValue.SetDetail(protocol.LanguageEnglish, domainEnglish,
+	ErrCookieBadValue.SetDetail(lang_p.LanguageEnglish, domainEnglish,
 		"Cookie Bad Value",
-		"Cookie value include illegal charecter by related RFC",
+		"Cookie value include illegal character by related RFC",
 		"",
 		"",
 		nil)
-	ErrCookieBadPath.SetDetail(protocol.LanguageEnglish, domainEnglish,
+	ErrCookieBadPath.SetDetail(lang_p.LanguageEnglish, domainEnglish,
 		"Cookie Bad Path",
-		"Cookie path include illegal charecter by related RFC",
+		"Cookie path include illegal character by related RFC",
 		"",
 		"",
 		nil)
-	ErrCookieBadDomain.SetDetail(protocol.LanguageEnglish, domainEnglish,
+	ErrCookieBadDomain.SetDetail(lang_p.LanguageEnglish, domainEnglish,
 		"Cookie Bad Domain",
 		"Cookie domain is not valid by related RFC",
 		"",
 		"",
 		nil)
 
-	ErrNotFound.SetDetail(protocol.LanguageEnglish, domainEnglish,
+	ErrNotFound.SetDetail(lang_p.LanguageEnglish, domainEnglish,
 		"Not Found",
 		"Requested HTTP URI Service is not found in this instance of app",
 		"",
@@ -103,7 +103,7 @@ func init() {
 		nil)
 
 		
-	ErrUnsupportedMediaType.SetDetail(protocol.LanguageEnglish, domainEnglish,
+	ErrUnsupportedMediaType.SetDetail(lang_p.LanguageEnglish, domainEnglish,
 		"Unsupported Media Type",
 		"Refuse to accept the request or response because the payload format or encoding is in an unsupported format",
 		"",
@@ -115,18 +115,18 @@ func init() {
 			//      transfer coding it does not understand SHOULD
 			//      respond with 501 (Unimplemented).
 
-	ErrServiceNotAcceptHTTP.SetDetail(detail.New(protocol.LanguageEnglish, domainEnglish).
+	ErrServiceNotAcceptHTTP.SetDetail(detail.New(lang_p.LanguageEnglish, domainEnglish).
 		SetName("").
 		SetAbbreviation("").
 		SetAliases([]string{}).
 		SetSummary("Service Not Accept HTTP").
 		SetOverview("Requested service by given ID not accept HTTP protocol in this server").
-		SetUserNote("Try other server or contact support of the software").
-		SetDevNote("It is so easy to implement HTTP handler for a service! Take a time and do it!").
+		SetUserActionNote("Try other server or contact support of the software").
+		SetDevActionNote("It is so easy to implement HTTP handler for a service! Take a time and do it!").
 		SetTAGS([]string{})
 	)
 	
-	ErrBodySizeMismatch.SetDetail(protocol.LanguageEnglish, domainEnglish,
+	ErrBodySizeMismatch.SetDetail(lang_p.LanguageEnglish, domainEnglish,
 			"Body Size Mismatch",
 			"This error will occur when the body's length did not match the length from the Content-Length header.",
 			"This typically occurs when the data is malformed, or when the Content-Length header was calculated based on characters instead of bytes.",

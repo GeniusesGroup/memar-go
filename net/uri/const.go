@@ -15,4 +15,6 @@ const (
 	sign_And        byte = '&'
 	sign_Slash      byte = '/'
 	sign_Asterisk   byte = '*'
+
+	sign_Asterisk_String string = "*"
 )

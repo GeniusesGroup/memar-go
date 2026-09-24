@@ -4,11 +4,6 @@
 
 package gp
 
-import (
-	"memar/detail"
-	"memar/protocol"
-)
-
 const domainPersian = "شبکه گیتی"
 
 func init() {

@@ -3,7 +3,6 @@
 package net_p
 
 import (
-	buffer_p "memar/buffer/protocol"
 	operation_p "memar/process/operation/protocol"
 )
 
@@ -22,7 +21,10 @@ type Socket interface {
 	// due to the Unix philosophy that "everything is a file", and the analogies between sockets and files.
 	// Both have functions to read, write, open, and close
 
-	Field_NetworkAddresses // string form of full address of socket to dial any time later.
+	// string form of full address of socket to dial any time later.
+	Field_NetworkAddresses
+
+	Field_SocketStatus
 
 	Socket_LowLevelAPIs
 }
@@ -30,20 +32,17 @@ type Socket interface {
 // Socket_LowLevelAPIs is low level APIs, don't use them in the services layer, if you don't know how it can be effect the application.
 // It will use in chunks managing packages e.g. sRPC, QUIC, TCP, UDP, ... or Application layer protocols e.g. HTTP, ...
 type Socket_LowLevelAPIs interface {
-	PhysicalLayer() OSI_Physical
-	LinkLayer() OSI_DataLink
-	NetworkLayer() OSI_Network
-	TransportLayer() OSI_Transport
-	SessionLayer() OSI_Session
-	PresentationLayer() OSI_Presentation
-	ApplicationLayer() OSI_Application
+	Field_OSI_Physical
+	Field_OSI_DataLink
+	Field_OSI_Network
+	Field_OSI_Transport
+	Field_OSI_Session
+	Field_OSI_Presentation
+	Field_OSI_Application
 
-	Socket_Status
-	Socket_Buffer
+	Method_SocketStatus
+
+	Field_Socket_Buffers
+
 	operation_p.Timeout
-}
-
-type Socket_Buffer interface {
-	SendBuffer() buffer_p.Buffer
-	ReceiveBuffer() buffer_p.Buffer
 }

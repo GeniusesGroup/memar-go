@@ -9,12 +9,12 @@ import (
 )
 
 // DecoderUnsafeMinified store data to decode data by each method.
-type DecoderUnsafeMinified[BUF buffer_p.Buffer] struct {
-	DecoderMinified[BUF]
+type DecoderUnsafeMinified struct {
+	DecoderMinified
 }
 
 // DecodeKey return json key. pass d.buf start from after {||, and receive from after :
-func (d *DecoderUnsafeMinified[BUF]) DecodeKey() string {
+func (d *DecoderUnsafeMinified) DecodeKey() string {
 	d.Offset(2)
 	var loc, _ = d.buf.Index('"')
 	var slice []byte = d.buf[:loc]
@@ -23,7 +23,7 @@ func (d *DecoderUnsafeMinified[BUF]) DecodeKey() string {
 }
 
 // DecodeString return string. pass d.buf start from after " and receive from from after "
-func (d *DecoderUnsafeMinified[BUF]) DecodeString() (s string, err error_p.Error) {
+func (d *DecoderUnsafeMinified) DecodeString() (s string, err error_p.Error) {
 	d.Offset(1) // due to have " at start
 
 	var loc = d.buf.Index('"')

@@ -3,7 +3,7 @@
 package gp
 
 import (
-	"memar/protocol"
+	net_p "memar/net/protocol"
 	"memar/time/earth"
 )
 
@@ -12,9 +12,9 @@ const (
 	AddrLen = 16
 
 	// FrameLen is GP frame length.
-	FrameLen = protocol.Network_FrameType_Length + AddrLen + AddrLen // 33 = 1+16+16
+	FrameLen = net_p.FrameType_Length + AddrLen + AddrLen // 33 = 1+16+16
 )
 
 const (
-	ConnectionIdleTimeout = 24 * earth.Hour // 24 hour
+	ConnectionIdleTimeout = earth.SecondInDay // 24 hour
 )

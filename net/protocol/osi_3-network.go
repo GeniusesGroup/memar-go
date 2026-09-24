@@ -14,6 +14,10 @@ https://en.wikipedia.org/wiki/Network_layer
 **********************************************************************************
 */
 
+type Field_OSI_Network interface {
+	OSI_NetworkLayer() OSI_Network
+}
+
 // OSI_Network is the network layer that provides the means of transferring variable-length network packets
 // from a source to a destination host via one or more networks.
 type OSI_Network interface {

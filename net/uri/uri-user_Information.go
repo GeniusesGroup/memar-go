@@ -3,8 +3,8 @@
 package uri
 
 import (
-	"libgo/protocol"
-	"libgo/utf8"
+	error_p "memar/process/error/protocol"
+	"memar/codec/string/utf8"
 )
 
 // UserInformation store user information part of an URI.
@@ -15,19 +15,19 @@ type UserInformation struct {
 	password string //
 }
 
-//libgo:impl libgo/protocol.ObjectLifeCycle
-func (u *UserInformation) Init(ui string) (err protocol.Error) {
+//memar:impl memar/computer/capsule/protocol.LifeCycle
+func (u *UserInformation) Init(ui string) (err error_p.Error) {
 	u.userinfo = ui
 	u.username, u.password, _ = utf8.CutByte(ui, sign_Colon)
 	return
 }
-func (u *UserInformation) Reinit() (err protocol.Error) {
+func (u *UserInformation) Reinit() (err error_p.Error) {
 	u.userinfo = ""
 	u.username = ""
 	u.password = ""
 	return
 }
-func (u *UserInformation) Deinit() (err protocol.Error) {
+func (u *UserInformation) Deinit() (err error_p.Error) {
 	return
 }
 

@@ -2,25 +2,15 @@
 
 package errs
 
-import (
-	er "memar/error"
-	"memar/errors"
-	"memar/protocol"
-)
-
 var (
-	ErrProtocolHandler errProtocolHandler
+	ProtocolHandler errProtocolHandler
 )
 
 type (
-	errProtocolHandler struct{ er.Err }
+	errProtocolHandler struct{}
 )
 
-func (dt *errProtocolHandler) Init() (err protocol.Error) {
-	err = dt.Err.Init("domain/memar.scm.geniuses.group; package=connection; type=error; name=protocol-handler")
-	if err != nil {
-		return
-	}
-	err = errors.Register(dt)
-	return
+//memar:impl memar/identifier/mediatype/protocol.Field_MediaType
+func (dt *errProtocolHandler) MediaType() string {
+	return domainBaseMediatype + "protocol-handler"
 }

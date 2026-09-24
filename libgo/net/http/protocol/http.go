@@ -7,10 +7,10 @@ package http_p
 // - https://nodejs.org/api/http.html#requestgetheaders
 
 // Request indicate HTTP request semantic.
-// 
+//
 // Other frameworks:
 // https://developer.mozilla.org/en-US/docs/Web/API/Request
-type Request /*[STR String]*/ interface {
+type Request interface {
 	PseudoHeader_Request
 	Header
 
@@ -19,10 +19,10 @@ type Request /*[STR String]*/ interface {
 }
 
 // Response indicate HTTP response semantic.
-// 
+//
 // Other frameworks:
 // https://developer.mozilla.org/en-US/docs/Web/API/Response
-type Response /*[STR String]*/ interface {
+type Response interface {
 	PseudoHeader_Response
 	Header
 

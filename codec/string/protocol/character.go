@@ -3,13 +3,14 @@
 package string_p
 
 import (
+	marker_p "memar/computer/adt/marker/protocol"
 	logic_p "memar/math/logic/protocol"
-	memory_p "memar/storage/memory/protocol"
 )
 
 // Character is base of any character encoding
 type Character interface {
 	logic_p.Equivalence[Character]
-	memory_p.Clone[Character]
-	memory_p.Copy[Character]
+
+	marker_p.Clone[Character]
+	marker_p.Copy[Character]
 }

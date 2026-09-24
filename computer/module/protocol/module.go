@@ -4,10 +4,11 @@ package module_p
 
 import (
 	datatype_p "memar/computer/datatype/protocol"
+	datatypes_p "memar/computer/datatypes/protocol"
 )
 
 // https://doc.rust-lang.org/cargo/reference/manifest.html
 type Module interface {
 	datatype_p.DataType
-	datatype_p.Field_DataTypes
+	datatypes_p.Field_DataTypes
 }

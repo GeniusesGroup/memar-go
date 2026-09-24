@@ -3,8 +3,9 @@
 package std
 
 import (
+	error_p "memar/process/error/protocol"
 	"memar/net"
-	"memar/protocol"
+	"memar/time/duration"
 	// "memar/uuid/16byte"
 )
 
@@ -12,9 +13,9 @@ type Socket struct {
 	net.Socket
 }
 
-//libgo:impl libgo/protocol.ObjectLifeCycle
-func (sk *Socket) Init(timeout protocol.Duration) (err protocol.Error) {
+//memar:impl memar/computer/capsule/protocol.LifeCycle
+func (sk *Socket) Init(timeout duration.NanoSecond) (err error_p.Error) {
 	return
 }
-func (sk *Socket) Reinit() (err protocol.Error) { return }
-func (sk *Socket) Deinit() (err protocol.Error) { return }
+func (sk *Socket) Reinit() (err error_p.Error) { return }
+func (sk *Socket) Deinit() (err error_p.Error) { return }

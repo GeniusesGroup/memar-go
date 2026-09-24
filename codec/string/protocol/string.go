@@ -3,26 +3,22 @@
 package string_p
 
 import (
-	array_p "memar/adt/array/protocol"
-	container_p "memar/adt/container/protocol"
-	// buffer_p "memar/buffer/protocol"
-	error_p "memar/error/protocol"
+	array_p "memar/computer/adt/array/protocol"
+	marker_p "memar/computer/adt/marker/protocol"
+	container_p "memar/computer/adt/container/protocol"
+	// buffer_p "memar/computer/buffer/protocol"
+	error_p "memar/process/error/protocol"
 	logic_p "memar/math/logic/protocol"
-	memory_p "memar/storage/memory/protocol"
 )
 
-// In computer programming, a string is traditionally a sequence of characters,
-// either as a literal constant or as some kind of variable.
-// The latter may allow its elements to be mutated and the length changed, or it may be fixed (after creation).
-// A string is generally considered as a data type and is often implemented as an array data structure of bytes
-// (or words) that stores a sequence of elements, typically characters, using some character encoding.
-// String may also denote more general arrays or other sequence (or list) data types and structures.
-// https://en.wikipedia.org/wiki/String_(computer_science)
 type String interface {
 	CharacterEncoding() CharacterEncoding
 	// Buffer() buffer_p.Buffer
 
 	array_p.Dynamic[Character]
+
+	marker_p.Clone[String]
+	marker_p.Copy[String]
 
 	container_p.Compare[String]
 	container_p.Concat[String]
@@ -32,8 +28,6 @@ type String interface {
 
 	logic_p.Equivalence[String]
 	// If source is a `Split` result, no copy action need and just increase buffer write index.
-	memory_p.Clone[String]
-	memory_p.Copy[String]
 }
 
 // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/join

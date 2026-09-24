@@ -4,26 +4,22 @@
 
 package validators
 
-import (
-	"libgo/protocol"
-)
-
 const domainEnglish = "Validation"
 
 func init() {
-	ErrTextOverFlow.SetDetail(protocol.LanguageEnglish, domainEnglish,
+	TextOverFlow.SetDetail(lang_p.LanguageEnglish, domainEnglish,
 		"Text OverFlow",
 		"Given text size is more than it must be",
 		"",
 		"",
 		nil)
-	ErrTextLack.SetDetail(protocol.LanguageEnglish, domainEnglish,
+	TextLack.SetDetail(lang_p.LanguageEnglish, domainEnglish,
 		"Text Lack",
 		"Given text size is less than it must be",
 		"",
 		"",
 		nil)
-	ErrTextIllegalCharacter.SetDetail(protocol.LanguageEnglish, domainEnglish,
+	TextIllegalCharacter.SetDetail(lang_p.LanguageEnglish, domainEnglish,
 		"Text Illegal Character",
 		"Given text include illegal character or text!",
 		"",

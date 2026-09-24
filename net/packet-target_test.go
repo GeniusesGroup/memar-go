@@ -3,7 +3,7 @@
 package net
 
 import (
-	"memar/protocol"
+	net_p "memar/net/protocol"
 )
 
-var _ protocol.PacketTarget = &PacketTarget{}
+var _ net_p.PacketTarget = &PacketTarget{}

@@ -6,18 +6,18 @@ import (
 	"strings"
 
 	capsule_p "memar/computer/capsule/protocol"
-	datatype_p "memar/datatype/protocol"
-	error_p "memar/error/protocol"
+	datatype_p "memar/computer/datatype/protocol"
 	"memar/math/boolean"
 	boolean_p "memar/math/boolean/protocol"
-	errs "memar/operation/command/errors"
+	command_errs "memar/process/command/errors"
+	error_p "memar/process/error/protocol"
 )
 
 // A FlagSet represents a set of defined fields
 type FlagSet struct {
 	object capsule_p.Capsule
-	fields []datatype_p.DataType
-	parsed []datatype_p.DataType
+	fields []capsule_p.Field
+	parsed []capsule_p.Field
 	args   []string // arguments after flags
 }
 
@@ -35,7 +35,7 @@ func (f *FlagSet) Init(ob capsule_p.Capsule, arguments []string) (err error_p.Er
 		return
 	}
 	if f.parsed == nil {
-		f.parsed = make([]datatype_p.DataType, 0, len(f.fields))
+		f.parsed = make([]capsule_p.Field, 0, len(f.fields))
 	}
 	f.args = arguments
 	return
@@ -104,7 +104,7 @@ func (f *FlagSet) Visit(fn func(datatype_p.DataType) (breaking bool)) {
 }
 
 // Lookup returns the Field of the named flag, returning nil if none exists.
-func (f *FlagSet) Lookup(name string) datatype_p.DataType {
+func (f *FlagSet) Lookup(name string) capsule_p.Field {
 	for _, field := range f.fields {
 		if field.Name() == name || field.Abbreviation() == name {
 			return field
@@ -117,7 +117,7 @@ func (f *FlagSet) Lookup(name string) datatype_p.DataType {
 func (f *FlagSet) Set(name, value string) (err error_p.Error) {
 	var flag = f.Lookup(name)
 	if flag == nil {
-		return &errs.ErrFlagNotFound
+		return &command_errs.FlagNotFound
 	}
 
 	err = flag.FromString(value)
@@ -136,9 +136,13 @@ func (f *FlagSet) checkFields() (err error_p.Error) {
 
 		// Flag must not begin "-" or contain "=".
 		if strings.HasPrefix(fieldName, "-") {
-			panic(fieldName + " flag begins with -")
+			// panic(fieldName + " flag begins with -")
+			// err = 
+			return
 		} else if strings.Contains(fieldName, "=") {
-			panic(fieldName + " flag %q contains =")
+			// panic(fieldName + " flag %q contains =")
+			// err = 
+			return
 		}
 
 		fieldsName = append(fieldsName, fieldName)
@@ -150,9 +154,13 @@ func (f *FlagSet) checkFields() (err error_p.Error) {
 			if fieldName == fieldsName[j] {
 				// Happens only if flags are declared with identical names
 				if fieldName == "" {
-					panic(fieldName + " flag redefined.")
+					// panic(fieldName + " flag redefined.")
+					// err = 
+					return
 				} else {
-					panic(fieldName + "flag redefined as" + fieldsName[j])
+					// panic(fieldName + "flag redefined as" + fieldsName[j])
+					// err = 
+					return
 				}
 			}
 		}
@@ -168,19 +176,19 @@ func (f *FlagSet) parseOne() (err error_p.Error) {
 
 	var s = f.args[0]
 	if len(s) < 2 || s[0] != '-' {
-		return &errs.ErrFlagBadSyntax
+		return &command_errs.FlagBadSyntax
 	}
 	var numMinuses = 1
 	if s[1] == '-' {
 		numMinuses++
 		if len(s) == 2 { // "--" terminates the flags
 			f.args = f.args[1:]
-			return &errs.ErrFlagBadSyntax
+			return &command_errs.FlagBadSyntax
 		}
 	}
 	var name = s[numMinuses:]
 	if len(name) == 0 || name[0] == '-' || name[0] == '=' {
-		return &errs.ErrFlagBadSyntax
+		return &command_errs.FlagBadSyntax
 	}
 
 	// it's a flag. does it have an argument?
@@ -204,7 +212,7 @@ func (f *FlagSet) checkAndSet(name, value string) (err error_p.Error) {
 	if !hasValue {
 		var flag = f.Lookup(name)
 		if flag == nil {
-			return &errs.ErrFlagNotFound
+			return &command_errs.FlagNotFound
 		}
 
 		var _, ok = flag.(boolean_p.Boolean[boolean.Boolean])
@@ -215,7 +223,7 @@ func (f *FlagSet) checkAndSet(name, value string) (err error_p.Error) {
 			hasValue = true
 			value, f.args = f.args[0], f.args[1:]
 		} else {
-			return &errs.ErrFlagNeedsAnArgument
+			return &command_errs.FlagNeedsAnArgument
 		}
 	}
 

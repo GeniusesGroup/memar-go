@@ -16,7 +16,7 @@ Contributor(s):
     contribution: "Go philosophy analysis, Memar vs Go optimization target comparison, insight that Go ecosystem rebuilds type identity around errors without admitting it"
     task: []
   - name: "Super Z"
-    uri: ""
+    uri: "https://chat.z.ai/"
     model: "GLM"
     effort: ""
     contribution: "Compiled community research, documented trade-offs, drafted analysis"

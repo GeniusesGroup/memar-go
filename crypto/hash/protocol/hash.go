@@ -3,10 +3,10 @@
 package hash_p
 
 import (
-	container_p "memar/adt/container/protocol"
-	buffer_p "memar/buffer/protocol"
+	container_p "memar/computer/adt/container/protocol"
+	buffer_p "memar/computer/buffer/protocol"
 	capsule_p "memar/computer/capsule/protocol"
-	error_p "memar/error/protocol"
+	error_p "memar/process/error/protocol"
 )
 
 // Hash is the common interface implemented by all hash functions.

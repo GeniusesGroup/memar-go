@@ -3,11 +3,7 @@
 package command_p
 
 import (
-	datatype_p "memar/computer/datatype/protocol"
 	error_p "memar/process/error/protocol"
-	mediatype_p "memar/identifier/mediatype/protocol"
-	request_p "memar/process/request/protocol"
-	response_p "memar/process/response/protocol"
 )
 
 // Codec is implement by operation request and response.

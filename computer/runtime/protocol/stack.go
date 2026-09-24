@@ -3,7 +3,7 @@
 package runtime_p
 
 import (
-	string_p "memar/string/protocol"
+	string_p "memar/codec/string/protocol"
 )
 
 type Stack interface {

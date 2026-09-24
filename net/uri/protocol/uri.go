@@ -2,10 +2,6 @@
 
 package uri_p
 
-import (
-	string_p "memar/codec/string/protocol"
-)
-
 type Field_URI interface {
 	// URI Return full URI e.g. HTTP-URL
 	URI() URI
@@ -29,6 +25,4 @@ type Field_URI interface {
 //
 // / \ /                        \
 // urn:example:animal:ferret:nose
-type URI interface {
-	string_p.String
-}
+type URI string

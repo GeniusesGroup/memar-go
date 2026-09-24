@@ -5,24 +5,24 @@ package float
 import (
 	"strconv"
 
+	error_p "memar/process/error/protocol"
 	"memar/math/boolean"
-	"memar/protocol"
 )
 
 // F64 is 64-bit floating point number.
 type F64 float64
 
-//memar:impl memar/protocol.DataType_Equal
+//memar:impl memar/math/logic/protocol.Equivalence
 func (f *F64) Equal(with F64) boolean.Boolean {
 	return *f == with
 }
 
-//memar:impl memar/protocol.Stringer
-func (f *F64) ToString() (str string, err protocol.Error) {
+//memar:impl memar/codec/string/protocol.Stringer
+func (f *F64) ToString() (str string, err error_p.Error) {
 	str = strconv.FormatFloat(float64(*f), 'g', -1, f.bitSize())
 	return
 }
-func (f *F64) FromString(str string) (err protocol.Error) {
+func (f *F64) FromString(str string) (err error_p.Error) {
 	// TODO::: error handling
 	var f64, _ = strconv.ParseFloat(str, f.bitSize())
 	*f = F64(f64)

@@ -3,9 +3,9 @@
 package errs
 
 func init() {
-	ErrNoConnection.Init()
-	ErrSendRequest.Init()
-	ErrProtocolHandler.Init()
-	ErrGuestNotAllow.Init()
-	ErrGuestMaxReached.Init()
+	// NoConnection.Init()
+	// SendRequest.Init()
+	// ProtocolHandler.Init()
+	// GuestNotAllow.Init()
+	// GuestMaxReached.Init()
 }

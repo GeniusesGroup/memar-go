@@ -1,10 +1,10 @@
-/* For license and copyright information please see LEGAL file in repository */
+/* For license and copyright information please see the LEGAL file in the code repository */
 
 package syllab
 
 /*
 ----encoder references in GoLang----
-// Read more about this encoder : https://github.com/SabzCity/RFCs/blob/master/Syllab.md
+Read more about this encoder : https://github.com/GeniusesGroup/memar/blob/main/Syllab.md
 
 fixed sized data types:
 - [1]byte	: byte, int8, uint8, bool
@@ -18,7 +18,7 @@ fixed sized data types:
 // slice in go make by this struct internally! we just omit cap var due to transfer data has distinct size!
 // It is just to show encoder||decoder in better way, we never use this type!
 type slice struct {
-    len int
+	len int
 	cap int
 	ptr uintptr
 }
@@ -40,4 +40,11 @@ type dynamicallyArray struct {
 type maps struct {
 	keys   dynamicallyArray
 	values dynamicallyArray
+}
+
+// dynamic is same as dynamicallyArray
+type dynamic struct {
+	// id     uint32	also tell about type but we don't use this in favor of some more data waste in buffer
+	loc    uint32
+	length uint32
 }

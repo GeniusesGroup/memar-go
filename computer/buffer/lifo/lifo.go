@@ -1,4 +1,4 @@
-/* For license and copyright information please see LEGAL file in repository */
+/* For license and copyright information please see the LEGAL file in the code repository */
 
 package pool
 
@@ -7,7 +7,9 @@ import (
 	"sync/atomic"
 	"time"
 
-	"../protocol"
+	container_p "memar/computer/adt/container/protocol"
+	error_p "memar/process/error/protocol"
+	"memar/time/duration"
 )
 
 // LIFO pool, i.e. the most recently Put() item will return in call Get()
@@ -18,47 +20,50 @@ type LIFO struct {
 	MaxItems    int64
 	MinItems    int64
 	MaxIdles    int64
-	IdleTimeout protocol.Duration
+	IdleTimeout duration.NanoSecond
 	// New optionally specifies a function to generate
 	// a value when Get would otherwise return nil.
 	// It may not be changed concurrently with calls to Get.
-	New func() interface{}
+	New func() any
 	// CloseFunc optionally specifies a function to call when an item want to drop after timeout
-	CloseFunc func(item interface{})
+	CloseFunc func(item any)
 
 	itemsCount  int64      // idles + actives
 	mutex       sync.Mutex // lock below fields until new line
-	hotItem     interface{}
-	idleItems   []interface{}
-	victimItems []interface{}
+	hotItem     any
+	idleItems   []any
+	victimItems []any
 
 	state int32
 }
 
-func (p *LIFO) Init() {
+//memar:impl memar/computer/capsule/protocol.LifeCycle
+func (p *LIFO) Init() (err error_p.Error) {
 	var preStatus = p.SetState(PoolStatus_Running)
 	if preStatus != PoolStatus_Unset {
 		panic("[pool] LIFO instance can't reuse")
 	}
 	if p.CloseFunc == nil {
-		p.CloseFunc = func(item interface{}) {}
+		p.CloseFunc = func(item any) {}
 	}
-	p.idleItems = make([]interface{}, p.MaxItems/4)
+	p.idleItems = make([]any, p.MaxItems/4)
 	go p.Clean()
+	return
 }
 
 func (p *LIFO) State() PoolStatus { return PoolStatus(atomic.LoadInt32(&p.state)) }
 func (p *LIFO) SetState(state PoolStatus) (pre PoolStatus) {
 	return PoolStatus(atomic.SwapInt32(&p.state, int32(state)))
 }
-func (p *LIFO) Len() (ln int) {
+
+func (p *LIFO) OccupiedLength() (ln container_p.NumberOfElement) {
 	p.mutex.Lock()
-	ln = len(p.idleItems) + len(p.victimItems)
+	ln = container_p.NumberOfElement(len(p.idleItems) + len(p.victimItems))
 	p.mutex.Unlock()
 	return
 }
 
-func (p *LIFO) Get() (item interface{}) {
+func (p *LIFO) Get() (item any) {
 	if p.isStop() {
 		return
 	}
@@ -70,7 +75,7 @@ func (p *LIFO) Get() (item interface{}) {
 	return
 }
 
-func (p *LIFO) Put(item interface{}) {
+func (p *LIFO) Put(item any) {
 	if p.isStop() {
 		p.CloseFunc(item)
 		return
@@ -109,7 +114,7 @@ func (p *LIFO) Clean() {
 		p.mutex.Lock()
 		var vi = p.victimItems
 		p.victimItems = p.idleItems
-		p.idleItems = make([]interface{}, p.MaxItems/4)
+		p.idleItems = make([]any, p.MaxItems/4)
 		p.mutex.Unlock()
 
 		atomic.AddInt64(&p.itemsCount, -int64(len(vi)))
@@ -129,7 +134,7 @@ func (p *LIFO) isStop() bool {
 	return false
 }
 
-func (p *LIFO) popHead() (item interface{}) {
+func (p *LIFO) popHead() (item any) {
 	p.mutex.Lock()
 	if p.hotItem != nil {
 		item = p.hotItem
@@ -151,7 +156,7 @@ func (p *LIFO) popHead() (item interface{}) {
 	return
 }
 
-func (p *LIFO) pushHead(item interface{}) {
+func (p *LIFO) pushHead(item any) {
 	p.mutex.Lock()
 	if p.hotItem == nil {
 		p.hotItem = item
@@ -161,7 +166,7 @@ func (p *LIFO) pushHead(item interface{}) {
 	p.mutex.Unlock()
 }
 
-func (p *LIFO) makeNew() (item interface{}) {
+func (p *LIFO) makeNew() (item any) {
 	var ic = atomic.AddInt64(&p.itemsCount, 1)
 	if ic <= p.MaxItems {
 		item = p.New()

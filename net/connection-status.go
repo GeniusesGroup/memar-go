@@ -3,9 +3,8 @@
 package net
 
 import (
+	net_p "memar/net/protocol"
 	"sync/atomic"
-
-	"memar/protocol"
 )
 
 // STATUS is the same as the Status.
@@ -13,15 +12,15 @@ import (
 type STATUS = Status
 
 type Status struct {
-	status atomic.Uint32
-	state  chan protocol.NetworkStatus
+	status atomic.Uint64
+	state  chan net_p.SocketStatus
 }
 
 //memar:impl memar/protocol.Network_Status
-func (s *Status) Status() protocol.NetworkStatus     { return protocol.NetworkStatus(s.status.Load()) }
-func (s *Status) State() chan protocol.NetworkStatus { return s.state }
-func (s *Status) SetStatus(ns protocol.NetworkStatus) {
-	s.status.Store(uint32(ns))
+func (s *Status) Status() net_p.SocketStatus     { return net_p.SocketStatus(s.status.Load()) }
+func (s *Status) State() chan net_p.SocketStatus { return s.state }
+func (s *Status) SetStatus(ns net_p.SocketStatus) {
+	s.status.Store(uint64(ns))
 
 	// TODO::: non blocking logic??
 	// notify stream listener that stream state has been changed!

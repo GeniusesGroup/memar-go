@@ -14,12 +14,12 @@
 ## build tags
 Some functionality in files that have build tags `//go:build tag_name` or `// +build tag_name` in the first line just build when you provided in build time like `go build -tags "dev_mode tcp_listener"`. Build tag declarations must be at the very top of a .go files. Nothing, not even comments, can be above build tags. We prefer `go:build` over `+build` because as [describe in the proposal](https://go.googlesource.com/proposal/+/master/design/draft-gobuild.md#transition) but below chart is how to declare in `+build` style.
 
-| Build Tag Syntax	            | Build Tag Sample	                        | Boolean Statement     |
-| :---:                         | :---:                                     | :---:                 |
-| Space-separated elements	    | // +build pro enterprise	                | pro OR enterprise     |
-| Comma-separated elements      | // +build pro,enterprise	                | pro AND enterprise    |
-| New line separated elements   | // +build pro<br />// +build enterprise   | pro AND enterprise    |
-| Exclamation point elements    | // +build !pro	                        | NOT pro               |
+|      Build Tag Syntax       |            Build Tag Sample             | Boolean Statement  |
+| :-------------------------: | :-------------------------------------: | :----------------: |
+|  Space-separated elements   |        // +build pro enterprise         | pro OR enterprise  |
+|  Comma-separated elements   |        // +build pro,enterprise         | pro AND enterprise |
+| New line separated elements | // +build pro<br />// +build enterprise | pro AND enterprise |
+| Exclamation point elements  |             // +build !pro              |      NOT pro       |
 
 ## Structure Alignment
 Currently there's no compile-time optimization; the values are padded to 8 bytes on x64.
@@ -67,6 +67,8 @@ $ govulncheck ./...
 - `//go:checkptr`: This directive comment is used to enable additional pointer safety checks in the code. It instructs the compiler to generate extra runtime checks to catch unsafe pointer operations and potential memory safety issues.
 - `//go:nosplitcheck`: This directive comment is used to disable a nosplit check for a function. The nosplit check verifies that a function can execute without being preempted by the Go runtime scheduler. Using this directive can be risky and should only be used when necessary.
 - `//go:noruntime`: This directive comment is used to indicate that a package does not depend on the Go runtime. It informs the compiler that the package can be used in a context where the Go runtime is not available or required.
+
+- https://bdemirpolat.medium.com/golang-compiler-directives-dc61820add40
 
 ## Other Organizations Styles
 - [Uber](https://github.com/uber-go/guide/blob/master/style.md)

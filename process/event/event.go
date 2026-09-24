@@ -3,15 +3,15 @@
 package event
 
 import (
-	datatype_p "memar/datatype/protocol"
-	event_p "memar/event/protocol"
+	datatype_p "memar/computer/datatype/protocol"
+	event_p "memar/process/event/protocol"
 	time_p "memar/time/protocol"
 	"memar/time/unix"
 )
 
-// Event implement memar/event/protocol.Event
+// Event implement memar/process/event/protocol.Event
 //
-//memar:impl memar/event/protocol.Event
+//memar:impl memar/process/event/protocol.Event
 type Event struct {
 	dt   datatype_p.DataType
 	time unix.Time

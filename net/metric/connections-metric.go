@@ -5,7 +5,7 @@ package net
 import (
 	"sync/atomic"
 
-	"memar/protocol"
+	time_p "memar/time/protocol"
 	"memar/time/unix"
 )
 
@@ -24,8 +24,8 @@ type ConnectionsMetric struct {
 	lifetimeClosedCount atomic.Int64
 }
 
-//libgo:impl memar/protocol.ConnectionsMetrics
-func (cm *ConnectionsMetric) LastUsage() protocol.Time   { return &cm.lastUsage }
+//memar:impl memar/protocol.ConnectionsMetrics
+func (cm *ConnectionsMetric) LastUsage() time_p.Time     { return &cm.lastUsage }
 func (cm *ConnectionsMetric) OpenCount() int64           { return cm.openCount.Load() }
 func (cm *ConnectionsMetric) GuestCount() int64          { return cm.guestCount.Load() }
 func (cm *ConnectionsMetric) InUseCount() int64          { return cm.inUseCount.Load() }

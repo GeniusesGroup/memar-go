@@ -10,22 +10,22 @@ import (
 )
 
 //memar:impl memar/computer/capsule/protocol.LifeCycle
-func (sk *Socket[BUF]) initTimeout(timeout duration.NanoSecond) (err error_p.Error) {
+func (sk *Socket) initTimeout(timeout duration.NanoSecond) (err error_p.Error) {
 	err = sk.socketTimer.Init(sk)
 	err = sk.socketTimer.Start(timeout)
 	return
 }
-func (sk *Socket[BUF]) reinitTimeout(timeout duration.NanoSecond) (err error_p.Error) {
+func (sk *Socket) reinitTimeout(timeout duration.NanoSecond) (err error_p.Error) {
 	err = sk.socketTimer.Reset(timeout)
 	return
 }
-func (sk *Socket[BUF]) deinitTimeout() (err error_p.Error) {
+func (sk *Socket) deinitTimeout() (err error_p.Error) {
 	err = sk.socketTimer.Deinit()
 	return
 }
 
 // Don't block the caller
-func (sk *Socket[BUF]) TimerHandler() {
+func (sk *Socket) TimerHandler() {
 	var timerWhen = sk.socketTimer.When()
 
 	if sk.readDeadline.Load() <= timerWhen {
@@ -38,7 +38,7 @@ func (sk *Socket[BUF]) TimerHandler() {
 }
 
 //memar:impl memar/process/operation/protocol.Timeout
-func (sk *Socket[BUF]) SetTimeout(d duration.NanoSecond) (err error_p.Error) {
+func (sk *Socket) SetTimeout(d duration.NanoSecond) (err error_p.Error) {
 	err = sk.SetReadTimeout(d)
 	if err != nil {
 		return
@@ -46,7 +46,7 @@ func (sk *Socket[BUF]) SetTimeout(d duration.NanoSecond) (err error_p.Error) {
 	err = sk.SetWriteTimeout(d)
 	return
 }
-func (sk *Socket[BUF]) SetReadTimeout(d duration.NanoSecond) (err error_p.Error) {
+func (sk *Socket) SetReadTimeout(d duration.NanoSecond) (err error_p.Error) {
 	err = sk.Check()
 	if err != nil {
 		return
@@ -55,7 +55,7 @@ func (sk *Socket[BUF]) SetReadTimeout(d duration.NanoSecond) (err error_p.Error)
 	err = sk.setWriteTimeout(d)
 	return
 }
-func (sk *Socket[BUF]) SetWriteTimeout(d duration.NanoSecond) (err error_p.Error) {
+func (sk *Socket) SetWriteTimeout(d duration.NanoSecond) (err error_p.Error) {
 	err = sk.Check()
 	if err != nil {
 		return
@@ -65,7 +65,7 @@ func (sk *Socket[BUF]) SetWriteTimeout(d duration.NanoSecond) (err error_p.Error
 	return
 }
 
-func (sk *Socket[BUF]) setReadTimeout(d duration.NanoSecond) (err error_p.Error) {
+func (sk *Socket) setReadTimeout(d duration.NanoSecond) (err error_p.Error) {
 	if d < 0 {
 		// no timeout
 		sk.readDeadline.Store(0)
@@ -84,7 +84,7 @@ func (sk *Socket[BUF]) setReadTimeout(d duration.NanoSecond) (err error_p.Error)
 	}
 	return
 }
-func (sk *Socket[BUF]) setWriteTimeout(d duration.NanoSecond) (err error_p.Error) {
+func (sk *Socket) setWriteTimeout(d duration.NanoSecond) (err error_p.Error) {
 	if d < 0 {
 		// no timeout
 		sk.writeDeadline.Store(0)

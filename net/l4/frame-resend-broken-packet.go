@@ -3,7 +3,7 @@
 package l4
 
 import (
-	"memar/protocol"
+	net_p "memar/net/protocol"
 )
 
 // var reSendBrokenPacketService = service.Service{
@@ -14,15 +14,15 @@ import (
 // 	ExpiryDate:         0,
 // 	ExpireInFavorOfURN: "",
 // 	ExpireInFavorOfID:  0,
-// 	Status:             protocol.Software_PreAlpha,
+// 	Status:             datatype_p.LifeCycle_PreAlpha,
 
 // 	Authorization: authorization.Service{
-// 		CRUD:     authorization.CRUDRead,
-// 		UserType: protocol.UserTypeOwner,
+// 		ActionType: operation_p.ActionType_Read,
+// 		UserType:   user_p.TypeOwner,
 // 	},
 
-// 	Detail: map[protocol.LanguageID]service.ServiceDetail{
-// 		protocol.LanguageEnglish: {
+// 	Detail: map[lang_p.LanguageID]service.ServiceDetail{
+// 		lang_p.LanguageEnglish: {
 // 			Name:        "ReSend Broken Packet",
 // 			Description: `use to send request to other party with broken packetID to send it again.`,
 // 			TAGS:        []string{},
@@ -33,7 +33,7 @@ import (
 // }
 
 // ReSendBrokenPacket use to send request to other party with broken packetID to send it again.
-func ReSendBrokenPacket(sk protocol.Socket) {
+func ReSendBrokenPacket(sk net_p.Socket) {
 }
 
 type reSendBrokenPacketReq struct {

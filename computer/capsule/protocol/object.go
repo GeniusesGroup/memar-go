@@ -3,14 +3,19 @@
 package capsule_p
 
 import (
-	function_p "memar/computer/function/protocol"
+	adt_p "memar/computer/adt/protocol"
 	datatype_p "memar/computer/datatype/protocol"
+	function_p "memar/computer/function/protocol"
 )
 
 type Capsule interface {
-	Fields() []datatype_p.DataType
-	Methods() []function_p.Method
+	Field_Fields
+	function_p.Field_Methods
 
-	// datatype_p.DataType
+	datatype_p.DataType
 	// LifeCycle
+	// Authorization
+
+	// logic_p.Equivalence[Capsule]
+	adt_p.ADT
 }

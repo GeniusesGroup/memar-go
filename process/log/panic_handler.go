@@ -5,9 +5,9 @@ package log
 import (
 	"fmt"
 
-	log_p "memar/audit/log/protocol"
-	error_p "memar/error/protocol"
-	string_p "memar/string/protocol"
+	log_p "memar/process/log/protocol"
+	error_p "memar/process/error/protocol"
+	string_p "memar/codec/string/protocol"
 )
 
 // PanicHandler recover from panics if exist to prevent app stop.

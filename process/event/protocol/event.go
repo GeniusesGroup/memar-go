@@ -3,7 +3,7 @@
 package event_p
 
 import (
-	datatype_p "memar/datatype/protocol"
+	datatype_p "memar/computer/datatype/protocol"
 	logic_p "memar/math/logic/protocol"
 	time_p "memar/time/protocol"
 )
@@ -24,5 +24,6 @@ import (
 type Event interface {
 	datatype_p.Field_DataType
 	time_p.Field_Time
+
 	logic_p.Equivalence[Event]
 }

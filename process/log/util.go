@@ -5,7 +5,7 @@ package log
 import (
 	"runtime"
 	
-	error_p "memar/error/protocol"
+	error_p "memar/process/error/protocol"
 )
 
 func CallerInfo(calldepth int) (file string, line int) {

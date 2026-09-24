@@ -10,9 +10,9 @@ func (d *errNotFound) Summary() string { return "Not Found" }
 func (d *errNotFound) Overview() string {
 	return "Can't find requested compression||decompression algorithm"
 }
-func (d *errNotFound) UserNote() string { return "" }
-func (d *errNotFound) DevNote() string  { return "" }
-func (d *errNotFound) TAGS() []string   { return []string{} }
+func (d *errNotFound) UserActionNote() string { return "" }
+func (d *errNotFound) DevActionNote() string  { return "" }
+func (d *errNotFound) TAGS() []string         { return []string{} }
 
 //memar:impl memar/protocol.Quiddity
 func (d *errNotFound) Name() string         { return "" }

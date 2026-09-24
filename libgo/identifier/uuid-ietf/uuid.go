@@ -6,12 +6,15 @@ import (
 	"bytes"
 	"encoding/hex"
 
-	"memar/buffer/byteslice/convert"
+	"memar/computer/buffer/byteslice/convert"
 	"memar/codec/binary"
 	error_p "memar/process/error/protocol"
 )
 
-// RFC4122 representation compliant with specification described in https://tools.ietf.org/html/rfc4122.
+// RFC4122 representation compliant with specification described in 
+// - https://tools.ietf.org/html/rfc4122
+// - https://datatracker.ietf.org/doc/rfc9562/
+// 
 // https://github.com/google/uuid/blob/master/uuid.go
 type UUID [16]byte
 

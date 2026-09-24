@@ -3,7 +3,10 @@
 package http
 
 import (
-	"memar/protocol"
+	container_p "memar/computer/adt/container/protocol"
+	buffer_p "memar/computer/buffer/protocol"
+	http_p "memar/libgo/net/http/protocol"
+	error_p "memar/process/error/protocol"
 )
 
 // body is represent HTTP body.
@@ -11,71 +14,35 @@ import (
 // use header ContentType() method instead. This can be change if ...
 // https://datatracker.ietf.org/doc/html/rfc2616#section-4.3
 type body struct {
-	protocol.Codec
+	body http_p.Body
 }
 
-//memar:impl memar/protocol.ObjectLifeCycle
-func (b *body) Init() (err protocol.Error)   { return }
-func (b *body) Reinit() (err protocol.Error) { b.Codec = nil; return }
-func (b *body) Deinit() (err protocol.Error) { return }
+//memar:impl memar/computer/capsule/protocol.LifeCycle
+func (b *body) Init() (err error_p.Error)   { return }
+func (b *body) Reinit() (err error_p.Error) { b.body = nil; return }
+func (b *body) Deinit() (err error_p.Error) { return }
 
-func (b *body) Body() protocol.Codec         { return b }
-func (b *body) SetBody(codec protocol.Codec) { b.Codec = codec }
+func (b *body) Body() http_p.Body        { return b.body }
+func (b *body) SetBody(body http_p.Body) { b.body = body }
 
 // Below methods exists to prevent panic errors cause of nil interface access.
 //
-//memar:impl memar/protocol.Codec
-func (b *body) Len() int {
-	if b.Codec != nil {
-		return b.Codec.Len()
+//memar:impl memar/codec/protocol.Codec
+func (b *body) SerializationLength() container_p.NumberOfElement {
+	if b.body != nil {
+		return b.body.SerializationLength()
 	}
 	return 0
 }
-func (b *body) MediaType() protocol.MediaType {
-	if b.Codec != nil {
-		return b.Codec.MediaType()
-	}
-	return nil
-}
-func (b *body) CompressType() protocol.CompressType {
-	if b.Codec != nil {
-		return b.Codec.CompressType()
-	}
-	return nil
-}
-func (b *body) Decode(source protocol.Codec) (n int, err protocol.Error) {
-	if b.Codec != nil {
-		n, err = b.Codec.Decode(source)
+func (b *body) Decode(source buffer_p.Buffer) (err error_p.Error) {
+	if b.body != nil {
+		err = b.body.Decode(source)
 	}
 	return
 }
-func (b *body) Encode(destination protocol.Codec) (n int, err protocol.Error) {
-	if b.Codec != nil {
-		n, err = b.Codec.Encode(destination)
-	}
-	return
-}
-func (b *body) Marshal() (data []byte, err protocol.Error) {
-	if b.Codec != nil {
-		data, err = b.Codec.Marshal()
-	}
-	return
-}
-func (b *body) MarshalTo(data []byte) (added []byte, err protocol.Error) {
-	if b.Codec != nil {
-		return b.Codec.MarshalTo(data)
-	}
-	return data, nil
-}
-func (b *body) Unmarshal(data []byte) (n int, err protocol.Error) {
-	if b.Codec != nil {
-		n, err = b.Codec.Unmarshal(data)
-	}
-	return
-}
-func (b *body) UnmarshalFrom(data []byte) (remaining []byte, err protocol.Error) {
-	if b.Codec != nil {
-		return b.Codec.UnmarshalFrom(data)
+func (b *body) Encode(destination buffer_p.Buffer) (err error_p.Error) {
+	if b.body != nil {
+		err = b.body.Encode(destination)
 	}
 	return
 }

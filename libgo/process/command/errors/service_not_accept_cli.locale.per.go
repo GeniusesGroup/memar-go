@@ -2,7 +2,7 @@
 
 /* For license and copyright information please see the LEGAL file in the code repository */
 
-package errs
+package command_errs
 
 //memar:impl memar/protocol.Detail
 func (d *errServiceNotAcceptCLI) Domain() string { return domainPersian }
@@ -12,10 +12,10 @@ func (d *errServiceNotAcceptCLI) Summary() string {
 func (d *errServiceNotAcceptCLI) Overview() string {
 	return "درخواست برای سرویس مدنظر بدلیل عدم پشتیبانی پروتکل مورد نیاز قابلیت انجام روی سرور فعلی را ندارد"
 }
-func (d *errServiceNotAcceptCLI) UserNote() string {
+func (d *errServiceNotAcceptCLI) UserActionNote() string {
 	return "سرور دیگر را امتحان کنید یا با پشتیبانی پلتفرم تماس بگیرید"
 }
-func (d *errServiceNotAcceptCLI) DevNote() string {
+func (d *errServiceNotAcceptCLI) DevActionNote() string {
 	return "پیاده سازی این پروتکل برای پاسخ گویی به سرویس ها به شدت ساده است، وقتی برای پیاده سازی اختصاص دهید"
 }
 func (d *errServiceNotAcceptCLI) TAGS() []string { return []string{} }

@@ -1,11 +1,11 @@
 # Memar Best Practice
 
 ### Developing hints
-- Don't think about network when you develope a business service logic. Use `sk protocol.Socket` as stream data not network stream and don't remove it even don't need it from `Process` method arguments.
+- Don't think about network when you develop a business service logic. Use `sk net_p.Socket` as stream data not network stream and don't remove it even don't need it from `Process` method arguments.
 
 ## Protocols
 - [IETF working groups](https://datatracker.ietf.org/wg/)
-- You can find protocol descriptions in its directory as now [protocol](./protocol/), [ISO](./iso/)    
+- You can find protocol descriptions in its directory as now [protocol](./protocol/)  
 Read more about each protocol or library in its [RFC](https://github.com/GeniusesGroup/RFCs)
 As [suggest here](https://github.com/golang/go/issues/48087) to comply with the standards we add [protocol](./protocol) package and all other memar packages implement this package. You can implement these protocols in your own way if our packages can't satisfied you or your requirements.   
 A standard is a formalized protocol accepted by most of the parties that implement it. A protocol is not a set of rules. A protocol is the thing those rules describe the rules of. This is why programs implement a protocol and comply with a standard.
@@ -48,7 +48,7 @@ All structure declare in memar can have these methods too:
     }
 ```
 - Don't access fields directly (`structName.field1`) in any way, just use methods to access structure fields even inside the encapsulation.
-- Don't use `panic` and `defer` in any way. return `protocol.Error` if you think caller need to get any error.
+- Don't use `panic` and `defer` in any way. return `error_p.Error` if you think caller need to get any error.
 
 ## GIT
 Git is not the best version control mechanism for a software project, but it is the most use one.
@@ -232,9 +232,10 @@ WHERE condition;
 - **RDBMS**: Relational Database Management System
 - **dm**: Data Model
 - **dt**: Data Type
-- **ss**: Storage Service
+- **ss**: SS stand for StorageServices indicates the domain storage layer services.
 - **bs**: Business Service
 - **BLL**(Business-Logic Layer) act as an intermediate between the Presentation Layer and the Data Access Layer (DAL).
 - **ce**: character encoding
 - **wg**: working group
 - **da**: Data analytics is the process of analyzing raw data in order to draw out meaningful, actionable insights, which are then used to inform. Analysis is the division of a whole into small components, and analytics is the science of logical analysis. While analysis looks backward over time and works on the facts and figures of what has happened, analytics work towards modeling the future or predicting a result.
+- **math** is an abbreviation of mathematics

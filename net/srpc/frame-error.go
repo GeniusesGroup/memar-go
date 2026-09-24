@@ -3,7 +3,7 @@
 package srpc
 
 import (
-	"memar/codec/data_exchange/syllab"
+	"memar/codec/syllab"
 	datatype_p "memar/computer/datatype/protocol"
 	net_p "memar/net/protocol"
 	error_p "memar/process/error/protocol"

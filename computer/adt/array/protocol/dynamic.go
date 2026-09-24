@@ -3,7 +3,7 @@
 package array_p
 
 import (
-	container_p "memar/adt/container/protocol"
+	container_p "memar/computer/adt/container/protocol"
 )
 
 // Slice is dynamically size array

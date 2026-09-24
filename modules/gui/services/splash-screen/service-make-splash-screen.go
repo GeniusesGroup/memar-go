@@ -5,12 +5,10 @@ package www
 import (
 	"bytes"
 	"text/template"
-
-	"memar/protocol"
 )
 
 // MakeSplashFiles make splash screen that use as landing page or first screen user see when open GUI app.
-func MakeSplashFiles(html, css, json protocol.File) (err error) {
+func MakeSplashFiles(html, css, json file_p.File) (err error) {
 	html.Rename("splash.html")
 	var htmlBuf = new(bytes.Buffer)
 	if err = splashHTMLFileTemplate.Execute(htmlBuf, ""); err != nil {

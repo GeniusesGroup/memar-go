@@ -3,29 +3,24 @@
 package gp
 
 import (
-	"memar/datatype"
-	"memar/mediatype"
-	"memar/protocol"
+	"memar/computer/datatype"
+	datatype_p "memar/computer/datatype/protocol"
 )
 
 var (
-	Package_MediaType mediaType
+	domain domainType
 )
 
-func init() {
-	Package_MediaType.Init("domain/memar.scm.geniuses.group; package=gp")
-}
-
-type mediaType struct {
+type domainType struct {
 	datatype.DataType
-	mediatype.MT
 }
 
-//memar:impl memar/protocol.DataType_Details
-func (m *mediaType) Status() protocol.SoftwareStatus { return protocol.Software_PreAlpha }
-func (m *mediaType) ReferenceURI() string {
-	return ""
-}
-func (m *mediaType) IssueDate() protocol.Time           { return nil }
-func (m *mediaType) ExpiryDate() protocol.Time          { return nil }
-func (m *mediaType) ExpireInFavorOf() protocol.DataType { return nil }
+//memar:impl memar/identifier/mediatype/protocol.Field_MediaType
+func (dt *domainType) MediaType() string { return "domain/memar.scm.geniuses.group; package=gp" }
+
+//memar:impl memar/datatype/protocol.DataType_Details
+func (dt *domainType) LifeCycle() datatype_p.LifeCycle      { return datatype_p.LifeCycle_PreAlpha }
+func (dt *domainType) ReferenceURI() string                 { return "" }
+func (dt *domainType) IssueDate() string                    { return "" }
+func (dt *domainType) ExpiryDate() string                   { return "" }
+func (dt *domainType) ExpireInFavorOf() datatype_p.DataType { return nil }

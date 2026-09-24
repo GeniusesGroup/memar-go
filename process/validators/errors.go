@@ -2,19 +2,18 @@
 
 package validators
 
-import (
-	er "libgo/error"
-)
+// import (
+// 	er "memar/process/error"
+// )
 
-// Declare package errors
-var (
-	ErrTextOverFlow         er.Error
-	ErrTextLack             er.Error
-	ErrTextIllegalCharacter er.Error
-)
+// var (
+// 	TextOverFlow         er.Error
+// 	TextLack             er.Error
+// 	TextIllegalCharacter er.Error
+// )
 
-func init() {
-	ErrTextOverFlow.Init("domain/libgo.scm.geniuses.group; package=validators; type=error; name=text-over-flow")
-	ErrTextLack.Init("domain/libgo.scm.geniuses.group; package=validators; type=error; name=text-lack")
-	ErrTextIllegalCharacter.Init("domain/libgo.scm.geniuses.group; package=validators; type=error; name=text-illegal-character")
-}
+// func init() {
+// 	TextOverFlow.Init("domain/memar.scm.geniuses.group; package=validators; type=error; name=text-over-flow")
+// 	TextLack.Init("domain/memar.scm.geniuses.group; package=validators; type=error; name=text-lack")
+// 	TextIllegalCharacter.Init("domain/memar.scm.geniuses.group; package=validators; type=error; name=text-illegal-character")
+// }

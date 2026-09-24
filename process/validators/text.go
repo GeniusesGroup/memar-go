@@ -3,15 +3,15 @@
 package validators
 
 import (
-	"libgo/protocol"
+	error_p "memar/process/error/protocol"
 )
 
-func ValidateTextLength(t string, min, max int) (err protocol.Error) {
+func ValidateTextLength(t string, min, max int) (err error_p.Error) {
 	if len(t) < min {
-		return &ErrTextLack
+		return &TextLack
 	}
 	if max != 0 && len(t) > max {
-		return &ErrTextOverFlow
+		return &TextOverFlow
 	}
 	return
 }

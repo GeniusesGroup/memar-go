@@ -3,8 +3,8 @@
 package queue_p
 
 import (
-	container_p "memar/adt/container/protocol"
-	error_p "memar/error/protocol"
+	container_p "memar/computer/adt/container/protocol"
+	error_p "memar/process/error/protocol"
 )
 
 // Queue is queue data structure.

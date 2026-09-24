@@ -3,8 +3,8 @@
 package log
 
 import (
-	"memar/datatype"
-	datatype_p "memar/datatype/protocol"
+	"memar/computer/datatype"
+	datatype_p "memar/computer/datatype/protocol"
 )
 
 var DT domainType
@@ -13,7 +13,7 @@ type domainType struct {
 	datatype.DataType
 }
 
-//memar:impl memar/protocol.MediaType
+//memar:impl memar/identifier/mediatype/protocol.Field_MediaType
 func (dt *domainType) MediaType() string { return "domain/memar.scm.geniuses.group; package=log" }
 
 //memar:impl memar/datatype/protocol.DataType_Details

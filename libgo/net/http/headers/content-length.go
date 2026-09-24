@@ -1,6 +1,6 @@
 /* For license and copyright information please see the LEGAL file in the code repository */
 
-package headers
+package http_headers
 
 import (
 	"strconv"
@@ -9,7 +9,7 @@ import (
 )
 
 // ContentLength read all value about content in header
-func (h *Header[STR]) ContentLength() (ne container_p.NumberOfElement) {
+func (h *Header) ContentLength() (ne container_p.NumberOfElement) {
 	var contentLength = h.Header_Get(Key_ContentLength)
 	var l, _ = strconv.ParseUint(contentLength, 10, 64)
 	ne = container_p.NumberOfElement(l)
@@ -17,17 +17,17 @@ func (h *Header[STR]) ContentLength() (ne container_p.NumberOfElement) {
 }
 
 // AddContentLength add body length to header
-func (h *Header[STR]) AddContentLength(bodyLength container_p.NumberOfElement) {
+func (h *Header) AddContentLength(bodyLength container_p.NumberOfElement) {
 	h.Header_Add(Key_ContentLength, strconv.FormatInt(int64(bodyLength), 10))
 }
 
 // AddZeroContentLength set body length to header
-func (h *Header[STR]) AddZeroContentLength() {
+func (h *Header) AddZeroContentLength() {
 	h.Header_Add(Key_ContentLength, "0")
 }
 
 // AddContentLength add body length to header.
-func (r *Request[STR]) AddContentLength() {
+func (r *Request) AddContentLength() {
 	if r.Body() != nil {
 		var bodyLength = r.Body().SerializationLength()
 		if bodyLength == 0 {
@@ -43,6 +43,6 @@ func (r *Request[STR]) AddContentLength() {
 }
 
 // AddContentLength add body length to header.
-func (r *Response[STR]) AddContentLength() {
+func (r *Response) AddContentLength() {
 	r.Header.AddContentLength(r.body.SerializationLength())
 }

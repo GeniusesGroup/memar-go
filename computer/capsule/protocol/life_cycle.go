@@ -13,9 +13,6 @@ type LifeCycle interface {
 
 	// Allocate()
 
-	// ?? IncrementReference()
-	// ?? DecrementReference()
-
 	// Constructors should instantiate the fields of an object and do any other initialization necessary to make the object ready to use.
 	// This is generally means constructors are small, but there are scenarios where this would be a substantial amount of work.
 	// TODO::: how let custom initialize and get some args??

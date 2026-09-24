@@ -7,6 +7,10 @@ import (
 	"memar/time/duration"
 )
 
+type Field_Week interface {
+	Week() Week
+}
+
 type Week integer.S64
 
 // Common durations.

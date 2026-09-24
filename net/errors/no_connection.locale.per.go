@@ -10,10 +10,10 @@ func (dt *errNoConnection) Summary() string { return "ارتباط قطع" }
 func (dt *errNoConnection) Overview() string {
 	return "ارتباطی جهت انجام رخواست مورد نظر بدلیل وجود مشکل موقت یا دایم وجود ندارد"
 }
-func (dt *errNoConnection) UserNote() string {
+func (dt *errNoConnection) UserActionNote() string {
 	return ""
 }
-func (dt *errNoConnection) DevNote() string {
+func (dt *errNoConnection) DevActionNote() string {
 	return ""
 }
 func (dt *errNoConnection) TAGS() []string { return []string{} }

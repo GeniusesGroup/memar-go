@@ -4,7 +4,8 @@ package chapar
 
 import (
 	"bytes"
-	"memar/protocol"
+	net_p "memar/net/protocol"
+	error_p "memar/process/error/protocol"
 )
 
 // Multiplexer Hardware implementation has some difference from Software(this) implementation:
@@ -20,15 +21,15 @@ type Multiplexer struct {
 	connections Connections
 }
 
-//memar:impl memar/protocol.Network_Framer
-func (mux *Multiplexer) FrameType() protocol.Network_FrameType {
-	return protocol.Network_FrameType_Chapar
+//memar:impl memar/net/protocol.Field_FrameType
+func (mux *Multiplexer) FrameType() net_p.FrameType {
+	return net_p.FrameType_Chapar
 }
 
 // Init initializes new Multiplexer object otherwise panic will occur on un-registered port or handler call.
 //
-//memar:impl memar/protocol.ObjectLifeCycle
-func (mux *Multiplexer) Init(portNumber byte, pConnection protocol.OSI_Physical, connections Connections) {
+//memar:impl memar/computer/capsule/protocol.LifeCycle
+func (mux *Multiplexer) Init(portNumber byte, pConnection net_p.OSI_Physical, connections Connections) {
 	mux.portNumber = portNumber
 	mux.connections = connections
 
@@ -44,13 +45,13 @@ func (mux *Multiplexer) Init(portNumber byte, pConnection protocol.OSI_Physical,
 }
 
 // Deinit ready the connection pools to de-allocated.
-func (mux *Multiplexer) Deinit() (err protocol.Error) {
+func (mux *Multiplexer) Deinit() (err error_p.Error) {
 	err = mux.connections.Deinit()
 	return
 }
 
-// Send send the payload to all ports async.
-func (mux *Multiplexer) Send(packet []byte) (err protocol.Error) {
+// Send send the packet to all ports async.
+func (mux *Multiplexer) Send(packet net_p.Packet) (err error_p.Error) {
 	var f = Frame(packet)
 
 	// err = f.CheckFrame()
@@ -70,7 +71,7 @@ func (mux *Multiplexer) Send(packet []byte) (err protocol.Error) {
 }
 
 // send the packet to all ports as BroadcastFrame!
-func (mux *Multiplexer) sendBroadcast(packet []byte) (err protocol.Error) {
+func (mux *Multiplexer) sendBroadcast(packet net_p.Packet) (err error_p.Error) {
 	// send the frame to all ports as BroadcastFrame!
 	var portNum byte
 	for portNum = 0; portNum <= 255; portNum++ {
@@ -80,7 +81,7 @@ func (mux *Multiplexer) sendBroadcast(packet []byte) (err protocol.Error) {
 }
 
 // Receive handles income frame to ports.
-func (mux *Multiplexer) Receive(soc protocol.Socket, packet []byte) (err protocol.Error) {
+func (mux *Multiplexer) Receive(soc net_p.Socket, packet net_p.Packet) (err error_p.Error) {
 	var f = Frame(packet)
 
 	err = f.CheckFrame()
@@ -92,7 +93,7 @@ func (mux *Multiplexer) Receive(soc protocol.Socket, packet []byte) (err protoco
 	var lastHop = f.IncrementNextHop(mux.portNumber)
 	if lastHop {
 		if !AcceptLastHop {
-			err = &ErrNotAcceptLastHop
+			// err = &chapar_errs.NotAcceptLastHop
 		} else {
 			var path = f.Path()
 
@@ -107,7 +108,7 @@ func (mux *Multiplexer) Receive(soc protocol.Socket, packet []byte) (err protoco
 				// TODO::: receive frame on alternative path, Any action needed??
 			}
 
-			// TODO::: Set conn to given soc(protocol.Socket) for others and response logic
+			// TODO::: Set conn to given soc(net_p.Socket) for others and response logic
 		}
 		return
 	}

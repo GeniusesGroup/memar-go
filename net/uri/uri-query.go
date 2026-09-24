@@ -5,8 +5,10 @@ package uri
 import (
 	"strings"
 
-	"libgo/protocol"
-	"libgo/utf8"
+	"memar/codec/string/utf8"
+	container_p "memar/computer/adt/container/protocol"
+	// uri_errs "memar/net/uri/errors"
+	error_p "memar/process/error/protocol"
 )
 
 // Query maps a string key to a list of query key/value.
@@ -24,9 +26,9 @@ type Query struct {
 // A setting without an equals sign is interpreted as a key set to an empty
 // value.
 // Settings containing a non-URL-encoded semicolon are considered invalid.
-func (q *Query) Init(query string) (err protocol.Error) {
+func (q *Query) Init(query string) (err error_p.Error) {
 	q.list = make(map[string][]string)
-	err = q.FromString(query)
+	_, err = q.FromString(query)
 	return
 }
 
@@ -74,8 +76,8 @@ func (q *Query) Sort() {
 
 // FromString decodes the queries from “URL encoded” form ("bar=baz&foo=quux").
 //
-//libgo:impl libgo/protocol.Stringer
-func (q *Query) FromString(query string) (err protocol.Error) {
+//memar:impl memar/codec/string/protocol.Stringer
+func (q *Query) FromString(query string) (dl container_p.NumberOfElement, err error_p.Error) {
 	for query != "" {
 		var key, value string
 		key, query, _ = utf8.CutByte(query, sign_And)
@@ -85,13 +87,13 @@ func (q *Query) FromString(query string) (err protocol.Error) {
 		}
 
 		if strings.IndexByte(key, sign_Semicolon) > -1 {
-			err = &ErrQueryBadKey
+			// err = &errs.ErrQueryBadKey
 			continue
 		}
 
 		key, value, _ = utf8.CutByte(key, sign_Equal)
 
-		var err1 protocol.Error
+		var err1 error_p.Error
 		key, err1 = Unescape(key, EscapeMode_QueryComponent)
 		if err1 != nil {
 			if err == nil {
@@ -113,10 +115,12 @@ func (q *Query) FromString(query string) (err protocol.Error) {
 
 // ToString encodes the queries into “URL encoded” form ("bar=baz&foo=quux").
 //
-//libgo:impl libgo/protocol.Stringer
-func (q *Query) ToString() string {
+//memar:impl memar/codec/string/protocol.Stringer
+func (q *Query) ToString() (s string, err error_p.Error) {
 	if q == nil {
-		return ""
+		// TODO:::
+		// err =
+		return
 	}
 	var buf strings.Builder
 	for key, values := range q.list {
@@ -130,5 +134,6 @@ func (q *Query) ToString() string {
 			buf.WriteString(Escape(v, EscapeMode_QueryComponent))
 		}
 	}
-	return buf.String()
+	s = buf.String()
+	return
 }

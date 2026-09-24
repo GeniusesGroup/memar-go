@@ -3,6 +3,7 @@
 package thread_p
 
 import (
+	runtime_p "memar/computer/runtime/protocol"
 	error_p "memar/process/error/protocol"
 	"memar/time/duration"
 )
@@ -12,13 +13,13 @@ type Thread interface {
 
 	// Defer(where ??, v any)
 
-	// Thread_Execution_Exception
-	Thread_SchedulerWaiting
+	// Execution_Exception
+	Scheduler_Waiting
 
-	Runtime
+	runtime_p.Runtime
 }
 
-type Thread_SchedulerWaiting interface {
+type Scheduler_Waiting interface {
 	AddToWaitList(id int) (err error_p.Error)
 	NotifyWaitList(id int) (err error_p.Error)
 	Wait() (id int, er error_p.Error)
@@ -26,7 +27,7 @@ type Thread_SchedulerWaiting interface {
 
 // Even when a package uses panic internally, its external API still presents explicit error return values.
 // TODO::: Is it good idea to have these logics? Why not just Errors??
-// type Thread_Execution_Exception interface {
+// type Execution_Exception interface {
 // 	Panic(e Event)
 // 	Recover() (e Event)
 // }

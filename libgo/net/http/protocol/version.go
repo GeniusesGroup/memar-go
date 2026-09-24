@@ -2,10 +2,6 @@
 
 package http_p
 
-import (
-	string_p "memar/codec/string/protocol"
-)
-
-type Field_Version /*[STR string_p.String]*/ interface {
-	Version() string_p.String
+type Field_Version interface {
+	Version() string
 }

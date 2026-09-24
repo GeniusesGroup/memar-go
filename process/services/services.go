@@ -3,16 +3,17 @@
 package services
 
 import (
-	"memar/audit/log"
-	error_p "memar/error/protocol"
-	service_p "memar/operation/service/protocol"
-	errs "memar/operation/services/errors"
+	error_p "memar/process/error/protocol"
+	"memar/process/log"
+	operation_p "memar/process/operation/protocol"
+	service_p "memar/process/service/protocol"
+	// services_errs "memar/process/services/errors"
 )
 
 func Register(s service_p.Service) (err error_p.Error) { return services.Register(s) }
 func Delete(s service_p.Service) (err error_p.Error)   { return services.Delete(s) }
 func Services() []service_p.Service                    { return services.Services() }
-func GetByID(sID service_p.ID) (ser service_p.Service, err error_p.Error) {
+func GetByID(sID operation_p.ID) (ser service_p.Service, err error_p.Error) {
 	return services.GetByID(sID)
 }
 func GetByMediaType(mt string) (ser service_p.Service, err error_p.Error) {
@@ -24,13 +25,13 @@ const poolSizes = 512
 
 var services = services_{
 	poolByRegisterTime: make([]service_p.Service, poolSizes),
-	poolByID:           make(map[service_p.ID]service_p.Service, poolSizes),
+	poolByID:           make(map[operation_p.ID]service_p.Service, poolSizes),
 	poolByMediaType:    make(map[string]service_p.Service, poolSizes),
 }
 
 type services_ struct {
 	poolByRegisterTime []service_p.Service
-	poolByID           map[service_p.ID]service_p.Service
+	poolByID           map[operation_p.ID]service_p.Service
 	poolByMediaType    map[string]service_p.Service
 }
 
@@ -40,8 +41,8 @@ type services_ struct {
 //
 //memar:impl memar/protocol.Services
 func (self *services_) Register(s service_p.Service) (err error_p.Error) {
-	if s.ServiceID() == 0 {
-		err = &errs.ServiceNotProvideIdentifier
+	if s.OperationID() == 0 {
+		// err = &services_errs.ServiceNotProvideIdentifier
 		return
 	}
 
@@ -58,10 +59,10 @@ func (self *services_) Services() []service_p.Service { return self.poolByRegist
 // GetServiceByID use to get specific service handler by service ID
 //
 //memar:impl memar/protocol.Services
-func (self *services_) GetByID(sID service_p.ID) (ser service_p.Service, err error_p.Error) {
+func (self *services_) GetByID(sID operation_p.ID) (ser service_p.Service, err error_p.Error) {
 	ser = self.poolByID[sID]
 	if ser == nil {
-		err = &errs.NotFound
+		// err = &services_errs.NotFound
 	}
 	return
 }
@@ -72,24 +73,24 @@ func (self *services_) GetByID(sID service_p.ID) (ser service_p.Service, err err
 func (self *services_) GetByMediaType(mt string) (ser service_p.Service, err error_p.Error) {
 	ser = self.poolByMediaType[mt]
 	if ser == nil {
-		err = &errs.NotFound
+		// err = &services_errs.NotFound
 	}
 	return
 }
 
 // DeleteService use to delete specific service in services list.
 func (self *services_) Delete(s service_p.Service) (err error_p.Error) {
-	delete(self.poolByID, s.ServiceID())
+	delete(self.poolByID, s.OperationID())
 	delete(self.poolByMediaType, s.MediaType())
 	// TODO::: delete from self.poolByRegisterTime
 	return
 }
 
 func (self *services_) registerServiceByMediaType(s service_p.Service) (err error_p.Error) {
-	var serviceID = s.ServiceID()
+	var serviceID = s.OperationID()
 	var exitingServiceByID, _ = self.GetByID(serviceID)
 	if exitingServiceByID != nil {
-		err = &errs.ServiceDuplicateIdentifier
+		// err = &services_errs.ServiceDuplicateIdentifier
 		log.Fatal(s, "ID associated for '"+s.MediaType()+"' Used before for other service and not legal to reuse same ID for other services\n"+
 			"	Exiting service MediaType is: "+exitingServiceByID.MediaType())
 	} else {
@@ -99,7 +100,7 @@ func (self *services_) registerServiceByMediaType(s service_p.Service) (err erro
 	var serviceMediaType = s.MediaType()
 	var exitingServiceByMediaType, _ = self.GetByMediaType(serviceMediaType)
 	if exitingServiceByMediaType != nil {
-		err = &errs.ServiceDuplicateIdentifier
+		// err = &services_errs.ServiceDuplicateIdentifier
 		log.Fatal(s, "This mediatype '"+serviceMediaType+"' register already before for other service and not legal to reuse same mediatype for other services\n")
 	} else {
 		self.poolByMediaType[serviceMediaType] = s

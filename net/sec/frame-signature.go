@@ -3,8 +3,9 @@
 package sec
 
 import (
-	"memar/protocol"
-	"memar/syllab"
+	"memar/codec/syllab"
+	net_p "memar/net/protocol"
+	error_p "memar/process/error/protocol"
 )
 
 /*
@@ -23,7 +24,7 @@ func (f SignatureFrame) ID() int64 { return syllab.GetInt64(f, 0) }
 //memar:impl memar/protocol.Network_Frame
 func (f SignatureFrame) NextFrame() []byte { return f[8:] }
 
-func (f SignatureFrame) Do(sk protocol.Socket) (err protocol.Error) {
+func (f SignatureFrame) Do(sk net_p.Socket) (err error_p.Error) {
 	return
 }
 

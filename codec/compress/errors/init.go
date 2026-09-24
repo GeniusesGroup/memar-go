@@ -5,5 +5,5 @@ package errs
 const domainBaseMediatype = "domain/memar.scm.geniuses.group; package=compress; type=error; name="
 
 func init() {
-	ErrSourceNotChangeable.Init()
+	SourceNotChangeable.Init()
 }

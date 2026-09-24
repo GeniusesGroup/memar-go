@@ -8,6 +8,8 @@ import (
 	"go/token"
 	"path"
 	"strings"
+
+	error_p "memar/process/error/protocol"
 )
 
 // Package :
@@ -23,12 +25,21 @@ type Package struct {
 }
 
 // Init initialize the object.
-func (p *Package) Init() {
+//
+//memar:impl memar/computer/capsule/protocol.LifeCycle
+func (p *Package) Init() (err error_p.Error) {
 	p.Files = make(map[string]*File)
 	p.Imports = make(map[string]*Import)
 	p.Functions = make(map[string]*Function)
 	p.Types = make(map[string]*Type)
 	p.Dependencies = make(map[string]*Package)
+	return
+}
+func (p *Package) Reinit() (err error_p.Error) {
+	return
+}
+func (p *Package) Deinit() (err error_p.Error) {
+	return
 }
 
 // AddFile use to add file to Package

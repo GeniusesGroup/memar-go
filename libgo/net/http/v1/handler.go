@@ -1,166 +1,128 @@
 /* For license and copyright information please see the LEGAL file in the code repository */
 
-package hh
+package http_v1
 
 import (
-	"github.com/GeniusesGroup/libgo/convert"
-	"github.com/GeniusesGroup/libgo/http"
-	hs "github.com/GeniusesGroup/libgo/http/services"
-	"github.com/GeniusesGroup/libgo/log"
-	"github.com/GeniusesGroup/libgo/protocol"
+	"memar/libgo/net/http"
+	"memar/libgo/net/http/headers"
+	http_p "memar/libgo/net/http/protocol"
+	net_p "memar/net/protocol"
+	error_p "memar/process/error/protocol"
+	"memar/process/log"
+	service_p "memar/process/service/protocol"
 )
 
-// Protocol Standard - HTTP/1 : https://en.wikipedia.org/wiki/Hypertext_Transfer_Protocol
-type V1 struct{}
+// Handler is application layer HTTPv1 protocol handler.
+type Handler struct {
+	mux http_p.Handler
+}
 
-// HandleIncomeRequest handle incoming HTTP request streams.
-// It can use for architectures like restful, ...
-func (h *V1) HandleIncomeRequest(st protocol.Stream) (err protocol.Error) {
-	var httpReq http.Request
-	var httpRes http.Response
-	httpReq.Init()
-	httpRes.Init()
-
-	_, err = httpReq.Decode(st)
-	if err != nil {
-		httpRes.SetStatus(http.StatusBadRequestCode, http.StatusBadRequestPhrase)
-		h.HandleOutcomeResponse(st, &httpReq, &httpRes)
-		return
-	}
-
-	err = h.ServeHTTP(st, &httpReq, &httpRes)
+//memar:impl memar/computer/capsule/protocol.LifeCycle
+func (self *Handler) Init(mux http_p.Handler) (err error_p.Error) {
+	self.mux = mux
+	return
+}
+func (self *Handler) Reinit() (err error_p.Error) {
+	// err = "To make process simple and prevent data racing, You can't reuse `Handler`"
+	return
+}
+func (self *Handler) Deinit() (err error_p.Error) {
+	// self.mux.Deinit()
 	return
 }
 
+// HandleIncomeRequest handle incoming HTTP request streams.
+// It can use for architectures like restful, ...
 // ServeHTTP handle incoming HTTP request.
-// Developers can develope new one with its desire logic to more respect protocols like restful, ...
-func (h *V1) ServeHTTP(st protocol.Stream, httpReq *http.Request, httpRes *http.Response) (err protocol.Error) {
-	if !protocol.AppMode_Dev && !hs.HostSupportedService.ServeHTTP(st, httpReq, httpRes) {
-		h.HandleOutcomeResponse(st, httpReq, httpRes)
-		return
+// Developers can develop new one with its desire logic to more respect protocols like restful, ...
+func (self *Handler) HandleIncomeRequest(sk net_p.Socket) (err error_p.Error) {
+	var httpReq Request
+	var httpRes Response
+	err = httpReq.Init()
+	err = httpRes.Init()
+
+	err = httpReq.Decode(sk.ReceiveBuffer())
+	if err != nil {
+		httpRes.SetStatusByError(err)
+	} else {
+		err = self.mux.ServeHTTP(sk, &httpReq.Request, &httpRes.Response)
 	}
 
-	var path = httpReq.URI().Path()
-	switch path {
-	case hs.MuxService_Path:
-		err = hs.MuxService.ServeHTTP(st, httpReq, httpRes)
-	case hs.LandingService_Path:
-		// TODO:::
-	default:
-		// serve by URL
-		var service protocol.Service
-		service, err = protocol.App.GetServiceByURI(path)
-		if service == nil {
-			// If project don't have any logic that support data on e.g. HTTP (restful, ...) we send platform GUI app for web
-			err = hs.ServeWWWService.ServeHTTP(st, httpReq, httpRes)
-		} else {
-			err = service.ServeHTTP(st, httpReq, httpRes)
-		}
-	}
-	h.HandleOutcomeResponse(st, httpReq, httpRes)
+	self.HandleOutcomeResponse(sk, &httpReq, &httpRes)
 	return
 }
 
 // HandleOutcomeResponse use to handle outcome HTTP response stream.
-func (h *V1) HandleOutcomeResponse(st protocol.Stream, httpReq *http.Request, httpRes *http.Response) {
+func (self *Handler) HandleOutcomeResponse(sk net_p.Socket, httpReq *Request, httpRes *Response) (err error_p.Error) {
 	// Do some global assignment to response
 	httpRes.SetVersion(httpReq.Version())
-	if httpRes.Body() != nil {
-		var mediaType = httpRes.Body().MediaType()
-		if mediaType != nil {
-			httpRes.H.Set(http.HeaderKeyContentType, mediaType.ToString())
-		}
-		var compressType = httpRes.Body().CompressType()
-		if compressType != nil {
-			httpRes.H.Set(http.HeaderKeyContentEncoding, compressType.ContentEncoding())
-		}
+	httpRes.Header_Set(headers.Key_Server, http.DefaultServer)
+	// TODO::: add server time?? is it worth??
 
-		if httpRes.Body().Len() > 0 {
-			httpRes.SetContentLength()
-		} else {
-			httpRes.H.SetTransferEncoding(http.HeaderValueChunked)
-		}
-	} else {
-		httpRes.H.SetZeroContentLength()
+	err = httpRes.Encode(sk.SendBuffer())
+
+	if log.CNF_DevelopingMode {
+		// TODO::: httpReq||httpRes not serialized yet to log it! any idea to have better performance below??
+		var reqAsStr, _ = httpReq.ToString()
+		var resAsStr, _ = httpRes.ToString()
+		log.Conf(httpReq, reqAsStr)
+		log.Conf(httpRes, resAsStr)
 	}
-
-	// httpRes.H.Set(HeaderKeyAccessControlAllowOrigin, "*")
-
-	st.Encode(httpRes)
-
-	if protocol.AppMode_Dev {
-		// TODO::: req||res not serialized yet to log it! any idea to have better performance below??
-		var req, _ = httpReq.Marshal()
-		var res, _ = httpRes.Marshal()
-		protocol.App.Log(log.ConfEvent(domainEnglish, convert.UnsafeByteSliceToString(req)))
-		protocol.App.Log(log.ConfEvent(domainEnglish, convert.UnsafeByteSliceToString(res)))
-	}
+	return
 }
 
-// SendBidirectionalRequest use to handle outcoming HTTP request stream
-// It block caller until get response or error
-func SendBidirectionalRequest(conn protocol.Connection, service protocol.Service, httpReq *http.Request) (httpRes *http.Response, err protocol.Error) {
-	var st protocol.Stream
-	st, err = conn.OutcomeStream(service)
+// SendBidirectionalRequest use to handle outgoing HTTP request.
+// It block caller until get response or error.
+// Caller must sk.Close() the given socket or pool it for other request.
+func SendBidirectionalRequest(sk net_p.Socket, service service_p.Service, httpReq *http.Request) (httpRes *http.Response, err error_p.Error) {
+	err = httpReq.Encode(sk.SendBuffer())
 	if err != nil {
 		return
 	}
 
-	_, err = st.Encode(httpReq)
-	if err != nil {
-		return
-	}
-
-	var streamStatus = st.State()
+	var skStatus = sk.State()
 	for {
-		var status = <-streamStatus
+		var status = <-skStatus
 		switch status {
-		case protocol.NetworkStatus_Timeout:
+		case net_p.Status_Timeout_Read, net_p.Status_Timeout_Write:
 			// err =
-		case protocol.NetworkStatus_ReceivedCompletely:
+			return
+		case net_p.Status_ReceivedCompletely:
 			var res http.Response
 			res.Init()
-			_, err = res.Decode(st)
+			err = res.Decode(sk.ReceiveBuffer())
 			if err == nil {
 				err = res.GetError()
 			}
 			httpRes = &res
+			return
 		default:
 			continue
 		}
-		st.Close()
-		break
 	}
-	return
 }
 
 // SendUnidirectionalRequest use to send outcome HTTP request and don't expect any response.
 // It block caller until request send successfully or return error
-func SendUnidirectionalRequest(conn protocol.Connection, service protocol.Service, httpReq *http.Request) (err protocol.Error) {
-	var st protocol.Stream
-	st, err = conn.OutcomeStream(service)
+// Caller must sk.Close() the given socket or pool it for other request.
+func SendUnidirectionalRequest(sk net_p.Socket, service service_p.Service, httpReq *http.Request) (err error_p.Error) {
+	err = httpReq.Encode(sk.SendBuffer())
 	if err != nil {
 		return
 	}
 
-	_, err = st.Encode(httpReq)
-	if err != nil {
-		return
-	}
-
-	var streamStatus = st.State()
+	var skStatus = sk.State()
 	for {
-		var status = <-streamStatus
+		var status = <-skStatus
 		switch status {
-		case protocol.NetworkStatus_Timeout:
+		case net_p.Status_Timeout_Read, net_p.Status_Timeout_Write:
 			// err =
-		case protocol.NetworkStatus_SentCompletely:
-			// Nothing to do. Just let execution go to st.Close() and break the loop
+			return
+		case net_p.Status_SentCompletely:
+			// Nothing to do. Just let execution go to sk.Close() and break the loop
+			return
 		default:
 			continue
 		}
-		st.Close()
-		break
 	}
-	return
 }

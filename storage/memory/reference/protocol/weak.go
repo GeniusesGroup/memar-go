@@ -2,12 +2,16 @@
 
 package reference_p
 
+import (
+	error_p "memar/process/error/protocol"
+)
+
 // Weak reference is a reference that does not protect the referenced object
 // from collection by a garbage collector, unlike a strong reference.
-// 
+//
 // In other words, weak models temporary ownership, when an object needs to be accessed only if it exists,
 // and it may be deleted at any time by someone else,
-// 
+//
 // https://en.wikipedia.org/wiki/Weak_reference
 //
 // Other protocols:::

@@ -1,4 +1,4 @@
-/* For license and copyright information please see LEGAL file in repository */
+/* For license and copyright information please see the LEGAL file in the code repository */
 
 package crypto
 
@@ -11,16 +11,16 @@ type aes256 struct {
 	dec [60]uint32
 }
 
-// NewAES256 use to create the aes256 that implement BlockCipher128 interface!
-func NewAES256(key [32]byte) BlockCipher128 {
+// NewAES256 use to create the aes256 that implement BlockCipher interface!
+func NewAES256(key [32]byte) *aes256 {
 	var c = aes256{}
 	return &c
 }
 
 // Encrypt encrypts the buf.
-// If original buf needed for any other proccess, must clone it before pass it!!
-func (aes *aes256) Encrypt(block *[16]byte) {}
+// If original buf needed for any other process, must clone it before pass it!!
+func (aes *aes256) Encrypt(block []byte) {}
 
 // Decrypt decrypts the buf.
-// If original buf needed for any other proccess, must clone it before pass it!!
-func (aes *aes256) Decrypt(block *[16]byte) {}
+// If original buf needed for any other process, must clone it before pass it!!
+func (aes *aes256) Decrypt(block []byte) {}

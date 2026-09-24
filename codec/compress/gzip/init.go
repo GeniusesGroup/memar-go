@@ -3,7 +3,7 @@
 package gzip
 
 import (
-	cts "memar/compress-types"
+	cts "memar/codec/compress-types"
 )
 
 func init() {

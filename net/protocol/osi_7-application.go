@@ -17,6 +17,10 @@ Application (OSI Layer 7: Application)
 **********************************************************************************
 */
 
+type Field_OSI_Application interface {
+	OSI_ApplicationLayer() OSI_Application
+}
+
 // OSI_Application usually use to save state and release thread(goroutine) in waiting state
 type OSI_Application interface {
 	capsule_p.LifeCycle

@@ -3,14 +3,14 @@
 package errors_errs
 
 import (
-	"memar/computer/datatype"
+	error "memar/process/error"
 	error_p "memar/process/error/protocol"
 )
 
-var NotProvideIdentifier notProvideIdentifier
+var ErrNotProvideIdentifier notProvideIdentifier
 
 type notProvideIdentifier struct {
-	datatype.DataType
+	error.Error
 }
 
 func (self *notProvideIdentifier) Init() (err error_p.Error) {

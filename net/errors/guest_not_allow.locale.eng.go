@@ -10,10 +10,10 @@ func (dt *errGuestNotAllow) Summary() string { return "Guest Not Allow" }
 func (dt *errGuestNotAllow) Overview() string {
 	return "Guest users don't allow to make new connection"
 }
-func (dt *errGuestNotAllow) UserNote() string {
+func (dt *errGuestNotAllow) UserActionNote() string {
 	return ""
 }
-func (dt *errGuestNotAllow) DevNote() string {
+func (dt *errGuestNotAllow) DevActionNote() string {
 	return ""
 }
 func (dt *errGuestNotAllow) TAGS() []string { return []string{} }

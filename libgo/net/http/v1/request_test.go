@@ -1,6 +1,6 @@
 /* For license and copyright information please see the LEGAL file in the code repository */
 
-package httpv1
+package http_v1
 
 import (
 	"bytes"
@@ -8,7 +8,8 @@ import (
 	"reflect"
 	"testing"
 
-	"memar/buffer"
+	"memar/computer/buffer"
+	"memar/libgo/net/http"
 )
 
 type RequestTest struct {
@@ -23,7 +24,7 @@ var requestTests = []RequestTest{
 		name:   "simple1",
 		packet: []byte("GET / HTTP/1.1\r\n" + "\r\n"),
 		req: Request{
-			PseudoHeader_Request: PseudoHeader_Request{
+			PseudoHeader_Request: http.PseudoHeader_Request{
 				method: "GET",
 				// uri: uri.URI{
 				// 	uri:       "/",
@@ -157,14 +158,14 @@ func TestRequest_Unmarshal(t *testing.T) {
 			if err != nil {
 				t.Errorf("Request.Unmarshal() error = %v", err)
 			}
-			if tt.out.method != tt.req.method {
-				t.Errorf("Request.Unmarshal(%q) - Method:\n\tgot  %v\n\twant %v\n", tt.packet, tt.out.method, tt.req.method)
+			if tt.out.Method() != tt.req.Method() {
+				t.Errorf("Request.Unmarshal(%q) - Method:\n\tgot  %v\n\twant %v\n", tt.packet, tt.out.Method(), tt.req.Method())
 			}
 			if tt.out.U.URI() != tt.req.U.URI() {
 				t.Errorf("Request.Unmarshal(%q) - URI:\n\tgot  %v\n\twant %v\n", tt.packet, tt.out.U.URI(), tt.req.U.URI())
 			}
-			if tt.out.version != tt.req.version {
-				t.Errorf("Request.Unmarshal(%q) - Version:\n\tgot  %v\n\twant %v\n", tt.packet, tt.out.version, tt.req.version)
+			if tt.out.Version() != tt.req.Version() {
+				t.Errorf("Request.Unmarshal(%q) - Version:\n\tgot  %v\n\twant %v\n", tt.packet, tt.out.Version(), tt.req.Version())
 			}
 			// if !reflect.DeepEqual(tt.out.header.headers, tt.req.header.headers) {
 			// 	t.Errorf("Request.Unmarshal(%q):\n\tgot  %v\n\twant %v\n", tt.packet, tt.out.header.headers, tt.req.header.headers)

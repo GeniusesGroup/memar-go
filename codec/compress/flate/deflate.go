@@ -3,9 +3,11 @@
 package flate
 
 import (
-	"memar/datatype"
-	"memar/mediatype"
-	"memar/protocol"
+	codec_p "memar/codec/protocol"
+	"memar/codec/compress"
+	"memar/computer/datatype"
+	datatype_p "memar/computer/datatype/protocol"
+	error_p "memar/process/error/protocol"
 )
 
 const (
@@ -17,34 +19,30 @@ var Deflate deflate
 
 type deflate struct {
 	datatype.DataType
-	mediatype.MT
 }
 
-//memar:impl memar/protocol.ObjectLifeCycle
-func (d *deflate) Init() (err protocol.Error) {
-	err = d.MT.Init("application/deflate")
-	return
-}
+//memar:impl memar/identifier/mediatype/protocol.Field_MediaType
+func (d *deflate) MediaType() string { return "application/deflate" }
 
-//memar:impl memar/protocol.DataType_Details
-func (d *deflate) Status() protocol.SoftwareStatus    { return protocol.Software_StableRelease }
-func (d *deflate) ReferenceURI() string               { return "" }
-func (d *deflate) IssueDate() protocol.Time           { return nil }
-func (d *deflate) ExpiryDate() protocol.Time          { return nil }
-func (d *deflate) ExpireInFavorOf() protocol.DataType { return nil }
+//memar:impl memar/datatype/protocol.DataType_Details
+func (d *deflate) LifeCycle() datatype_p.LifeCycle      { return datatype_p.LifeCycle_StableRelease }
+func (d *deflate) ReferenceURI() string                 { return "" }
+func (d *deflate) IssueDate() string                    { return "" }
+func (d *deflate) ExpiryDate() string                   { return "" }
+func (d *deflate) ExpireInFavorOf() datatype_p.DataType { return nil }
 
-//memar:impl memar/protocol.MediaType
+//memar:impl memar/identifier/mediatype/protocol.Field_MediaType
 func (d *deflate) FileExtension() string { return Extension }
 
-//memar:impl memar/protocol.CompressType
+//memar:impl memar/compress_p.CompressType
 func (d *deflate) ContentEncoding() string { return ContentEncoding }
-func (d *deflate) Compress(raw protocol.Codec, options protocol.CompressOptions) (compressed protocol.Codec, err protocol.Error) {
+func (d *deflate) Compress(raw codec_p.Codec, options compress.Options) (compressed codec_p.Codec, err error_p.Error) {
 	var com Compressor
 	err = com.Init(raw, options)
 	compressed = &com
 	return
 }
-func (d *deflate) Decompress(compressed protocol.Codec) (raw protocol.Codec, err protocol.Error) {
+func (d *deflate) Decompress(compressed codec_p.Codec) (raw codec_p.Codec, err error_p.Error) {
 	var dec Decompressor
 	err = dec.Init(compressed)
 	raw = &dec

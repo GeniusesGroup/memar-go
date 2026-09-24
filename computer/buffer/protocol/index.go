@@ -3,10 +3,8 @@
 package buffer_p
 
 import (
-	container_p "memar/adt/container/protocol"
+	container_p "memar/computer/adt/container/protocol"
 )
-
-type Index = container_p.ElementIndex
 
 type Field_Indexes interface {
 	ReadIndex() Index
@@ -17,3 +15,5 @@ type Method_Indexes interface {
 	SetReadIndex(ri Index)
 	SetWriteIndex(wi Index)
 }
+
+type Index = container_p.ElementIndex

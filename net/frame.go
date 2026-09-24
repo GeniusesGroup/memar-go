@@ -3,7 +3,7 @@
 package net
 
 import (
-	"memar/protocol"
+	net_p "memar/net/protocol"
 )
 
 /*
@@ -14,7 +14,7 @@ import (
 */
 type frame []byte
 
-//memar:impl memar/protocol.Network_Framer
-func (f frame) FrameType() protocol.Network_FrameType { return protocol.Network_FrameType(f[0]) }
+//memar:impl memar/net/protocol.Field_FrameType
+func (f frame) FrameType() net_p.FrameType { return net_p.FrameType(f[0]) }
 
 func (f frame) Payload() []byte { return f[1:] }

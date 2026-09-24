@@ -3,7 +3,7 @@
 package net_p
 
 import (
-	container_p "memar/adt/container/protocol"
+	container_p "memar/computer/adt/container/protocol"
 	error_p "memar/process/error/protocol"
 )
 

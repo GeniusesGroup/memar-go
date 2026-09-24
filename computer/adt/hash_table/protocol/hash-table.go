@@ -3,13 +3,13 @@
 package hashTable_p
 
 import (
-	container_p "memar/adt/container/protocol"
-	adt_p "memar/adt/protocol"
+	container_p "memar/computer/adt/container/protocol"
+	adt_p "memar/computer/adt/protocol"
+	marker_p "memar/computer/adt/marker/protocol"
 	capsule_p "memar/computer/capsule/protocol"
 	hash_p "memar/crypto/hash/protocol"
 	logic_p "memar/math/logic/protocol"
 	error_p "memar/process/error/protocol"
-	storage_p "memar/storage/memory/protocol"
 )
 
 // func New[K Key, V Value](capacity container_p.NumberOfElement) *HashTable[K, V]
@@ -23,12 +23,13 @@ type HashTable[K Key[K], V Value] interface {
 	Iteration[K, V]
 
 	adt_p.ADT
-	container_p.Capacity
-	container_p.OccupiedLength
-	container_p.Clear
 
-	memory_p.Copy[HashTable[K, V]]
-	memory_p.Clone[HashTable[K, V]]
+	marker_p.Copy[HashTable[K, V]]
+	marker_p.Clone[HashTable[K, V]]
+
+	container_p.Field_Capacity
+	container_p.Field_OccupiedLength
+	container_p.Clear
 }
 
 type Key[T any] interface {

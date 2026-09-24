@@ -3,7 +3,7 @@
 package cts
 
 import (
-	"memar/protocol"
+	cts_p "memar/codec/compress-types/protocol"
 )
 
-var _ protocol.CompressTypes = &cts
+var _ cts_p.CompressTypes = &cts

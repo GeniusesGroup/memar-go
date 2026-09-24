@@ -5,7 +5,7 @@ package json
 import (
 	"encoding/json"
 
-	// json_errs "memar/codec/data_exchange/json/errors"
+	// json_errs "memar/libgo/codec/json/errors"
 	error_p "memar/process/error/protocol"
 )
 
@@ -32,7 +32,7 @@ Field int `json:"-"`                // Field is ignored by this package.
 Field int `json:"-,"`               // Field appears in JSON as key "-".
 */
 
-// Marshal encodes the value of s to the payload buffer in runtime.
+// Marshal encodes the value of s to the buffer in runtime.
 func Marshal(s any) (p []byte, err error_p.Error) {
 	// TODO::: make better algorithm instead of below
 	var goErr error

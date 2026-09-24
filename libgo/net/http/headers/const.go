@@ -1,6 +1,6 @@
 /* For license and copyright information please see the LEGAL file in the code repository */
 
-package headers
+package http_headers
 
 const (
 	// TimeFormat is the time format to use when generating times in HTTP

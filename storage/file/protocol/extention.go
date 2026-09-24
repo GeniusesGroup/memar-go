@@ -6,6 +6,11 @@ import (
 	string_p "memar/codec/string/protocol"
 )
 
+type Field_Extension interface {
+	// FileExtension return extension name without a period or space or ...
+	FileExtension() Extension
+}
+
 // A filename extension, file name extension or file extension is
 // a suffix to the name of a computer file (for example, .txt, .docx, .md).
 // The extension indicates a characteristic of the file contents or its intended use.
@@ -14,9 +19,4 @@ import (
 // https://en.wikipedia.org/wiki/Filename_extension
 type Extension interface {
 	string_p.String
-}
-
-type Field_Extension interface {
-	// FileExtension return extension name without a period or space or ...
-	FileExtension() Extension
 }

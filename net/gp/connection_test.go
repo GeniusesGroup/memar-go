@@ -3,7 +3,7 @@
 package gp
 
 import (
-	"memar/protocol"
+	net_p "memar/net/protocol"
 )
 
-var _ protocol.OSI_Network = &Connection{}
+var _ net_p.OSI_Network = &Connection{}

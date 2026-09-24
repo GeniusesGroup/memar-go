@@ -5,14 +5,6 @@ package error_p
 // Belows are some other error behaviors that Errors capsule CAN implement,
 // but any error package can introduce new behaviors for any purpose.
 
-// Chian errors can use in situation that error occurred but can't handle in that layer and
-// Upper layer also can't handle it directly and decide to log it!
-// Use chain errors to return multiple error to caller and
-// Usually caller log them and return another error to caller that almost always SDK client e.g. GUI, Apps, ...
-type Chain interface {
-	PastChain() (last Error)
-}
-
 type Internal interface {
 	// Who cause the error?
 	// Internal	: means calling process logic has runtime bugs like HTTP server error status codes ( 500 – 599 ).
@@ -26,5 +18,12 @@ type Temporary interface {
 }
 
 type Timeout interface {
+	// Timeout return true when the error cause by timeout operation not `internal` process error.
+	// It can be `Temporary` or even `permanent` situation when process allowed time not enough to completed
 	Timeout() bool
+}
+
+// TODO::: Do really need this here? be consider HTTP is not part of `memar` and it is bad practice to translate errors to status code
+type HTTP_StatusCode interface {
+	Error_HTTP_StatusCode() string
 }

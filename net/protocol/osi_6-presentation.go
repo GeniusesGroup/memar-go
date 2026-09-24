@@ -10,6 +10,10 @@ https://en.wikipedia.org/wiki/Presentation_layer
 **********************************************************************************
 */
 
+type Field_OSI_Presentation interface {
+	OSI_PresentationLayer() OSI_Presentation
+}
+
 // Serialization of complex data structures into flat byte-strings (using mechanisms such as TLV, XML or JSON)
 // can be thought of as the key functionality of the presentation layer.
 // 

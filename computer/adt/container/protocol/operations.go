@@ -6,12 +6,6 @@ import (
 	error_p "memar/process/error/protocol"
 )
 
-// Clear is an operation
-type Clear interface {
-	// Clear will remove all elements.
-	Clear() (err error_p.Error)
-}
-
 // Reversed is a container level operation.
 type Reversed interface {
 	// Reversed is an operation that reverse the container.

@@ -16,6 +16,10 @@ https://en.wikipedia.org/wiki/Session_(computer_science)
 **********************************************************************************
 */
 
+type Field_OSI_Session interface {
+	OSI_SessionLayer() OSI_Session
+}
+
 // The session layer provides the mechanism for opening, closing and managing a session between end-user application processes,
 type OSI_Session interface {
 	capsule_p.LifeCycle

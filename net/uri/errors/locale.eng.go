@@ -4,33 +4,28 @@
 
 package errs
 
-import (
-	"memar/detail"
-	"memar/protocol"
-)
-
 const domainEnglish = "URI"
 
 func init() {
-	ErrParse.SetDetail(protocol.LanguageEnglish, domainEnglish,
+	ErrParse.SetDetail(lang_p.LanguageEnglish, domainEnglish,
 		"Parse URI",
 		"Parsing received HTTP packet encounter unknown situation in URI part",
 		"",
 		"",
 		nil)
-	ErrQueryBadKey.SetDetail(protocol.LanguageEnglish, domainEnglish,
+	ErrQueryBadKey.SetDetail(lang_p.LanguageEnglish, domainEnglish,
 		"Query bad key",
 		"invalid semicolon separator in query",
 		"",
 		"",
 		nil)
-	ErrInvalidURLEscape.SetDetail(protocol.LanguageEnglish, domainEnglish,
+	ErrInvalidURLEscape.SetDetail(lang_p.LanguageEnglish, domainEnglish,
 		"Invalid URL escape",
 		"invalid URL escape in given uri",
 		"",
 		"",
 		nil)
-	ErrInvalidHostEscape.SetDetail(protocol.LanguageEnglish, domainEnglish,
+	ErrInvalidHostEscape.SetDetail(lang_p.LanguageEnglish, domainEnglish,
 		"Invalid host escape",
 		"invalid character in host name",
 		"",
@@ -39,5 +34,5 @@ func init() {
 }
 
 func init() {
-	MediaType.SetDetail(protocol.LanguageEnglish, "URI", "", "", "", "", []string{})
+	MediaType.SetDetail(lang_p.LanguageEnglish, "URI", "", "", "", "", []string{})
 }

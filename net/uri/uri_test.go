@@ -5,16 +5,15 @@ package uri
 import (
 	"testing"
 
-	"memar/computer/buffer"
+	container_p "memar/computer/adt/container/protocol"
 	error_p "memar/process/error/protocol"
-	"memar/codec/string/ascii"
 )
 
 type uriTest struct {
 	name       string
 	encoded    string
-	uri        URI[ascii.STR[buffer.String]] // expected parse
-	out        URI[ascii.STR[buffer.String]] // parsed one
+	uri        URI // expected parse
+	out        URI // parsed one
 	wantURIEnd container_p.NumberOfElement
 	wantError  error_p.Error
 }
@@ -23,7 +22,7 @@ var uriTests = []uriTest{
 	{
 		name:    "asterisk-form",
 		encoded: "*",
-		uri: URI[ascii.STR[buffer.String]]{
+		uri: URI{
 			raw:    "*",
 			scheme: "",
 			AU: AU{

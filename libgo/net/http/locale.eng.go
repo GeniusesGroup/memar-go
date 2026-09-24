@@ -4,22 +4,17 @@
 
 package http
 
-import (
-	"memar/detail"
-	"memar/protocol"
-)
-
 const domainEnglish = "HTTP"
 
 func init() {
-	MediaType.SetDetail(protocol.LanguageEnglish, domainEnglish,
+	MediaType.SetDetail(lang_p.LanguageEnglish, domainEnglish,
 		"Hypertext Transfer Protocol",
 		"An application layer protocol in the Internet protocol suite model for distributed, collaborative, hypermedia information",
 		"",
 		"",
 		[]string{})
 
-	MediaTypeRequest.SetDetail(protocol.LanguageEnglish, domainEnglish, "Hypertext Transfer Protocol Request", "", "", "", []string{})
+	MediaTypeRequest.SetDetail(lang_p.LanguageEnglish, domainEnglish, "Hypertext Transfer Protocol Request", "", "", "", []string{})
 
-	MediaTypeResponse.SetDetail(protocol.LanguageEnglish, domainEnglish, "Hypertext Transfer Protocol Response", "", "", "", []string{})
+	MediaTypeResponse.SetDetail(lang_p.LanguageEnglish, domainEnglish, "Hypertext Transfer Protocol Response", "", "", "", []string{})
 }

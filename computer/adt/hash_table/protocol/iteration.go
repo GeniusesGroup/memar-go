@@ -7,6 +7,7 @@ import (
 )
 
 type Iteration[K Key[K], V Value] interface {
+	// It can return `Iterate` errors or internal `Iteration` errors.
 	Iteration(iterator Iterator[K, V]) (err error_p.Error)
 }
 

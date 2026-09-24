@@ -3,10 +3,10 @@
 package operation_p
 
 import (
-	datatype_p "memar/datatype/protocol"
+	error_p "memar/process/error/protocol"
 )
 
-// Authorize ...
+// Authorize is part of operation process logic
 type Authorize interface {
 	authorize() error_p.Error
 }

@@ -3,10 +3,10 @@
 package buffer_p
 
 import (
-	container_p "memar/adt/container/protocol"
+	container_p "memar/computer/adt/container/protocol"
+	marker_p "memar/computer/adt/marker/protocol"
 	capsule_p "memar/computer/capsule/protocol"
 	datatype_p "memar/computer/datatype/protocol"
-	memory_p "memar/storage/memory/protocol"
 )
 
 // In computer science, a data buffer (or just buffer) is a region of a memory used to store data temporarily
@@ -17,7 +17,7 @@ import (
 // Other frameworks:
 // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/ArrayBuffer
 type Buffer interface {
-	datatype_p.Field_ID
+	datatype_p.DataType
 
 	capsule_p.LifeCycle
 	// Init(opt BufferOptions)
@@ -26,6 +26,7 @@ type Buffer interface {
 	Method_Indexes
 	Field_Lengths
 
+	// Implementations must not retain buffer after `Buffer.Reinit` or `Buffer.Deinit` called.
 	container_p.Container[byte]
 
 	container_p.Compare[Buffer]
@@ -36,8 +37,8 @@ type Buffer interface {
 	container_p.Split_Offset[Buffer, byte]
 
 	// If source is a `Split` result, no copy action need and just increase buffer write index.
-	memory_p.Clone[Buffer]
-	memory_p.Copy[Buffer]
+	marker_p.Clone[Buffer]
+	marker_p.Copy[Buffer]
 }
 
 // BufferOptions:

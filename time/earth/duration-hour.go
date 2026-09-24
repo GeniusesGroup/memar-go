@@ -7,6 +7,11 @@ import (
 	"memar/time/duration"
 )
 
+type Field_Hour interface {
+	// Epoch is not indicate here and MUST indicate by the user.
+	Hour() Hour
+}
+
 type Hour integer.S64
 
 // Common durations.

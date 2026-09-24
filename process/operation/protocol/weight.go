@@ -2,6 +2,11 @@
 
 package operation_p
 
+type Field_Weight interface {
+	// Use to queue requests by its weights in the same priority
+	OperationWeight() Weight
+}
+
 // Weight indicate to use by any queue systems like network sockets to implement priority/weight mechanism.
 type Weight uint8
 

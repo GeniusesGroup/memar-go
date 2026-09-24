@@ -3,7 +3,7 @@
 package errors_errs
 
 import (
-	"memar/computer/datatype"
+	error "memar/process/error"
 	error_p "memar/process/error/protocol"
 )
 
@@ -12,7 +12,7 @@ var (
 )
 
 type errNotFound struct {
-	datatype.DataType
+	error.Error
 }
 
 func (dt *errNotFound) Init() (err error_p.Error) {

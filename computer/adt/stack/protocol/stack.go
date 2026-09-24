@@ -3,7 +3,7 @@
 package stack_p
 
 import (
-	container_p "memar/adt/container/protocol"
+	container_p "memar/computer/adt/container/protocol"
 )
 
 // Stack is stack data structure.

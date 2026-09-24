@@ -1,6 +1,8 @@
 /* For license and copyright information please see the LEGAL file in the code repository */
 
-package cl
+package logic
+
+// TODO::: We MUST change below logic to interface and methods!
 
 // TODO::: Does comparison circuitry belong in a purely mathematical or computing category??
 // https://en.wikipedia.org/wiki/Category:Comparison_(mathematical)

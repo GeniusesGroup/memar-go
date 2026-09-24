@@ -3,10 +3,10 @@
 package validation_p
 
 import (
-	error_p "memar/error/protocol"
+	error_p "memar/process/error/protocol"
 )
 
-// **ATTENTION**::: strongly suggest use capsule_p.Accessor to prevent invalid state at first place.
+// **ATTENTION**::: strongly suggest use capsule_p.Assignment to prevent invalid state at first place.
 type Validation interface {
 	Validate() (err error_p.Error)
 }

@@ -3,7 +3,7 @@
 package duration
 
 import (
-	error_p "memar/error/protocol"
+	error_p "memar/process/error/protocol"
 	"memar/math/integer"
 )
 
@@ -34,7 +34,7 @@ func (d *NanoSecond) FromSecAndNano(sec Second, nsec NanoInSecond) {
 	*d = sec.ToNanoSecond() + NanoSecond(nsec)
 }
 
-//memar:impl memar/string/protocol.Stringer
+//memar:impl memar/codec/string/protocol.Stringer
 func (d *NanoSecond) ToString() (str string, err error_p.Error) {
 	// Go doesn't support to access derived type methods, So we MUST hack it this way!
 	// var s64 = integer.S64(*d)

@@ -3,20 +3,22 @@
 package errs
 
 import (
-	er "memar/error"
-	"memar/errors"
-	"memar/protocol"
+	"memar/computer/datatype"
+	er "memar/process/error"
+	error_p "memar/process/error/protocol"
 )
 
-var ErrSourceNotChangeable errSourceNotChangeable
+var SourceNotChangeable sourceNotChangeable
 
-type errSourceNotChangeable struct{ er.Err }
+type sourceNotChangeable struct{ datatype.DataType }
 
-func (dt *errSourceNotChangeable) Init() (err protocol.Error) {
-	err = dt.Err.Init(domainBaseMediatype + "source-not-changeable")
-	if err != nil {
-		return
-	}
-	err = errors.Register(dt)
+func (self *sourceNotChangeable) Init() (err error_p.Error) {
+	// err = dt.Init(domainBaseMediatype + "source-not-changeable")
+	// if err != nil {
+	// 	return
+	// }
+	// err = errors.Register(dt)
 	return
 }
+
+func (self *sourceNotChangeable) Equivalence(with error_p.Error) bool { return er.IsEqual(self, with) }

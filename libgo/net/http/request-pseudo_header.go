@@ -3,36 +3,35 @@
 package http
 
 import (
-	error_p "memar/process/error/protocol"
 	"memar/net/uri"
-	string_p "memar/codec/string/protocol"
+	error_p "memar/process/error/protocol"
 )
 
-type PseudoHeader_Request[STR string_p.String] struct {
-	method       STR
-	uri.URI[STR] // Exported field to let consumers use other methods that uri_p.URI
-	version      STR
+type PseudoHeader_Request struct {
+	method  string
+	uri.URI // Exported field to let consumers use other methods that uri_p.URI
+	version string
 }
 
 //memar:impl memar/computer/capsule/protocol.LifeCycle
-func (r *PseudoHeader_Request[STR]) Init() (err error_p.Error) {
+func (r *PseudoHeader_Request) Init() (err error_p.Error) {
 	// err = r.U.Init()
 	return
 }
-func (r *PseudoHeader_Request[STR]) Reinit() (err error_p.Error) {
+func (r *PseudoHeader_Request) Reinit() (err error_p.Error) {
 	// err = r.method.Reinit()
 	// err = r.version.Reinit()
 	// err = r.URI.Reinit()
 	return
 }
-func (r *PseudoHeader_Request[STR]) Deinit() (err error_p.Error) {
+func (r *PseudoHeader_Request) Deinit() (err error_p.Error) {
 	err = r.URI.Deinit()
 	return
 }
 
-//memar:impl memar/net/http/protocol.PseudoHeader_Request
-func (r *PseudoHeader_Request[STR]) Method() string_p.String  { return r.method }
-func (r *PseudoHeader_Request[STR]) Version() string_p.String { return r.version }
+//memar:impl memar/libgo/net/http/protocol.PseudoHeader_Request
+func (r *PseudoHeader_Request) Method() string  { return r.method }
+func (r *PseudoHeader_Request) Version() string { return r.version }
 
-func (r *PseudoHeader_Request[STR]) SetMethod(method STR)   { r.method = method }
-func (r *PseudoHeader_Request[STR]) SetVersion(version STR) { r.version = version }
+func (r *PseudoHeader_Request) SetMethod(method string)   { r.method = method }
+func (r *PseudoHeader_Request) SetVersion(version string) { r.version = version }

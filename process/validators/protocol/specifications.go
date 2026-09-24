@@ -3,7 +3,7 @@
 package validation_p
 
 import (
-	error_p "memar/error/protocol"
+	error_p "memar/process/error/protocol"
 )
 
 // TODO::: why not validate per field??

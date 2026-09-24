@@ -24,7 +24,7 @@ func (mt *Parsed[STR]) Init(mediatype STR) (err error_p.Error) {
 	return
 }
 
-//memar:impl memar/protocol.MediaType
+//memar:impl memar/identifier/mediatype/protocol.Field_MediaType
 func (mt *Parsed[STR]) MediaType() STR    { return mt.mediaType }
 func (mt *Parsed[STR]) MainType() STR     { return mt.mainType }
 func (mt *Parsed[STR]) Tree() STR         { return mt.tree }

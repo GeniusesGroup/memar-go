@@ -2,25 +2,15 @@
 
 package errs
 
-import (
-	er "memar/error"
-	"memar/errors"
-	"memar/protocol"
-)
-
 var (
-	ErrNoConnection errNoConnection
+	NoConnection errNoConnection
 )
 
 type (
-	errNoConnection struct{ er.Err }
+	errNoConnection struct{}
 )
 
-func (dt *errNoConnection) Init() (err protocol.Error) {
-	err = dt.Err.Init("domain/memar.scm.geniuses.group; package=net; type=error; name=no-connection")
-	if err != nil {
-		return
-	}
-	err = errors.Register(dt)
-	return
+//memar:impl memar/identifier/mediatype/protocol.Field_MediaType
+func (dt *errNoConnection) MediaType() string {
+	return domainBaseMediatype + "no-connection"
 }

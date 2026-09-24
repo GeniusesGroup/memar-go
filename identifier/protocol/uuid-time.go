@@ -3,12 +3,12 @@
 package identifier_p
 
 import (
-	string_p "memar/string/protocol"
+	string_p "memar/codec/string/protocol"
 	time_p "memar/time/protocol"
 )
 
 type UUID_Time interface {
 	ExistenceTime() time_p.Time
 
-	string_p.Stringer[string_p.String]
+	string_p.Stringer
 }

@@ -3,26 +3,26 @@
 package gp
 
 import (
-	"memar/protocol"
+	net_p "memar/net/protocol"
 )
 
 // frameStructure is represent protocol frame structure.
 // It is just to show protocol in better way, we never use this type.
 // Read more about this protocol : https://github.com/GeniusesGroup/memar/blob/main/networking-osi_3-Giti-Network.md
 type frameStructure struct {
-	FrameType protocol.Network_FrameType //
+	FrameType net_p.FrameType //
 
 	// DestinationGPAddr Addr
 	DestinationPlanet  [2]byte // uint16
 	DestinationSociety [4]byte // uint32
 	DestinationRouter  [4]byte // uint32
-	DestinationUser    [4]byte // uint32
+	DestinationThing   [4]byte // uint32
 	DestinationApp     [2]byte // uint16
 
 	//SourceGPAddr Addr
 	SourcePlanet  [2]byte // uint16
 	SourceSociety [4]byte // uint32
 	SourceRouter  [4]byte // uint32
-	SourceUser    [4]byte // uint32
+	SourceThing   [4]byte // uint32
 	SourceApp     [2]byte // uint16
 }

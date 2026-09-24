@@ -3,7 +3,7 @@
 package string_p
 
 import (
-	datatype_p "memar/datatype/protocol"
+	datatype_p "memar/computer/datatype/protocol"
 )
 
 // character encoding used for electronic communication.

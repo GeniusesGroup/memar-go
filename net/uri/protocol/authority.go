@@ -2,10 +2,6 @@
 
 package uri_p
 
-import (
-	string_p "memar/codec/string/protocol"
-)
-
 // URI Authority >> [ userinfo "@" ] host [ ":" port ]
 type Field_Authority interface {
 	Field_UserInfo

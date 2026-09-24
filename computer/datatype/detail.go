@@ -7,12 +7,12 @@ package datatype
 type Detail struct{}
 
 //memar:impl memar/protocol.Detail
-func (self *Detail) Domain() string   { return "" }
-func (self *Detail) Summary() string  { return "" }
-func (self *Detail) Overview() string { return "" }
-func (self *Detail) UserNote() string { return "" }
-func (self *Detail) DevNote() string  { return "" }
-func (self *Detail) TAGS() []string   { return []string{} }
+func (self *Detail) Domain() string         { return "" }
+func (self *Detail) Summary() string        { return "" }
+func (self *Detail) Overview() string       { return "" }
+func (self *Detail) UserActionNote() string { return "" }
+func (self *Detail) DevActionNote() string  { return "" }
+func (self *Detail) TAGS() []string         { return []string{} }
 
 //memar:impl memar/protocol.Quiddity
 func (self *Detail) Name() string         { return "" }

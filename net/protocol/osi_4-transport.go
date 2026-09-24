@@ -16,6 +16,10 @@ https://en.wikipedia.org/wiki/Transport_layer
 **********************************************************************************
 */
 
+type Field_OSI_Transport interface {
+	OSI_TransportLayer() OSI_Transport
+}
+
 // OSI_Transport provides services such as connection-oriented communication, reliability, flow control.
 // It must also implement chunks managing like sRPC, QUIC, TCP, UDP, ...
 type OSI_Transport interface {

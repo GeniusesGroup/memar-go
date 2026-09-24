@@ -3,9 +3,9 @@
 package log
 
 import (
-	datatype_p "memar/datatype/protocol"
-	log_p "memar/audit/log/protocol"
-	string_p "memar/string/protocol"
+	datatype_p "memar/computer/datatype/protocol"
+	log_p "memar/process/log/protocol"
+	string_p "memar/codec/string/protocol"
 )
 
 func NewEvent(dt datatype_p.DataType, level log_p.Level, message, stack string_p.String) (event *Event) {

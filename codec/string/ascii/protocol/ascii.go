@@ -3,8 +3,8 @@
 package ascii_p
 
 import (
-	error_p "memar/error/protocol"
-	string_p "memar/string/protocol"
+	error_p "memar/process/error/protocol"
+	string_p "memar/codec/string/protocol"
 )
 
 // ASCII abbreviated from American Standard Code for Information Interchange,

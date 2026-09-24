@@ -1,26 +1,28 @@
 /* For license and copyright information please see the LEGAL file in the code repository */
 
-package http
+package http_headers
 
 import (
 	"strings"
+
+	http_p "memar/libgo/net/http/protocol"
 )
+
+// AddTransferEncoding add transfer encoding.
+func AddTransferEncoding(h http_p.Header, te string) {
+	h.Header_Add(Key_TransferEncoding, te)
+}
 
 // TransferEncoding return transfer encoding and notify if multiple exist
 // To read multiple just call this method in a loop to get multiple became false
 // https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Transfer-Encoding
 // https://datatracker.ietf.org/doc/html/rfc2616#section-3.6
-func (h *Header) TransferEncoding() TransferEncodings {
-	var transferEncodings = h.Header_Get(HeaderKey_TransferEncoding)
-	return TransferEncodings(transferEncodings)
-}
-
-// AddTransferEncoding add transfer encoding.
-func (h *Header) AddTransferEncoding(te string) {
-	h.Header_Add(HeaderKey_TransferEncoding, te)
-}
-
 type TransferEncodings string
+
+func (self *TransferEncodings) Init(h http_p.Header) {
+	var transferEncodings = h.Header_Get(Key_TransferEncoding)
+	self = TransferEncodings(transferEncodings)
+}
 
 // Last return last TransferEncoding and remove it from TransferEncodings.
 //

@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"testing"
 
+	error_p "memar/process/error/protocol"
 	errs "memar/math/errors"
-	"memar/protocol"
 )
 
 func Test_U32_FromString_Base10(t *testing.T) {
@@ -18,7 +18,7 @@ func Test_U32_FromString_Base10(t *testing.T) {
 		name    string
 		args    args
 		wantNum U32
-		wantErr protocol.Error
+		wantErr error_p.Error
 	}{
 		{
 			name:    "empty",

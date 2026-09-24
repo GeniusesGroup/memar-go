@@ -3,6 +3,7 @@
 package time_p
 
 import (
+	string_p "memar/codec/string/protocol"
 	"memar/time/duration"
 )
 
@@ -19,7 +20,7 @@ type Time interface {
 }
 
 // Time_Stringer is base on other factor than Time like timezone, ...
-type Time_Stringer[STR string_p.String] interface {
+type Time_Stringer interface {
 	// Stringer MUST include factors like timezone, ...
-	string_p.Stringer[STR]
+	string_p.Stringer
 }

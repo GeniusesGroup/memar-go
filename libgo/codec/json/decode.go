@@ -7,44 +7,44 @@ import (
 	"encoding/base64"
 	"strconv"
 
-	buffer_p "memar/computer/buffer/protocol"
-	errs "memar/codec/data_exchange/json/errors"
 	"memar/computer/buffer/byteslice/convert"
-	error_p "memar/process/error/protocol"
+	buffer_p "memar/computer/buffer/protocol"
+	errs "memar/libgo/codec/json/errors"
 	"memar/math/integer"
+	error_p "memar/process/error/protocol"
 )
 
 // Decoder store data to decode data by each method.
-type Decoder[BUF buffer_p.Buffer] struct {
+type Decoder struct {
 	// TODO::: json is string base why not wrap in ASCII to provide more helpful methods??
-	buf      BUF
+	buf      buffer_p.Buffer
 	token    byte
 	lastItem []byte
 	options  DecodeOptions
 }
 
 //memar:impl memar/computer/capsule/protocol.LifeCycle
-func (self *Decoder[BUF]) Init(buf BUF, opts DecodeOptions) (err error_p.Error) {
+func (self *Decoder) Init(buf buffer_p.Buffer, opts DecodeOptions) (err error_p.Error) {
 	self.buf = buf
 	self.options = opts
 	return
 }
-func (self *Decoder[BUF]) Reinit() (err error_p.Error) { return }
-func (self *Decoder[BUF]) Deinit() (err error_p.Error) { return }
+func (self *Decoder) Reinit() (err error_p.Error) { return }
+func (self *Decoder) Deinit() (err error_p.Error) { return }
 
-func (self *Decoder[BUF]) Buf() BUF { return self.buf }
+func (self *Decoder) Buf() buffer_p.Buffer { return self.buf }
 
-func (self *Decoder[BUF]) LastItem() string {
+func (self *Decoder) LastItem() string {
 	return self.LastItem()
 }
 
 // Offset make self.buf to start of given offset
-func (self *Decoder[BUF]) Offset(o int) {
-	self.buf = self.buf[o:]
+func (self *Decoder) Offset(o int) {
+	self.buf.SetReadIndex(o)
 }
 
 // FindEndToken find next end json token
-func (self *Decoder[BUF]) FindEndToken() {
+func (self *Decoder) FindEndToken() {
 	for i, c := range self.buf {
 		switch c {
 		case ',':
@@ -67,7 +67,7 @@ func (self *Decoder[BUF]) FindEndToken() {
 }
 
 // TrimToDigit remove any data and set self.buf to first character as number
-func (self *Decoder[BUF]) TrimToDigit() {
+func (self *Decoder) TrimToDigit() {
 	for i, c := range self.buf {
 		if '0' <= c && c <= '9' {
 			self.buf = self.buf[i:]
@@ -77,7 +77,7 @@ func (self *Decoder[BUF]) TrimToDigit() {
 }
 
 // TrimSpaces remove any spaces from self.buf
-func (self *Decoder[BUF]) TrimSpaces() {
+func (self *Decoder) TrimSpaces() {
 	for i, c := range self.buf {
 		if c != ' ' {
 			self.buf = self.buf[i:]
@@ -87,7 +87,7 @@ func (self *Decoder[BUF]) TrimSpaces() {
 }
 
 // TrimToStringStart remove any data from self.buf to first character after quotation mark as '"'
-func (self *Decoder[BUF]) TrimToStringStart() {
+func (self *Decoder) TrimToStringStart() {
 	for i, c := range self.buf {
 		if c == '"' {
 			self.buf = self.buf[i+1:] // remove any byte before " due to don't need them
@@ -97,7 +97,7 @@ func (self *Decoder[BUF]) TrimToStringStart() {
 }
 
 // CheckNullValue check if null exist as value. pass self.buf start from after : and receive from from after , if null exist
-func (self *Decoder[BUF]) CheckNullValue() (null bool) {
+func (self *Decoder) CheckNullValue() (null bool) {
 	for i, c := range self.buf {
 		switch c {
 		case 'n':
@@ -114,12 +114,12 @@ func (self *Decoder[BUF]) CheckNullValue() (null bool) {
 }
 
 // ResetToken set self.token to nil
-func (self *Decoder[BUF]) ResetToken() {
+func (self *Decoder) ResetToken() {
 	self.token = 0
 }
 
 // CheckToken set self.token to nil
-func (self *Decoder[BUF]) CheckToken(t byte) bool {
+func (self *Decoder) CheckToken(t byte) bool {
 	if self.token == t {
 		self.ResetToken()
 		return true
@@ -128,7 +128,7 @@ func (self *Decoder[BUF]) CheckToken(t byte) bool {
 }
 
 // DecodeKey return key very safe for each decode iteration. pass self.buf start from any where and receive from after :
-func (self *Decoder[BUF]) DecodeKey() string {
+func (self *Decoder) DecodeKey() string {
 	self.TrimToStringStart()
 	var loc, _ = self.buf.Index('"')
 	if loc < 0 {
@@ -144,17 +144,17 @@ func (self *Decoder[BUF]) DecodeKey() string {
 }
 
 // NotFoundKey call in default switch of each decode iteration
-func (self *Decoder[BUF]) NotFoundKey() (err error_p.Error) {
+func (self *Decoder) NotFoundKey() (err error_p.Error) {
 	self.FindEndToken()
 	return
 }
 
 // NotFoundKeyStrict call in default switch of each decode iteration in strict mode.
-func (self *Decoder[BUF]) NotFoundKeyStrict() error_p.Error {
+func (self *Decoder) NotFoundKeyStrict() error_p.Error {
 	return &errs.EncodedIncludeNotDefinedKey
 }
 
-func (self *Decoder[BUF]) End() bool {
+func (self *Decoder) End() bool {
 	if len(self.buf) < 3 || self.token == '}' {
 		return true
 	}
@@ -162,7 +162,7 @@ func (self *Decoder[BUF]) End() bool {
 }
 
 // DecodeBool convert string base boolean to bool. pass self.buf start from after : and receive from after ,
-func (self *Decoder[BUF]) DecodeBool() (b bool, err error_p.Error) {
+func (self *Decoder) DecodeBool() (b bool, err error_p.Error) {
 	self.TrimSpaces()
 	if self.buf[0] == 't' {
 		b = true
@@ -175,7 +175,7 @@ func (self *Decoder[BUF]) DecodeBool() (b bool, err error_p.Error) {
 }
 
 // Decode_Integer_U8 convert 8bit integer number string to number. pass self.buf start from number and receive from after ,
-func (self *Decoder[BUF]) Decode_Integer_U8() (ui integer.U8, err error_p.Error) {
+func (self *Decoder) Decode_Integer_U8() (ui integer.U8, err error_p.Error) {
 	self.TrimToDigit()
 	self.FindEndToken()
 	err = ui.FromString_Base10(self.LastItem())
@@ -187,7 +187,7 @@ func (self *Decoder[BUF]) Decode_Integer_U8() (ui integer.U8, err error_p.Error)
 }
 
 // Decode_Integer_U16 convert 16bit integer number string to number. pass self.buf start from number and receive from after ,
-func (self *Decoder[BUF]) Decode_Integer_U16() (ui integer.U16, err error_p.Error) {
+func (self *Decoder) Decode_Integer_U16() (ui integer.U16, err error_p.Error) {
 	self.TrimToDigit()
 	self.FindEndToken()
 	err = ui.FromString_Base10(self.LastItem())
@@ -199,7 +199,7 @@ func (self *Decoder[BUF]) Decode_Integer_U16() (ui integer.U16, err error_p.Erro
 }
 
 // Decode_Integer_U32 convert 32bit integer number string to number. pass self.buf start from number and receive from after ,
-func (self *Decoder[BUF]) Decode_Integer_U32() (ui integer.U32, err error_p.Error) {
+func (self *Decoder) Decode_Integer_U32() (ui integer.U32, err error_p.Error) {
 	self.TrimToDigit()
 	self.FindEndToken()
 	err = ui.FromString_Base10(self.LastItem())
@@ -211,7 +211,7 @@ func (self *Decoder[BUF]) Decode_Integer_U32() (ui integer.U32, err error_p.Erro
 }
 
 // Decode_Integer_U64 convert 64bit integer number string to number. pass self.buf start from after : and receive from after ,
-func (self *Decoder[BUF]) Decode_Integer_U64() (ui integer.U64, err error_p.Error) {
+func (self *Decoder) Decode_Integer_U64() (ui integer.U64, err error_p.Error) {
 	self.TrimToDigit()
 	self.FindEndToken()
 	err = ui.FromString_Base10(self.LastItem())
@@ -223,7 +223,7 @@ func (self *Decoder[BUF]) Decode_Integer_U64() (ui integer.U64, err error_p.Erro
 }
 
 // DecodeInt64 convert 64bit number string to number. pass self.buf start from number and receive from after ,
-func (self *Decoder[BUF]) DecodeInt64() (i int64, err error_p.Error) {
+func (self *Decoder) DecodeInt64() (i int64, err error_p.Error) {
 	self.TrimToDigit()
 	self.FindEndToken()
 	var goErr error
@@ -235,7 +235,7 @@ func (self *Decoder[BUF]) DecodeInt64() (i int64, err error_p.Error) {
 }
 
 // DecodeFloat64AsNumber convert float64 number string to float64 number. pass self.buf start from after : and receive from ,
-func (self *Decoder[BUF]) DecodeFloat64AsNumber() (f float64, err error_p.Error) {
+func (self *Decoder) DecodeFloat64AsNumber() (f float64, err error_p.Error) {
 	self.TrimToDigit()
 	self.FindEndToken()
 	var goErr error
@@ -247,7 +247,7 @@ func (self *Decoder[BUF]) DecodeFloat64AsNumber() (f float64, err error_p.Error)
 }
 
 // DecodeString return string. pass self.buf start from after : and receive from from after "
-func (self *Decoder[BUF]) DecodeString() (s string, err error_p.Error) {
+func (self *Decoder) DecodeString() (s string, err error_p.Error) {
 	if self.CheckNullValue() {
 		return
 	}
@@ -271,7 +271,7 @@ func (self *Decoder[BUF]) DecodeString() (s string, err error_p.Error) {
 */
 
 // DecodeByteArrayAsBase64 convert base64 string to [n]byte
-func (self *Decoder[BUF]) DecodeByteArrayAsBase64(array []byte) (err error_p.Error) {
+func (self *Decoder) DecodeByteArrayAsBase64(array []byte) (err error_p.Error) {
 	if self.CheckNullValue() {
 		return
 	}
@@ -294,7 +294,7 @@ func (self *Decoder[BUF]) DecodeByteArrayAsBase64(array []byte) (err error_p.Err
 }
 
 // DecodeByteArrayAsNumber convert number array to [n]byte
-func (self *Decoder[BUF]) DecodeByteArrayAsNumber(array []byte) (err error_p.Error) {
+func (self *Decoder) DecodeByteArrayAsNumber(array []byte) (err error_p.Error) {
 	if self.CheckNullValue() {
 		return
 	}
@@ -320,7 +320,7 @@ func (self *Decoder[BUF]) DecodeByteArrayAsNumber(array []byte) (err error_p.Err
 */
 
 // DecodeByteSliceAsNumber convert number string slice to []byte. pass buf start from after [ and receive from after ]
-func (self *Decoder[BUF]) DecodeByteSliceAsNumber() (slice []byte, err error_p.Error) {
+func (self *Decoder) DecodeByteSliceAsNumber() (slice []byte, err error_p.Error) {
 	slice = make([]byte, 0, 8) // TODO::: Is cap efficient enough?
 
 	var num uint8
@@ -338,7 +338,7 @@ func (self *Decoder[BUF]) DecodeByteSliceAsNumber() (slice []byte, err error_p.E
 }
 
 // Decode_Integer_U16SliceAsNumber convert uint16 number string slice to []byte. pass buf start from after [ and receive from after ]
-func (self *Decoder[BUF]) Decode_Integer_U16SliceAsNumber() (slice []uint16, err error_p.Error) {
+func (self *Decoder) Decode_Integer_U16SliceAsNumber() (slice []uint16, err error_p.Error) {
 	slice = make([]uint16, 0, 8) // TODO::: Is cap efficient enough?
 
 	var num integer.U16
@@ -356,7 +356,7 @@ func (self *Decoder[BUF]) Decode_Integer_U16SliceAsNumber() (slice []uint16, err
 }
 
 // Decode_Integer_U32SliceAsNumber convert uint32 number string slice to []byte. pass buf start from after [ and receive from after ]
-func (self *Decoder[BUF]) Decode_Integer_U32SliceAsNumber() (slice []uint32, err error_p.Error) {
+func (self *Decoder) Decode_Integer_U32SliceAsNumber() (slice []uint32, err error_p.Error) {
 	slice = make([]uint32, 0, 8) // TODO::: Is cap efficient enough?
 
 	var num uint32
@@ -374,7 +374,7 @@ func (self *Decoder[BUF]) Decode_Integer_U32SliceAsNumber() (slice []uint32, err
 }
 
 // Decode_Integer_U64SliceAsNumber convert uint64 number string slice to []byte. pass buf start from after [ and receive from after ]
-func (self *Decoder[BUF]) Decode_Integer_U64SliceAsNumber() (slice []uint64, err error_p.Error) {
+func (self *Decoder) Decode_Integer_U64SliceAsNumber() (slice []uint64, err error_p.Error) {
 	slice = make([]uint64, 0, 8) // TODO::: Is cap efficient enough?
 
 	var num uint64
@@ -396,7 +396,7 @@ func (self *Decoder[BUF]) Decode_Integer_U64SliceAsNumber() (slice []uint64, err
 */
 
 // DecodeByteSliceAsBase64 convert base64 string to []byte
-func (self *Decoder[BUF]) DecodeByteSliceAsBase64() (slice []byte, err error_p.Error) {
+func (self *Decoder) DecodeByteSliceAsBase64() (slice []byte, err error_p.Error) {
 	self.TrimToStringStart()
 	var loc, _ = self.buf.Index('"')
 	if loc < 0 {
@@ -418,7 +418,7 @@ func (self *Decoder[BUF]) DecodeByteSliceAsBase64() (slice []byte, err error_p.E
 }
 
 // Decode32ByteArraySliceAsBase64 decode [32]byte base64 string slice. pass buf start from after [ and receive from after ]
-func (self *Decoder[BUF]) Decode32ByteArraySliceAsBase64() (slice [][32]byte, err error_p.Error) {
+func (self *Decoder) Decode32ByteArraySliceAsBase64() (slice [][32]byte, err error_p.Error) {
 	const base64Len = 43 // base64.RawStdEncoding.EncodedLen(len(32))	>>	(32*8 + 5) / 6
 	slice = make([][32]byte, 0, 8)
 

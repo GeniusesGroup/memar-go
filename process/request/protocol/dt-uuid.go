@@ -3,7 +3,7 @@
 package request_p
 
 import (
-	record_p "memar/storage/record/protocol"
+	record_id_p "memar/identifier/record/protocol"
 )
 
 //	Field audit request (logging) is the process of documenting activity within the software systems used across your organization.
@@ -20,4 +20,4 @@ type Field_RequestIDs interface {
 }
 
 // Request RecordID to prove how domain objects created in the chain of other objects.
-type UUID record_p.UUID
+type UUID record_id_p.UUID

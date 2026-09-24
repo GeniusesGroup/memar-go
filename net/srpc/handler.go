@@ -3,7 +3,7 @@
 package srpc
 
 import (
-	buffer_p "memar/buffer/protocol"
+	buffer_p "memar/computer/buffer/protocol"
 	codec_p "memar/codec/protocol"
 	error_p "memar/process/error/protocol"
 	net_p "memar/net/protocol"

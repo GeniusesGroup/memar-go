@@ -3,37 +3,27 @@
 package block_p
 
 import (
-	container_p "memar/adt/container/protocol"
-	buffer_p "memar/buffer/protocol"
-	error_p "memar/error/protocol"
+	container_p "memar/computer/adt/container/protocol"
+	error_p "memar/process/error/protocol"
+	storage_page_p "memar/storage/page/protocol"
 )
 
-// Volatile or StorageMemory is the interface that show how an app access to volatile storage devices.
-// Usually dev must not use this interface due to it can damage any data written by objects, files, records, k/v interfaces
-type Volatile interface {
+// Model is storage memory interface that show how an app access to volatile storage devices.
+// It can use as volatile and nonvolatile storage.
+// Usually dev must not use this interface due to it can damage any data written by upper abstractions such as objects, files, records, k/v, ...
+type Model interface {
 	// return volume capacity
-	container_p.Capacity
+	// these methods have eventual consistency behavior due to extend and other methods.
+	Field_BlockNumber
+	storage_page_p.Field_PageNumber
 
 	// Extended length may vary of requested cap, Due to Extend() is base on storage device block size not bytes,
-	// e.g. on SSDs block sizes are 256*page-size like 256*4(page-size)=1024(B)=1(MB)
-	Extend(cap container_p.NumberOfElement) (extended container_p.NumberOfElement, err error_p.Error)
+	Extend(cap BlockNumber) (extended BlockNumber, err error_p.Error)
 
-	// Change the return data not flush to any non-volatile storages. Use Write() to change data.
-	Read(offset container_p.ElementIndex, limit container_p.NumberOfElement, buf buffer_p.Buffer) (err error_p.Error)
-	// Write at more than block capacity cause block extend. extend capacity isn't equal to write length.
-	Write(offset container_p.ElementIndex, buf buffer_p.Buffer) (err error_p.Error)
-	Search(data []byte, offset container_p.ElementIndex) (loc container_p.ElementIndex, err error_p.Error)
+	GetPage(pi storage_page_p.PageIndex) (p storage_page_p.Page, err error_p.Error)
+	GetBlock(bi BlockIndex) (b Block, err error_p.Error)
 
-	Erase(offset container_p.ElementIndex, limit container_p.NumberOfElement) (err error_p.Error)
-	Copy(desOffset, srcOffset container_p.ElementIndex, limit container_p.NumberOfElement) (err error_p.Error)
-	Move(desOffset, srcOffset container_p.ElementIndex, limit container_p.NumberOfElement) (err error_p.Error)
-}
-
-// NonVolatile is the interface that show how an app access to storage devices.
-// Usually dev must not use this interface due to it can damage any data written by objects, files, records or k/v interfaces
-type NonVolatile interface {
-	Volatile
-
-	// Flush force the storage device to write any changes to data (store in cache) before call Flush.
-	Flush() (err error_p.Error)
+	// container_p.Iteration[Page]
+	// TODO::: `Search` and `Iteration` is same but `Search` is a process in storage hardware and don't need to transfer data to `RAM,CPU`
+	Search(query []byte, offset container_p.Offset, limit container_p.Limit) (loc container_p.Offset, err error_p.Error)
 }

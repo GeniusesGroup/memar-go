@@ -3,8 +3,8 @@
 package array_p
 
 import (
-	container_p "memar/adt/container/protocol"
-	error_p "memar/error/protocol"
+	container_p "memar/computer/adt/container/protocol"
+	error_p "memar/process/error/protocol"
 )
 
 // In computer science, an associative array, map, symbol table, or dictionary is an abstract data type that
@@ -20,12 +20,12 @@ type Associative[KEY comparable, VALUE any] interface {
 
 	Iteration_KV[KEY, VALUE]
 
-	container_p.Capacity
-	container_p.OccupiedLength
+	container_p.Field_Capacity
+	container_p.Field_OccupiedLength
 }
 
 type Iteration_KV[K, V any] interface {
-	Iterate_KV(startIndex container_p.ElementIndex, iterator Iterate_KV[K, V]) (err error_p.Error)
+	Iteration_KV(startIndex container_p.ElementIndex, iterator Iterate_KV[K, V]) (err error_p.Error)
 }
 
 type Iterate_KV[K, V any] interface {

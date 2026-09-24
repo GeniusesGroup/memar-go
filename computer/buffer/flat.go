@@ -5,7 +5,7 @@ package buffer
 import (
 	"fmt"
 
-	"memar/protocol"
+	container_p "memar/computer/adt/container/protocol"
 )
 
 // smallBufferSize is an initial allocation minimal capacity.
@@ -67,8 +67,10 @@ func (b *Flat) WriteString(s string) (n int, err error) {
 }
 func (b *Flat) WriteByte(bt byte) (err error) { b.buf = append(b.buf, bt); return }
 
-func (b *Flat) Cap() int         { return cap(b.buf) }
-func (b *Flat) Len() int         { return len(b.buf) }
+func (b *Flat) Capacity() container_p.NumberOfElement { return container_p.NumberOfElement(cap(b.buf)) }
+func (b *Flat) OccupiedLength() container_p.NumberOfElement {
+	return container_p.NumberOfElement(len(b.buf))
+}
 func (b *Flat) LenOfUnread() int { return len(b.buf) - b.off }
 
 func (b *Flat) Grow(n int) {
@@ -113,18 +115,8 @@ func (b *Flat) GrowLen(n int) int {
 	return buffLen
 }
 
-func (b *Flat) WriteTo(w protocol.Writer) (n int, err protocol.Error) {
-	// io.Copy(w, b)
-	return
-}
-func (b *Flat) ReadFrom(r protocol.Reader) (n int, err protocol.Error) {
-	// io.Copy(b, r)
-	return
-}
-func (b *Flat) Close() (err error) { return }
-
 // makeSlice allocates a slice of size n. If the allocation fails, it panics
-// with ErrTooLarge.
+// with TooLarge.
 func makeSlice(n int) []byte {
 	// If the make fails, give a known error.
 	defer func() {

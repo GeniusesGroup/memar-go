@@ -1,28 +1,22 @@
 /* For license and copyright information please see the LEGAL file in the code repository */
 
-package http
+package http_headers
 
 import (
 	"strings"
 
-	"memar/convert"
-	errs "memar/net/http/errors"
-	"memar/protocol"
+	container_p "memar/computer/adt/container/protocol"
+	"memar/computer/buffer/byteslice/convert"
+	http_p "memar/libgo/net/http/protocol"
+	error_p "memar/process/error/protocol"
 )
 
-// Cookies parses and returns the Cookie headers.
-// By related RFC we just support one Cookie in header.
-// https://tools.ietf.org/html/rfc6265#section-5.4
-func (h *Header) Cookies() Cookies {
-	var cookies = h.Header_Get(HeaderKey_Cookie)
-	return Cookies(cookies)
-}
-func (h *Header) AddCookies(cookies string) {
-	h.Header_Add(HeaderKey_Cookie, cookies)
+func AddCookies(h http_p.Header, cookies string) {
+	h.Header_Add(Key_Cookie, cookies)
 }
 
 // AddCookie will marshal and add given cookies to the Cookie header.
-func (h *Header) AddCookie(cookies ...Cookie) {
+func AddCookie(h http_p.Header, cookies ...Cookie) {
 	// TODO::: make buffer by needed size.
 	var b strings.Builder
 	var ln = len(cookies)
@@ -37,11 +31,19 @@ func (h *Header) AddCookie(cookies ...Cookie) {
 			break
 		}
 	}
-	h.Header_Add(HeaderKey_Cookie, b.String())
+	h.Header_Add(Key_Cookie, b.String())
 }
 
 // Cookies store all the Cookie headers.
+// Cookies parses and returns the Cookie headers.
+// By related RFC we just support one Cookie in header.
+// https://tools.ietf.org/html/rfc6265#section-5.4
 type Cookies string
+
+func (self *Cookies) Init(h http_p.Header) {
+	var cookies = h.Header_Get(Key_Cookie)
+	self = Cookies(cookies)
+}
 
 func (c *Cookies) Next() (cookie Cookie, exist bool) {
 	var cs = *c
@@ -51,7 +53,8 @@ func (c *Cookies) Next() (cookie Cookie, exist bool) {
 		return
 	}
 
-	var remain, _ = cookie.UnmarshalFrom(string(cs))
+	var dl, _ = cookie.FromString(string(cs))
+	var remain = cs[dl:]
 	if len(remain) > 0 {
 		exist = true
 		*c = Cookies(remain)
@@ -67,7 +70,7 @@ type Cookie struct {
 }
 
 // CheckAndSanitize check if the cookie is in standard by RFC and try to fix them. It returns last error!
-func (c *Cookie) CheckAndSanitize() (err protocol.Error) {
+func (c *Cookie) CheckAndSanitize() (err error_p.Error) {
 	c.Name, err = sanitizeCookieName(c.Name)
 	if err != nil {
 		return
@@ -92,8 +95,8 @@ func (c *Cookie) Unmarshal(cookie string) {
 	c.Value = cookie[equalIndex+1:]
 }
 
-// Unmarshal parse given cookies value to c and return
-func (c *Cookie) UnmarshalFrom(cookies string) (remain string, err protocol.Error) {
+// FromString parse given cookies value to c and return
+func (c *Cookie) FromString(cookies string) (dl container_p.NumberOfElement, err error_p.Error) {
 	var equalIndex = strings.IndexByte(cookies, '=')
 	// First check no equal(=) sign or empty name or value
 	if equalIndex < 1 || equalIndex == len(cookies)-1 {
@@ -105,14 +108,15 @@ func (c *Cookie) UnmarshalFrom(cookies string) (remain string, err protocol.Erro
 	var SemiColonIndex = strings.IndexByte(cookies, ';')
 	if SemiColonIndex == -1 {
 		c.Value = cookies[equalIndex+1:]
+		dl = container_p.NumberOfElement(len(cookies) - 1)
 	} else {
 		c.Value = cookies[equalIndex+1 : SemiColonIndex]
-		remain = cookies[SemiColonIndex+2:] // Due to have space after semi colon do +2
+		dl = container_p.NumberOfElement(SemiColonIndex + 2) // Due to have space after semi colon do +2
 	}
 	return
 }
 
-func sanitizeCookieName(n string) (name string, err protocol.Error) {
+func sanitizeCookieName(n string) (name string, err error_p.Error) {
 	var ln = len(n)
 	var buf = make([]byte, 0, ln)
 	var b byte
@@ -120,7 +124,7 @@ func sanitizeCookieName(n string) (name string, err protocol.Error) {
 		b = n[i]
 		if b == '\n' || b == '\r' {
 			buf = append(buf, '-')
-			err = &errs.ErrCookieBadName
+			// err = &errs.ErrCookieBadName
 		} else {
 			buf = append(buf, b)
 		}
@@ -138,7 +142,7 @@ func sanitizeCookieName(n string) (name string, err protocol.Error) {
 //	; and backslash
 //
 // Don't check for ; due to Unmarshal will panic for bad cookie!!
-func sanitizeCookieValue(v string) (value string, err protocol.Error) {
+func sanitizeCookieValue(v string) (value string, err error_p.Error) {
 	var ln = len(v)
 	var buf = make([]byte, 0, ln)
 	var b byte
@@ -147,7 +151,7 @@ func sanitizeCookieValue(v string) (value string, err protocol.Error) {
 		if 0x20 <= b && b < 0x7f && b != ' ' && b != '"' && b != ',' && b != '\\' {
 			buf = append(buf, b)
 		} else {
-			err = &errs.ErrCookieBadValue
+			// err = &errs.ErrCookieBadValue
 		}
 	}
 	value = convert.UnsafeByteSliceToString(buf)

@@ -3,45 +3,44 @@
 package http
 
 import (
-	error_p "memar/process/error/protocol"
+	errs "memar/libgo/net/http/errors"
 	"memar/math/integer"
-	errs "memar/net/http/errors"
-	string_p "memar/codec/string/protocol"
+	error_p "memar/process/error/protocol"
 )
 
-type PseudoHeader_Response[STR string_p.String] struct {
-	version      STR
-	statusCode   STR
-	reasonPhrase STR
+type PseudoHeader_Response struct {
+	version      string
+	statusCode   string
+	reasonPhrase string
 }
 
 //memar:impl memar/computer/capsule/protocol.LifeCycle
-func (r *PseudoHeader_Response[STR]) Init() (err error_p.Error) {
+func (r *PseudoHeader_Response) Init() (err error_p.Error) {
 	return
 }
-func (r *PseudoHeader_Response[STR]) Reinit() (err error_p.Error) {
+func (r *PseudoHeader_Response) Reinit() (err error_p.Error) {
 	// r.version.Reinit()
 	// r.statusCode.Reinit()
 	// r.reasonPhrase.Reinit()
 	return
 }
-func (r *PseudoHeader_Response[STR]) Deinit() (err error_p.Error) {
+func (r *PseudoHeader_Response) Deinit() (err error_p.Error) {
 	return
 }
 
-//memar:impl memar/net/http/protocol.PseudoHeader_Response
-func (r *PseudoHeader_Response[STR]) Version() string_p.String      { return r.version }
-func (r *PseudoHeader_Response[STR]) StatusCode() string_p.String   { return r.statusCode }
-func (r *PseudoHeader_Response[STR]) ReasonPhrase() string_p.String { return r.reasonPhrase }
+//memar:impl memar/libgo/net/http/protocol.PseudoHeader_Response
+func (r *PseudoHeader_Response) Version() string      { return r.version }
+func (r *PseudoHeader_Response) StatusCode() string   { return r.statusCode }
+func (r *PseudoHeader_Response) ReasonPhrase() string { return r.reasonPhrase }
 
-func (r *PseudoHeader_Response[STR]) SetVersion(version STR) { r.version = version }
-func (r *PseudoHeader_Response[STR]) SetStatus(code, phrase STR) {
+func (r *PseudoHeader_Response) SetVersion(version string) { r.version = version }
+func (r *PseudoHeader_Response) SetStatus(code, phrase string) {
 	r.statusCode = code
 	r.reasonPhrase = phrase
 }
 
 // GetStatusCode get status code as uit16
-func (r *PseudoHeader_Response[STR]) GetStatusCode() (code integer.U16, err error_p.Error) {
+func (r *PseudoHeader_Response) GetStatusCode() (code integer.U16, err error_p.Error) {
 	// TODO::: don't use strconv for such simple task
 	err = code.FromString(r.StatusCode())
 	// var c, goErr = strconv.ParseUint(r.StatusCode(), 10, 16)
@@ -51,7 +50,7 @@ func (r *PseudoHeader_Response[STR]) GetStatusCode() (code integer.U16, err erro
 	return
 }
 
-func (r *Response[STR]) SetStatusByError(err error_p.Error) {
+func (r *Response) SetStatusByError(err error_p.Error) {
 	if err != nil {
 		switch {
 		case err.Equal(&errs.ErrParseHeaderTooLarge):

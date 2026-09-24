@@ -3,8 +3,8 @@
 package queue
 
 import (
-	adt_p "memar/adt/protocol"
-	"memar/protocol"
+	container_p "memar/computer/adt/container/protocol"
+	error_p "memar/process/error/protocol"
 )
 
 // Concurrent safe
@@ -12,31 +12,31 @@ type Queue struct {
 	// queue    []ringBuf
 	head     *ringBuf
 	tail     *ringBuf
-	totalLen adt_p.NumberOfElement
-	totalCap adt_p.NumberOfElement
+	totalLen container_p.NumberOfElement
+	totalCap container_p.NumberOfElement
 }
 
-//memar:impl memar/protocol.ObjectLifeCycle
-func (q *Queue) Init(initCap adt_p.NumberOfElement) (err protocol.Error) {
+//memar:impl memar/computer/capsule/protocol.LifeCycle
+func (q *Queue) Init(initCap container_p.NumberOfElement) (err error_p.Error) {
 	q.totalCap = initCap
 	// TODO:::
 	return
 }
-func (q *Queue) Reinit() (err protocol.Error) {
+func (q *Queue) Reinit() (err error_p.Error) {
 	// TODO:::
 	return
 }
-func (q *Queue) Deinit() (err protocol.Error) {
+func (q *Queue) Deinit() (err error_p.Error) {
 	// TODO:::
 	return
 }
 
 func (q *Queue) Full() bool { return false }
 
-func (q *Queue) Read(b []byte) (n int, err protocol.Error) {
+func (q *Queue) Read(b []byte) (n int, err error_p.Error) {
 	return
 }
-func (q *Queue) Write(b []byte) (n int, err protocol.Error) {
+func (q *Queue) Write(b []byte) (n int, err error_p.Error) {
 	var lenB = len(b)
 	if q.head.ln == 0 {
 		q.head.data = make([]byte, lenB)
@@ -52,7 +52,7 @@ func (q *Queue) Write(b []byte) (n int, err protocol.Error) {
 	}
 	return
 }
-func (q *Queue) WriteIn(b []byte, at uint32) (n int, err protocol.Error) {
+func (q *Queue) WriteIn(b []byte, at uint32) (n int, err error_p.Error) {
 	// TODO:::
 	return
 }

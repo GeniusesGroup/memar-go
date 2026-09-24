@@ -3,7 +3,7 @@
 package picture_p
 
 import (
-	buffer_p "memar/buffer/protocol"
+	buffer_p "memar/computer/buffer/protocol"
 )
 
 type Image interface {

@@ -7,28 +7,31 @@ import (
 	egzip "compress/gzip"
 	"io"
 
-	errs "memar/compress/errors"
-	"memar/protocol"
+	container_p "memar/computer/adt/container/protocol"
+	buffer_p "memar/computer/buffer/protocol"
+	codec_p "memar/codec/protocol"
+	mediatype_p "memar/identifier/mediatype/protocol"
+	error_p "memar/process/error/protocol"
 )
 
 type Decompressor struct {
-	source           protocol.Codec
-	sourceMT         protocol.MediaType
+	source           codec_p.Codec
+	sourceMT         mediatype_p.MediaType
 	comBuf           bytes.Buffer
-	comLen           int
+	comLen           container_p.NumberOfElement
 	zr               egzip.Reader
 	decompressedData []byte
 }
 
-//memar:impl memar/protocol.ObjectLifeCycle
-func (c *Decompressor) Init(compressed protocol.Codec) (err protocol.Error) {
+//memar:impl memar/computer/capsule/protocol.LifeCycle
+func (c *Decompressor) Init(compressed codec_p.Codec) (err error_p.Error) {
 	c.source = compressed
 	c.sourceMT = compressed.MediaType()
-	c.comLen = compressed.Len()
+	c.comLen = compressed.SerializationLength()
 	return
 }
 
-func (c *Decompressor) decompressAll() (err protocol.Error) {
+func (c *Decompressor) decompressAll() (err error_p.Error) {
 	var comData []byte
 	comData, err = c.source.Marshal()
 	if err != nil {
@@ -55,60 +58,58 @@ func (c *Decompressor) decompressAll() (err protocol.Error) {
 	return
 }
 
-//memar:impl memar/protocol.Codec
-func (c *Decompressor) MediaType() protocol.MediaType       { return c.sourceMT }
-func (c *Decompressor) CompressType() protocol.CompressType { return nil }
-func (c *Decompressor) Decode(source protocol.Codec) (n int, err protocol.Error) {
-	err = &errs.ErrSourceNotChangeable
+// func (c *Decompressor) MediaType() mediatype_p.MediaType    { return c.sourceMT }
+// func (c *Decompressor) CompressType() compress_p.CompressType { return nil }
+//
+//memar:impl memar/codec/protocol.Codec
+func (c *Decompressor) Decode(source buffer_p.Buffer) (err error_p.Error) {
+	// err = &errs.SourceNotChangeable
 	return
 }
-func (c *Decompressor) Encode(destination protocol.Codec) (n int, err protocol.Error) {
-	n, err = destination.Decode(c)
+func (c *Decompressor) Encode(destination buffer_p.Buffer) (err error_p.Error) {
+	err = destination.Decode(c)
 	return
 }
-func (c *Decompressor) Marshal() (data []byte, err protocol.Error) {
+func (c *Decompressor) Marshal() (data []byte, err error_p.Error) {
 	if c.decompressedData == nil {
 		c.decompressAll()
 	}
 	data = c.decompressedData
 	return
 }
-func (c *Decompressor) MarshalTo(data []byte) (added []byte, err protocol.Error) {
+func (c *Decompressor) MarshalTo(data []byte) (added []byte, err error_p.Error) {
 	if c.decompressedData == nil {
 		c.decompressAll()
 	}
 	added = append(data, c.decompressedData...)
 	return
 }
-func (c *Decompressor) Unmarshal(data []byte) (n int, err protocol.Error) {
-	c.comLen = len(data)
-	c.comBuf = *bytes.NewBuffer(data)
+func (c *Decompressor) Unmarshal(source []byte) (n container_p.NumberOfElement, err error_p.Error) {
+	c.comLen = len(source)
+	c.comBuf = *bytes.NewBuffer(source)
 	var goErr = c.zr.Reset(&c.comBuf)
 	if goErr != nil {
 		// err =
 	}
 	return
 }
-func (c *Decompressor) UnmarshalFrom(data []byte) (remaining []byte, err protocol.Error) {
-	var n int
-	n, err = c.Unmarshal(data)
-	remaining = data[n:]
-	return
-}
-func (c *Decompressor) Len() (ln int) {
+
+//memar:impl memar/codec/protocol.Field_Length
+func (c *Decompressor) SerializationLength() (ln container_p.NumberOfElement) {
 	if c.decompressedData == nil {
 		c.decompressAll()
 	}
-	return len(c.decompressedData)
+	ln = container_p.NumberOfElement(len(c.decompressedData))
+	return
 }
 
-func (c *Decompressor) Discard() (err protocol.Error) {
+func (c *Decompressor) Discard() (err error_p.Error) {
 	// io.Copy(io.Discard, b)
 	return
 }
 
 /*
-********** protocol.Buffer interface **********
+********** buffer_p.Buffer interface **********
  */
 
 func (c *Decompressor) ReadFrom(reader io.Reader) (n int64, err error) {

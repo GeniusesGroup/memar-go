@@ -29,11 +29,11 @@ func (self *errorsPool) Register(errorToRegister error_p.Error) (err error_p.Err
 
 	if log.CNF_DevelopingMode {
 		if errID == 0 {
-			err = &errors_errs.NotProvideIdentifier
+			err = &errors_errs.ErrNotProvideIdentifier
 			return
 		}
 		if self.poolByID[errID] != nil {
-			err = &errors_errs.DuplicateIdentifier
+			err = &errors_errs.ErrDuplicateIdentifier
 			return
 		}
 	}

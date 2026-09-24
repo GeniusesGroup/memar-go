@@ -18,6 +18,7 @@ type NumberOfElement int
 // Capacity in (computer science) the amount of information (in bytes) that can be stored.
 type Field_Capacity interface {
 	// Capacity return a length that underlying implementor can store desire elements such as byte.
+	// TODO::: on bad page e.g. bad sector return 0 or have error?
 	Capacity() NumberOfElement
 }
 

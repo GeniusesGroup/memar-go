@@ -3,9 +3,9 @@
 package log_p
 
 import (
-	event_p "memar/event/protocol"
-	runtime_p "memar/runtime/protocol"
-	string_p "memar/string/protocol"
+	event_p "memar/process/event/protocol"
+	runtime_p "memar/computer/runtime/protocol"
+	string_p "memar/codec/string/protocol"
 )
 
 // Event just suggest base structure, Additional data can structure in `Message` field as describe in many RFCs e.g.

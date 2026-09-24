@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"os"
 
-	error_p "memar/error/protocol"
-	errs "memar/operation/command/errors"
-	command_p "memar/operation/command/protocol"
+	error_p "memar/process/error/protocol"
+	// command_errs "memar/process/command/errors"
+	command_p "memar/process/command/protocol"
 )
 
 func ServeCLA(c command_p.Command, arguments []string) (err error_p.Error) {
@@ -26,13 +26,13 @@ func ServeCLA(c command_p.Command, arguments []string) (err error_p.Error) {
 		if serviceName == "help" || serviceName == "-h" || serviceName == "--help" {
 			// TODO:::
 			fmt.Fprintf(os.Stdout, "We must print help for You, But it is not implement yet. Sorry!\n")
-			err = &errs.ErrServiceNotFound
+			// err = &command_errs.ErrServiceNotFound
 			// helpMessage()
 			// Accept 'go mod help' and 'go mod help foo' for 'go help mod' and 'go help mod foo'.
 			// help.Help(os.Stdout, append(strings.Split(cfg.CmdName, " "), args[1:]...))
 		} else {
 			fmt.Fprintf(os.Stderr, "unknown command\nRun '%s help' for usage.\n", CommandPath(c))
-			err = &errs.ErrServiceNotFound
+			// err = &command_errs.ErrServiceNotFound
 		}
 		return
 	}
@@ -41,19 +41,19 @@ func ServeCLA(c command_p.Command, arguments []string) (err error_p.Error) {
 	var cmdAbbr = command.Abbreviation()
 	if serviceName != cmdName && serviceName != cmdAbbr {
 		fmt.Fprintf(os.Stderr, "	Do you mean '%s %s'?\n", CommandPath(c), cmdName)
-		err = &errs.ErrServiceCallByAlias
+		// err = &command_errs.ErrServiceCallByAlias
 		return
 	}
 
-	err = command.ServeCLA(arguments[1:])
+	// err = command.ServeCLA(arguments[1:])
 	return
 }
 
 // Root finds root command. or return nil if it is the root
 func Root(c command_p.Command) (root command_p.Command) {
 	for {
-		if root.Parent() != nil {
-			root = root.Parent()
+		if root.ParentCommand() != nil {
+			root = root.ParentCommand()
 		} else {
 			break
 		}
@@ -65,7 +65,7 @@ func Root(c command_p.Command) (root command_p.Command) {
 func CommandPath(command command_p.Command) (fullName string) {
 	for {
 		fullName = command.Name() + " " + fullName
-		command = command.Parent()
+		command = command.ParentCommand()
 		if command == nil {
 			break
 		}

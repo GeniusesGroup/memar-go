@@ -5,7 +5,8 @@ package uri
 import (
 	"strings"
 
-	"libgo/protocol"
+	error_p "memar/process/error/protocol"
+	errs "memar/net/uri/errors"
 )
 
 type escapeMode int
@@ -84,7 +85,7 @@ func Escape(s string, mode escapeMode) string {
 // hex-decoded byte 0xAB.
 // the mode specifies which section of the URL string is being unescaped.
 // It returns an error if any % is not followed by two hexadecimal digits.
-func Unescape(s string, mode escapeMode) (string, protocol.Error) {
+func Unescape(s string, mode escapeMode) (string, error_p.Error) {
 	// Count %, check that they're well-formed.
 	var n = 0
 	var hasPlus = false
@@ -93,7 +94,7 @@ func Unescape(s string, mode escapeMode) (string, protocol.Error) {
 		case '%':
 			n++
 			if i+2 >= len(s) || !ishex(s[i+1]) || !ishex(s[i+2]) {
-				return "", &ErrInvalidURLEscape
+				return "", &errs.ErrInvalidURLEscape
 			}
 			// Per https://tools.ietf.org/html/rfc3986#page-21
 			// in the host component %-encoding can only be used
@@ -102,7 +103,7 @@ func Unescape(s string, mode escapeMode) (string, protocol.Error) {
 			// introduces %25 being allowed to escape a percent sign
 			// in IPv6 scoped-address literals. Yay.
 			if mode == EscapeMode_Host && unhex(s[i+1]) < 8 && s[i:i+3] != "%25" {
-				return "", &ErrInvalidURLEscape
+				return "", &errs.ErrInvalidURLEscape
 			}
 			if mode == EscapeMode_Zone {
 				// RFC 6874 says basically "anything goes" for zone identifiers
@@ -114,7 +115,7 @@ func Unescape(s string, mode escapeMode) (string, protocol.Error) {
 				// But Windows puts spaces here! Yay.
 				var v = unhex(s[i+1])<<4 | unhex(s[i+2])
 				if s[i:i+3] != "%25" && v != ' ' && shouldEscape(v, EscapeMode_Host) {
-					return "", &ErrInvalidURLEscape
+					return "", &errs.ErrInvalidURLEscape
 				}
 			}
 			i += 2
@@ -122,7 +123,7 @@ func Unescape(s string, mode escapeMode) (string, protocol.Error) {
 			hasPlus = mode == EscapeMode_QueryComponent
 		default:
 			if (mode == EscapeMode_Host || mode == EscapeMode_Zone) && s[i] < 0x80 && shouldEscape(s[i], mode) {
-				return "", &ErrInvalidHostEscape
+				return "", &errs.ErrInvalidHostEscape
 			}
 		}
 	}
@@ -155,7 +156,7 @@ func Unescape(s string, mode escapeMode) (string, protocol.Error) {
 // appearing in a URL string, according to RFC 3986.
 //
 // Please be informed that for now shouldEscape does not check all
-// reserved characters correctly. See golang.org/issue/5684.
+// reserved characters correctly. See go.dev/issue/5684.
 func shouldEscape(c byte, mode escapeMode) bool {
 	// §2.3 Unreserved characters (alphanum)
 	if 'a' <= c && c <= 'z' || 'A' <= c && c <= 'Z' || '0' <= c && c <= '9' {

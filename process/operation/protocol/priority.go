@@ -2,6 +2,11 @@
 
 package operation_p
 
+type Field_Priority interface {
+	// Use to queue requests by its priority
+	OperationPriority() Priority
+}
+
 // Priority indicate to use by any queue systems like network sockets to implement priority/weight mechanism.
 type Priority uint8
 

@@ -5,22 +5,22 @@ package http
 import (
 	"memar/computer/datatype"
 	datatype_p "memar/computer/datatype/protocol"
+	http_headers "memar/libgo/net/http/headers"
 	error_p "memar/process/error/protocol"
-	string_p "memar/codec/string/protocol"
 )
 
 // Request is represent HTTP request protocol structure.
 // https://tools.ietf.org/html/rfc2616#section-5
-type Request[STR string_p.String] struct {
-	PseudoHeader_Request[STR]
-	Header[STR]
+type Request struct {
+	PseudoHeader_Request
+	Header
 	body
 
 	datatype.DataType
 }
 
 //memar:impl memar/computer/capsule/protocol.LifeCycle
-func (r *Request[STR]) Init() (err error_p.Error) {
+func (r *Request) Init() (err error_p.Error) {
 	err = r.PseudoHeader_Request.Init()
 	if err != nil {
 		return
@@ -32,7 +32,7 @@ func (r *Request[STR]) Init() (err error_p.Error) {
 	err = r.body.Init()
 	return
 }
-func (r *Request[STR]) Reinit() (err error_p.Error) {
+func (r *Request) Reinit() (err error_p.Error) {
 	err = r.PseudoHeader_Request.Reinit()
 	if err != nil {
 		return
@@ -44,7 +44,7 @@ func (r *Request[STR]) Reinit() (err error_p.Error) {
 	err = r.body.Reinit()
 	return
 }
-func (r *Request[STR]) Deinit() (err error_p.Error) {
+func (r *Request) Deinit() (err error_p.Error) {
 	err = r.PseudoHeader_Request.Deinit()
 	if err != nil {
 		return
@@ -68,23 +68,23 @@ func (r *Request[STR]) Deinit() (err error_p.Error) {
 //	Host: apis.geniuses.group
 //
 // the same. In the second case, any Host line is ignored.
-func (r *Request[STR]) CheckHost() {
+func (r *Request) CheckHost() {
 	if r.URI.Authority() == "" {
-		r.URI.SetAuthority(r.Header_Get(Key_Host))
+		r.URI.SetAuthority(r.Header_Get(http_headers.Key_Host))
 	}
 }
 
 //memar:impl memar/identifier/mediatype/protocol.Field_MediaType
-func (r *Request[STR]) MediaType() string { return "application/http; request" }
+func (r *Request) MediaType() string { return "application/http; request" }
 
 //memar:impl memar/identifier/mediatype/protocol.Field_MediaType
-func (r *Request[STR]) FileExtension() string { return "req.http" }
+func (r *Request) FileExtension() string { return "req.http" }
 
 //memar:impl memar/datatype/protocol.DataType_Details
-func (r *Request[STR]) LifeCycle() datatype_p.LifeCycle { return datatype_p.LifeCycle_PreAlpha }
-func (r *Request[STR]) ReferenceURI() string {
+func (r *Request) LifeCycle() datatype_p.LifeCycle { return datatype_p.LifeCycle_PreAlpha }
+func (r *Request) ReferenceURI() string {
 	return "https://www.iana.org/assignments/media-types/application/http"
 }
-func (r *Request[STR]) IssueDate() string                    { return "" }
-func (r *Request[STR]) ExpiryDate() string                   { return "" }
-func (r *Request[STR]) ExpireInFavorOf() datatype_p.DataType { return nil }
+func (r *Request) IssueDate() string                    { return "" }
+func (r *Request) ExpiryDate() string                   { return "" }
+func (r *Request) ExpireInFavorOf() datatype_p.DataType { return nil }

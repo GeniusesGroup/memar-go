@@ -5,7 +5,7 @@ package json
 import (
 	container_p "memar/computer/adt/container/protocol"
 	buffer_p "memar/computer/buffer/protocol"
-	json_p "memar/codec/data_exchange/json/protocol"
+	json_p "memar/libgo/codec/json/protocol"
 	error_p "memar/process/error/protocol"
 )
 

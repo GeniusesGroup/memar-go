@@ -5,16 +5,16 @@
 package errs
 
 //memar:impl memar/protocol.Detail
-func (d *errSourceNotChangeable) Domain() string  { return domainEnglish }
-func (d *errSourceNotChangeable) Summary() string { return "Source not Changeable" }
-func (d *errSourceNotChangeable) Overview() string {
+func (self *sourceNotChangeable) Domain() string  { return domainEnglish }
+func (self *sourceNotChangeable) Summary() string { return "Source not Changeable" }
+func (self *sourceNotChangeable) Overview() string {
 	return "Can't read from other source than source given in compression||decompression creation"
 }
-func (d *errSourceNotChangeable) UserNote() string { return "" }
-func (d *errSourceNotChangeable) DevNote() string  { return "" }
-func (d *errSourceNotChangeable) TAGS() []string   { return []string{} }
+func (self *sourceNotChangeable) UserActionNote() string { return "" }
+func (self *sourceNotChangeable) DevActionNote() string  { return "" }
+func (self *sourceNotChangeable) TAGS() []string         { return []string{} }
 
 //memar:impl memar/protocol.Quiddity
-func (d *errSourceNotChangeable) Name() string         { return "" }
-func (d *errSourceNotChangeable) Abbreviation() string { return "" }
-func (d *errSourceNotChangeable) Aliases() []string    { return []string{} }
+func (self *sourceNotChangeable) Name() string         { return "" }
+func (self *sourceNotChangeable) Abbreviation() string { return "" }
+func (self *sourceNotChangeable) Aliases() []string    { return []string{} }

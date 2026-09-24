@@ -3,7 +3,7 @@
 package net
 
 import (
-	"memar/protocol"
+	net_p "memar/net/protocol"
 )
 
-var _ protocol.Network_PacketListener = &PacketListener{}
+var _ net_p.PacketListener = &PacketListener{}

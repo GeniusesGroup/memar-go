@@ -10,10 +10,10 @@ func (dt *errProtocolHandler) Summary() string { return "Protocol Handler" }
 func (dt *errProtocolHandler) Overview() string {
 	return "Protocol handler not exist to complete the request"
 }
-func (dt *errProtocolHandler) UserNote() string {
+func (dt *errProtocolHandler) UserActionNote() string {
 	return ""
 }
-func (dt *errProtocolHandler) DevNote() string {
+func (dt *errProtocolHandler) DevActionNote() string {
 	return ""
 }
 func (dt *errProtocolHandler) TAGS() []string { return []string{} }

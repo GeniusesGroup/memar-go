@@ -2,14 +2,8 @@
 
 package uri_p
 
-import (
-	string_p "memar/codec/string/protocol"
-)
-
 type Field_Fragment interface {
 	Fragment() Fragment
 }
 
-type Fragment interface {
-	string_p.String
-}
+type Fragment string

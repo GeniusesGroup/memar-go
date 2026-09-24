@@ -5,15 +5,16 @@ package minify
 import (
 	"regexp"
 
-	"memar/protocol"
+	codec_p "memar/codec/protocol"
+	error_p "memar/process/error/protocol"
 
-	"github.com/tdewolff/minify"
-	tcss "github.com/tdewolff/minify/css"
-	thtml "github.com/tdewolff/minify/html"
-	"github.com/tdewolff/minify/js"
-	"github.com/tdewolff/minify/json"
-	"github.com/tdewolff/minify/svg"
-	"github.com/tdewolff/minify/xml"
+	"github.com/tdewolff/minify/v2"
+	tcss "github.com/tdewolff/minify/v2/css"
+	thtml "github.com/tdewolff/minify/v2/html"
+	"github.com/tdewolff/minify/v2/js"
+	"github.com/tdewolff/minify/v2/json"
+	"github.com/tdewolff/minify/v2/svg"
+	"github.com/tdewolff/minify/v2/xml"
 )
 
 var minifier = minify.New()
@@ -28,14 +29,14 @@ func init() {
 }
 
 // Minify replace file data with minify of them.
-func Minify(data protocol.Codec) (err protocol.Error) {
+func Minify(data codec_p.Codec) (err error_p.Error) {
 	var rawData []byte
 	rawData, err = data.Marshal()
 	if err != nil {
 		return
 	}
 
-	var minifiedData, goErr = minifier.Bytes(data.MediaType().ToString(), rawData)
+	var minifiedData, goErr = minifier.Bytes(data.MediaType(), rawData)
 	if goErr != nil {
 		return
 	}

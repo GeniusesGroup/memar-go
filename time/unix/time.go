@@ -3,8 +3,8 @@
 package unix
 
 import (
-	error_p "memar/error/protocol"
-	string_p "memar/string/protocol"
+	error_p "memar/process/error/protocol"
+	string_p "memar/codec/string/protocol"
 	"memar/time/duration"
 	"memar/time/earth"
 	time_p "memar/time/protocol"
@@ -24,7 +24,7 @@ func (t *Time) Epoch() time_p.Epoch                        { return &Epoch }
 func (t *Time) SecondElapsed() duration.Second             { return t.sec }
 func (t *Time) NanoInSecondElapsed() duration.NanoInSecond { return t.nsec }
 
-//memar:impl memar/string/protocol.Stringer
+//memar:impl memar/codec/string/protocol.Stringer
 func (t *Time) ToString() (str string_p.String, err error_p.Error) {
 	// TODO:::
 	return
